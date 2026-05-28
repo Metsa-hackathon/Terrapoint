@@ -7,102 +7,243 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-    <header>
-        <div class="header-inner">
-            <h1>🌲 Terrapoint</h1>
-            <p class="subtitle">Eesti metsaandmed ühes kohas</p>
+    <!-- Hero Header -->
+    <header class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                        <path d="M20 4L8 20h8l-4 16 16-20h-8l4-12z" fill="white" opacity="0.9"/>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h1>Terrapoint</h1>
+                    <p class="tagline">Eesti metsaandmed ühes kohas</p>
+                </div>
+            </div>
         </div>
     </header>
 
-    <main>
-        <section class="search-section">
+    <!-- Search Section -->
+    <section class="search-section">
+        <div class="search-container">
             <div class="search-box">
+                <div class="search-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                    </svg>
+                </div>
                 <input type="text" id="kataster-input" placeholder="Sisesta katastri number (nt 78404:409:0113)" autocomplete="off">
-                <button id="search-btn">Otsi</button>
+                <button id="search-btn">
+                    <span class="btn-text">Analüüsi</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </button>
             </div>
             <div id="error-msg" class="error-msg hidden"></div>
-        </section>
-
-        <div id="loading" class="loading hidden">
-            <div class="spinner"></div>
-            <p>Andmeid laaditakse...</p>
         </div>
+    </section>
 
-        <section id="dashboard" class="dashboard hidden">
-            <div class="dashboard-top">
-                <div class="map-container">
-                    <div id="map"></div>
-                    <div class="layer-controls">
-                        <label><input type="checkbox" id="layer-kitsendused" checked> Kitsendused</label>
-                        <label><input type="checkbox" id="layer-yrask"> Üraski risk</label>
-                        <label><input type="checkbox" id="layer-lageraie"> Lageraiealad</label>
-                        <label><input type="checkbox" id="layer-karuputk"> Karuputk</label>
-                        <label><input type="checkbox" id="layer-oksjonid"> RMK oksjonid</label>
-                    </div>
+    <!-- Loading State -->
+    <div id="loading" class="loading hidden">
+        <div class="loading-content">
+            <div class="skeleton-grid">
+                <div class="skeleton skeleton-map"></div>
+                <div class="skeleton-cards">
+                    <div class="skeleton skeleton-card"></div>
+                    <div class="skeleton skeleton-card"></div>
+                    <div class="skeleton skeleton-card"></div>
                 </div>
-                <div class="cards-container">
-                    <div class="card" id="card-kataster">
-                        <h3>Katastri andmed</h3>
-                        <div id="kataster-info"></div>
-                    </div>
-                    <div class="card" id="card-mets">
-                        <h3>Metsaandmed</h3>
-                        <div id="mets-info"></div>
-                    </div>
-                    <div class="card" id="card-vaartus">
-                        <h3>Puidu väärtus</h3>
-                        <div id="vaartus-info"></div>
-                    </div>
-                    <div class="card" id="card-sinik">
-                        <h3>Süsinik</h3>
-                        <div id="sinik-info"></div>
-                    </div>
-                    <div class="card" id="card-riskid">
-                        <h3>Riskid</h3>
-                        <div id="riskid-info"></div>
-                    </div>
-                    <div class="card" id="card-eudr">
-                        <h3>EUDR</h3>
-                        <div id="eudr-info">
-                            <p>Laadi alla GeoJSON Euroopa Liidu deforestatsiooniregulatsiooni jaoks.</p>
-                            <button id="eudr-btn" class="btn-eudr">📥 Laadi alla EUDR GeoJSON</button>
-                        </div>
+            </div>
+            <p class="loading-text">Andmeid laaditakse...</p>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <section id="dashboard" class="dashboard hidden">
+
+        <!-- Map Section -->
+        <div class="map-section">
+            <div class="map-wrapper">
+                <div id="map"></div>
+                <div class="map-controls">
+                    <div class="layer-toggle">
+                        <label class="toggle-item">
+                            <input type="checkbox" id="layer-kitsendused" checked>
+                            <span class="toggle-label">Kitsendused</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="layer-yrask">
+                            <span class="toggle-label">Üraski risk</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="layer-lageraie">
+                            <span class="toggle-label">Lageraiealad</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="layer-karuputk">
+                            <span class="toggle-label">Karuputk</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="layer-oksjonid">
+                            <span class="toggle-label">RMK oksjonid</span>
+                        </label>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <section class="charts-section">
+        <!-- Metric Cards Grid -->
+        <div class="metrics-grid">
+            <!-- Kataster Card -->
+            <div class="metric-card" id="card-kataster">
+                <div class="card-header">
+                    <div class="card-icon kataster-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                    </div>
+                    <h3>Katastri andmed</h3>
+                </div>
+                <div id="kataster-info"></div>
+            </div>
+
+            <!-- Mets Card -->
+            <div class="metric-card" id="card-mets">
+                <div class="card-header">
+                    <div class="card-icon mets-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 12h4l-2 10 12-12h-4l2-8z"/>
+                        </svg>
+                    </div>
+                    <h3>Metsaandmed</h3>
+                </div>
+                <div id="mets-info"></div>
+            </div>
+
+            <!-- Value Card -->
+            <div class="metric-card highlight-card" id="card-vaartus">
+                <div class="card-header">
+                    <div class="card-icon vaartus-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                    </div>
+                    <h3>Puidu väärtus</h3>
+                </div>
+                <div id="vaartus-info"></div>
+            </div>
+
+            <!-- Carbon Card -->
+            <div class="metric-card" id="card-sinik">
+                <div class="card-header">
+                    <div class="card-icon sinik-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                        </svg>
+                    </div>
+                    <h3>Süsinik</h3>
+                </div>
+                <div id="sinik-info"></div>
+            </div>
+
+            <!-- Risk Card -->
+            <div class="metric-card" id="card-riskid">
+                <div class="card-header">
+                    <div class="card-icon risk-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </div>
+                    <h3>Riskid</h3>
+                </div>
+                <div id="riskid-info"></div>
+            </div>
+
+            <!-- EUDR Card -->
+            <div class="metric-card eudr-card" id="card-eudr">
+                <div class="card-header">
+                    <div class="card-icon eudr-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                    </div>
+                    <h3>EUDR</h3>
+                </div>
+                <div id="eudr-info">
+                    <p class="eudr-desc">GeoJSON Euroopa Liidu deforestatsiooniregulatsiooni jaoks.</p>
+                    <button id="eudr-btn" class="btn-eudr">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Laadi alla EUDR GeoJSON
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <div class="section-header">
                 <h2>Graafikud</h2>
-                <div class="charts-grid">
-                    <div class="chart-box">
-                        <h3>Puuliikide koosseis</h3>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>Puuliikide koosseis</h3>
+                    <div class="chart-wrapper">
                         <canvas id="chart-composition"></canvas>
                     </div>
-                    <div class="chart-box">
-                        <h3>Väärtuse jaotus</h3>
+                </div>
+                <div class="chart-card">
+                    <h3>Väärtuse jaotus</h3>
+                    <div class="chart-wrapper">
                         <canvas id="chart-value"></canvas>
                     </div>
                 </div>
-            </section>
+            </div>
+        </div>
 
-            <section class="tables-section">
-                <div class="table-card">
-                    <h3>⚠️ Kitsendused</h3>
-                    <div id="kitsendused-info"><p class="muted">Andmeid pole</p></div>
+        <!-- Tables Section -->
+        <div class="tables-section">
+            <div class="table-card">
+                <div class="card-header">
+                    <div class="card-icon risk-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                    </div>
+                    <h3>Kitsendused</h3>
                 </div>
-                <div class="table-card">
-                    <h3>💰 Toetused</h3>
-                    <div id="toetused-info"><p class="muted">Andmeid pole</p></div>
+                <div id="kitsendused-info"><p class="muted">Andmeid pole</p></div>
+            </div>
+            <div class="table-card">
+                <div class="card-header">
+                    <div class="card-icon vaartus-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                    </div>
+                    <h3>Toetused</h3>
                 </div>
-            </section>
-        </section>
-    </main>
+                <div id="toetused-info"><p class="muted">Andmeid pole</p></div>
+            </div>
+        </div>
+    </section>
 
+    <!-- Footer -->
     <footer>
-        <p>Terrapoint © 2026 | Andmed: Keskkonnaagentuur, Maa-amet, Erametsaliit</p>
+        <div class="footer-content">
+            <p class="footer-brand">Terrapoint &copy; 2026</p>
+            <p class="footer-sources">Andmed: Keskkonnaagentuur, Maa-amet, Erametsaliit</p>
+        </div>
     </footer>
 
     <script src="/js/api.js"></script>

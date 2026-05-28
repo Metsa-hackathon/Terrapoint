@@ -1,11 +1,23 @@
 const SPECIES_COLORS = {
-    KU: '#2d5016', MA: '#4a7c28', KS: '#8fbc8f', HB: '#a0c4a0',
+    KU: '#2d5016', MA: '#4a7c28', KS: '#7ab356', HB: '#a0c4a0',
     LH: '#3d6b1e', LM: '#6b8e23', LV: '#7a9e3a', TA: '#5c4033',
     SA: '#7a5c3a', VA: '#8b6f47',
 };
 
+const VALUE_COLORS = {
+    log: '#2d5016',
+    pulp: '#4a7c28',
+    harvest: '#e63946',
+    transport: '#f4a261',
+};
+
 let compositionChart = null;
 let valueChart = null;
+
+// Chart.js global defaults
+Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#4a5568';
 
 function renderCompositionChart(species) {
     const ctx = document.getElementById('chart-composition');
@@ -13,10 +25,8 @@ function renderCompositionChart(species) {
 
     if (compositionChart) compositionChart.destroy();
 
-    const labels = species.map(s => {
-        const names = { MA: 'Mänd', KU: 'Kuusk', KS: 'Kask', HB: 'Haab', LH: 'Lehis', LM: 'Sanglepp', LV: 'Hall lepp', TA: 'Tamm', SA: 'Saar', VA: 'Vaher' };
-        return names[s.puuliik_kood || s.puuliik] || s.puuliik;
-    });
+    const names = { MA: 'Mänd', KU: 'Kuusk', KS: 'Kask', HB: 'Haab', LH: 'Lehis', LM: 'Sanglepp', LV: 'Hall lepp', TA: 'Tamm', SA: 'Saar', VA: 'Vaher' };
+    const labels = species.map(s => names[s.puuliik_kood || s.puuliik] || s.puuliik);
     const values = species.map(s => s.osakaal);
     const colors = species.map(s => SPECIES_COLORS[s.puuliik_kood || s.puuliik] || '#6c757d');
 
@@ -24,12 +34,40 @@ function renderCompositionChart(species) {
         type: 'doughnut',
         data: {
             labels,
-            datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }],
+            datasets: [{
+                data: values,
+                backgroundColor: colors,
+                borderWidth: 3,
+                borderColor: '#ffffff',
+                hoverBorderWidth: 0,
+                hoverOffset: 6,
+            }],
         },
         options: {
             responsive: true,
+            maintainAspectRatio: true,
+            cutout: '62%',
             plugins: {
-                legend: { position: 'bottom', labels: { padding: 12, font: { size: 12 } } },
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 16,
+                        usePointStyle: true,
+                        pointStyleWidth: 10,
+                        font: { size: 12, weight: '500' },
+                    },
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(26, 29, 35, 0.9)',
+                    titleFont: { weight: '600' },
+                    bodyFont: { size: 13 },
+                    padding: 12,
+                    cornerRadius: 8,
+                    displayColors: true,
+                    callbacks: {
+                        label: (ctx) => ` ${ctx.label}: ${ctx.parsed}%`,
+                    },
+                },
             },
         },
     });
@@ -51,16 +89,66 @@ function renderValueChart(data) {
         data: {
             labels: ['Palk', 'Paberipuit', 'Varumine', 'Transport'],
             datasets: [{
-                data: [Math.round(logValue), Math.round(pulpValue), Math.round(harvestCost), Math.round(transportCost)],
-                backgroundColor: ['#2d5016', '#4a7c28', '#e63946', '#f4a261'],
-                borderRadius: 6,
+                data: [
+                    Math.round(logValue),
+                    Math.round(pulpValue),
+                    Math.round(harvestCost),
+                    Math.round(transportCost),
+                ],
+                backgroundColor: [
+                    VALUE_COLORS.log,
+                    VALUE_COLORS.pulp,
+                    VALUE_COLORS.harvest,
+                    VALUE_COLORS.transport,
+                ],
+                borderRadius: 8,
+                borderSkipped: false,
+                barPercentage: 0.7,
+                categoryPercentage: 0.8,
             }],
         },
         options: {
             responsive: true,
-            plugins: { legend: { display: false } },
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(26, 29, 35, 0.9)',
+                    titleFont: { weight: '600' },
+                    bodyFont: { size: 13 },
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: (ctx) => {
+                            const v = ctx.parsed.y;
+                            return ` ${v.toLocaleString('et-EE').replace(/,/g, ' ')} €`;
+                        },
+                    },
+                },
+            },
             scales: {
-                y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('et-EE').replace(/,/g, ' ') + ' €' } },
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        font: { size: 11, weight: '500' },
+                        color: '#4a5568',
+                    },
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0,0,0,0.04)',
+                        drawBorder: false,
+                    },
+                    ticks: {
+                        font: { size: 11 },
+                        color: '#8896a6',
+                        callback: v => {
+                            if (v >= 1000) return (v / 1000).toFixed(0) + 'k €';
+                            return v + ' €';
+                        },
+                    },
+                },
             },
         },
     });

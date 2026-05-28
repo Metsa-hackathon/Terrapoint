@@ -6,6 +6,8 @@ SPECIES_NAMES = {
     "MA": "Mänd", "KU": "Kuusk", "KS": "Kask", "HB": "Haab",
     "LH": "Lehis", "LM": "Sanglepp", "LV": "Hall lepp",
     "TA": "Tamm", "SA": "Saar", "VA": "Vaher",
+    "TM": "Toomingas", "PI": "Pihlakas", "LN": "Lõhislehine pärn",
+    "JV": "Jalakas", "NV": "Nõiapuu",
 }
 
 BONITEET_MAP = {0: "I", 1: "II", 2: "III", 3: "IV", 4: "V", 5: "VI", 6: "VII"}

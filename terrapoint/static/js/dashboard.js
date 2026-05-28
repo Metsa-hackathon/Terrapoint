@@ -1,7 +1,8 @@
 const SPECIES_NAMES = {
     MA: 'Mänd', KU: 'Kuusk', KS: 'Kask', HB: 'Haab',
     LH: 'Lehis', LM: 'Sanglepp', LV: 'Hall lepp', TA: 'Tamm',
-    SA: 'Saar', VA: 'Vaher',
+    SA: 'Saar', VA: 'Vaher', TM: 'Toomingas', PI: 'Pihlakas',
+    LN: 'Lõhislehine pärn', JV: 'Jalakas', NV: 'Nõiapuu',
 };
 const BONITEET_LABELS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
 
@@ -18,6 +19,27 @@ function formatNum(n, decimals) {
 
 function speciesName(code) {
     return SPECIES_NAMES[code] || code;
+}
+
+// Animated number counter
+function animateNumber(el, target, suffix, decimals) {
+    if (target == null) { el.textContent = '—'; return; }
+    const duration = 800;
+    const start = performance.now();
+    const startVal = 0;
+    const format = (v) => {
+        if (decimals !== undefined) return v.toFixed(decimals).replace('.', ',');
+        return Math.round(v).toLocaleString('et-EE').replace(/,/g, ' ');
+    };
+    function tick(now) {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        const current = startVal + (target - startVal) * eased;
+        el.textContent = format(current) + (suffix || '');
+        if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
 }
 
 function renderKataster(data) {
@@ -38,16 +60,20 @@ function renderKataster(data) {
 function renderMets(data) {
     const el = document.getElementById('mets-info');
     if (!data) { el.innerHTML = '<p class="muted">Metsaandmeid pole</p>'; return; }
-    const boniteet = BONITEET_LABELS[data.boniteedi_kood] || data.boniteedi_kood;
+
+    // Use boniteet string directly from API, fallback to array lookup
+    const boniteet = data.boniteet || BONITEET_LABELS[data.boniteedi_kood] || data.boniteedi_kood || '—';
+
     let compHtml = '';
     if (data.liikide_koosseis && data.liikide_koosseis.length > 0) {
         compHtml = '<table class="comp-table">' + data.liikide_koosseis.map(s =>
-            `<tr><td>${speciesName(s.puuliik_kood || s.puuliik)}</td><td>${s.osakaal}%</td><td class="bar-cell"><span class="comp-bar" style="width:${s.osakaal}%"></span></td></tr>`
+            `<tr><td>${speciesName(s.puuliik_kood || s.puuliik)}</td><td style="font-weight:600">${s.osakaal}%</td><td class="bar-cell"><span class="comp-bar" style="width:${s.osakaal}%"></span></td></tr>`
         ).join('') + '</table>';
     }
+
     el.innerHTML = `
         <div class="info-row"><span class="label">Peapuuliik</span><span class="value">${speciesName(data.puuliik_kood || data.puuliik)}</span></div>
-        <div class="info-row"><span class="label">Keskmine vanus</span><span class="value">${data.vanus} a</span></div>
+        <div class="info-row"><span class="label">Keskmine vanus</span><span class="value">${data.vanus || '—'} a</span></div>
         <div class="info-row"><span class="label">Tagavara</span><span class="value">${formatNum(data.tagavara_y_ha)} m³/ha</span></div>
         <div class="info-row"><span class="label">Boniteet</span><span class="value">${boniteet}</span></div>
         <div class="info-row"><span class="label">Pindala</span><span class="value">${formatNum(data.pindala_ha, 2)} ha</span></div>
@@ -59,25 +85,39 @@ function renderMets(data) {
 function renderVaartus(data) {
     const el = document.getElementById('vaartus-info');
     if (!data) { el.innerHTML = '<p class="muted">Väärtuse andmeid pole</p>'; return; }
+
     el.innerHTML = `
-        <div class="big-number">${formatEur(data.total_value_eur)}</div>
+        <div class="big-number accent"><span id="anim-vaartus">0</span> €</div>
         <div class="info-row"><span class="label">Ühikuhind</span><span class="value">${formatEur(data.value_per_ha)} / ha</span></div>
         <div class="info-row"><span class="label">Seisuhind</span><span class="value">${formatNum(data.price_per_m3, 2)} €/m³</span></div>
         <div class="info-row"><span class="label">Tagavara</span><span class="value">${formatNum(data.tagavara_m3)} m³</span></div>
         <div class="info-row"><span class="label">Palk</span><span class="value">${formatNum(data.log_price, 2)} €/m³</span></div>
         <div class="info-row"><span class="label">Paberipuit</span><span class="value">${formatNum(data.pulp_price, 2)} €/m³</span></div>
     `;
+
+    // Animate the big number
+    setTimeout(() => {
+        const animEl = document.getElementById('anim-vaartus');
+        if (animEl) animateNumber(animEl, data.total_value_eur, '', 0);
+    }, 200);
 }
 
 function renderSinik(data) {
     const el = document.getElementById('sinik-info');
     if (!data) { el.innerHTML = '<p class="muted">Süsiniku andmeid pole</p>'; return; }
+
     el.innerHTML = `
-        <div class="big-number">${formatNum(data.co2_tons_total, 0)} <span class="unit">tCO₂</span></div>
+        <div class="big-number"><span id="anim-co2">0</span><span class="unit"> tCO₂</span></div>
         <div class="info-row"><span class="label">CO₂ / ha</span><span class="value">${formatNum(data.co2_tons_ha, 1)} t</span></div>
         <div class="info-row"><span class="label">Biomass / ha</span><span class="value">${formatNum(data.total_biomass_tons_ha, 1)} t</span></div>
         <div class="info-row"><span class="label">Potentsiaalne tulu</span><span class="value">${formatEur(data.potential_income_eur)}</span></div>
     `;
+
+    // Animate CO2 number
+    setTimeout(() => {
+        const animEl = document.getElementById('anim-co2');
+        if (animEl) animateNumber(animEl, data.co2_tons_total, '', 0);
+    }, 300);
 }
 
 function renderRiskid(data) {
@@ -103,14 +143,14 @@ function renderRiskid(data) {
     // Terviseindeks
     if (data.terviseindeks != null) {
         const t = data.terviseindeks;
-        const barColor = t >= 70 ? '#28a745' : t >= 40 ? '#ffc107' : '#e63946';
+        const barColor = t >= 70 ? 'linear-gradient(90deg, #28a745, #2a9d8f)' : t >= 40 ? 'linear-gradient(90deg, #ffc107, #f4a261)' : 'linear-gradient(90deg, #e63946, #fd7e14)';
         html += `<div class="info-row"><span class="label">Terviseindeks</span><span class="value">${t}/100</span></div>
             <div class="progress-bar"><div class="fill" style="width:${t}%;background:${barColor}"></div></div>`;
     }
 
     // Karuputk
     if (data.karuputk) {
-        html += `<div class="info-row"><span class="label">Karuputk</span><span style="color:var(--danger);font-weight:600">⚠️ Leitud</span></div>`;
+        html += `<div class="info-row"><span class="label">Karuputk</span><span style="color:var(--danger);font-weight:600">Leitud</span></div>`;
     }
 
     // Lageraieala
@@ -137,7 +177,7 @@ function renderToetused(data) {
     if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Toetusi ei leitud</p>'; return; }
     let html = '<table><thead><tr><th></th><th>Programm</th><th>Summa</th><th>Asutus</th></tr></thead><tbody>';
     data.forEach(t => {
-        const icon = t.sobib ? '✅' : '❌';
+        const icon = t.sobib ? '✅' : '—';
         html += `<tr><td>${icon}</td><td><strong>${t.nimi}</strong>${t.taotlusvoor ? `<br><span class="muted">${t.taotlusvoor}</span>` : ''}</td><td>${t.summa}</td><td>${t.asutus}</td></tr>`;
     });
     html += '</tbody></table>';
@@ -163,5 +203,10 @@ function showError(msg) {
 }
 
 function showDashboard() {
-    document.getElementById('dashboard').classList.remove('hidden');
+    const dashboard = document.getElementById('dashboard');
+    dashboard.classList.remove('hidden');
+    // Smooth scroll to dashboard
+    setTimeout(() => {
+        dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
 }

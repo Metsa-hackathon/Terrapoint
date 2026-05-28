@@ -85,6 +85,20 @@ async def search(request: Request, kataster_nr: str, refresh: bool = Query(False
         # Ensure numeric defaults
         tagavara = eraldis_data.get("tagavara_y_ha") or 0
         pindala = eraldis_data.get("pindala_ha") or 0
+
+        # If tagavara is missing, estimate from species composition
+        if tagavara == 0 and liikide_koosseis:
+            weighted_sum = 0
+            total_osakaal = 0
+            for elem in liikide_koosseis:
+                t = elem.get("tagavara")
+                o = elem.get("osakaal", 0)
+                if t and t > 0 and o > 0:
+                    weighted_sum += t * o
+                    total_osakaal += o
+            if total_osakaal > 0:
+                tagavara = round(weighted_sum / total_osakaal, 1)
+                eraldis_data["tagavara_y_ha"] = tagavara
         puuliik = eraldis_data.get("puuliik_kood") or "MA"
 
         # 4. Calculators

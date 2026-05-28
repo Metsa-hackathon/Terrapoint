@@ -26,6 +26,11 @@ async function doSearch() {
     const nr = document.getElementById('kataster-input').value.trim();
     if (!nr) { showError('Sisesta katastri number.'); return; }
 
+    // Disable button during search
+    const btn = document.getElementById('search-btn');
+    btn.disabled = true;
+    btn.querySelector('.btn-text').textContent = 'Laadin...';
+
     showLoading();
 
     try {
@@ -35,10 +40,9 @@ async function doSearch() {
         // Kataster
         if (data.kataster) renderKataster(data.kataster);
 
-        // Map
+        // Map - show parcel first
         if (data.kataster && data.kataster.geometry) {
             showParcel(data.kataster.geometry);
-            fitToParcel(data.kataster.geometry);
         }
 
         // Mets
@@ -68,28 +72,25 @@ async function doSearch() {
         }
 
         // Overlay layers
-        setupOverlayLayers(data);
+        if (data.kitsendused) {
+            toggleOverlayLayer('kitsendused', document.getElementById('layer-kitsendused').checked);
+        }
 
         hideLoading();
         showDashboard();
+
+        // Fix Leaflet map size after dashboard becomes visible
+        setTimeout(() => {
+            map.invalidateSize();
+            if (data.kataster && data.kataster.geometry) {
+                fitToParcel(data.kataster.geometry);
+            }
+        }, 150);
     } catch (err) {
         hideLoading();
-        showError(err.message || 'Andmete laadimine ebaõnnestus.');
+        showError(err.message);
+    } finally {
+        btn.disabled = false;
+        btn.querySelector('.btn-text').textContent = 'Analüüsi';
     }
-}
-
-function setupOverlayLayers(data) {
-    // Clear existing overlays
-    ['kitsendused', 'yrask', 'lageraie', 'karuputk', 'oksjonid'].forEach(n => removeOverlayLayer(n));
-
-    // Reset checkboxes
-    document.getElementById('layer-kitsendused').checked = true;
-    document.getElementById('layer-yrask').checked = false;
-    document.getElementById('layer-lageraie').checked = false;
-    document.getElementById('layer-karuputk').checked = false;
-    document.getElementById('layer-oksjonid').checked = false;
-
-    // Kitsendused — we don't have geometry in the main response, skip map layer
-    // The overlay layers would need geometry from the /api/search response
-    // For now, layers are available if the backend provides features with geometry
 }
