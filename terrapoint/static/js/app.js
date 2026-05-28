@@ -73,6 +73,7 @@ async function doSearch() {
         hideLoading();
         showDashboard();
     } catch (err) {
+        hideLoading();
         showError(err.message || 'Andmete laadimine ebaõnnestus.');
     }
 }
