@@ -1,25 +1,30 @@
+import os
 import time
 from contextlib import asynccontextmanager
 
 import redis.asyncio as aioredis
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 
 from config import CORS_ORIGINS, REDIS_URL
 from api.search import router as search_router
 from api.export import router as export_router
 
+ON_VERCEL = os.environ.get("VERCEL") == "1"
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    try:
-        app.state.redis = aioredis.from_url(REDIS_URL, decode_responses=True)
-        await app.state.redis.ping()
-    except Exception:
+    if not ON_VERCEL:
+        try:
+            app.state.redis = aioredis.from_url(REDIS_URL, decode_responses=True)
+            await app.state.redis.ping()
+        except Exception:
+            app.state.redis = None
+    else:
         app.state.redis = None
     yield
-    if app.state.redis:
+    if getattr(app.state, "redis", None):
         await app.state.redis.aclose()
 
 
@@ -46,4 +51,7 @@ async def health():
     return {"status": "ok", "timestamp": time.time()}
 
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+if not ON_VERCEL:
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/", StaticFiles(directory="static", html=True), name="static")

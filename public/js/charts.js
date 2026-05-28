@@ -26,12 +26,9 @@ function renderCompositionChart(species) {
     if (compositionChart) compositionChart.destroy();
 
     const names = { MA: 'Mänd', KU: 'Kuusk', KS: 'Kask', HB: 'Haab', LH: 'Lehis', LM: 'Sanglepp', LV: 'Hall lepp', TA: 'Tamm', SA: 'Saar', VA: 'Vaher' };
-    // Filter to actual tree species (exclude codes like TM, PI)
-    const validSpecies = species.filter(s => SPECIES_COLORS[s.puuliik_kood || s.puuliik]);
-    if (validSpecies.length === 0) return;
-    const labels = validSpecies.map(s => names[s.puuliik_kood || s.puuliik] || s.puuliik);
-    const values = validSpecies.map(s => s.osakaal);
-    const colors = validSpecies.map(s => SPECIES_COLORS[s.puuliik_kood || s.puuliik] || '#6c757d');
+    const labels = species.map(s => names[s.puuliik_kood || s.puuliik] || s.puuliik);
+    const values = species.map(s => s.osakaal);
+    const colors = species.map(s => SPECIES_COLORS[s.puuliik_kood || s.puuliik] || '#6c757d');
 
     compositionChart = new Chart(ctx, {
         type: 'doughnut',

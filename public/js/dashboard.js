@@ -185,27 +185,38 @@ function renderToetused(data) {
 }
 
 function showLoading() {
-    document.getElementById('loading').classList.remove('hidden');
-    document.getElementById('dashboard').classList.add('hidden');
-    document.getElementById('error-msg').classList.add('hidden');
+    const loading = document.getElementById('loading');
+    const dashboard = document.getElementById('dashboard');
+    const error = document.getElementById('error-msg');
+    loading.style.display = '';
+    loading.classList.remove('hidden');
+    dashboard.style.display = 'none';
+    dashboard.classList.add('hidden');
+    error.style.display = 'none';
+    error.classList.add('hidden');
 }
 
 function hideLoading() {
-    document.getElementById('loading').classList.add('hidden');
+    const loading = document.getElementById('loading');
+    loading.style.display = 'none';
+    loading.classList.add('hidden');
 }
 
 function showError(msg) {
     const el = document.getElementById('error-msg');
-    el.textContent = msg;
+    el.innerHTML = msg;
+    el.style.display = '';
     el.classList.remove('hidden');
+    document.getElementById('loading').style.display = 'none';
     document.getElementById('loading').classList.add('hidden');
+    document.getElementById('dashboard').style.display = 'none';
     document.getElementById('dashboard').classList.add('hidden');
 }
 
 function showDashboard() {
     const dashboard = document.getElementById('dashboard');
+    dashboard.style.display = '';
     dashboard.classList.remove('hidden');
-    // Smooth scroll to dashboard
     setTimeout(() => {
         dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
