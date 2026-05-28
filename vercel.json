@@ -1,9 +1,9 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" },
-    { "source": "/css/(.*)", "destination": "/api/index" },
-    { "source": "/js/(.*)", "destination": "/api/index" },
-    { "source": "/img/(.*)", "destination": "/api/index" },
-    { "source": "/", "destination": "/api/index" }
+    { "source": "/api/(.*)", "destination": "/index.py" },
+    { "source": "/css/(.*)", "destination": "/index.py" },
+    { "source": "/js/(.*)", "destination": "/index.py" },
+    { "source": "/img/(.*)", "destination": "/index.py" },
+    { "source": "/", "destination": "/index.py" }
   ]
 }
