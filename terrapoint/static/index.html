@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terrapoint — Eesti metsaandmed</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <h1>🌲 Terrapoint</h1>
+            <p class="subtitle">Eesti metsaandmed ühes kohas</p>
+        </div>
+    </header>
+
+    <main>
+        <section class="search-section">
+            <div class="search-box">
+                <input type="text" id="kataster-input" placeholder="Sisesta katastri number (nt 78404:409:0113)" autocomplete="off">
+                <button id="search-btn">Otsi</button>
+            </div>
+            <div id="error-msg" class="error-msg hidden"></div>
+        </section>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Andmeid laaditakse...</p>
+        </div>
+
+        <section id="dashboard" class="dashboard hidden">
+            <div class="dashboard-top">
+                <div class="map-container">
+                    <div id="map"></div>
+                    <div class="layer-controls">
+                        <label><input type="checkbox" id="layer-kitsendused" checked> Kitsendused</label>
+                        <label><input type="checkbox" id="layer-yrask"> Üraski risk</label>
+                        <label><input type="checkbox" id="layer-lageraie"> Lageraiealad</label>
+                        <label><input type="checkbox" id="layer-karuputk"> Karuputk</label>
+                        <label><input type="checkbox" id="layer-oksjonid"> RMK oksjonid</label>
+                    </div>
+                </div>
+                <div class="cards-container">
+                    <div class="card" id="card-kataster">
+                        <h3>Katastri andmed</h3>
+                        <div id="kataster-info"></div>
+                    </div>
+                    <div class="card" id="card-mets">
+                        <h3>Metsaandmed</h3>
+                        <div id="mets-info"></div>
+                    </div>
+                    <div class="card" id="card-vaartus">
+                        <h3>Puidu väärtus</h3>
+                        <div id="vaartus-info"></div>
+                    </div>
+                    <div class="card" id="card-sinik">
+                        <h3>Süsinik</h3>
+                        <div id="sinik-info"></div>
+                    </div>
+                    <div class="card" id="card-riskid">
+                        <h3>Riskid</h3>
+                        <div id="riskid-info"></div>
+                    </div>
+                    <div class="card" id="card-eudr">
+                        <h3>EUDR</h3>
+                        <div id="eudr-info">
+                            <p>Laadi alla GeoJSON Euroopa Liidu deforestatsiooniregulatsiooni jaoks.</p>
+                            <button id="eudr-btn" class="btn-eudr">📥 Laadi alla EUDR GeoJSON</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <section class="charts-section">
+                <h2>Graafikud</h2>
+                <div class="charts-grid">
+                    <div class="chart-box">
+                        <h3>Puuliikide koosseis</h3>
+                        <canvas id="chart-composition"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h3>Väärtuse jaotus</h3>
+                        <canvas id="chart-value"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section class="tables-section">
+                <div class="table-card">
+                    <h3>⚠️ Kitsendused</h3>
+                    <div id="kitsendused-info"><p class="muted">Andmeid pole</p></div>
+                </div>
+                <div class="table-card">
+                    <h3>💰 Toetused</h3>
+                    <div id="toetused-info"><p class="muted">Andmeid pole</p></div>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <footer>
+        <p>Terrapoint © 2026 | Andmed: Keskkonnaagentuur, Maa-amet, Erametsaliit</p>
+    </footer>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/map.js"></script>
+    <script src="/js/dashboard.js"></script>
+    <script src="/js/charts.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
