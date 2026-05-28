@@ -360,9 +360,14 @@
     const SPECIES_NAMES = {
         MA: 'Mänd', KU: 'Kuusk', KS: 'Kask', HB: 'Haab',
         LH: 'Lehis', LM: 'Sanglepp', LV: 'Hall lepp', TA: 'Tamm',
-        SA: 'Saar', VA: 'Vaher', TM: 'Toomingas', PI: 'Pihlakas',
-        LN: 'Lõhislehine pärn', JV: 'Jalakas', NV: 'Nõiapuu',
+        SA: 'Saar', VA: 'Vaher',
     };
+    // Non-species codes from metsaregister (forest types, not tree species)
+    const NON_SPECIES_CODES = ['TM', 'PI', 'PS', 'PA', 'LV2', 'MU'];
+    function isValidSpecies(s) {
+        var code = s.puuliik_kood || s.puuliik;
+        return code && NON_SPECIES_CODES.indexOf(code) === -1 && SPECIES_NAMES[code];
+    }
     const BONITEET_LABELS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
 
     function formatEur(n) {
@@ -421,11 +426,15 @@
         var boniteet = data.boniteet || BONITEET_LABELS[data.boniteedi_kood] || data.boniteedi_kood || '—';
         var compHtml = '';
         if (data.liikide_koosseis && data.liikide_koosseis.length > 0) {
-            compHtml = '<table class="comp-table">';
-            data.liikide_koosseis.forEach(function(s) {
-                compHtml += '<tr><td>' + speciesName(s.puuliik_kood || s.puuliik) + '</td><td style="font-weight:600">' + s.osakaal + '%</td><td class="bar-cell"><span class="comp-bar" style="width:' + s.osakaal + '%"></span></td></tr>';
-            });
-            compHtml += '</table>';
+            // Filter to actual tree species only (exclude forest type codes like TM, PI)
+            var species = data.liikide_koosseis.filter(isValidSpecies);
+            if (species.length > 0) {
+                compHtml = '<table class="comp-table">';
+                species.forEach(function(s) {
+                    compHtml += '<tr><td>' + speciesName(s.puuliik_kood || s.puuliik) + '</td><td style="font-weight:600">' + s.osakaal + '%</td><td class="bar-cell"><span class="comp-bar" style="width:' + s.osakaal + '%"></span></td></tr>';
+                });
+                compHtml += '</table>';
+            }
         }
         var html = '';
         html += '<div class="info-row"><span class="label">Peapuuliik</span><span class="value">' + speciesName(data.puuliik_kood || data.puuliik) + '</span></div>';
@@ -567,7 +576,7 @@
     var SPECIES_COLORS = {
         KU: '#2d5016', MA: '#4a7c28', KS: '#7ab356', HB: '#a0c4a0',
         LH: '#3d6b1e', LM: '#6b8e23', LV: '#7a9e3a', TA: '#5c4033',
-        SA: '#7a5c3a', VA: '#8b6f47', TM: '#9ca87a', PI: '#b5c49a',
+        SA: '#7a5c3a', VA: '#8b6f47',
     };
 
     var VALUE_COLORS = {
@@ -588,10 +597,13 @@
         if (!ctx || !species || species.length === 0) return;
         if (compositionChart) compositionChart.destroy();
 
-        var names = { MA: 'Mänd', KU: 'Kuusk', KS: 'Kask', HB: 'Haab', LH: 'Lehis', LM: 'Sanglepp', LV: 'Hall lepp', TA: 'Tamm', SA: 'Saar', VA: 'Vaher', TM: 'Toomingas', PI: 'Pihlakas' };
-        var labels = species.map(function(s) { return names[s.puuliik_kood || s.puuliik] || s.puuliik; });
-        var values = species.map(function(s) { return s.osakaal; });
-        var colors = species.map(function(s) { return SPECIES_COLORS[s.puuliik_kood || s.puuliik] || '#6c757d'; });
+        var names = { MA: 'Mänd', KU: 'Kuusk', KS: 'Kask', HB: 'Haab', LH: 'Lehis', LM: 'Sanglepp', LV: 'Hall lepp', TA: 'Tamm', SA: 'Saar', VA: 'Vaher' };
+        // Filter to actual tree species only
+        var validSpecies = species.filter(function(s) { return SPECIES_COLORS[s.puuliik_kood || s.puuliik]; });
+        if (validSpecies.length === 0) return;
+        var labels = validSpecies.map(function(s) { return names[s.puuliik_kood || s.puuliik] || s.puuliik; });
+        var values = validSpecies.map(function(s) { return s.osakaal; });
+        var colors = validSpecies.map(function(s) { return SPECIES_COLORS[s.puuliik_kood || s.puuliik] || '#6c757d'; });
 
         compositionChart = new Chart(ctx, {
             type: 'doughnut',
