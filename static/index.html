@@ -530,25 +530,37 @@
     }
 
     function showLoading() {
-        document.getElementById('loading').classList.remove('hidden');
-        document.getElementById('dashboard').classList.add('hidden');
-        document.getElementById('error-msg').classList.add('hidden');
+        var loading = document.getElementById('loading');
+        var dashboard = document.getElementById('dashboard');
+        var error = document.getElementById('error-msg');
+        loading.style.display = '';
+        loading.classList.remove('hidden');
+        dashboard.style.display = 'none';
+        dashboard.classList.add('hidden');
+        error.style.display = 'none';
+        error.classList.add('hidden');
     }
 
     function hideLoading() {
-        document.getElementById('loading').classList.add('hidden');
+        var loading = document.getElementById('loading');
+        loading.style.display = 'none';
+        loading.classList.add('hidden');
     }
 
     function showError(msg) {
         var el = document.getElementById('error-msg');
         el.textContent = msg;
+        el.style.display = '';
         el.classList.remove('hidden');
+        document.getElementById('loading').style.display = 'none';
         document.getElementById('loading').classList.add('hidden');
+        document.getElementById('dashboard').style.display = 'none';
         document.getElementById('dashboard').classList.add('hidden');
     }
 
     function showDashboard() {
         var dashboard = document.getElementById('dashboard');
+        dashboard.style.display = '';
         dashboard.classList.remove('hidden');
         setTimeout(function() {
             dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
