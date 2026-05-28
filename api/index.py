@@ -1,3 +1,4 @@
+import os
 import time
 import asyncio
 from contextlib import asynccontextmanager
@@ -5,11 +6,12 @@ from contextlib import asynccontextmanager
 import orjson
 from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import Response, HTMLResponse, FileResponse
 
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+PROJECT_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 from services.cache import CacheService
 from services.kataster import query_kataster
@@ -44,6 +46,38 @@ app.add_middleware(
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "timestamp": time.time()}
+
+
+@app.get("/")
+async def root():
+    html_path = PROJECT_ROOT / "public" / "index.html"
+    if html_path.exists():
+        return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
+    return HTMLResponse(content="<h1>Terrapoint</h1><p>index.html not found</p>", status_code=500)
+
+
+@app.get("/css/{filename:path}")
+async def serve_css(filename: str):
+    file_path = PROJECT_ROOT / "public" / "css" / filename
+    if file_path.exists():
+        return FileResponse(str(file_path), media_type="text/css")
+    return Response(status_code=404)
+
+
+@app.get("/js/{filename:path}")
+async def serve_js(filename: str):
+    file_path = PROJECT_ROOT / "public" / "js" / filename
+    if file_path.exists():
+        return FileResponse(str(file_path), media_type="application/javascript")
+    return Response(status_code=404)
+
+
+@app.get("/img/{filename:path}")
+async def serve_img(filename: str):
+    file_path = PROJECT_ROOT / "public" / "img" / filename
+    if file_path.exists():
+        return FileResponse(str(file_path))
+    return Response(status_code=404)
 
 
 @app.get("/api/search/{kataster_nr}")
