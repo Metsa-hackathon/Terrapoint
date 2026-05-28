@@ -1,9 +1,9 @@
 {
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "/index.py" },
-    { "source": "/css/(.*)", "destination": "/index.py" },
-    { "source": "/js/(.*)", "destination": "/index.py" },
-    { "source": "/img/(.*)", "destination": "/index.py" },
-    { "source": "/", "destination": "/index.py" }
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/index.py" },
+    { "src": "/css/(.*)", "dest": "/index.py" },
+    { "src": "/js/(.*)", "dest": "/index.py" },
+    { "src": "/img/(.*)", "dest": "/index.py" },
+    { "src": "/", "dest": "/index.py" }
   ]
 }
