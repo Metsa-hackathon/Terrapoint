@@ -279,14 +279,14 @@
         const kaart = L.tileLayer('https://tiles.maaamet.ee/tm/tms/1.0.0/kaart@GMC/{z}/{x}/{y}.png', {
             tms: true,
             zoomReverse: true,
-            maxZoom: 14,
+            maxZoom: 18,
             attribution: '&copy; <a href="https://www.maaamet.ee/">Maa-amet</a>',
         });
 
         const foto = L.tileLayer('https://tiles.maaamet.ee/tm/tms/1.0.0/foto@GMC/{z}/{x}/{y}.png', {
             tms: true,
             zoomReverse: true,
-            maxZoom: 14,
+            maxZoom: 18,
             attribution: '&copy; <a href="https://www.maaamet.ee/">Maa-amet</a>',
         });
 
@@ -703,7 +703,7 @@
     var currentData = null;
 
     document.addEventListener('DOMContentLoaded', function() {
-        initMap();
+        // Don't init map here - container is hidden, Leaflet can't calculate size
         document.getElementById('kataster-input').focus();
 
         document.getElementById('search-btn').addEventListener('click', doSearch);
@@ -738,7 +738,6 @@
             currentData = data;
 
             if (data.kataster) renderKataster(data.kataster);
-            if (data.kataster && data.kataster.geometry) showParcel(data.kataster.geometry);
             renderMets(data.mets);
             renderVaartus(data.vaartus);
             renderSinik(data.sinik);
@@ -752,10 +751,18 @@
             hideLoading();
             showDashboard();
 
+            // Init map after dashboard is visible (Leaflet needs visible container)
             setTimeout(function() {
-                map.invalidateSize();
-                if (data.kataster && data.kataster.geometry) fitToParcel(data.kataster.geometry);
-            }, 150);
+                if (!map) {
+                    initMap();
+                } else {
+                    map.invalidateSize();
+                }
+                if (data.kataster && data.kataster.geometry) {
+                    showParcel(data.kataster.geometry);
+                    fitToParcel(data.kataster.geometry);
+                }
+            }, 200);
         } catch (err) {
             hideLoading();
             showError(err.message);

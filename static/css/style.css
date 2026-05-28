@@ -371,7 +371,7 @@ body {
     transition: all var(--transition);
     opacity: 0;
     transform: translateY(12px);
-    animation: cardIn 0.5s var(--transition) forwards;
+    animation: cardIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .metric-card:nth-child(1) { animation-delay: 0.05s; }
@@ -702,7 +702,7 @@ td strong {
 }
 
 .hidden {
-    display: none !important;
+    display: none;
 }
 
 /* ═══ Footer ═══ */
