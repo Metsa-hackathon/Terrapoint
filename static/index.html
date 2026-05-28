@@ -276,18 +276,14 @@
             attributionControl: true,
         }).setView([58.5, 25.0], 7);
 
-        const kaart = L.tileLayer('https://tiles.maaamet.ee/tm/tms/1.0.0/kaart@GMC/{z}/{x}/{y}.png', {
-            tms: true,
-            zoomReverse: true,
-            maxZoom: 18,
-            attribution: '&copy; <a href="https://www.maaamet.ee/">Maa-amet</a>',
+        const kaart = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         });
 
-        const foto = L.tileLayer('https://tiles.maaamet.ee/tm/tms/1.0.0/foto@GMC/{z}/{x}/{y}.png', {
-            tms: true,
-            zoomReverse: true,
-            maxZoom: 18,
-            attribution: '&copy; <a href="https://www.maaamet.ee/">Maa-amet</a>',
+        const foto = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: '&copy; Esri, Maxar, Earthstar Geographics',
         });
 
         kaart.addTo(map);
