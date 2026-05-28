@@ -511,10 +511,17 @@
 
     function renderKitsendused(data) {
         var el = document.getElementById('kitsendused-info');
-        if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Kitsendusi ei leitud</p>'; return; }
-        var html = '<table><thead><tr><th>Tüüp</th><th>Kirjeldus</th><th>Allikas</th></tr></thead><tbody>';
+        if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Kitsendusi ei leitud — krunt asub kitsendusteta alal</p>'; return; }
+        var html = '<table><thead><tr><th>Tüüp</th><th>Kirjeldus</th><th>Lisainfo</th></tr></thead><tbody>';
+        var links = {
+            'Kaitseala': 'https://kaitsealad.ee',
+            'Natura elupaik': 'https://keskkonnaamet.ee/natura-ala',
+            'Muinsuskaitse': 'https://register.muinas.ee',
+        };
         data.forEach(function(k) {
-            html += '<tr><td><strong>' + k.tyyp + '</strong></td><td>' + k.kirjeldus + '</td><td class="muted">' + k.allikas + '</td></tr>';
+            var link = links[k.tyyp] || '#';
+            html += '<tr><td><strong>' + k.tyyp + '</strong></td><td>' + k.kirjeldus + '</td>';
+            html += '<td><a href="' + link + '" target="_blank" rel="noopener" style="color:var(--primary);font-size:0.82rem">Vaata kaardil →</a></td></tr>';
         });
         html += '</tbody></table>';
         el.innerHTML = html;
@@ -523,14 +530,47 @@
     function renderToetused(data) {
         var el = document.getElementById('toetused-info');
         if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Toetusi ei leitud</p>'; return; }
-        var html = '<table><thead><tr><th></th><th>Programm</th><th>Summa</th><th>Asutus</th></tr></thead><tbody>';
-        data.forEach(function(t) {
-            var icon = t.sobib ? '✅' : '—';
-            html += '<tr><td>' + icon + '</td><td><strong>' + t.nimi + '</strong>';
-            if (t.taotlusvoor) html += '<br><span class="muted">' + t.taotlusvoor + '</span>';
-            html += '</td><td>' + t.summa + '</td><td>' + t.asutus + '</td></tr>';
-        });
-        html += '</tbody></table>';
+
+        // Separate eligible and ineligible
+        var eligible = data.filter(function(t) { return t.sobib; });
+        var ineligible = data.filter(function(t) { return !t.sobib; });
+
+        var html = '';
+
+        // Eligible programs first (highlighted)
+        if (eligible.length > 0) {
+            html += '<div style="margin-bottom:1rem"><strong style="color:var(--success)">✓ Sobivad toetused (' + eligible.length + ')</strong></div>';
+            html += '<table><thead><tr><th>Programm</th><th>Summa</th><th>Taotlusvoor</th><th></th></tr></thead><tbody>';
+            var links = {
+                'Natura 2000 metsatoetus': 'https://kik.ee/toetused/natura-2000-metsatoetus',
+                'Kliimakindla metsa kujundamine': 'https://kik.ee/toetused/kliimakindel-mets',
+                'Kooreüraski tõrje': 'https://kik.ee/toetused/kooreyuraski-torre',
+                'Metsastamise toetus': 'https://kik.ee/toetused/metsastamine',
+                'Vääriselupaiga hooldus': 'https://kik.ee/toetused/vaariselupaik',
+                'Metsa uuendamise toetus': 'https://kik.ee/toetused/metsa-uuendamine',
+                'Metsa hooldamise toetus': 'https://kik.ee/toetused/metsa-hooldamine',
+                'Looduskaitse erametsas': 'https://kik.ee/toetused/looduskaitse-erametsas',
+            };
+            eligible.forEach(function(t) {
+                var link = links[t.nimi] || 'https://kik.ee/toetused';
+                html += '<tr><td><strong>' + t.nimi + '</strong></td><td>' + t.summa + '</td>';
+                html += '<td>' + (t.taotlusvoor || '—') + '</td>';
+                html += '<td><a href="' + link + '" target="_blank" rel="noopener" style="color:var(--success);font-weight:600;font-size:0.82rem">Kandideeri →</a></td></tr>';
+            });
+            html += '</tbody></table>';
+        }
+
+        // Ineligible programs (collapsed)
+        if (ineligible.length > 0) {
+            html += '<details style="margin-top:1rem"><summary style="cursor:pointer;color:var(--text-muted);font-size:0.85rem">Muud toetused (' + ineligible.length + ') — ei vasta tingimustele</summary>';
+            html += '<table style="margin-top:0.5rem"><thead><tr><th>Programm</th><th>Summa</th><th>Asutus</th><th>Põhjus</th></tr></thead><tbody>';
+            ineligible.forEach(function(t) {
+                html += '<tr><td>' + t.nimi + '</td><td>' + t.summa + '</td><td>' + t.asutus + '</td>';
+                html += '<td class="muted" style="font-size:0.8rem">Tingimused ei vasta</td></tr>';
+            });
+            html += '</tbody></table></details>';
+        }
+
         el.innerHTML = html;
     }
 
