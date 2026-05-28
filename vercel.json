@@ -1,12 +1,5 @@
 {
-  "builds": [
-    { "src": "api/index.py", "use": "@vercel/python", "config": { "includeFiles": ["public/**"] } }
-  ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index.py" },
-    { "source": "/css/(.*)", "destination": "/api/index.py" },
-    { "source": "/js/(.*)", "destination": "/api/index.py" },
-    { "source": "/img/(.*)", "destination": "/api/index.py" },
-    { "source": "/", "destination": "/api/index.py" }
+    { "source": "/api/(.*)", "destination": "/api/index.py" }
   ]
 }
