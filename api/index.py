@@ -50,7 +50,7 @@ async def health():
 
 @app.get("/")
 async def root():
-    html_path = PROJECT_ROOT / "public" / "index.html"
+    html_path = PROJECT_ROOT / "static" / "index.html"
     if html_path.exists():
         return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
     return HTMLResponse(content="<h1>Terrapoint</h1><p>index.html not found</p>", status_code=500)
@@ -58,7 +58,7 @@ async def root():
 
 @app.get("/css/{filename:path}")
 async def serve_css(filename: str):
-    file_path = PROJECT_ROOT / "public" / "css" / filename
+    file_path = PROJECT_ROOT / "static" / "css" / filename
     if file_path.exists():
         return FileResponse(str(file_path), media_type="text/css")
     return Response(status_code=404)
@@ -66,7 +66,7 @@ async def serve_css(filename: str):
 
 @app.get("/js/{filename:path}")
 async def serve_js(filename: str):
-    file_path = PROJECT_ROOT / "public" / "js" / filename
+    file_path = PROJECT_ROOT / "static" / "js" / filename
     if file_path.exists():
         return FileResponse(str(file_path), media_type="application/javascript")
     return Response(status_code=404)
@@ -74,7 +74,7 @@ async def serve_js(filename: str):
 
 @app.get("/img/{filename:path}")
 async def serve_img(filename: str):
-    file_path = PROJECT_ROOT / "public" / "img" / filename
+    file_path = PROJECT_ROOT / "static" / "img" / filename
     if file_path.exists():
         return FileResponse(str(file_path))
     return Response(status_code=404)
