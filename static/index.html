@@ -428,10 +428,25 @@
         if (data.liikide_koosseis && data.liikide_koosseis.length > 0) {
             // Filter to actual tree species only (exclude forest type codes like TM, PI)
             var species = data.liikide_koosseis.filter(isValidSpecies);
-            if (species.length > 0) {
+            // Merge duplicate species (sum percentages from different stands)
+            var merged = {};
+            species.forEach(function(s) {
+                var code = s.puuliik_kood || s.puuliik;
+                if (merged[code]) {
+                    merged[code] += s.osakaal;
+                } else {
+                    merged[code] = s.osakaal;
+                }
+            });
+            // Convert to array and sort by percentage
+            var sorted = Object.keys(merged).map(function(code) {
+                return { code: code, name: speciesName(code), osakaal: merged[code] };
+            }).sort(function(a, b) { return b.osakaal - a.osakaal; });
+
+            if (sorted.length > 0) {
                 compHtml = '<table class="comp-table">';
-                species.forEach(function(s) {
-                    compHtml += '<tr><td>' + speciesName(s.puuliik_kood || s.puuliik) + '</td><td style="font-weight:600">' + s.osakaal + '%</td><td class="bar-cell"><span class="comp-bar" style="width:' + s.osakaal + '%"></span></td></tr>';
+                sorted.forEach(function(s) {
+                    compHtml += '<tr><td>' + s.name + '</td><td style="font-weight:600">' + s.osakaal + '%</td><td class="bar-cell"><span class="comp-bar" style="width:' + Math.min(s.osakaal, 100) + '%"></span></td></tr>';
                 });
                 compHtml += '</table>';
             }
@@ -638,12 +653,20 @@
         if (compositionChart) compositionChart.destroy();
 
         var names = { MA: 'Mänd', KU: 'Kuusk', KS: 'Kask', HB: 'Haab', LH: 'Lehis', LM: 'Sanglepp', LV: 'Hall lepp', TA: 'Tamm', SA: 'Saar', VA: 'Vaher' };
-        // Filter to actual tree species only
+        // Filter to actual tree species only, then merge duplicates
         var validSpecies = species.filter(function(s) { return SPECIES_COLORS[s.puuliik_kood || s.puuliik]; });
         if (validSpecies.length === 0) return;
-        var labels = validSpecies.map(function(s) { return names[s.puuliik_kood || s.puuliik] || s.puuliik; });
-        var values = validSpecies.map(function(s) { return s.osakaal; });
-        var colors = validSpecies.map(function(s) { return SPECIES_COLORS[s.puuliik_kood || s.puuliik] || '#6c757d'; });
+        var merged = {};
+        validSpecies.forEach(function(s) {
+            var code = s.puuliik_kood || s.puuliik;
+            merged[code] = (merged[code] || 0) + s.osakaal;
+        });
+        var sorted = Object.keys(merged).map(function(code) {
+            return { code: code, osakaal: merged[code] };
+        }).sort(function(a, b) { return b.osakaal - a.osakaal; });
+        var labels = sorted.map(function(s) { return names[s.code] || s.code; });
+        var values = sorted.map(function(s) { return s.osakaal; });
+        var colors = sorted.map(function(s) { return SPECIES_COLORS[s.code] || '#6c757d'; });
 
         compositionChart = new Chart(ctx, {
             type: 'doughnut',
