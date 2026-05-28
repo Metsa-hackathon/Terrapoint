@@ -438,6 +438,13 @@
                     merged[code] = s.osakaal;
                 }
             });
+            // Normalize to 100% (multiple stands each have 100%)
+            var total = Object.values(merged).reduce(function(a, b) { return a + b; }, 0);
+            if (total > 100) {
+                Object.keys(merged).forEach(function(code) {
+                    merged[code] = Math.round(merged[code] / total * 100);
+                });
+            }
             // Convert to array and sort by percentage
             var sorted = Object.keys(merged).map(function(code) {
                 return { code: code, name: speciesName(code), osakaal: merged[code] };
@@ -661,6 +668,13 @@
             var code = s.puuliik_kood || s.puuliik;
             merged[code] = (merged[code] || 0) + s.osakaal;
         });
+        // Normalize to 100%
+        var total = Object.values(merged).reduce(function(a, b) { return a + b; }, 0);
+        if (total > 100) {
+            Object.keys(merged).forEach(function(code) {
+                merged[code] = Math.round(merged[code] / total * 100);
+            });
+        }
         var sorted = Object.keys(merged).map(function(code) {
             return { code: code, osakaal: merged[code] };
         }).sort(function(a, b) { return b.osakaal - a.osakaal; });
