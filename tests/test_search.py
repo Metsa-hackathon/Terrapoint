@@ -46,7 +46,7 @@ def test_beetle_risk_not_spruce():
 
 
 def test_beetle_risk_young_spruce():
-    result = beetle_risk("KU", 30)
+    result = beetle_risk("KU", 30, kuivendatud=True)
     assert result["score"] == 0
 
 
