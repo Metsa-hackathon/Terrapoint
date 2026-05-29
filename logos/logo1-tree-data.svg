@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <!-- Tree with data rings - a pine tree made of concentric data circles -->
+  <circle cx="32" cy="32" r="28" fill="#e8f5e9" stroke="#2d5016" stroke-width="2"/>
+  <!-- Stylized pine tree -->
+  <path d="M32 12 L22 28 L26 28 L18 42 L46 42 L38 28 L42 28 Z" fill="#2d5016" stroke="#1a3a0a" stroke-width="1"/>
+  <rect x="29" y="42" width="6" height="8" fill="#5c4033" rx="1"/>
+  <!-- Small data dots around the tree -->
+  <circle cx="14" cy="20" r="2" fill="#4a7c28" opacity="0.7"/>
+  <circle cx="50" cy="20" r="2" fill="#4a7c28" opacity="0.7"/>
+  <circle cx="12" cy="38" r="2" fill="#7ab356" opacity="0.6"/>
+  <circle cx="52" cy="38" r="2" fill="#7ab356" opacity="0.6"/>
+  <circle cx="22" cy="52" r="1.5" fill="#a0c4a0" opacity="0.5"/>
+  <circle cx="42" cy="52" r="1.5" fill="#a0c4a0" opacity="0.5"/>
+</svg>
