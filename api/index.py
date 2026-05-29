@@ -135,16 +135,37 @@ async def _search(kataster_nr: str):
             if not species_only:
                 species_only = liikide_koosseis  # fallback to all if no valid species
 
-            # Use tagavara for proportions; fall back to count if all zero
-            total_tagavara = sum((e.get("tagavara_y_ha") or 0) for e in species_only)
+            # Aggregate by species code
+            aggregated = {}
+            for e in species_only:
+                kood = e.get("puuliik_kood", "")
+                if kood not in aggregated:
+                    aggregated[kood] = {"puuliik": e.get("puuliik"), "puuliik_kood": kood, "tagavara_y_ha": 0, "vanus_sum": 0, "count": 0}
+                aggregated[kood]["tagavara_y_ha"] += (e.get("tagavara_y_ha") or 0)
+                aggregated[kood]["vanus_sum"] += (e.get("vanus") or 0)
+                aggregated[kood]["count"] += 1
+
+            species_list = list(aggregated.values())
+
+            # Use tagavara for proportions; fall back to equal if all zero
+            total_tagavara = sum(s["tagavara_y_ha"] for s in species_list)
             if total_tagavara > 0:
-                for e in species_only:
-                    koosseis_with_osakaal.append({**e, "osakaal": round((e.get("tagavara_y_ha") or 0) / total_tagavara * 100)})
+                for s in species_list:
+                    koosseis_with_osakaal.append({
+                        "puuliik": s["puuliik"], "puuliik_kood": s["puuliik_kood"],
+                        "tagavara_y_ha": round(s["tagavara_y_ha"], 1),
+                        "vanus": round(s["vanus_sum"] / s["count"]) if s["count"] else 0,
+                        "osakaal": round(s["tagavara_y_ha"] / total_tagavara * 100),
+                    })
             else:
-                # Equal distribution when no tagavara data
-                equal_pct = round(100 / len(species_only)) if species_only else 0
-                for e in species_only:
-                    koosseis_with_osakaal.append({**e, "osakaal": equal_pct})
+                equal_pct = round(100 / len(species_list)) if species_list else 0
+                for s in species_list:
+                    koosseis_with_osakaal.append({
+                        "puuliik": s["puuliik"], "puuliik_kood": s["puuliik_kood"],
+                        "tagavara_y_ha": 0,
+                        "vanus": round(s["vanus_sum"] / s["count"]) if s["count"] else 0,
+                        "osakaal": equal_pct,
+                    })
 
         # Build eraldised summary for frontend
         eraldised_summary = []
