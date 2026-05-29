@@ -1,6 +1,5 @@
 import asyncio
 import httpx
-
 import config
 
 LAYER_CONFIGS = [
@@ -8,18 +7,23 @@ LAYER_CONFIGS = [
     ("toetus_mets", "eelis", "eelis:toetus_mets"),
     ("natura_elupaik", "eelis", "eelis:natura_elupaik"),
     ("yrask_eelis", "eelis", "eelis:kuusekooreyrask_eelis"),
+    ("liigid_eelis", "eelis", "eelis:liigi_alamkirjed_avalik"),
+    ("jahipiirkonnad", "eelis", "eelis:kr_jahipiirkond"),
     ("veekaitse", "kitsendused", "kitsendused:metsakas_kpois_RANNA_VOI_KALDA_VEEKAITSEVOOND"),
     ("piiranguvoond", "kitsendused", "kitsendused:metsakas_kpois_RANNA_VOI_KALDA_PIIRANGUVOOND"),
     ("uleujutus", "kitsendused", "kitsendused:metsakas_kpois_KORDUV_ULEUJUTUSALA"),
     ("kotkas", "kitsendused", "kitsendused:kotkas_kitsendused"),
     ("malestised", "muinsuskaitse", "muinsuskaitse:kpo_malestised"),
     ("lageraiealad", "veeveeb", "veeveeb:lageraiealad"),
+    ("mullad", "veeveeb", "veeveeb:mullad_boniteet"),
     ("karuputk", "maaamet", "maaamet:karuputk"),
     ("auction", "maaoksjon", "maaoksjon:auction"),
+    ("clc", "keskkonnainfo", "keskkonnainfo:clc_2018_iii"),
+    ("protected_sites", "ps", "ps:ProtectedSite"),
 ]
 
 
-async def _fetch_layer(client: httpx.AsyncClient, key: str, workspace: str, typename: str, bbox_str: str) -> tuple[str, list[dict]]:
+async def _fetch_layer(client, key, workspace, typename, bbox_str):
     url = (
         f"{config.GEOBASE}/{workspace}/wfs?"
         f"service=WFS&request=GetFeature&typeName={typename}"
@@ -35,12 +39,10 @@ async def _fetch_layer(client: httpx.AsyncClient, key: str, workspace: str, type
 
 
 async def query_all_layers(bbox_str: str) -> dict[str, list[dict]]:
-    """BBOX fanout to all restriction/overlay layers."""
     async with httpx.AsyncClient(timeout=30) as client:
         tasks = [
             _fetch_layer(client, key, ws, tn, bbox_str)
             for key, ws, tn in LAYER_CONFIGS
         ]
         results = await asyncio.gather(*tasks)
-
     return {key: features for key, features in results}

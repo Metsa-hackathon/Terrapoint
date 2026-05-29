@@ -1,1 +1,7 @@
-{"builds":[{"src":"api/index.py","use":"@vercel/python"}],"routes":[{"src":"/api/(.*)","dest":"/api/index.py"},{"src":"/css/(.*)","dest":"/api/index.py"},{"src":"/js/(.*)","dest":"/api/index.py"},{"src":"/","dest":"/api/index.py"}]}
+{
+  "framework": null,
+  "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index.py" }
+  ]
+}

@@ -1,15 +1,11 @@
 from shapely.geometry import shape
 
 
-def calculate_bbox(geometry: dict) -> tuple[float, float, float, float]:
-    """Calculate bounding box from GeoJSON geometry.
-    Returns (minx, miny, maxx, maxy) in EPSG:4326.
-    """
+def calculate_bbox(geometry: dict, buffer_deg: float = 0.005) -> tuple[float, float, float, float]:
     geom = shape(geometry)
-    return geom.bounds
+    minx, miny, maxx, maxy = geom.bounds
+    return (minx - buffer_deg, miny - buffer_deg, maxx + buffer_deg, maxy + buffer_deg)
 
 
 def bbox_to_wfs_string(bbox: tuple[float, float, float, float]) -> str:
-    """Convert bbox tuple to WFS BBOX parameter string."""
-    minx, miny, maxx, maxy = bbox
-    return f"{minx},{miny},{maxx},{maxy},EPSG:4326"
+    return f"{bbox[1]},{bbox[0]},{bbox[3]},{bbox[2]}"

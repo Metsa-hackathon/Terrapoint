@@ -10,37 +10,29 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <!-- Hero Header -->
+    <!-- Top Navigation Bar -->
     <header class="hero">
-        <div class="hero-bg"></div>
-        <div class="hero-content">
-            <div class="logo">
-                <div class="logo-icon">
-                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                        <path d="M20 4L8 20h8l-4 16 16-20h-8l4-12z" fill="white" opacity="0.9"/>
-                    </svg>
-                </div>
-                <div class="logo-text">
-                    <h1>Terrapoint</h1>
-                    <p class="tagline">Eesti metsaandmed ühes kohas</p>
-                </div>
+        <div class="nav-left">
+            <button class="hamburger" id="hamburger-btn" aria-label="Menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+            <div class="logo-text">
+                <h1>Terrapoint</h1>
             </div>
         </div>
-    </header>
-
-    <!-- Search Section -->
-    <section class="search-section">
-        <div class="search-container">
+        <div class="nav-right">
             <div class="search-box">
                 <div class="search-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                     </svg>
                 </div>
-                <input type="text" id="kataster-input" placeholder="Sisesta katastri number (nt 78404:409:0113)" autocomplete="off">
+                <input type="text" id="kataster-input" placeholder="Katastri number (nt 78404:409:0113)" autocomplete="off">
                 <button id="search-btn">
                     <span class="btn-text">Analüüsi</span>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -50,7 +42,7 @@
             </div>
             <div id="error-msg" class="error-msg hidden" style="display:none"></div>
         </div>
-    </section>
+    </header>
 
     <!-- Loading State -->
     <div id="loading" class="loading hidden" style="display:none">
@@ -564,17 +556,17 @@
             html += '<div style="margin-bottom:1rem"><strong style="color:var(--success)">✓ Sobivad toetused (' + eligible.length + ')</strong></div>';
             html += '<table><thead><tr><th>Programm</th><th>Summa</th><th>Taotlusvoor</th><th></th></tr></thead><tbody>';
             var links = {
-                'Natura 2000 metsatoetus': 'https://kik.ee/toetused/natura-2000-metsatoetus',
-                'Kliimakindla metsa kujundamine': 'https://kik.ee/toetused/kliimakindel-mets',
-                'Kooreüraski tõrje': 'https://kik.ee/toetused/kooreyuraski-torre',
-                'Metsastamise toetus': 'https://kik.ee/toetused/metsastamine',
-                'Vääriselupaiga hooldus': 'https://kik.ee/toetused/vaariselupaik',
-                'Metsa uuendamise toetus': 'https://kik.ee/toetused/metsa-uuendamine',
-                'Metsa hooldamise toetus': 'https://kik.ee/toetused/metsa-hooldamine',
-                'Looduskaitse erametsas': 'https://kik.ee/toetused/looduskaitse-erametsas',
+                'Natura 2000 metsatoetus': 'https://www.eramets.ee/toetused/natura-metsa-toetus/',
+                'Kliimakindla metsa kujundamine': 'https://www.eramets.ee/metsa-kujundamine/',
+                'Kooreüraski tõrje': 'https://www.eramets.ee/uraskikahjustuste-ennetamine/',
+                'Metsastamise toetus': 'https://www.eramets.ee/metsastamine/',
+                'Vääriselupaiga hooldus': 'https://www.eramets.ee/toetused/vaariselupaiga-kaitseks-lepingu-solmimine/',
+                'Metsa uuendamise toetus': 'https://www.eramets.ee/toetused/metsa-uuendamise-toetus/',
+                'Metsa hooldamise toetus': 'https://www.eramets.ee/toetused/metsameede/',
+                'Looduskaitse erametsas': 'https://www.eramets.ee/toetused/',
             };
             eligible.forEach(function(t) {
-                var link = links[t.nimi] || 'https://kik.ee/toetused';
+                var link = links[t.nimi] || 'https://www.eramets.ee/toetused/';
                 html += '<tr><td><strong>' + t.nimi + '</strong></td><td>' + t.summa + '</td>';
                 html += '<td>' + (t.taotlusvoor || '—') + '</td>';
                 html += '<td><a href="' + link + '" target="_blank" rel="noopener" style="color:var(--success);font-weight:600;font-size:0.82rem">Kandideeri →</a></td></tr>';
