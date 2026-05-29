@@ -654,12 +654,13 @@
         if (data.eraldisi_kokku > 1) html += '<div class="info-row"><span class="label" title="Metsa eraldised — eraldi majandatavad metsatükid">Eraldisi</span><span class="value">' + data.eraldisi_kokku + ' tk</span></div>';
         html += compHtml;
 
-        // Show individual eraldised if multiple
-        if (data.eraldised && data.eraldised.length > 1) {
-            html += '<details style="margin-top:0.75rem"><summary style="cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--primary)">Eraldised (' + data.eraldised.length + ')</summary>';
-            html += '<table style="margin-top:0.5rem;font-size:0.78rem"><thead><tr><th>Nr</th><th>Puuliik</th><th>Vanus</th><th>Tagavara</th><th>Pindala</th></tr></thead><tbody>';
+        // Show individual eraldised
+        if (data.eraldised && data.eraldised.length > 0) {
+            html += '<details style="margin-top:0.75rem"' + (data.eraldised.length <= 5 ? ' open' : '') + '><summary style="cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--primary)">Eraldised (' + data.eraldised.length + ')</summary>';
+            html += '<table style="margin-top:0.5rem;font-size:0.78rem"><thead><tr><th>Nr</th><th>Puuliik</th><th>Vanus</th><th>Tagavara</th><th>Pindala</th><th>Boniteet</th></tr></thead><tbody>';
             data.eraldised.forEach(function(e) {
-                html += '<tr><td>' + (e.eraldis_nr || '—') + '</td><td>' + speciesName(e.puuliik_kood || e.puuliik) + '</td><td>' + (e.vanus || '—') + ' a</td><td>' + formatNum(e.tagavara_y_ha) + ' m³/ha</td><td>' + formatNum(e.pindala_ha, 2) + ' ha</td></tr>';
+                var b = e.boniteet || BONITEET_LABELS[e.boniteedi_kood] || '—';
+                html += '<tr><td>' + (e.eraldis_nr || '—') + '</td><td>' + speciesName(e.puuliik_kood || e.puuliik) + '</td><td>' + (e.vanus || '—') + ' a</td><td>' + formatNum(e.tagavara_y_ha) + ' m³/ha</td><td>' + formatNum(e.pindala_ha, 2) + ' ha</td><td>' + b + '</td></tr>';
             });
             html += '</tbody></table></details>';
         }
