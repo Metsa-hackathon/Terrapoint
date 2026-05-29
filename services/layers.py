@@ -39,7 +39,7 @@ async def _fetch_layer(client, key, workspace, typename, bbox_str):
 
 
 async def query_all_layers(bbox_str: str) -> dict[str, list[dict]]:
-    async with httpx.AsyncClient(timeout=30) as client:
+    async with httpx.AsyncClient(timeout=5) as client:
         tasks = [
             _fetch_layer(client, key, ws, tn, bbox_str)
             for key, ws, tn in LAYER_CONFIGS

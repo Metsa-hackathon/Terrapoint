@@ -33,13 +33,6 @@ def json_response(data: dict, status: int = 200) -> Response:
     return Response(content=orjson.dumps(data), media_type="application/json", status_code=status)
 
 
-async def _empty_layers():
-    return {}
-
-async def _empty_list():
-    return []
-
-
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "version": "2.0.0", "timestamp": time.time()}
@@ -48,6 +41,7 @@ async def health():
 @app.get("/api/search/{kataster_nr:path}")
 async def search(kataster_nr: str, request: Request):
     start = time.time()
+    MAX_TIME = 8.5  # Vercel Hobby has 10s timeout, leave buffer
 
     kataster_data = await query_kataster(kataster_nr)
     if not kataster_data:
@@ -56,37 +50,76 @@ async def search(kataster_nr: str, request: Request):
     bbox = calculate_bbox(kataster_data["geometry"])
     bbox_str = bbox_to_wfs_string(bbox)
 
-    eraldis_task = query_eraldis(kataster_nr)
-    layers_task = query_all_layers(bbox_str)
-    natura_task = query_natura_2000(bbox_str)
-    yrask_task = query_yrask_mke(bbox_str)
-    teatised_task = query_teatised(kataster_nr)
-
-    eraldis_data, layers_data, natura_features, yrask_features, teatised_features = await asyncio.gather(
-        eraldis_task, layers_task, natura_task, yrask_task, teatised_task
-    )
-
+    # Default values if something times out
+    eraldis_data = None
     kitsendused = []
-    for key in ["kaitsealad", "veekaitse", "piiranguvoond", "uleujutus", "kotkas", "malestised"]:
-        for feat in layers_data.get(key, []):
-            props = feat.get("properties", {})
-            kitsendused.append({"tyyp": key, "kirjeldus": props.get("nimi", props.get("nimetus", key))})
-
-    liikide_koosseis = []
     mets_result = None
     vaartus_result = None
     sinik_result = None
     kahjustused_features = []
     carbon = {}
     raie = {}
+    liikide_koosseis = []
+    teatised_features = []
+    natura_features = []
+    yrask_features = []
+    layers_data = {}
+    pindala = 0
+
+    try:
+        eraldis_task = asyncio.create_task(query_eraldis(kataster_nr))
+        layers_task = asyncio.create_task(query_all_layers(bbox_str))
+        natura_task = asyncio.create_task(query_natura_2000(bbox_str))
+        yrask_task = asyncio.create_task(query_yrask_mke(bbox_str))
+        teatised_task = asyncio.create_task(query_teatised(kataster_nr))
+
+        done, pending = await asyncio.wait(
+            [eraldis_task, layers_task, natura_task, yrask_task, teatised_task],
+            timeout=max(1.0, MAX_TIME - (time.time() - start) - 1.0),
+        )
+
+        for coro in done:
+            try:
+                result = await coro
+                if coro is eraldis_task:
+                    eraldis_data = result
+                elif coro is layers_task:
+                    layers_data = result
+                elif coro is natura_task:
+                    natura_features = result
+                elif coro is yrask_task:
+                    yrask_features = result
+                elif coro is teatised_task:
+                    teatised_features = result
+            except Exception:
+                pass
+
+        for coro in pending:
+            coro.cancel()
+    except Exception:
+        pass
+
+    # Process what we got, even if partial
+    for key in ["kaitsealad", "veekaitse", "piiranguvoond", "uleujutus", "kotkas", "malestised"]:
+        for feat in layers_data.get(key, []):
+            props = feat.get("properties", {})
+            kitsendused.append({"tyyp": key, "kirjeldus": props.get("nimi", props.get("nimetus", key))})
 
     if eraldis_data:
         eraldis_id = eraldis_data.get("id")
         if eraldis_id:
-            liikide_koosseis, kahjustused_features = await asyncio.gather(
-                query_eraldis_element(eraldis_id),
-                query_kahjustused(eraldis_id),
-            )
+            try:
+                el_comp, kahj = await asyncio.wait_for(
+                    asyncio.gather(
+                        query_eraldis_element(eraldis_id),
+                        query_kahjustused(eraldis_id),
+                    ),
+                    timeout=1.5,
+                )
+                liikide_koosseis = el_comp
+                kahjustused_features = kahj
+            except (asyncio.TimeoutError, Exception):
+                pass
 
         tagavara = eraldis_data.get("tagavara_y_ha", 0)
         pindala = eraldis_data.get("pindala_ha", 0)
