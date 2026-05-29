@@ -577,7 +577,7 @@ async def chat(request: Request):
         messages.append({"role": "user", "content": user_message})
 
         api_key = os.environ.get("OPENROUTER_API_KEY", "")
-        model = os.environ.get("OPENROUTER_MODEL", "deepseek/deepseek-v4-flash:free")
+        model = os.environ.get("OPENROUTER_MODEL", "google/gemma-4-31b-it:free")
 
         if not api_key:
             return json_response({"error": "OpenRouter API key not configured"}, 500)
