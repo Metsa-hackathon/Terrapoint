@@ -1305,7 +1305,9 @@
     async function searchAddresses(query) {
         var dropdown = document.getElementById('address-dropdown');
         try {
+            console.log('Searching addresses for:', query);
             var resp = await fetch('/api/address/' + encodeURIComponent(query));
+            console.log('Response status:', resp.status);
             var data = await resp.json();
             if (!data.results || data.results.length === 0) {
                 dropdown.style.display = 'none';
