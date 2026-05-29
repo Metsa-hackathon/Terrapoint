@@ -118,7 +118,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 .search-box:focus-within .search-icon { color: white; }
 
 .search-box input {
-    width: 240px;
+    width: 320px;
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
     font-family: var(--font);
@@ -568,6 +568,18 @@ footer {
 }
 
 /* ═══ Leaflet ═══ */
+.leaflet-bar {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+.leaflet-control-zoom {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
 .leaflet-control-zoom a {
     background: var(--card) !important;
     color: var(--text) !important;
@@ -577,9 +589,16 @@ footer {
     height: 36px !important;
     line-height: 36px !important;
     border-radius: var(--radius-sm) !important;
+    box-shadow: none !important;
 }
 
 .leaflet-control-zoom a:hover { background: var(--surface) !important; }
+
+.leaflet-control-zoom a:first-child { border-radius: var(--radius-sm) !important; }
+.leaflet-control-zoom a:last-child { border-radius: var(--radius-sm) !important; }
+
+.center-control { margin-top: 6px !important; }
+.center-control a svg { vertical-align: middle; }
 
 .leaflet-control-layers {
     border-radius: var(--radius) !important;

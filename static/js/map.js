@@ -28,6 +28,26 @@ function initMap() {
         'Kaart': kaart,
         'Ortofoto': foto,
     }, null, { position: 'bottomleft' }).addTo(map);
+
+    // Center button
+    var CenterControl = L.Control.extend({
+        options: { position: 'bottomleft' },
+        onAdd: function() {
+            var btn = L.DomUtil.create('div', 'leaflet-control-zoom leaflet-bar leaflet-control center-control');
+            btn.innerHTML = '<a href="#" title="Tsentreeri kaart" role="button" aria-label="Center map"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg></a>';
+            L.DomEvent.disableClickPropagation(btn);
+            btn.firstChild.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (parcelLayer) {
+                    map.fitBounds(parcelLayer.getBounds(), { padding: [40, 40], maxZoom: 15 });
+                } else {
+                    map.flyTo([58.5, 25.0], 7, { duration: 1.2 });
+                }
+            });
+            return btn;
+        }
+    });
+    new CenterControl().addTo(map);
 }
 
 function showParcel(geometry) {

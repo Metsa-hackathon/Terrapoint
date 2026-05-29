@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
+  <!-- Map pin made of tree canopy -->
+  <circle cx="32" cy="32" r="28" fill="#e8f5e9" stroke="#2d5016" stroke-width="2"/>
+  <!-- Map pin shape filled with tree -->
+  <path d="M32 8 C22 8, 14 16, 14 26 C14 36, 32 54, 32 54 C32 54, 50 36, 50 26 C50 16, 42 8, 32 8Z" fill="#2d5016" stroke="#1a3a0a" stroke-width="1.5"/>
+  <!-- Tree canopy inside the pin -->
+  <path d="M32 16 L26 24 L28 24 L22 32 L26 32 L20 40 L44 40 L38 32 L42 32 L36 24 L38 24 Z" fill="#4a7c28" stroke="#2d5016" stroke-width="0.8"/>
+  <!-- Small trunk -->
+  <rect x="30" y="40" width="4" height="4" fill="#5c4033" rx="0.5"/>
+  <!-- Data dots around the pin -->
+  <circle cx="12" cy="20" r="2" fill="#7ab356" opacity="0.7"/>
+  <circle cx="52" cy="20" r="2" fill="#7ab356" opacity="0.7"/>
+  <circle cx="10" cy="36" r="1.5" fill="#a0c4a0" opacity="0.5"/>
+  <circle cx="54" cy="36" r="1.5" fill="#a0c4a0" opacity="0.5"/>
+</svg>
