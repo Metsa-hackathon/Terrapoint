@@ -600,18 +600,41 @@ async def chat(request: Request):
             )
             if resp.status_code != 200:
                 return json_response({"error": f"API viga: {resp.status_code}"}, 500)
-            try:
-                result = resp.json()
-            except Exception:
-                return json_response({"error": "API vastus ei ole JSON"}, 500)
-            choices = result.get("choices", [])
-            if not choices:
-                error = result.get("error", {}).get("message", "Tühi vastus")
-                return json_response({"error": error}, 500)
-            content = choices[0].get("message", {}).get("content", "")
-            if not content:
-                return json_response({"error": "AI ei vastanud"}, 500)
-            return json_response({"content": content})
+
+            # Handle both JSON and SSE streaming responses
+            content_type = resp.headers.get("content-type", "")
+            if "text/event-stream" in content_type:
+                # Parse SSE stream and collect full response
+                full_text = ""
+                for line in resp.text.split("\n"):
+                    line = line.strip()
+                    if line.startswith("data: "):
+                        data_str = line[6:]
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            chunk = orjson.loads(data_str)
+                            delta = chunk.get("choices", [{}])[0].get("delta", {})
+                            full_text += delta.get("content", "")
+                        except Exception:
+                            continue
+                if not full_text:
+                    return json_response({"error": "AI ei vastanud"}, 500)
+                return json_response({"content": full_text})
+            else:
+                # Standard JSON response
+                try:
+                    result = resp.json()
+                except Exception:
+                    return json_response({"error": "API vastus ei ole JSON"}, 500)
+                choices = result.get("choices", [])
+                if not choices:
+                    error = result.get("error", {}).get("message", "Tühi vastus")
+                    return json_response({"error": error}, 500)
+                content = choices[0].get("message", {}).get("content", "")
+                if not content:
+                    return json_response({"error": "AI ei vastanud"}, 500)
+                return json_response({"content": content})
 
     except Exception as exc:
         import traceback
