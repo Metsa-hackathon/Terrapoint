@@ -1,7 +1,6 @@
 import time
 import asyncio
 import orjson
-import traceback
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, HTMLResponse, FileResponse
@@ -28,16 +27,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Terrapoint", version="2.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    tb = traceback.format_exc()
-    return Response(
-        content=orjson.dumps({"error": str(exc), "traceback": tb}),
-        media_type="application/json",
-        status_code=500,
-    )
 
 
 def json_response(data: dict, status: int = 200) -> Response:
