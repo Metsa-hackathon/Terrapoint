@@ -35,7 +35,6 @@ LAYER_CONFIGS = [
     ("karuputk", "maaamet", "maaamet:karuputk"),
     ("auction", "maaoksjon", "maaoksjon:auction"),
     ("clc", "keskkonnainfo", "keskkonnainfo:clc_2018_iii"),
-    ("protected_sites", "ps", "ps:ProtectedSite"),
 ]
 
 
@@ -44,18 +43,20 @@ async def _fetch_layer(client, key, workspace, typename, bbox_str):
         f"{config.GEOBASE}/{workspace}/wfs?"
         f"service=WFS&request=GetFeature&typeName={typename}"
         f"&srsName=EPSG:4326&outputFormat=application/json"
+        f"&count=50"
         f"&bbox={bbox_str}"
     )
     try:
         resp = await client.get(url)
-        resp.raise_for_status()
+        if resp.status_code >= 400:
+            return key, []
         return key, resp.json().get("features", [])
     except Exception:
         return key, []
 
 
 async def query_all_layers(bbox_str: str) -> dict[str, list[dict]]:
-    async with httpx.AsyncClient(timeout=5) as client:
+    async with httpx.AsyncClient(timeout=8) as client:
         tasks = [
             _fetch_layer(client, key, ws, tn, bbox_str)
             for key, ws, tn in LAYER_CONFIGS
