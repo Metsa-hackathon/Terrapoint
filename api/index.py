@@ -56,9 +56,15 @@ async def search(kataster_nr: str, request: Request):
     yrask_task = query_yrask_mke(bbox_str)
     teatised_task = query_teatised(kataster_nr)
 
-    eraldised, layers_data, natura_features, yrask_features, teatised_features = await asyncio.gather(
-        eraldis_task, layers_task, natura_task, yrask_task, teatised_task
+    results = await asyncio.gather(
+        eraldis_task, layers_task, natura_task, yrask_task, teatised_task,
+        return_exceptions=True
     )
+    eraldised = results[0] if not isinstance(results[0], Exception) else []
+    layers_data = results[1] if not isinstance(results[1], Exception) else {}
+    natura_features = results[2] if not isinstance(results[2], Exception) else []
+    yrask_features = results[3] if not isinstance(results[3], Exception) else []
+    teatised_features = results[4] if not isinstance(results[4], Exception) else []
 
     kitsendused = []
     mets_result = None
@@ -80,10 +86,12 @@ async def search(kataster_nr: str, request: Request):
         # Fetch element data for all eraldised in parallel
         element_tasks = [query_eraldis_element(e.get("id")) for e in eraldised]
         kahjustused_tasks = [query_kahjustused(e.get("id")) for e in eraldised]
-        all_elements, all_kahjustused = await asyncio.gather(
-            asyncio.gather(*element_tasks),
-            asyncio.gather(*kahjustused_tasks),
+        inner_results = await asyncio.gather(
+            asyncio.gather(*element_tasks, return_exceptions=True),
+            asyncio.gather(*kahjustused_tasks, return_exceptions=True),
         )
+        all_elements = [r if not isinstance(r, Exception) else [] for r in inner_results[0]]
+        all_kahjustused = [r if not isinstance(r, Exception) else [] for r in inner_results[1]]
 
         # Merge all liikide_koosseis from all eraldised
         for elements in all_elements:
