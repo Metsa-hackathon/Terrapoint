@@ -698,7 +698,11 @@ async def root():
 async def serve_static(filename: str):
     file_path = PROJECT_ROOT / "static" / filename
     if file_path.exists():
-        return FileResponse(str(file_path))
+        if filename.endswith(".css"):
+            return FileResponse(str(file_path), media_type="text/css", headers={"Cache-Control": "no-cache, must-revalidate"})
+        if filename.endswith(".js"):
+            return FileResponse(str(file_path), media_type="application/javascript", headers={"Cache-Control": "no-cache, must-revalidate"})
+        return FileResponse(str(file_path), headers={"Cache-Control": "no-cache, must-revalidate"})
     return Response(status_code=404)
 
 
