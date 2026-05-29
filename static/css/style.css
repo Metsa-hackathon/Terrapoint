@@ -31,10 +31,10 @@
     --shadow-xl: 0 16px 48px rgba(0,0,0,0.12);
     --shadow-glow: 0 0 30px rgba(26,77,46,0.15);
 
-    --radius-sm: 8px;
-    --radius: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 20px;
+    --radius-sm: 3px;
+    --radius: 4px;
+    --radius-lg: 6px;
+    --radius-xl: 6px;
     --radius-full: 9999px;
 
     --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -57,7 +57,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     justify-content: space-between;
     padding: 0 1.5rem;
     height: 56px;
-    background: #003087;
+    background: #0a3d9e;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
@@ -189,26 +189,35 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 }
 
 /* ═══ Loading ═══ */
-.loading { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
-.loading-content { text-align: center; }
-
-.skeleton-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; margin-bottom: 1rem; }
-.skeleton-cards { display: flex; flex-direction: column; gap: 1rem; }
-
-.skeleton {
-    background: linear-gradient(90deg, var(--border-light) 25%, var(--bg) 50%, var(--border-light) 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s ease-in-out infinite;
-    border-radius: var(--radius);
+.loading {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    z-index: 1999;
+    height: 3px;
+    background: var(--border-light);
+    overflow: hidden;
 }
 
-.skeleton-map { height: 400px; border-radius: var(--radius-lg); }
-.skeleton-card { height: 100px; }
-.loading-text { color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem; font-weight: 500; }
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -40%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, var(--primary), var(--primary-light), transparent);
+    animation: loadSlide 1.2s ease-in-out infinite;
+}
 
-@keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+@keyframes loadSlide {
+    0% { left: -40%; }
+    100% { left: 100%; }
+}
+
+.loading-content, .skeleton-grid, .skeleton-cards, .skeleton, .skeleton-map, .skeleton-card, .loading-text {
+    display: none;
 }
 
 /* ═══ Dashboard ═══ */
@@ -533,7 +542,7 @@ td strong { font-weight: 600; color: var(--text); }
 /* ═══ Footer ═══ */
 footer {
     text-align: center;
-    padding: 2.5rem 1.5rem;
+    padding: 1.25rem 1.5rem;
     border-top: 1px solid var(--border);
     margin-top: 1rem;
     background: var(--card);
