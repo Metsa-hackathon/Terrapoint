@@ -1,10 +1,11 @@
 import time
 import asyncio
+import os
 import httpx
 import orjson
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, HTMLResponse, FileResponse
+from fastapi.responses import Response, HTMLResponse, FileResponse, StreamingResponse
 from contextlib import asynccontextmanager
 
 import sys
@@ -409,6 +410,209 @@ async def _search(kataster_nr: str):
         "map_layers": map_layers,
         "meta": {"cached": False, "response_time_ms": elapsed},
     })
+
+
+def build_system_prompt(data: dict) -> str:
+    """Build comprehensive system prompt with all forest data for AI advisor."""
+    k = data.get("kataster", {})
+    m = data.get("mets")
+    v = data.get("vaartus")
+    s = data.get("sinik")
+    kitsendused = data.get("kitsendused", [])
+    toetused = data.get("toetused", [])
+    riskid = data.get("riskid", {})
+    teatised = data.get("teatised", [])
+    kahjustused = data.get("kahjustused", [])
+
+    lines = []
+    lines.append("Oled TerraPoint metsanõustaja — Eesti metsanduse ja kinnisvara ekspert.")
+    lines.append("Analüüsid kasutaja metsaandmeid ja annad praktilisi, konkreetseid soovitusi.")
+    lines.append("Vasta alati eesti keeles. Ole sõbralik, kuid otsekohene. Kasuta numbreid andmetest.")
+    lines.append("")
+    lines.append("=== KATASTRI ANDMED ===")
+    lines.append(f"Number: {k.get('number', 'N/A')}")
+    lines.append(f"Pindala: {k.get('pindala_ha', 0)} ha")
+    lines.append(f"Asukoht: {k.get('l_aadress', '')}, {k.get('ov_nimi', '')}, {k.get('mk_nimi', '')}")
+    lines.append(f"Sihtotstarve: {k.get('sihtotstarve', 'N/A')}")
+    lines.append(f"Omandivorm: {k.get('omvorm', 'N/A')}")
+    lines.append(f"Maksuhind: {k.get('maks_hind', 'N/A')} EUR")
+    lines.append(f"Metsa pindala: {k.get('mets_pindala_ha', 0)} ha")
+
+    if m:
+        lines.append("")
+        lines.append("=== METSA ANDMED ===")
+        lines.append(f"Peapuuliik: {m.get('puuliik', 'N/A')} ({m.get('puuliik_kood', '')})")
+        lines.append(f"Keskmine vanus: {m.get('vanus', 0)} aastat")
+        lines.append(f"Tagavara: {m.get('tagavara_y_ha', 0)} m³/ha")
+        lines.append(f"Boniteet: {m.get('boniteet', 'N/A')}")
+        lines.append(f"Kõrgus: {m.get('korgus', 'N/A')} m")
+        lines.append(f"Eraldiseid kokku: {m.get('eraldisi_kokku', 0)}")
+        lines.append(f"Kuivendatud: {'Jah' if m.get('kuivendatud') else 'Ei'}")
+
+        koosseis = m.get("liikide_koosseis", [])
+        if koosseis:
+            lines.append("Liikide koosseis:")
+            for l in koosseis:
+                lines.append(f"  - {l.get('puuliik', '?')}: {l.get('osakaal', 0)}%, tagavara {l.get('tagavara_y_ha', 0)} m³/ha, vanus {l.get('vanus', 0)} a")
+
+        eraldised = m.get("eraldised", [])
+        if eraldised:
+            lines.append("Eraldised:")
+            for e in eraldised:
+                lines.append(f"  - Eraldis {e.get('eraldis_nr', '?')}: {e.get('puuliik', '?')}, {e.get('vanus', 0)} a, {e.get('tagavara_y_ha', 0)} m³/ha, {e.get('pindala_ha', 0)} ha, boniteet {e.get('boniteet', '?')}")
+
+    if v:
+        lines.append("")
+        lines.append("=== PUIDU VÄÄRTUS ===")
+        lines.append(f"Koguväärtus: {v.get('total_value_eur', 0)} EUR")
+        lines.append(f"Väärtus hektari kohta: {v.get('value_per_ha', 0)} EUR/ha")
+        lines.append(f"Seisuhind: {v.get('price_per_m3', 0)} EUR/m³")
+        lines.append(f"Kogutagavara: {v.get('tagavara_m3', 0)} m³")
+        lines.append(f"Palgi hind: {v.get('log_price', 0)} EUR/m³")
+        lines.append(f"Paberipuu hind: {v.get('pulp_price', 0)} EUR/m³")
+        lines.append(f"Hinnallikas: {v.get('price_source', '')} ({v.get('price_updated', '')})")
+
+    if s:
+        lines.append("")
+        lines.append("=== SÜSINIK ===")
+        lines.append(f"CO2 kogus: {s.get('co2_tons_total', 0)} tonni")
+        lines.append(f"CO2 hektari kohta: {s.get('co2_tons_ha', 0)} t/ha")
+        lines.append(f"Biomass: {s.get('total_biomass_tons_ha', 0)} t/ha")
+        lines.append(f"Potentsiaalne sissetulek: {s.get('potential_income_eur', 0)} EUR")
+        lines.append(f"Autoekvivalent: {s.get('cars_equivalent', 0)} autot aastas")
+        lines.append(f"Puuekivalent: {s.get('trees_equivalent', 0)} küpset puud")
+
+    if kitsendused:
+        lines.append("")
+        lines.append("=== KITSENDUSED ===")
+        for kit in kitsendused:
+            lines.append(f"  - {kit.get('tyyp', '?')}: {kit.get('kirjeldus', '')}")
+
+    if toetused:
+        lines.append("")
+        lines.append("=== TOETUSED ===")
+        for t in toetused:
+            sobib = "SOBIB" if t.get("sobib") else "EI SOBI"
+            lines.append(f"  - {t.get('nimi', '?')} ({t.get('asutus', '')}): {sobib}, {t.get('summa', '')} EUR")
+            if t.get("pohjus"):
+                lines.append(f"    Põhjus: {t['pohjus']}")
+            if t.get("taotlusvoor"):
+                lines.append(f"    Taotlusvoor: {t['taotlusvoor']}")
+
+    if riskid:
+        lines.append("")
+        lines.append("=== RISKID ===")
+        raie = riskid.get("raievanus", {})
+        if raie:
+            lines.append(f"Raievanus: {raie.get('label', 'N/A')} (suhe: {raie.get('ratio', 0)})")
+        yrask = riskid.get("yrask", {})
+        if yrask:
+            lines.append(f"Üraski risk: {yrask.get('label', 'N/A')} (skoor: {yrask.get('score', 0)})")
+        if riskid.get("karuputk"):
+            lines.append("Karuputk: LEITUD")
+        if riskid.get("lageraieala"):
+            lines.append("Lageraieala: LEITUD")
+
+    if teatised:
+        lines.append("")
+        lines.append("=== METSATEATISED ===")
+        for t in teatised:
+            aktiivne = "AKTIIVNE" if t.get("active") else "MITTEAKTIIVNE"
+            lines.append(f"  - {t.get('tyyp', '?')} ({t.get('tyyp_kood', '')}): {aktiivne}, kehtib kuni {t.get('kehtiv_kuni', 'N/A')}")
+            if t.get("maht"):
+                lines.append(f"    Maht: {t['maht']} m³")
+            if t.get("number"):
+                lines.append(f"    Number: {t['number']}")
+
+    if kahjustused:
+        lines.append("")
+        lines.append("=== KAHJUSTUSED ===")
+        for kahj in kahjustused:
+            lines.append(f"  - {kahj.get('tyyp', '?')}: {kahj.get('kirjeldus', '')} ({kahj.get('kuupaev', '')})")
+
+    lines.append("")
+    lines.append("Vasta kasutaja küsimusele nende andmete põhjal. Kui küsimus puudutab müüki, arvuta konkreetne summa. Kui puudutab oste, anna hinnang. Kui toetusi, ütle millised sobivad ja miks. Ole praktiline ja konkreetne.")
+
+    return "\n".join(lines)
+
+
+@app.post("/api/chat")
+async def chat(request: Request):
+    try:
+        body = await request.json()
+        kataster_nr = body.get("kataster_nr", "")
+        user_message = body.get("message", "")
+        history = body.get("history", [])
+
+        if not kataster_nr or not user_message:
+            return json_response({"error": "kataster_nr and message required"}, 400)
+
+        # Fetch all forest data
+        data_resp = await _search(kataster_nr)
+        # _search returns a Response object, extract the JSON body
+        if hasattr(data_resp, 'body'):
+            data = orjson.loads(data_resp.body)
+        else:
+            data = data_resp
+
+        if "error" in data:
+            return json_response({"error": data["error"]}, 400)
+
+        system_prompt = build_system_prompt(data)
+
+        # Build messages array
+        messages = [{"role": "system", "content": system_prompt}]
+        for h in history:
+            messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
+        messages.append({"role": "user", "content": user_message})
+
+        api_key = os.environ.get("OPENROUTER_API_KEY", "")
+        model = os.environ.get("OPENROUTER_MODEL", "openrouter/owl-alpha")
+
+        if not api_key:
+            return json_response({"error": "OpenRouter API key not configured"}, 500)
+
+        async def stream_response():
+            async with httpx.AsyncClient(timeout=60) as client:
+                async with client.stream(
+                    "POST",
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": model,
+                        "messages": messages,
+                        "stream": True,
+                        "temperature": 0.7,
+                        "max_tokens": 2000,
+                    },
+                ) as resp:
+                    async for line in resp.aiter_lines():
+                        if line.startswith("data: "):
+                            chunk = line[6:]
+                            if chunk.strip() == "[DONE]":
+                                yield "data: [DONE]\n\n"
+                                break
+                            try:
+                                chunk_data = orjson.loads(chunk)
+                                delta = chunk_data.get("choices", [{}])[0].get("delta", {})
+                                content = delta.get("content", "")
+                                if content:
+                                    yield f"data: {orjson.dumps({'content': content}).decode()}\n\n"
+                            except Exception:
+                                continue
+
+        return StreamingResponse(
+            stream_response(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
+    except Exception as exc:
+        import traceback
+        return json_response({"error": str(exc), "trace": traceback.format_exc()}, 500)
 
 
 @app.get("/api/export/eudr/{kataster_nr:path}")
