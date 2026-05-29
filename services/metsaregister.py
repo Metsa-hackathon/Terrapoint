@@ -19,7 +19,7 @@ async def query_eraldis(kataster_nr: str) -> list[dict]:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&CQL_FILTER=katastri_nr%3D%27{kataster_nr}%27"
     )
-    async with httpx.AsyncClient(timeout=5) as client:
+    async with httpx.AsyncClient(timeout=3) as client:
         resp = await client.get(url)
         resp.raise_for_status()
         features = resp.json().get("features", [])
@@ -57,7 +57,7 @@ async def query_eraldis_element(eraldis_id: int) -> list[dict]:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&CQL_FILTER=eraldis_id%3D{eraldis_id}"
     )
-    async with httpx.AsyncClient(timeout=5) as client:
+    async with httpx.AsyncClient(timeout=3) as client:
         resp = await client.get(url)
         resp.raise_for_status()
         features = resp.json().get("features", [])
@@ -82,7 +82,7 @@ async def query_natura_2000(bbox_str: str) -> list[dict]:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&bbox={bbox_str}"
     )
-    async with httpx.AsyncClient(timeout=5) as client:
+    async with httpx.AsyncClient(timeout=3) as client:
         try:
             resp = await client.get(url)
             resp.raise_for_status()
@@ -98,7 +98,7 @@ async def query_yrask_mke(bbox_str: str) -> list[dict]:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&bbox={bbox_str}"
     )
-    async with httpx.AsyncClient(timeout=5) as client:
+    async with httpx.AsyncClient(timeout=3) as client:
         try:
             resp = await client.get(url)
             resp.raise_for_status()
@@ -114,7 +114,7 @@ async def query_teatised(kataster_nr: str) -> list[dict]:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&CQL_FILTER=katastri_nr%3D%27{kataster_nr}%27"
     )
-    async with httpx.AsyncClient(timeout=5) as client:
+    async with httpx.AsyncClient(timeout=3) as client:
         try:
             resp = await client.get(url)
             resp.raise_for_status()
@@ -130,7 +130,7 @@ async def query_kahjustused(eraldis_id: int) -> list[dict]:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&CQL_FILTER=eraldis_id%3D{eraldis_id}"
     )
-    async with httpx.AsyncClient(timeout=5) as client:
+    async with httpx.AsyncClient(timeout=3) as client:
         try:
             resp = await client.get(url)
             resp.raise_for_status()

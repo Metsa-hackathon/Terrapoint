@@ -9,7 +9,7 @@ async def query_kataster(kataster_nr: str) -> dict | None:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&CQL_FILTER=tunnus%3D%27{kataster_nr}%27"
     )
-    async with httpx.AsyncClient(timeout=5) as client:
+    async with httpx.AsyncClient(timeout=3) as client:
         resp = await client.get(url)
         resp.raise_for_status()
         features = resp.json().get("features", [])
