@@ -9,6 +9,10 @@ SPECIES_DATA = {
     "TA": {"density": 0.63, "bef": 1.30, "root_shoot": 0.24},
     "SA": {"density": 0.59, "bef": 1.32, "root_shoot": 0.22},
     "VA": {"density": 0.57, "bef": 1.35, "root_shoot": 0.22},
+    "PK": {"density": 0.59, "bef": 1.30, "root_shoot": 0.22},
+    "JA": {"density": 0.55, "bef": 1.32, "root_shoot": 0.23},
+    "RE": {"density": 0.50, "bef": 1.35, "root_shoot": 0.25},
+    "SP": {"density": 0.50, "bef": 1.35, "root_shoot": 0.25},
 }
 
 CARBON_FRACTION = 0.47

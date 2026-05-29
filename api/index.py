@@ -210,6 +210,10 @@ async def _search(kataster_nr: str):
             "TA": {"seisuhind": 50, "log": 110.00, "pulp": 55.00},
             "SA": {"seisuhind": 45, "log": 100.00, "pulp": 50.00},
             "VA": {"seisuhind": 32, "log": 72.00, "pulp": 45.00},
+            "PK": {"seisuhind": 45, "log": 100.00, "pulp": 50.00},
+            "JA": {"seisuhind": 38, "log": 85.00, "pulp": 48.00},
+            "RE": {"seisuhind": 28, "log": 65.00, "pulp": 44.00},
+            "SP": {"seisuhind": 40, "log": 90.00, "pulp": 50.00},
         }
         prices = SPECIES_PRICES.get(puuliik, SPECIES_PRICES["MA"])
         price_m3 = prices["seisuhind"]

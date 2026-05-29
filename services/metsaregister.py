@@ -5,6 +5,7 @@ SPECIES_NAMES = {
     "MA": "Mänd", "KU": "Kuusk", "KS": "Kask", "HB": "Haab",
     "LH": "Lehis", "LM": "Sanglepp", "LV": "Hall lepp",
     "TA": "Tamm", "SA": "Saar", "VA": "Vaher",
+    "PK": "Pöök", "JA": "Jalakas", "RE": "Remmelgas", "SP": "Seedrip",
 }
 
 BONITEET_MAP = {0: "I", 1: "II", 2: "III", 3: "IV", 4: "V", 5: "VI", 6: "VII"}
@@ -68,7 +69,7 @@ async def query_eraldis_element(eraldis_id: int) -> list[dict]:
             "puuliik": SPECIES_NAMES.get(kood, kood),
             "puuliik_kood": kood,
             "vanus": p.get("vanus", 0),
-            "tagavara_y_ha": p.get("tagavara_y_ha", 0),
+            "tagavara_y_ha": p.get("tagavara") or p.get("tagavara_y_ha") or 0,
             "taius": p.get("taius", 0),
         })
     return result
