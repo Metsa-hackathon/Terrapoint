@@ -134,18 +134,16 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 .search-box button {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.5rem 1.25rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    font-family: var(--font);
+    justify-content: center;
+    width: 36px;
+    height: 30px;
+    padding: 0;
     background: white;
     color: #003087;
     border: none;
     border-radius: var(--radius-full);
     cursor: pointer;
     transition: all var(--transition);
-    white-space: nowrap;
     flex-shrink: 0;
 }
 
@@ -291,6 +289,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 .metric-card:nth-child(4) { animation-delay: 0.2s; }
 .metric-card:nth-child(5) { animation-delay: 0.25s; }
 .metric-card:nth-child(6) { animation-delay: 0.3s; }
+.metric-card:nth-child(7) { animation-delay: 0.35s; }
 
 @keyframes cardIn {
     to { opacity: 1; transform: translateY(0); }

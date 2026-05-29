@@ -25,5 +25,6 @@ async def query_kataster(kataster_nr: str) -> dict | None:
         "mk_nimi": props.get("mk_nimi", ""),
         "ov_nimi": props.get("ov_nimi", ""),
         "l_aadress": props.get("l_aadress", ""),
+        "maks_hind": props.get("maks_hind"),
         "geometry": geom,
     }

@@ -50,8 +50,16 @@ async def search(kataster_nr: str, request: Request):
     bbox = calculate_bbox(kataster_data["geometry"])
     bbox_str = bbox_to_wfs_string(bbox)
 
-    # Default values if something times out
-    eraldis_data = None
+    eraldis_task = query_eraldis(kataster_nr)
+    layers_task = query_all_layers(bbox_str)
+    natura_task = query_natura_2000(bbox_str)
+    yrask_task = query_yrask_mke(bbox_str)
+    teatised_task = query_teatised(kataster_nr)
+
+    eraldised, layers_data, natura_features, yrask_features, teatised_features = await asyncio.gather(
+        eraldis_task, layers_task, natura_task, yrask_task, teatised_task
+    )
+
     kitsendused = []
     mets_result = None
     vaartus_result = None
@@ -60,76 +68,48 @@ async def search(kataster_nr: str, request: Request):
     carbon = {}
     raie = {}
     liikide_koosseis = []
-    teatised_features = []
-    natura_features = []
-    yrask_features = []
-    layers_data = {}
     pindala = 0
 
-    try:
-        eraldis_task = asyncio.create_task(query_eraldis(kataster_nr))
-        layers_task = asyncio.create_task(query_all_layers(bbox_str))
-        natura_task = asyncio.create_task(query_natura_2000(bbox_str))
-        yrask_task = asyncio.create_task(query_yrask_mke(bbox_str))
-        teatised_task = asyncio.create_task(query_teatised(kataster_nr))
-
-        remaining = max(1.0, MAX_TIME - (time.time() - start) - 1.0)
-        done, pending = await asyncio.wait(
-            [eraldis_task, layers_task, natura_task, yrask_task, teatised_task],
-            timeout=remaining,
-        )
-
-        for t in done:
-            try:
-                result = t.result()
-                if t is eraldis_task:
-                    eraldis_data = result
-                elif t is layers_task:
-                    layers_data = result
-                elif t is natura_task:
-                    natura_features = result
-                elif t is yrask_task:
-                    yrask_features = result
-                elif t is teatised_task:
-                    teatised_features = result
-            except Exception:
-                pass
-
-        for t in pending:
-            t.cancel()
-    except Exception:
-        pass
-
-    # Process what we got, even if partial
+    # Process kitsendused from layers
     for key in ["kaitsealad", "veekaitse", "piiranguvoond", "uleujutus", "kotkas", "malestised"]:
         for feat in layers_data.get(key, []):
             props = feat.get("properties", {})
             kitsendused.append({"tyyp": key, "kirjeldus": props.get("nimi", props.get("nimetus", key))})
 
-    if eraldis_data:
-        eraldis_id = eraldis_data.get("id")
-        if eraldis_id:
-            try:
-                el_comp, kahj = await asyncio.wait_for(
-                    asyncio.gather(
-                        query_eraldis_element(eraldis_id),
-                        query_kahjustused(eraldis_id),
-                    ),
-                    timeout=1.5,
-                )
-                liikide_koosseis = el_comp
-                kahjustused_features = kahj
-            except (asyncio.TimeoutError, Exception):
-                pass
+    if eraldised:
+        # Fetch element data for all eraldised in parallel
+        element_tasks = [query_eraldis_element(e.get("id")) for e in eraldised]
+        kahjustused_tasks = [query_kahjustused(e.get("id")) for e in eraldised]
+        all_elements, all_kahjustused = await asyncio.gather(
+            asyncio.gather(*element_tasks),
+            asyncio.gather(*kahjustused_tasks),
+        )
 
-        tagavara = eraldis_data.get("tagavara_y_ha", 0)
-        pindala = eraldis_data.get("pindala_ha", 0)
-        puuliik = eraldis_data.get("puuliik_kood", "MA") or "MA"
-        vanus = int(eraldis_data.get("vanus", 0) or 0)
-        boniteet = int(eraldis_data.get("boniteedi_kood", 3) or 3)
+        # Merge all liikide_koosseis from all eraldised
+        for elements in all_elements:
+            liikide_koosseis.extend(elements)
+        for kahjust in all_kahjustused:
+            kahjustused_features.extend(kahjust)
 
-        carbon = carbon_potential(tagavara, pindala, puuliik)
-        raie = cutting_age_indicator(vanus, puuliik, boniteet)
+        # Aggregate across all eraldised (weighted by pindala)
+        total_pindala = sum(e.get("pindala_ha", 0) for e in eraldised)
+        pindala = total_pindala
+
+        # Weighted average tagavara and vanus
+        if total_pindala > 0:
+            avg_tagavara = sum(e.get("tagavara_y_ha", 0) * e.get("pindala_ha", 0) for e in eraldised) / total_pindala
+            avg_vanus = sum(e.get("vanus", 0) * e.get("pindala_ha", 0) for e in eraldised) / total_pindala
+        else:
+            avg_tagavara = eraldised[0].get("tagavara_y_ha", 0)
+            avg_vanus = eraldised[0].get("vanus", 0)
+
+        # Use primary eraldis (largest pindala) for species/boniteet display
+        primary = max(eraldised, key=lambda e: e.get("pindala_ha", 0))
+        puuliik = primary.get("puuliik_kood", "MA")
+        boniteet = primary.get("boniteedi_kood", 3)
+
+        carbon = carbon_potential(avg_tagavara, total_pindala, puuliik)
+        raie = cutting_age_indicator(int(avg_vanus), puuliik, boniteet)
 
         koosseis_with_osakaal = []
         if liikide_koosseis:
@@ -137,31 +117,62 @@ async def search(kataster_nr: str, request: Request):
             for e in liikide_koosseis:
                 koosseis_with_osakaal.append({**e, "osakaal": round(e.get("tagavara_y_ha", 0) / total * 100)})
 
+        # Build eraldised summary for frontend
+        eraldised_summary = []
+        for e in eraldised:
+            eraldised_summary.append({
+                "eraldis_nr": e.get("eraldis_nr"),
+                "puuliik": e.get("puuliik"),
+                "puuliik_kood": e.get("puuliik_kood"),
+                "vanus": e.get("vanus"),
+                "tagavara_y_ha": e.get("tagavara_y_ha"),
+                "pindala_ha": e.get("pindala_ha"),
+                "boniteet": e.get("boniteet"),
+            })
+
         mets_result = {
-            "puuliik": eraldis_data.get("puuliik"),
+            "puuliik": primary.get("puuliik"),
             "puuliik_kood": puuliik,
-            "vanus": vanus,
-            "tagavara_y_ha": tagavara,
-            "boniteet": eraldis_data.get("boniteet"),
-            "korgus": eraldis_data.get("korgus"),
-            "pindala_ha": pindala,
-            "kuivendatud": eraldis_data.get("kuivendatud"),
+            "vanus": int(avg_vanus),
+            "tagavara_y_ha": round(avg_tagavara, 1),
+            "boniteet": primary.get("boniteet"),
+            "korgus": primary.get("korgus"),
+            "pindala_ha": total_pindala,
+            "kuivendatud": primary.get("kuivendatud"),
             "liikide_koosseis": koosseis_with_osakaal,
             "total_biomass_tons_ha": carbon.get("biomass_tons_ha"),
             "co2_tons_ha": carbon.get("co2_tons_ha"),
             "co2_tons_total": carbon.get("co2_tons_total"),
             "potential_income_eur": carbon.get("potential_income_eur"),
+            "eraldised": eraldised_summary,
+            "eraldisi_kokku": len(eraldised),
         }
 
-        price_m3 = 45.0
-        total_m3 = tagavara * pindala
+        # Timber pricing - species-specific (Erametsaliit 2024 avg, updated periodically)
+        SPECIES_PRICES = {
+            "MA": {"seisuhind": 42, "log": 48, "pulp": 28},
+            "KU": {"seisuhind": 50, "log": 58, "pulp": 32},
+            "KS": {"seisuhind": 38, "log": 44, "pulp": 24},
+            "HB": {"seisuhind": 30, "log": 35, "pulp": 18},
+            "LH": {"seisuhind": 45, "log": 52, "pulp": 30},
+            "LM": {"seisuhind": 32, "log": 38, "pulp": 20},
+            "LV": {"seisuhind": 32, "log": 38, "pulp": 20},
+            "TA": {"seisuhind": 55, "log": 65, "pulp": 35},
+            "SA": {"seisuhind": 50, "log": 58, "pulp": 32},
+            "VA": {"seisuhind": 35, "log": 40, "pulp": 22},
+        }
+        prices = SPECIES_PRICES.get(puuliik, SPECIES_PRICES["MA"])
+        price_m3 = prices["seisuhind"]
+        total_m3 = avg_tagavara * total_pindala
         vaartus_result = {
             "total_value_eur": round(total_m3 * price_m3),
-            "value_per_ha": round(tagavara * price_m3),
+            "value_per_ha": round(avg_tagavara * price_m3),
             "price_per_m3": price_m3,
             "tagavara_m3": round(total_m3),
-            "log_price": round(price_m3 * 0.6, 2),
-            "pulp_price": round(price_m3 * 0.4, 2),
+            "log_price": prices["log"],
+            "pulp_price": prices["pulp"],
+            "price_source": "Erametsaliit 2024 keskmine",
+            "price_updated": "2024",
         }
 
         sinik_result = {
@@ -169,9 +180,11 @@ async def search(kataster_nr: str, request: Request):
             "co2_tons_ha": carbon.get("co2_tons_ha"),
             "total_biomass_tons_ha": carbon.get("biomass_tons_ha"),
             "potential_income_eur": carbon.get("potential_income_eur"),
+            "cars_equivalent": carbon.get("cars_equivalent"),
+            "trees_equivalent": carbon.get("trees_equivalent"),
         }
 
-    kataster_data["mets_pindala_ha"] = pindala if eraldis_data else 0
+    kataster_data["mets_pindala_ha"] = pindala if eraldised else 0
 
     natura_2000 = bool(natura_features)
     kaitseala_features = layers_data.get("kaitsealad", [])
@@ -181,31 +194,61 @@ async def search(kataster_nr: str, request: Request):
     subsidy_data = {
         "natura_2000": natura_2000,
         "vaariselupaik": vaariselupaik,
-        "keskm_vanus": eraldis_data.get("vanus", 0) if eraldis_data else 0,
-        "peapuuliik_kood": eraldis_data.get("puuliik_kood") if eraldis_data else None,
-        "keskm_raievanus": eraldis_data.get("raievanus") if eraldis_data else None,
-        "mets_pindala": eraldis_data.get("pindala_ha", 0) if eraldis_data else 0,
+        "keskm_vanus": int(avg_vanus) if eraldised else 0,
+        "peapuuliik_kood": eraldised[0].get("puuliik_kood") if eraldised else None,
+        "keskm_raievanus": eraldised[0].get("raievanus") if eraldised else None,
+        "mets_pindala": pindala if eraldised else 0,
         "siht1": kataster_data.get("sihtotstarve", ""),
         "kaitseala": bool(kaitseala_features),
     }
     toetused = check_subsidies(subsidy_data)
 
     riskid = {}
-    if eraldis_data:
+    if eraldised:
         riskid["raievanus"] = raie
+
+        # Improved ürask risk scoring: consider official zone, species, and age
+        yrask_score = 0
+        yrask_label = "Madal"
+        has_kuusk = any(e.get("puuliik_kood") == "KU" for e in eraldised)
+        max_vanus = max(e.get("vanus", 0) for e in eraldised)
+
+        if yrask_features:
+            yrask_score = 3
+            yrask_label = "Kriitiline — tsoonis"
+        elif has_kuusk and max_vanus > 50:
+            yrask_score = 2
+            yrask_label = "Kõrge — vana kuusemets"
+        elif has_kuusk and max_vanus > 30:
+            yrask_score = 1
+            yrask_label = "Keskmine — kuusk üle 30a"
+        else:
+            yrask_score = 0
+            yrask_label = "Madal"
+
         riskid["yrask"] = {
-            "score": 2 if yrask_features else 0,
-            "label": "Kõrge" if yrask_features else "Madal",
+            "score": yrask_score,
+            "label": yrask_label,
             "official_zone": bool(yrask_features),
+            "detail": "Kuusekooreüraski MKE tsoon" if yrask_features else None,
         }
         riskid["terviseindeks"] = None
         riskid["karuputk"] = bool(layers_data.get("karuputk"))
         riskid["lageraieala"] = bool(layers_data.get("lageraiealad"))
 
+    # Process metsateatised - show active ones prominently
     teatised = []
     for feat in teatised_features:
         p = feat.get("properties", {})
-        teatised.append({"tyyp": p.get("teatise_tyyp", ""), "staatus": p.get("staatus", ""), "kehtiv_kuni": p.get("kehtiv_kuni", ""), "pindala_ha": p.get("pindala", 0)})
+        staatus = p.get("staatus", "")
+        teatised.append({
+            "tyyp": p.get("teatise_tyyp", ""),
+            "staatus": staatus,
+            "kehtiv_kuni": p.get("kehtiv_kuni", ""),
+            "pindala_ha": p.get("pindala", 0),
+            "number": p.get("teatise_nr", ""),
+            "active": staatus.upper() in ("KEHTIV", "ESITATUD", "MENETLUSES"),
+        })
 
     kahjustused = []
     for feat in kahjustused_features:

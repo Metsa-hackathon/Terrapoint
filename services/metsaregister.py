@@ -10,7 +10,8 @@ SPECIES_NAMES = {
 BONITEET_MAP = {0: "I", 1: "II", 2: "III", 3: "IV", 4: "V", 5: "VI", 6: "VII"}
 
 
-async def query_eraldis(kataster_nr: str) -> dict | None:
+async def query_eraldis(kataster_nr: str) -> list[dict]:
+    """Return ALL eraldised for a kataster parcel (not just the first)."""
     url = (
         f"{config.GEOBASE}/metsaregister/wfs?"
         f"service=WFS&request=GetFeature&typeName=metsaregister:eraldis"
@@ -22,26 +23,30 @@ async def query_eraldis(kataster_nr: str) -> dict | None:
         resp.raise_for_status()
         features = resp.json().get("features", [])
     if not features:
-        return None
-    props = features[0].get("properties", {})
-    kood = props.get("peapuuliik_kood", "MA")
-    return {
-        "id": props.get("id"),
-        "puuliik": SPECIES_NAMES.get(kood, kood),
-        "puuliik_kood": kood,
-        "vanus": props.get("keskm_vanus") or 0,
-        "tagavara_y_ha": props.get("tagavara_y_ha") or 0,
-        "boniteet": BONITEET_MAP.get(int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3, "III"),
-        "boniteedi_kood": int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3,
-        "raievanus": props.get("keskm_raievanus"),
-        "korgus": props.get("korgus"),
-        "pindala_ha": props.get("pindala") or 0,
-        "taius_1": props.get("taius_1"),
-        "kuivendatud": bool(props.get("kuivendatud", False)),
-        "tuleohu_kood": props.get("tuleohu_kood"),
-        "siht1": props.get("siht1"),
-        "geometry": features[0].get("geometry"),
-    }
+        return []
+    result = []
+    for feat in features:
+        props = feat.get("properties", {})
+        kood = props.get("peapuuliik_kood", "MA")
+        result.append({
+            "id": props.get("id"),
+            "puuliik": SPECIES_NAMES.get(kood, kood),
+            "puuliik_kood": kood,
+            "vanus": props.get("keskm_vanus", 0),
+            "tagavara_y_ha": props.get("tagavara_y_ha", 0),
+            "boniteet": BONITEET_MAP.get(int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3, "III"),
+            "boniteedi_kood": int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3,
+            "raievanus": props.get("keskm_raievanus"),
+            "korgus": props.get("korgus"),
+            "pindala_ha": props.get("pindala", 0),
+            "taius_1": props.get("taius_1"),
+            "kuivendatud": bool(props.get("kuivendatud", False)),
+            "tuleohu_kood": props.get("tuleohu_kood"),
+            "siht1": props.get("siht1"),
+            "eraldis_nr": props.get("eraldis_nr"),
+            "geometry": feat.get("geometry"),
+        })
+    return result
 
 
 async def query_eraldis_element(eraldis_id: int) -> list[dict]:

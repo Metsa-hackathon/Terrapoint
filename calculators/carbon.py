@@ -14,6 +14,10 @@ SPECIES_DATA = {
 CARBON_FRACTION = 0.47
 CO2_C_RATIO = 3.67
 CO2_PRICE_EUR = 30
+# Average car emits ~4.6 t CO2/year (EU average passenger car)
+CO2_PER_CAR_YEAR = 4.6
+# A mature tree absorbs ~22 kg CO2/year
+CO2_PER_TREE_KG = 22
 
 
 def carbon_potential(tagavara_y_ha: float, pindala_ha: float, peapuuliik_kood: str) -> dict:
@@ -22,10 +26,17 @@ def carbon_potential(tagavara_y_ha: float, pindala_ha: float, peapuuliik_kood: s
     carbon_ha = biomass_ha * CARBON_FRACTION
     co2_ha = carbon_ha * CO2_C_RATIO
     co2_total = co2_ha * pindala_ha
+
+    # Equivalency calculations
+    cars_equivalent = round(co2_total / CO2_PER_CAR_YEAR)
+    trees_equivalent = round(co2_total * 1000 / CO2_PER_TREE_KG)  # tons to kg
+
     return {
         "biomass_tons_ha": round(biomass_ha, 1),
         "carbon_tons_ha": round(carbon_ha, 1),
         "co2_tons_ha": round(co2_ha, 1),
         "co2_tons_total": round(co2_total, 1),
         "potential_income_eur": round(co2_total * CO2_PRICE_EUR),
+        "cars_equivalent": cars_equivalent,
+        "trees_equivalent": trees_equivalent,
     }
