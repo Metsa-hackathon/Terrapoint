@@ -154,6 +154,18 @@
                 <div id="riskid-info"></div>
             </div>
 
+            <div class="metric-card" id="card-teatised">
+                <div class="card-header">
+                    <div class="card-icon" style="background:#e3f2fd;color:#1565c0">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                    </div>
+                    <h3>Metsateatised</h3>
+                </div>
+                <div id="teatised-info"></div>
+            </div>
+
             <div class="metric-card eudr-card" id="card-eudr">
                 <div class="card-header">
                     <div class="card-icon eudr-icon">
@@ -289,11 +301,12 @@
         if (parcelLayer) map.removeLayer(parcelLayer);
         parcelLayer = L.geoJSON(geometry, {
             style: {
-                color: '#2d5016',
-                weight: 3,
-                opacity: 0.9,
-                fillColor: '#4a7c28',
-                fillOpacity: 0.15,
+                color: '#e63946',
+                weight: 4,
+                opacity: 1,
+                fillColor: '#ff6b6b',
+                fillOpacity: 0.12,
+                dashArray: null,
             },
         }).addTo(map);
     }
@@ -407,7 +420,7 @@
         if (data.mk_nimi) html += '<div class="info-row"><span class="label">Maakond</span><span class="value">' + data.mk_nimi + '</span></div>';
         if (data.ov_nimi) html += '<div class="info-row"><span class="label">Omavalitsus</span><span class="value">' + data.ov_nimi + '</span></div>';
         if (data.l_aadress) html += '<div class="info-row"><span class="label">Aadress</span><span class="value">' + data.l_aadress + '</span></div>';
-        if (data.maks_hind) html += '<div class="info-row"><span class="label">Maksuhind</span><span class="value">' + formatEur(data.maks_hind) + '</span></div>';
+        if (data.maks_hind) html += '<div class="info-row"><span class="label">Maksuhind (maa)</span><span class="value">' + formatEur(data.maks_hind) + '</span></div>';
         el.innerHTML = html;
     }
 
@@ -417,9 +430,7 @@
         var boniteet = data.boniteet || BONITEET_LABELS[data.boniteedi_kood] || data.boniteedi_kood || '—';
         var compHtml = '';
         if (data.liikide_koosseis && data.liikide_koosseis.length > 0) {
-            // Filter to actual tree species only (exclude forest type codes like TM, PI)
             var species = data.liikide_koosseis.filter(isValidSpecies);
-            // Merge duplicate species (sum percentages from different stands)
             var merged = {};
             species.forEach(function(s) {
                 var code = s.puuliik_kood || s.puuliik;
@@ -429,14 +440,12 @@
                     merged[code] = s.osakaal;
                 }
             });
-            // Normalize to 100% (multiple stands each have 100%)
             var total = Object.values(merged).reduce(function(a, b) { return a + b; }, 0);
             if (total > 100) {
                 Object.keys(merged).forEach(function(code) {
                     merged[code] = Math.round(merged[code] / total * 100);
                 });
             }
-            // Convert to array and sort by percentage
             var sorted = Object.keys(merged).map(function(code) {
                 return { code: code, name: speciesName(code), osakaal: merged[code] };
             }).sort(function(a, b) { return b.osakaal - a.osakaal; });
@@ -456,7 +465,18 @@
         html += '<div class="info-row"><span class="label">Boniteet</span><span class="value">' + boniteet + '</span></div>';
         html += '<div class="info-row"><span class="label">Pindala</span><span class="value">' + formatNum(data.pindala_ha, 2) + ' ha</span></div>';
         if (data.korgus) html += '<div class="info-row"><span class="label">Kõrgus</span><span class="value">' + formatNum(data.korgus, 1) + ' m</span></div>';
+        if (data.eraldisi_kokku > 1) html += '<div class="info-row"><span class="label">Eraldisi</span><span class="value">' + data.eraldisi_kokku + ' tk</span></div>';
         html += compHtml;
+
+        // Show individual eraldised if multiple
+        if (data.eraldised && data.eraldised.length > 1) {
+            html += '<details style="margin-top:0.75rem"><summary style="cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--primary)">Eraldised (' + data.eraldised.length + ')</summary>';
+            html += '<table style="margin-top:0.5rem;font-size:0.78rem"><thead><tr><th>Nr</th><th>Puuliik</th><th>Vanus</th><th>Tagavara</th><th>Pindala</th></tr></thead><tbody>';
+            data.eraldised.forEach(function(e) {
+                html += '<tr><td>' + (e.eraldis_nr || '—') + '</td><td>' + speciesName(e.puuliik_kood || e.puuliik) + '</td><td>' + (e.vanus || '—') + ' a</td><td>' + formatNum(e.tagavara_y_ha) + ' m³/ha</td><td>' + formatNum(e.pindala_ha, 2) + ' ha</td></tr>';
+            });
+            html += '</tbody></table></details>';
+        }
         el.innerHTML = html;
     }
 
@@ -470,6 +490,9 @@
         html += '<div class="info-row"><span class="label">Tagavara</span><span class="value">' + formatNum(data.tagavara_m3) + ' m³</span></div>';
         html += '<div class="info-row"><span class="label">Palk</span><span class="value">' + formatNum(data.log_price, 2) + ' €/m³</span></div>';
         html += '<div class="info-row"><span class="label">Paberipuit</span><span class="value">' + formatNum(data.pulp_price, 2) + ' €/m³</span></div>';
+        if (data.price_source) {
+            html += '<div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-muted);font-style:italic">Hinnad: ' + data.price_source + '</div>';
+        }
         el.innerHTML = html;
         setTimeout(function() {
             var animEl = document.getElementById('anim-vaartus');
@@ -485,6 +508,19 @@
         html += '<div class="info-row"><span class="label">CO₂ / ha</span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
         html += '<div class="info-row"><span class="label">Biomass / ha</span><span class="value">' + formatNum(data.total_biomass_tons_ha, 1) + ' t</span></div>';
         html += '<div class="info-row"><span class="label">Potentsiaalne tulu</span><span class="value">' + formatEur(data.potential_income_eur) + '</span></div>';
+
+        // CO2 equivalency illustration
+        if (data.cars_equivalent || data.trees_equivalent) {
+            html += '<div style="margin-top:0.75rem;padding:0.75rem;background:var(--surface);border-radius:var(--radius-sm);font-size:0.82rem">';
+            html += '<div style="font-weight:600;color:var(--text-secondary);margin-bottom:0.4rem">Võrdluseks:</div>';
+            if (data.cars_equivalent) {
+                html += '<div style="margin-bottom:0.25rem">🚗 ' + formatNum(data.cars_equivalent) + ' auto aastane CO₂ heide</div>';
+            }
+            if (data.trees_equivalent) {
+                html += '<div>🌳 Vastab ' + formatNum(data.trees_equivalent) + ' puu aastasele CO₂ sidumisele</div>';
+            }
+            html += '</div>';
+        }
         el.innerHTML = html;
         setTimeout(function() {
             var animEl = document.getElementById('anim-co2');
@@ -505,7 +541,10 @@
             var y = data.yrask;
             var colors = ['#28a745', '#ffc107', '#fd7e14', '#e63946'];
             html += '<div class="info-row"><span class="label">Üraski risk</span>';
-            html += '<span style="color:' + colors[y.score] + ';font-weight:600">' + y.label + (y.official_zone ? ' ⚠️' : '') + '</span></div>';
+            html += '<span style="color:' + colors[y.score] + ';font-weight:600">' + y.label + '</span></div>';
+            if (y.detail) {
+                html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem">' + y.detail + '</div>';
+            }
         }
         if (data.terviseindeks != null) {
             var t = data.terviseindeks;
@@ -520,6 +559,33 @@
             html += '<div class="info-row"><span class="label">Lageraieala</span><span class="value">' + data.lageraieala + '</span></div>';
         }
         el.innerHTML = html || '<p class="muted">Riskiandmeid pole</p>';
+    }
+
+    function renderTeatised(data) {
+        var el = document.getElementById('teatised-info');
+        if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Metsateatisi pole registreeritud</p>'; return; }
+
+        var active = data.filter(function(t) { return t.active; });
+        var inactive = data.filter(function(t) { return !t.active; });
+
+        var html = '';
+        if (active.length > 0) {
+            html += '<div style="margin-bottom:0.5rem"><span style="display:inline-block;padding:0.2rem 0.6rem;background:#e8f5e9;color:#2e7d32;border-radius:var(--radius-full);font-size:0.75rem;font-weight:600">' + active.length + ' aktiivset</span></div>';
+            html += '<table style="font-size:0.8rem"><thead><tr><th>Tüüp</th><th>Staatus</th><th>Kehtib kuni</th><th>Pindala</th></tr></thead><tbody>';
+            active.forEach(function(t) {
+                html += '<tr><td><strong>' + (t.tyyp || '—') + '</strong></td><td><span style="color:var(--success);font-weight:600">' + t.staatus + '</span></td><td>' + (t.kehtiv_kuni || '—') + '</td><td>' + (t.pindala_ha ? t.pindala_ha + ' ha' : '—') + '</td></tr>';
+            });
+            html += '</tbody></table>';
+        }
+        if (inactive.length > 0) {
+            html += '<details style="margin-top:0.5rem"><summary style="cursor:pointer;font-size:0.78rem;color:var(--text-muted)">Aegunud/lõpetatud (' + inactive.length + ')</summary>';
+            html += '<table style="margin-top:0.3rem;font-size:0.78rem"><thead><tr><th>Tüüp</th><th>Staatus</th><th>Pindala</th></tr></thead><tbody>';
+            inactive.forEach(function(t) {
+                html += '<tr><td>' + (t.tyyp || '—') + '</td><td class="muted">' + t.staatus + '</td><td>' + (t.pindala_ha ? t.pindala_ha + ' ha' : '—') + '</td></tr>';
+            });
+            html += '</tbody></table></details>';
+        }
+        el.innerHTML = html;
     }
 
     function renderKitsendused(data) {
@@ -811,6 +877,7 @@
             renderVaartus(data.vaartus);
             renderSinik(data.sinik);
             renderRiskid(data.riskid);
+            renderTeatised(data.teatised);
             renderKitsendused(data.kitsendused);
             renderToetused(data.toetused);
 
