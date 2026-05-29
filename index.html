@@ -33,9 +33,8 @@
                     </svg>
                 </div>
                 <input type="text" id="kataster-input" placeholder="Katastri number (nt 78404:409:0113)" autocomplete="off">
-                <button id="search-btn">
-                    <span class="btn-text">Analüüsi</span>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <button id="search-btn" aria-label="Otsi">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M5 12h14M12 5l7 7-7 7"/>
                     </svg>
                 </button>
@@ -60,9 +59,9 @@
     </div>
 
     <!-- Dashboard -->
-    <section id="dashboard" class="dashboard hidden" style="display:none">
+    <section id="dashboard" class="dashboard">
 
-        <!-- Map Section -->
+        <!-- Map Section (always visible) -->
         <div class="map-section">
             <div class="map-wrapper">
                 <div id="map"></div>
@@ -93,7 +92,7 @@
             </div>
         </div>
 
-        <!-- Metric Cards Grid -->
+        <!-- Metric Cards Grid (always visible, empty until search) -->
         <div class="metrics-grid">
             <div class="metric-card" id="card-kataster">
                 <div class="card-header">
@@ -176,8 +175,8 @@
             </div>
         </div>
 
-        <!-- Charts Section -->
-        <div class="charts-section">
+        <!-- Charts Section (hidden until search) -->
+        <div id="charts-section" class="charts-section" style="display:none">
             <div class="section-header">
                 <h2>Graafikud</h2>
             </div>
@@ -197,8 +196,8 @@
             </div>
         </div>
 
-        <!-- Tables Section -->
-        <div class="tables-section">
+        <!-- Tables Section (hidden until search) -->
+        <div id="tables-section" class="tables-section" style="display:none">
             <div class="table-card">
                 <div class="card-header">
                     <div class="card-icon risk-icon">
@@ -590,12 +589,9 @@
 
     function showLoading() {
         var loading = document.getElementById('loading');
-        var dashboard = document.getElementById('dashboard');
         var error = document.getElementById('error-msg');
         loading.style.display = '';
         loading.classList.remove('hidden');
-        dashboard.style.display = 'none';
-        dashboard.classList.add('hidden');
         error.style.display = 'none';
         error.classList.add('hidden');
     }
@@ -613,16 +609,13 @@
         el.classList.remove('hidden');
         document.getElementById('loading').style.display = 'none';
         document.getElementById('loading').classList.add('hidden');
-        document.getElementById('dashboard').style.display = 'none';
-        document.getElementById('dashboard').classList.add('hidden');
     }
 
     function showDashboard() {
-        var dashboard = document.getElementById('dashboard');
-        dashboard.style.display = '';
-        dashboard.classList.remove('hidden');
+        document.getElementById('charts-section').style.display = '';
+        document.getElementById('tables-section').style.display = '';
         setTimeout(function() {
-            dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.getElementById('charts-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 100);
     }
 
@@ -780,7 +773,7 @@
     var currentData = null;
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Don't init map here - container is hidden, Leaflet can't calculate size
+        initMap();
         document.getElementById('kataster-input').focus();
 
         document.getElementById('search-btn').addEventListener('click', doSearch);
@@ -806,7 +799,6 @@
 
         var btn = document.getElementById('search-btn');
         btn.disabled = true;
-        btn.querySelector('.btn-text').textContent = 'Laadin...';
 
         showLoading();
 
@@ -828,13 +820,9 @@
             hideLoading();
             showDashboard();
 
-            // Init map after dashboard is visible (Leaflet needs visible container)
+            // Show parcel on the already-visible map
             setTimeout(function() {
-                if (!map) {
-                    initMap();
-                } else {
-                    map.invalidateSize();
-                }
+                map.invalidateSize();
                 if (data.kataster && data.kataster.geometry) {
                     showParcel(data.kataster.geometry);
                     fitToParcel(data.kataster.geometry);
@@ -845,7 +833,6 @@
             showError(err.message);
         } finally {
             btn.disabled = false;
-            btn.querySelector('.btn-text').textContent = 'Analüüsi';
         }
     }
     </script>
