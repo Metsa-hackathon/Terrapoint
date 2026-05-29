@@ -118,6 +118,13 @@
                         </svg>
                     </div>
                     <h3>Katastri andmed</h3>
+                    <span class="info-toggle" onclick="toggleInfo('info-kataster')">?</span>
+                </div>
+                <div id="info-kataster" class="info-box" style="display:none">
+                    <strong>Mis näitab:</strong> Krundi põhiandmed — number, pindala, sihtotstarve, omandivorm, asukoht ja maksuhind.<br>
+                    <strong>Allikas:</strong> Maa-amet WFS (kataster:ky_kehtistus)<br>
+                    <strong>Arvutus:</strong> Pindala arvutatakse geomeetriast (Shapely), maksuhind tuleb otse registrist.
+                    <div class="source">Andmed: Maa-amet, geoportaal.maaamet.ee</div>
                 </div>
                 <div id="kataster-info"></div>
             </div>
@@ -133,6 +140,13 @@
                         </svg>
                     </div>
                     <h3>Metsaandmed</h3>
+                    <span class="info-toggle" onclick="toggleInfo('info-mets')">?</span>
+                </div>
+                <div id="info-mets" class="info-box" style="display:none">
+                    <strong>Mis näitab:</strong> Metsa eraldiste andmed — puuliik, vanus, tagavara (m³/ha), boniteet, kõrgus ja liikide koosseis.<br>
+                    <strong>Allikas:</strong> Metsaregister WFS (metsaregister:eraldis, eraldis_element)<br>
+                    <strong>Arvutus:</strong> Keskmine vanus ja tagavara on pindala-kaalutud keskmised kõigist eraldistest. Liikide koosseis agregeeritakse eraldiste elementide järgi.
+                    <div class="source">Andmed: Keskkonnaagentuur, register.metsad.ee</div>
                 </div>
                 <div id="mets-info"></div>
             </div>
@@ -145,6 +159,13 @@
                         </svg>
                     </div>
                     <h3>Puidu väärtus</h3>
+                    <span class="info-toggle" onclick="toggleInfo('info-vaartus')">?</span>
+                </div>
+                <div id="info-vaartus" class="info-box" style="display:none">
+                    <strong>Mis näitab:</strong> Metsa ümarmaterjali koguväärtus praeguste turuhindade järgi.<br>
+                    <strong>Arvutus:</strong> Koguväärtus = tagavara (m³) × seisuhind (€/m³). Hind sõltub peapuuliigist — iga liigi kohta on eraldi seisuhind, palgi- ja paberipuu hind.<br>
+                    <strong>Allikas:</strong> Eesti Erametsaliidu hinnastatistika (2024). Hinnad uuenevad kord kvartalis.
+                    <div class="source">Andmed: erametsaliit.ee</div>
                 </div>
                 <div id="vaartus-info"></div>
             </div>
@@ -157,6 +178,14 @@
                         </svg>
                     </div>
                     <h3>Süsinik</h3>
+                    <span class="info-toggle" onclick="toggleInfo('info-sinik')">?</span>
+                </div>
+                <div id="info-sinik" class="info-box" style="display:none">
+                    <strong>Mis näitab:</strong> Metsa süsinikuvaru ja CO₂ sidumise potentsiaal.<br>
+                    <strong>Arvutus:</strong> Biomass = tagavara × tihedus × BEF × (1 + juurte/suhte koefitsient). Süsinik = biomass × 0,47. CO₂ = süsinik × 3,67. Potentsiaalne tulu = CO₂ × 30 €/t.<br>
+                    <strong>Võrdlused:</strong> Auto = 4,6 t CO₂/aasta (EL keskmine). Puu = 22 kg CO₂/aasta.<br>
+                    <strong>Allikas:</strong> IPCC tasandusfaktorid, Eesti metsainventuuri andmed.
+                    <div class="source">Andmed: IPCC, Keskkonnaagentuur</div>
                 </div>
                 <div id="sinik-info"></div>
             </div>
@@ -169,6 +198,14 @@
                         </svg>
                     </div>
                     <h3>Riskid</h3>
+                    <span class="info-toggle" onclick="toggleInfo('info-riskid')">?</span>
+                </div>
+                <div id="info-riskid" class="info-box" style="display:none">
+                    <strong>Mis näitab:</strong> Metsa terviseriskid — raievanuse näitaja, üraski risk, karuputk ja lageraiealad.<br>
+                    <strong>Raievanus:</strong> Võrdleb praegust vanust liigi ja boniteedi järgse raievanusega. Roheline &lt;85%, kollane 85–100%, punane ≥100%.<br>
+                    <strong>Üraski risk:</strong> 0=madal, 1=keskmine (kuusk &gt;30a), 2=kõrge (kuusk &gt;50a), 3=kriitiline (MKE tsoonis).<br>
+                    <strong>Allikas:</strong> Metsaregister (MKE tsoonid), EELIS (looduskaitse).
+                    <div class="source">Andmed: Keskkonnaagentuur, metsaregister.ee</div>
                 </div>
                 <div id="riskid-info"></div>
             </div>
@@ -181,6 +218,13 @@
                         </svg>
                     </div>
                     <h3>Metsateatised</h3>
+                    <span class="info-toggle" onclick="toggleInfo('info-teatised')">?</span>
+                </div>
+                <div id="info-teatised" class="info-box" style="display:none">
+                    <strong>Mis näitab:</strong> Krundile registreeritud metsateatised — raie-, uuendus- ja hooldusteatiste staatus ja kehtivus.<br>
+                    <strong>Allikas:</strong> Metsaregister WFS (metsaregister:teatis)<br>
+                    <strong>Märkus:</strong> Aktiivsed teatised (KEHTIV, ESITATUD, MENETLUSED) näitavad kehtivaid raieõigusi.
+                    <div class="source">Andmed: Keskkonnaagentuur, register.metsad.ee</div>
                 </div>
                 <div id="teatised-info"></div>
             </div>
@@ -193,6 +237,13 @@
                         </svg>
                     </div>
                     <h3>EUDR</h3>
+                    <span class="info-toggle" onclick="toggleInfo('info-eudr')">?</span>
+                </div>
+                <div id="info-eudr" class="info-box" style="display:none">
+                    <strong>Mis näitab:</strong> Krundi geomeetria GeoJSON-formaadis EL deforestatsioonivastase määruse (EUDR) jaoks.<br>
+                    <strong>Kasutus:</strong> EUDR nõuab tõestust, et toode ei pärine deforestatsioonitud alalt. GeoJSON sisaldab krundi piire ja katastri numbrit.<br>
+                    <strong>Allikas:</strong> Maa-amet WFS (kataster:ky_kehtistus)
+                    <div class="source">Andmed: Maa-amet, geoportaal.maaamet.ee</div>
                 </div>
                 <div id="eudr-info">
                     <p class="eudr-desc">GeoJSON Euroopa Liidu deforestatsiooniregulatsiooni jaoks.</p>
@@ -237,8 +288,21 @@
                         </svg>
                     </div>
                     <h3>Kitsendused</h3>
+                    <span class="info-toggle" onclick="toggleInfo('info-kitsendused')">?</span>
                 </div>
-                <div id="kitsendused-info"><p class="muted">Andmeid pole</p></div>
+                <div id="info-kitsendused" class="info-box" style="display:none">
+                    <strong>Mis näitab:</strong> Krundile kehtivad keskkonna- ja muinsuskaitse kitsendused — kaitsealad, piiranguvööndid, veekaitse, üleujutusalad ja muinsuskaitseobjektid.<br>
+                    <strong>Allikas:</strong> EELIS WFS (Keskkonnaagentuur), kitsendused WFS (Maa-amet), muinsuskaitse register.<br>
+                    <strong>Märkus:</strong> Kitsendused mõjutavad raieõigusi, metsauuendust ja toetuste kõlblikkust.
+                    <div class="source">Andmed: Keskkonnaagentuur, Maa-amet, Muinsuskaitseamet</div>
+                </div>
+                <div id="kitsendused-info">
+                    <div class="initial-info">
+                        <div class="icon">&#128269;</div>
+                        <p>Otsi krundi, et näha kitsendusi</p>
+                        <p class="hint">Kaitsealad, piiranguvööndid, veekaitse, üleujutusalad, muinsuskaitse</p>
+                    </div>
+                </div>
                 <div id="kitsendused-link" style="display:none;margin-top:8px">
                     <a href="https://infoleht.keskkonnainfo.ee/" target="_blank" rel="noopener" style="font-size:13px;color:#457b9d;text-decoration:none">
                         Rohkem infot Keskkonnainfo lehel →
@@ -253,8 +317,21 @@
                         </svg>
                     </div>
                     <h3>Toetused</h3>
+                    <span class="info-toggle" onclick="toggleInfo('info-toetused')">?</span>
                 </div>
-                <div id="toetused-info"><p class="muted">Andmeid pole</p></div>
+                <div id="info-toetused" class="info-box" style="display:none">
+                    <strong>Mis näitab:</strong> Krundile potentsiaalselt kõlblikud metsatoetused ja hüvitised.<br>
+                    <strong>Arvutus:</strong> Toetuste kõlblikkus sõltub krundi omadustest — vanus, puuliik, pindala, Natura 2000 kuuluvus, kaitseala staatus ja sihtotstarve.<br>
+                    <strong>Allikas:</strong> Erametsakeskus, Keskkonnaagentuur (EELIS). Tingimused põhinevad metsaseadusel ja EL määrustel.
+                    <div class="source">Andmed: eramets.ee, Keskkonnaagentuur</div>
+                </div>
+                <div id="toetused-info">
+                    <div class="initial-info">
+                        <div class="icon">&#128176;</div>
+                        <p>Otsi krundi, et näha toetusi</p>
+                        <p class="hint">Metsauuendus, hooldusraie, Natura 2000, kaitsealade hüvitised</p>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -458,6 +535,11 @@
         return code && NON_SPECIES_CODES.indexOf(code) === -1 && SPECIES_NAMES[code];
     }
     const BONITEET_LABELS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+
+    function toggleInfo(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
+    }
 
     function formatEur(n) {
         if (n == null) return '—';

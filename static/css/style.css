@@ -338,6 +338,49 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 .risk-icon { background: #fce4ec; color: var(--danger); }
 .eudr-icon { background: #e8f5e9; color: var(--primary); }
 
+.card-header h3 { flex: 1; }
+
+.info-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    flex-shrink: 0;
+    transition: all var(--transition);
+}
+.info-toggle:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.info-box {
+    margin-top: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--primary-light);
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+.info-box strong { color: var(--text); font-weight: 600; }
+.info-box .source { margin-top: 0.3rem; font-size: 0.72rem; color: var(--text-muted); font-style: italic; }
+
+.initial-info {
+    padding: 1rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+.initial-info .icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+.initial-info p { margin: 0.25rem 0; }
+.initial-info .hint { font-size: 0.78rem; margin-top: 0.5rem; }
+
 .card-header h3 {
     font-size: 0.8rem;
     font-weight: 700;
