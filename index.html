@@ -65,7 +65,7 @@
         <div class="map-section">
             <div class="map-wrapper">
                 <div id="map"></div>
-                <div class="map-controls">
+                <div class="map-controls" id="map-controls" style="display:none">
                     <div class="layer-toggle">
                         <label class="toggle-item">
                             <input type="checkbox" id="layer-kaitsealad" data-layer="kaitsealad" checked>
@@ -239,6 +239,11 @@
                     <h3>Kitsendused</h3>
                 </div>
                 <div id="kitsendused-info"><p class="muted">Andmeid pole</p></div>
+                <div id="kitsendused-link" style="display:none;margin-top:8px">
+                    <a href="https://infoleht.keskkonnainfo.ee/" target="_blank" rel="noopener" style="font-size:13px;color:#457b9d;text-decoration:none">
+                        Rohkem infot Keskkonnainfo lehel →
+                    </a>
+                </div>
             </div>
             <div class="table-card">
                 <div class="card-header">
@@ -669,7 +674,12 @@
 
     function renderKitsendused(data) {
         var el = document.getElementById('kitsendused-info');
-        if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Kitsendusi ei leitud — krunt asub kitsendusteta alal</p>'; return; }
+        var linkEl = document.getElementById('kitsendused-link');
+        if (!data || data.length === 0) {
+            el.innerHTML = '<p class="muted">Kitsendusi ei leitud — krunt asub kitsendusteta alal</p>';
+            if (linkEl) linkEl.style.display = 'none';
+            return;
+        }
         var html = '<table><thead><tr><th>Tüüp</th><th>Kirjeldus</th><th>Lisainfo</th></tr></thead><tbody>';
         var links = {
             'Kaitseala': 'https://kaitsealad.ee',
@@ -683,6 +693,7 @@
         });
         html += '</tbody></table>';
         el.innerHTML = html;
+        if (linkEl) linkEl.style.display = '';
     }
 
     function renderToetused(data) {
@@ -966,6 +977,7 @@
 
             // Load map overlay layers
             if (data.map_layers) loadMapLayers(data.map_layers);
+            document.getElementById('map-controls').style.display = '';
 
             hideLoading();
             showDashboard();
