@@ -300,7 +300,6 @@ async def _search(kataster_nr: str):
         "sood": bool(layers_data.get("sood")),
         "veekaitse": bool(layers_data.get("veekaitse")),
         "natura_elupaik": bool(layers_data.get("natura_elupaik")),
-        "lageraieala": bool(layers_data.get("lageraiealad")),
         "karuputk": bool(layers_data.get("karuputk")),
         "yrask_tsoon": bool(yrask_features),
     }
@@ -386,7 +385,6 @@ async def _search(kataster_nr: str):
         "natura_elupaik": {"label": "Natura elupaigad", "color": "#6a994e"},
         "veekaitse": {"label": "Veekaitsevööndid", "color": "#0077b6"},
         "uleujutus": {"label": "Üleujutusala", "color": "#0096c7"},
-        "lageraiealad": {"label": "Lageraiealad", "color": "#adb5bd"},
         "karuputk": {"label": "Karuputk", "color": "#d63384"},
     }
     for key, meta in LAYER_MAP.items():
