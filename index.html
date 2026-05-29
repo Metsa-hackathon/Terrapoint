@@ -90,7 +90,7 @@
                     <div class="ai-avatar"></div>
                     <div class="ai-bubble">
                         <p>Tere! Olen Terrapoint AI.</p>
-                        <p>Otsi ülevalt oma katastri number ja ma analüüsin su metsaandmeid — annan nõu kas müüa, hoida, osta juurde või taotleda toetusi.</p>
+                        <p>Otsi ülevalt oma katastri number ja ma analüüsin su metsaandmeid. Annan nõu kas müüa, hoida, osta juurde või taotleda toetusi.</p>
                     </div>
                 </div>
             </div>
@@ -252,7 +252,7 @@
                     <span class="info-toggle">?</span>
                 </div>
                 <div id="info-riskid" class="info-box">
-                    <strong>Mis näitab:</strong> Metsa terviseriskid — üraski risk ja karuputk.<br>
+                    <strong>Mis näitab:</strong> Metsa terviseriskid: üraski risk ja karuputk.<br>
                     <strong>Üraski risk:</strong> 0=madal, 1=keskmine (kuusk &gt;30a), 2=kõrge (kuusk &gt;50a), 3=kriitiline (MKE tsoonis).<br>
                     <strong>Allikas:</strong> Metsaregister (MKE tsoonid), EELIS (looduskaitse).
                     <div class="source">Andmed: Keskkonnaagentuur, metsaregister.ee</div>
@@ -512,7 +512,7 @@
             aiAppendMessage('assistant', aiFormatResponse(fullText));
 
             aiChatHistory.push({role: 'assistant', content: fullText});
-            document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + ' — küsi lisa küsimusi';
+            document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + '. Küsi lisa küsimusi';
 
         } catch(err) {
             aiRemoveTyping();
