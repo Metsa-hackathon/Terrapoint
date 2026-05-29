@@ -118,7 +118,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 .search-box:focus-within .search-icon { color: white; }
 
 .search-box input {
-    width: 240px;
+    width: 320px;
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
     font-family: var(--font);
