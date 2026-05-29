@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Leaf shape with AI circuit -->
+  <path d="M12 2c-5 2-8 7-8 12 0 2 1 4 3 5"/>
+  <path d="M12 2c5 2 8 7 8 12 0 2-1 4-3 5"/>
+  <!-- Leaf vein / circuit path -->
+  <path d="M12 6v14"/>
+  <path d="M12 10c-3 0-5 2-5 4" stroke-width="1.5"/>
+  <path d="M12 10c3 0 5 2 5 4" stroke-width="1.5"/>
+  <!-- AI dots at intersections -->
+  <circle cx="12" cy="6" r="1.2" fill="currentColor" stroke="none"/>
+  <circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/>
+  <circle cx="16" cy="14" r="1" fill="currentColor" stroke="none"/>
+  <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/>
+</svg>

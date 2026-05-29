@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Hexagonal AI node (tech feel) with leaf inside -->
+  <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z"/>
+  <!-- Inner leaf -->
+  <path d="M12 7c-2.5 1-4 3.5-4 6 0 1 .5 2 1.5 2.5"/>
+  <path d="M12 7c2.5 1 4 3.5 4 6 0 1-.5 2-1.5 2.5"/>
+  <path d="M12 9v8"/>
+  <!-- Small data node at top -->
+  <circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none"/>
+</svg>
