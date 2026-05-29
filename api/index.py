@@ -174,9 +174,9 @@ async def _search(kataster_nr: str):
                 "eraldis_nr": e.get("eraldis_nr"),
                 "puuliik": e.get("puuliik"),
                 "puuliik_kood": e.get("puuliik_kood"),
-                "vanus": e.get("vanus"),
-                "tagavara_y_ha": e.get("tagavara_y_ha"),
-                "pindala_ha": e.get("pindala_ha"),
+                "vanus": e.get("vanus") or 0,
+                "tagavara_y_ha": e.get("tagavara_y_ha") or 0,
+                "pindala_ha": e.get("pindala_ha") or 0,
                 "boniteet": e.get("boniteet"),
             })
 
