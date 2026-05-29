@@ -108,24 +108,24 @@ async def _search(kataster_nr: str):
             kahjustused_features.extend(kahjust)
 
         # Aggregate across all eraldised (weighted by pindala)
-        total_pindala = sum(e.get("pindala_ha", 0) for e in eraldised)
+        total_pindala = sum((e.get("pindala_ha") or 0) for e in eraldised)
         pindala = total_pindala
 
         # Weighted average tagavara and vanus
         if total_pindala > 0:
-            avg_tagavara = sum(e.get("tagavara_y_ha", 0) * e.get("pindala_ha", 0) for e in eraldised) / total_pindala
-            avg_vanus = sum(e.get("vanus", 0) * e.get("pindala_ha", 0) for e in eraldised) / total_pindala
+            avg_tagavara = sum((e.get("tagavara_y_ha") or 0) * (e.get("pindala_ha") or 0) for e in eraldised) / total_pindala
+            avg_vanus = sum((e.get("vanus") or 0) * (e.get("pindala_ha") or 0) for e in eraldised) / total_pindala
         else:
-            avg_tagavara = eraldised[0].get("tagavara_y_ha", 0)
-            avg_vanus = eraldised[0].get("vanus", 0)
+            avg_tagavara = eraldised[0].get("tagavara_y_ha") or 0
+            avg_vanus = eraldised[0].get("vanus") or 0
 
         # Use primary eraldis (largest pindala) for species/boniteet display
-        primary = max(eraldised, key=lambda e: e.get("pindala_ha", 0))
-        puuliik = primary.get("puuliik_kood", "MA")
-        boniteet = primary.get("boniteedi_kood", 3)
+        primary = max(eraldised, key=lambda e: (e.get("pindala_ha") or 0))
+        puuliik = primary.get("puuliik_kood") or "MA"
+        boniteet = primary.get("boniteedi_kood") or 3
 
         carbon = carbon_potential(avg_tagavara, total_pindala, puuliik)
-        raie = cutting_age_indicator(int(avg_vanus), puuliik, boniteet)
+        raie = cutting_age_indicator(int(avg_vanus or 0), puuliik, boniteet)
 
         koosseis_with_osakaal = []
         if liikide_koosseis:
