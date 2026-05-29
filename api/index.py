@@ -156,9 +156,13 @@ async def _search(kataster_nr: str):
             avg_tagavara = eraldised[0].get("tagavara_y_ha") or 0
             avg_vanus = eraldised[0].get("vanus") or 0
 
-        # Use primary eraldis (largest pindala) for species/boniteet display
+        # Peapuuliik = species with highest total tagavara across all eraldised
+        species_tagavara = {}
+        for e in eraldised:
+            kood = e.get("puuliik_kood") or "MA"
+            species_tagavara[kood] = species_tagavara.get(kood, 0) + ((e.get("tagavara_y_ha") or 0) * (e.get("pindala_ha") or 0))
+        puuliik = max(species_tagavara, key=species_tagavara.get) if species_tagavara else "MA"
         primary = max(eraldised, key=lambda e: (e.get("pindala_ha") or 0))
-        puuliik = primary.get("puuliik_kood") or "MA"
         boniteet = primary.get("boniteedi_kood") or 3
 
         carbon = carbon_potential(avg_tagavara, total_pindala, puuliik)
