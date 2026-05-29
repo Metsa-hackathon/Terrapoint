@@ -697,20 +697,48 @@
     function renderTeatised(data) {
         var el = document.getElementById('teatised-info');
         if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Metsateatisi pole registreeritud</p>'; return; }
-        var active = data.filter(function(t) { return t.active; }), inactive = data.filter(function(t) { return !t.active; });
+
+        var active = data.filter(function(t) { return t.active; });
+        var inactive = data.filter(function(t) { return !t.active; });
         var html = '';
+
         if (active.length > 0) {
-            html += '<div style="margin-bottom:0.5rem"><span style="display:inline-block;padding:0.2rem 0.6rem;background:#e8f5e9;color:#2e7d32;border-radius:var(--radius-full);font-size:0.75rem;font-weight:600">' + active.length + ' aktiivset</span></div>';
-            html += '<table style="font-size:0.8rem"><thead><tr><th>Tüüp</th><th>Staatus</th><th>Kehtib kuni</th><th>Pindala</th></tr></thead><tbody>';
-            active.forEach(function(t) { html += '<tr><td><strong>' + (t.tyyp || '—') + '</strong></td><td><span style="color:var(--success);font-weight:600">' + t.staatus + '</span></td><td>' + (t.kehtiv_kuni || '—') + '</td><td>' + (t.pindala_ha ? t.pindala_ha + ' ha' : '—') + '</td></tr>'; });
-            html += '</tbody></table>';
+            html += '<div style="margin-bottom:0.5rem"><span style="display:inline-block;padding:0.2rem 0.6rem;background:#e8f5e9;color:#2e7d32;border-radius:var(--radius-full);font-size:0.75rem;font-weight:600">' + active.length + ' kehtivat teatist</span></div>';
+            active.forEach(function(t) {
+                html += '<div style="background:var(--surface);border-radius:var(--radius-sm);padding:0.6rem 0.75rem;margin-bottom:0.5rem;border-left:3px solid var(--success)">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem">';
+                html += '<strong style="font-size:0.85rem">' + (t.tyyp || 'Raie') + '</strong>';
+                html += '<span style="font-size:0.72rem;color:var(--text-muted)">nr ' + (t.number || '—') + '</span>';
+                html += '</div>';
+                html += '<div style="font-size:0.78rem;color:var(--text-secondary)">';
+                if (t.kehtiv_kuni) html += 'Kehtib: <strong>' + t.kehtiv_kuni.split('T')[0] + '</strong>';
+                if (t.pindala_ha) html += ' &middot; Pindala: <strong>' + t.pindala_ha + ' ha</strong>';
+                if (t.maht) html += ' &middot; Maht: <strong>' + t.maht + ' m³</strong>';
+                html += '</div>';
+                if (t.metskond || t.kvartal || t.eraldis) {
+                    html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.2rem">';
+                    if (t.metskond) html += 'Metskond: ' + t.metskond;
+                    if (t.kvartal) html += ' &middot; Kvartal: ' + t.kvartal;
+                    if (t.eraldis) html += ' &middot; Eraldis: ' + t.eraldis;
+                    html += '</div>';
+                }
+                if (t.staatus) {
+                    html += '<div style="font-size:0.72rem;margin-top:0.3rem;padding:0.3rem 0.5rem;background:var(--bg);border-radius:var(--radius-sm)">';
+                    html += '<strong>Otsus:</strong> ' + t.staatus;
+                    if (t.otsuse_pohjendus) html += '<br>' + t.otsuse_pohjendus;
+                    html += '</div>';
+                }
+                html += '</div>';
+            });
         }
+
         if (inactive.length > 0) {
             html += '<details style="margin-top:0.5rem"><summary style="cursor:pointer;font-size:0.78rem;color:var(--text-muted)">Aegunud/lõpetatud (' + inactive.length + ')</summary>';
             html += '<table style="margin-top:0.3rem;font-size:0.78rem"><thead><tr><th>Tüüp</th><th>Staatus</th><th>Pindala</th></tr></thead><tbody>';
-            inactive.forEach(function(t) { html += '<tr><td>' + (t.tyyp || '—') + '</td><td class="muted">' + t.staatus + '</td><td>' + (t.pindala_ha ? t.pindala_ha + ' ha' : '—') + '</td></tr>'; });
+            inactive.forEach(function(t) { html += '<tr><td>' + (t.tyyp || '—') + '</td><td class="muted">' + (t.staatus || '—') + '</td><td>' + (t.pindala_ha ? t.pindala_ha + ' ha' : '—') + '</td></tr>'; });
             html += '</tbody></table></details>';
         }
+
         el.innerHTML = html;
     }
 

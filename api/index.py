@@ -340,17 +340,31 @@ async def _search(kataster_nr: str):
         riskid["lageraieala"] = bool(layers_data.get("lageraiealad"))
 
     # Process metsateatised - show active ones prominently
+    TOO_NIMETUSED = {
+        "TR": "Trassiraie", "HR": "Hooldusraie", "LR": "Lageraie",
+        "UR": "Uuendusraie", "SR": "Sanitaarraie", "VR": "Valikraie",
+        "KR": "Kujundusraie", "PR": "Peenraie", "JR": "Järjekorraline raie",
+    }
     teatised = []
     for feat in teatised_features:
         p = feat.get("properties", {})
-        staatus = p.get("staatus", "")
+        too_kood = (p.get("too_kood") or "").upper()
+        otsus = p.get("otsus") or ""
+        staatus = "KEHTIV" if p.get("kehtiv_kuni") else otsus
+        kehtiv = p.get("kehtiv_kuni") or ""
         teatised.append({
-            "tyyp": p.get("teatise_tyyp", ""),
-            "staatus": staatus,
-            "kehtiv_kuni": p.get("kehtiv_kuni", ""),
+            "tyyp": TOO_NIMETUSED.get(too_kood, too_kood),
+            "tyyp_kood": too_kood,
+            "staatus": otsus,
+            "kehtiv_kuni": kehtiv.replace("Z", ""),
             "pindala_ha": p.get("pindala", 0),
-            "number": p.get("teatise_nr", ""),
-            "active": staatus.upper() in ("KEHTIV", "ESITATUD", "MENETLUSES"),
+            "number": p.get("teatise_nr") or "",
+            "maht": p.get("raiutav_maht"),
+            "metskond": p.get("metskond") or "",
+            "kvartal": p.get("kvartali_nr") or "",
+            "eraldis": p.get("eraldise_nr"),
+            "otsuse_pohjendus": (p.get("otsuse_pohjendus") or "")[:200],
+            "active": bool(kehtiv),
         })
 
     kahjustused = []
