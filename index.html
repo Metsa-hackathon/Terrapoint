@@ -32,7 +32,10 @@
                         <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                     </svg>
                 </div>
-                <input type="text" id="kataster-input" placeholder="Katastri number (nt 78404:409:0113)" autocomplete="off">
+                <div class="search-input-wrap">
+                    <input type="text" id="kataster-input" placeholder="Katastri number (nt 78404:409:0113) või aadress" autocomplete="off">
+                    <div id="address-dropdown" class="address-dropdown" style="display:none"></div>
+                </div>
                 <button id="search-btn" aria-label="Otsi">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -1072,7 +1075,65 @@
                 if (key) toggleOverlayLayer(key, e.target.checked);
             });
         });
+
+        // Address search autocomplete
+        var addressTimer = null;
+        var input = document.getElementById('kataster-input');
+        var dropdown = document.getElementById('address-dropdown');
+
+        input.addEventListener('input', function() {
+            var val = input.value.trim();
+            clearTimeout(addressTimer);
+            if (val.length < 3) { dropdown.style.display = 'none'; return; }
+            // If it looks like a kataster number, don't search addresses
+            if (/^\d{5}:\d{3}:\d{4}$/.test(val)) { dropdown.style.display = 'none'; return; }
+            addressTimer = setTimeout(function() { searchAddresses(val); }, 350);
+        });
+
+        input.addEventListener('blur', function() {
+            setTimeout(function() { dropdown.style.display = 'none'; }, 200);
+        });
+
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') dropdown.style.display = 'none';
+        });
     });
+
+    async function searchAddresses(query) {
+        var dropdown = document.getElementById('address-dropdown');
+        try {
+            var resp = await fetch('/api/address/' + encodeURIComponent(query));
+            var data = await resp.json();
+            if (!data.results || data.results.length === 0) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            var html = '';
+            data.results.forEach(function(r) {
+                var label = r.aadress || r.asula || '';
+                var sub = [r.asula, r.vald, r.maakond].filter(Boolean).join(', ');
+                html += '<div class="address-item" data-kataster="' + r.katastri_nr + '">';
+                html += '<div class="addr-main">' + label + '</div>';
+                if (sub) html += '<div class="addr-sub">' + sub + '</div>';
+                html += '<div class="addr-kataster">Kataster: ' + r.katastri_nr + '</div>';
+                html += '</div>';
+            });
+            dropdown.innerHTML = html;
+            dropdown.style.display = '';
+
+            dropdown.querySelectorAll('.address-item').forEach(function(item) {
+                item.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    var kataster = item.dataset.kataster;
+                    document.getElementById('kataster-input').value = kataster;
+                    dropdown.style.display = 'none';
+                    doSearch();
+                });
+            });
+        } catch(e) {
+            dropdown.style.display = 'none';
+        }
+    }
 
     async function doSearch() {
         var nr = document.getElementById('kataster-input').value.trim();

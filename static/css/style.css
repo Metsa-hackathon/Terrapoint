@@ -684,3 +684,35 @@ footer {
 
 /* ═══ Selection ═══ */
 ::selection { background: rgba(26,77,46,0.15); color: var(--text); }
+
+/* ═══ Address Dropdown ═══ */
+.search-input-wrap { position: relative; flex: 1; }
+.search-input-wrap input { width: 100%; }
+
+.address-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    max-height: 260px;
+    overflow-y: auto;
+    margin-top: 2px;
+}
+
+.address-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border);
+    transition: background var(--transition);
+}
+.address-item:last-child { border-bottom: none; }
+.address-item:hover { background: var(--surface-alt); }
+.address-item .addr-main { font-weight: 500; color: var(--text); }
+.address-item .addr-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+.address-item .addr-kataster { font-size: 0.72rem; color: var(--primary); margin-top: 2px; }

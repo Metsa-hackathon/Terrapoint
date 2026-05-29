@@ -38,6 +38,37 @@ async def health():
     return {"status": "ok", "version": "2.0.0", "timestamp": time.time()}
 
 
+@app.get("/api/address/{query:path}")
+async def address_search(query: str):
+    try:
+        url = (
+            f"{config.GEOBASE}/kataster/wfs?"
+            f"service=WFS&request=GetFeature&typeName=kataster:ky_aadress"
+            f"&srsName=EPSG:4326&outputFormat=application/json"
+            f"&count=10"
+            f"&CQL_FILTER=l_aadress%20LIKE%20%27%25{query}%25%27"
+        )
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            features = resp.json().get("features", [])
+
+        results = []
+        for f in features:
+            p = f.get("properties", {})
+            results.append({
+                "aadress": p.get("l_aadress", ""),
+                "maakond": p.get("mk_nimi", ""),
+                "vald": p.get("ov_nimi", ""),
+                "asula": p.get("ay_nimi", ""),
+                "katastri_nr": p.get("tunnus", ""),
+            })
+
+        return json_response({"results": results})
+    except Exception as exc:
+        return json_response({"error": str(exc)}, 500)
+
+
 @app.get("/api/search/{kataster_nr:path}")
 async def search(kataster_nr: str, request: Request):
     try:
