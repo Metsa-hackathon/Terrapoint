@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terrapoint AI Icon Options</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f2e1a;
+    color: #fff;
+    padding: 40px 20px;
+  }
+  h1 { text-align: center; margin-bottom: 8px; font-size: 1.6rem; }
+  p.sub { text-align: center; opacity: 0.7; margin-bottom: 40px; font-size: 0.9rem; }
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    justify-content: center;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 28px 20px 20px;
+    width: 160px;
+    text-align: center;
+  }
+  .card.current { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); }
+  .icon-wrap {
+    width: 64px;
+    height: 64px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+  }
+  .icon-wrap svg { width: 32px; height: 32px; }
+  .card span {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .card small {
+    display: block;
+    font-size: 0.7rem;
+    opacity: 0.6;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 0.6rem;
+    background: rgba(255,255,255,0.15);
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin-top: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  /* Navbar preview */
+  .nav-preview {
+    max-width: 900px;
+    margin: 40px auto 0;
+    background: linear-gradient(135deg, #0f2e1a, #1a4d2e);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 16px 20px;
+  }
+  .nav-preview h3 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.5;
+    margin-bottom: 16px;
+  }
+  .nav-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 10px 16px;
+    min-width: 200px;
+  }
+  .nav-item .mini-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .nav-item .mini-icon svg { width: 22px; height: 22px; }
+  .nav-item .nav-text { font-size: 0.85rem; font-weight: 600; }
+  .nav-item .nav-sub { font-size: 0.7rem; opacity: 0.7; }
+</style>
+</head>
+<body>
+  <h1>Terrapoint AI Icon Options</h1>
+  <p class="sub">Pick one to replace the current lightbulb icon</p>
+
+  <div class="grid">
+    <!-- Current -->
+    <div class="card current">
+      <div class="icon-wrap">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.3C6.2 13.5 5 11.4 5 9a7 7 0 0 1 7-7z"/>
+          <path d="M9 22h6"/><path d="M10 2v2"/><path d="M14 2v2"/>
+        </svg>
+      </div>
+      <span>Current</span>
+      <small>Lightbulb</small>
+      <div class="badge">existing</div>
+    </div>
+
+    <!-- Option 1 -->
+    <div class="card">
+      <div class="icon-wrap">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2C8 2 5 5 5 9c0 2 1 3.5 2 4.5"/>
+          <path d="M12 2c4 0 7 3 7 7 0 2-1 3.5-2 4.5"/>
+          <path d="M7 13.5C7 15 9 17 12 17s5-2 5-3.5"/>
+          <line x1="12" y1="17" x2="12" y2="22"/>
+          <circle cx="9" cy="7" r="1.5" fill="currentColor" stroke="none"/>
+          <circle cx="15" cy="7" r="1.5" fill="currentColor" stroke="none"/>
+          <circle cx="12" cy="11" r="1.5" fill="currentColor" stroke="none"/>
+          <line x1="9" y1="7" x2="12" y2="11" stroke-width="1"/>
+          <line x1="15" y1="7" x2="12" y2="11" stroke-width="1"/>
+          <line x1="9" y1="7" x2="15" y2="7" stroke-width="1"/>
+        </svg>
+      </div>
+      <span>Option 1</span>
+      <small>Tree Neural</small>
+    </div>
+
+    <!-- Option 2 -->
+    <div class="card">
+      <div class="icon-wrap">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2c-5 2-8 7-8 12 0 2 1 4 3 5"/>
+          <path d="M12 2c5 2 8 7 8 12 0 2-1 4-3 5"/>
+          <path d="M12 6v14"/>
+          <path d="M12 10c-3 0-5 2-5 4" stroke-width="1.5"/>
+          <path d="M12 10c3 0 5 2 5 4" stroke-width="1.5"/>
+          <circle cx="12" cy="6" r="1.2" fill="currentColor" stroke="none"/>
+          <circle cx="8" cy="14" r="1" fill="currentColor" stroke="none"/>
+          <circle cx="16" cy="14" r="1" fill="currentColor" stroke="none"/>
+          <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
+      <span>Option 2</span>
+      <small>Leaf Circuit</small>
+    </div>
+
+    <!-- Option 3 -->
+    <div class="card">
+      <div class="icon-wrap">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3L8 10h2.5L7 16h10l-3.5-6H16L12 3z"/>
+          <line x1="12" y1="16" x2="12" y2="20"/>
+          <ellipse cx="12" cy="12" rx="10" ry="4" stroke-dasharray="3 2" stroke-width="1.5"/>
+          <circle cx="2" cy="12" r="1.3" fill="currentColor" stroke="none"/>
+          <circle cx="22" cy="12" r="1.3" fill="currentColor" stroke="none"/>
+          <circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
+      <span>Option 3</span>
+      <small>Tree Orbit</small>
+    </div>
+
+    <!-- Option 4 -->
+    <div class="card">
+      <div class="icon-wrap">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z"/>
+          <path d="M12 7c-2.5 1-4 3.5-4 6 0 1 .5 2 1.5 2.5"/>
+          <path d="M12 7c2.5 1 4 3.5 4 6 0 1-.5 2-1.5 2.5"/>
+          <path d="M12 9v8"/>
+          <circle cx="12" cy="5" r="1.2" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
+      <span>Option 4</span>
+      <small>Hex Leaf</small>
+    </div>
+
+    <!-- Option 5 -->
+    <div class="card">
+      <div class="icon-wrap">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="2" x2="12" y2="6"/>
+          <line x1="12" y1="18" x2="12" y2="22"/>
+          <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+          <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+          <line x1="2" y1="12" x2="6" y2="12"/>
+          <line x1="18" y1="12" x2="22" y2="12"/>
+          <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+          <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+          <path d="M12 8l-3 5h2l-2 3h6l-2-3h2l-3-5z" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
+      <span>Option 5</span>
+      <small>Sparkle Tree</small>
+    </div>
+  </div>
+
+  <!-- Navbar context preview -->
+  <div class="nav-preview">
+    <h3>In-context: AI chat header</h3>
+    <div class="nav-row">
+      <div class="nav-item">
+        <div class="mini-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2C8 2 5 5 5 9c0 2 1 3.5 2 4.5"/>
+            <path d="M12 2c4 0 7 3 7 7 0 2-1 3.5-2 4.5"/>
+            <path d="M7 13.5C7 15 9 17 12 17s5-2 5-3.5"/>
+            <line x1="12" y1="17" x2="12" y2="22"/>
+            <circle cx="9" cy="7" r="1.5" fill="#fff" stroke="none"/>
+            <circle cx="15" cy="7" r="1.5" fill="#fff" stroke="none"/>
+            <circle cx="12" cy="11" r="1.5" fill="#fff" stroke="none"/>
+            <line x1="9" y1="7" x2="12" y2="11" stroke-width="1"/>
+            <line x1="15" y1="7" x2="12" y2="11" stroke-width="1"/>
+            <line x1="9" y1="7" x2="15" y2="7" stroke-width="1"/>
+          </svg>
+        </div>
+        <div>
+          <div class="nav-text">Terrapoint AI</div>
+          <div class="nav-sub">Tree Neural</div>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="mini-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2c-5 2-8 7-8 12 0 2 1 4 3 5"/>
+            <path d="M12 2c5 2 8 7 8 12 0 2-1 4-3 5"/>
+            <path d="M12 6v14"/>
+            <path d="M12 10c-3 0-5 2-5 4" stroke-width="1.5"/>
+            <path d="M12 10c3 0 5 2 5 4" stroke-width="1.5"/>
+            <circle cx="12" cy="6" r="1.2" fill="#fff" stroke="none"/>
+            <circle cx="8" cy="14" r="1" fill="#fff" stroke="none"/>
+            <circle cx="16" cy="14" r="1" fill="#fff" stroke="none"/>
+            <circle cx="12" cy="19" r="1" fill="#fff" stroke="none"/>
+          </svg>
+        </div>
+        <div>
+          <div class="nav-text">Terrapoint AI</div>
+          <div class="nav-sub">Leaf Circuit</div>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="mini-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3L8 10h2.5L7 16h10l-3.5-6H16L12 3z"/>
+            <line x1="12" y1="16" x2="12" y2="20"/>
+            <ellipse cx="12" cy="12" rx="10" ry="4" stroke-dasharray="3 2" stroke-width="1.5"/>
+            <circle cx="2" cy="12" r="1.3" fill="#fff" stroke="none"/>
+            <circle cx="22" cy="12" r="1.3" fill="#fff" stroke="none"/>
+            <circle cx="12" cy="8" r="1" fill="#fff" stroke="none"/>
+          </svg>
+        </div>
+        <div>
+          <div class="nav-text">Terrapoint AI</div>
+          <div class="nav-sub">Tree Orbit</div>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="mini-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z"/>
+            <path d="M12 7c-2.5 1-4 3.5-4 6 0 1 .5 2 1.5 2.5"/>
+            <path d="M12 7c2.5 1 4 3.5 4 6 0 1-.5 2-1.5 2.5"/>
+            <path d="M12 9v8"/>
+            <circle cx="12" cy="5" r="1.2" fill="#fff" stroke="none"/>
+          </svg>
+        </div>
+        <div>
+          <div class="nav-text">Terrapoint AI</div>
+          <div class="nav-sub">Hex Leaf</div>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="mini-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="2" x2="12" y2="6"/>
+            <line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+            <line x1="2" y1="12" x2="6" y2="12"/>
+            <line x1="18" y1="12" x2="22" y2="12"/>
+            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+            <path d="M12 8l-3 5h2l-2 3h6l-2-3h2l-3-5z" fill="#fff" stroke="none"/>
+          </svg>
+        </div>
+        <div>
+          <div class="nav-text">Terrapoint AI</div>
+          <div class="nav-sub">Sparkle Tree</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

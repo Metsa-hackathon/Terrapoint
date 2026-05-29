@@ -69,8 +69,15 @@
             <div class="ai-chat-header">
                 <div class="ai-chat-icon">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.3C6.2 13.5 5 11.4 5 9a7 7 0 0 1 7-7z"/>
-                        <path d="M9 22h6"/><path d="M10 2v2"/><path d="M14 2v2"/>
+                        <line x1="12" y1="2" x2="12" y2="6"/>
+                        <line x1="12" y1="18" x2="12" y2="22"/>
+                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                        <line x1="2" y1="12" x2="6" y2="12"/>
+                        <line x1="18" y1="12" x2="22" y2="12"/>
+                        <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+                        <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+                        <path d="M12 8l-3 5h2l-2 3h6l-2-3h2l-3-5z" fill="currentColor" stroke="none"/>
                     </svg>
                 </div>
                 <div>
@@ -80,7 +87,7 @@
             </div>
             <div class="ai-chat-messages" id="ai-chat-messages">
                 <div class="ai-message ai-welcome">
-                    <div class="ai-avatar">AI</div>
+                    <div class="ai-avatar"></div>
                     <div class="ai-bubble">
                         <p>Tere! Olen Terrapoint AI.</p>
                         <p>Otsi ülevalt oma katastri number ja ma analüüsin su metsaandmeid — annan nõu kas müüa, hoida, osta juurde või taotleda toetusi.</p>
@@ -413,7 +420,7 @@
 
         var avatar = document.createElement('div');
         avatar.className = 'ai-avatar';
-        avatar.textContent = role === 'user' ? 'Sina' : 'AI';
+        avatar.textContent = role === 'user' ? 'Sina' : '';
 
         var bubble = document.createElement('div');
         bubble.className = 'ai-bubble';
@@ -436,7 +443,7 @@
         var div = document.createElement('div');
         div.className = 'ai-message';
         div.id = 'ai-typing-indicator';
-        div.innerHTML = '<div class="ai-avatar">AI</div><div class="ai-bubble"><div class="ai-typing"><span></span><span></span><span></span></div></div>';
+        div.innerHTML = '<div class="ai-avatar"></div><div class="ai-bubble"><div class="ai-thinking"><div class="ai-thinking-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l-3 5h2l-2 3h6l-2-3h2l-3-5z" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="3" stroke-dasharray="4 2"><animate attributeName="stroke-dashoffset" values="0;6" dur="1s" repeatCount="indefinite"/></circle></svg></div><span class="ai-thinking-text">Terrapoint AI mõtleb...</span><div class="ai-typing"><span></span><span></span><span></span></div></div></div>';
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
     }
@@ -474,17 +481,26 @@
         aiShowTyping();
 
         try {
+            var controller = new AbortController();
+            var timeoutId = setTimeout(function() { controller.abort(); }, 55000);
             var resp = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     kataster_nr: aiCurrentKataster,
                     message: message,
-                    history: aiChatHistory.slice(0, -1), // exclude current message
+                    history: aiChatHistory.slice(0, -1),
                 }),
+                signal: controller.signal,
             });
+            clearTimeout(timeoutId);
 
-            var data = await resp.json();
+            var data;
+            try {
+                data = await resp.json();
+            } catch(e) {
+                throw new Error('Serveri vastus ei ole korrektne');
+            }
 
             if (!resp.ok || data.error) {
                 throw new Error(data.error || 'Serveri viga');
@@ -499,7 +515,8 @@
 
         } catch(err) {
             aiRemoveTyping();
-            aiAppendMessage('assistant', '<span style="color:var(--danger)">Viga: ' + err.message + '</span>');
+            var msg = err.name === 'AbortError' ? 'AI vastus aegus (55s). Proovi uuesti.' : 'Viga: ' + err.message;
+            aiAppendMessage('assistant', '<span style="color:var(--danger)">' + msg + '</span>');
         }
 
         aiStreaming = false;

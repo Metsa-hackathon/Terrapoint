@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Tree canopy as brain/AI network -->
+  <path d="M12 2C8 2 5 5 5 9c0 2 1 3.5 2 4.5"/>
+  <path d="M12 2c4 0 7 3 7 7 0 2-1 3.5-2 4.5"/>
+  <path d="M7 13.5C7 15 9 17 12 17s5-2 5-3.5"/>
+  <!-- Trunk -->
+  <line x1="12" y1="17" x2="12" y2="22"/>
+  <!-- Neural network nodes -->
+  <circle cx="9" cy="7" r="1.5" fill="currentColor" stroke="none"/>
+  <circle cx="15" cy="7" r="1.5" fill="currentColor" stroke="none"/>
+  <circle cx="12" cy="11" r="1.5" fill="currentColor" stroke="none"/>
+  <!-- Connecting lines -->
+  <line x1="9" y1="7" x2="12" y2="11" stroke-width="1"/>
+  <line x1="15" y1="7" x2="12" y2="11" stroke-width="1"/>
+  <line x1="9" y1="7" x2="15" y2="7" stroke-width="1"/>
+</svg>
