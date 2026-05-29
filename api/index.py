@@ -547,13 +547,9 @@ async def chat(request: Request):
         if not kataster_nr or not user_message:
             return json_response({"error": "kataster_nr and message required"}, 400)
 
-        # Fetch all forest data
-        data_resp = await _search(kataster_nr)
-        # _search returns a Response object, extract the JSON body
-        if hasattr(data_resp, 'body'):
-            data = orjson.loads(data_resp.body)
-        else:
-            data = data_resp
+        # Fetch all forest data via existing _search function
+        search_response = await _search(kataster_nr)
+        data = orjson.loads(search_response.body)
 
         if "error" in data:
             return json_response({"error": data["error"]}, 400)
