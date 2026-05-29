@@ -40,6 +40,14 @@ async def health():
 
 @app.get("/api/search/{kataster_nr:path}")
 async def search(kataster_nr: str, request: Request):
+    try:
+        return await _search(kataster_nr)
+    except Exception as exc:
+        import traceback
+        return json_response({"error": str(exc), "trace": traceback.format_exc()}, 500)
+
+
+async def _search(kataster_nr: str):
     start = time.time()
     MAX_TIME = 8.5  # Vercel Hobby has 10s timeout, leave buffer
 
