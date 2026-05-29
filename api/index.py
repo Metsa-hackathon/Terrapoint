@@ -382,11 +382,12 @@ async def export_eudr(kataster_nr: str):
         lon, lat = None, None
 
     # Get forest data
-    eraldised = await query_eraldised(kataster_nr)
+    eraldised = await query_eraldis(kataster_nr)
 
     # Get Natura/protected status
-    bbox_str = compute_bbox(kataster_data["geometry"])
-    natura_features = await query_natura(bbox_str) if bbox_str else []
+    bbox = calculate_bbox(kataster_data["geometry"])
+    bbox_str = bbox_to_wfs_string(bbox) if bbox else None
+    natura_features = await query_natura_2000(bbox_str) if bbox_str else []
     layers_data = await query_all_layers(bbox_str) if bbox_str else {}
 
     # Determine deforestation risk
