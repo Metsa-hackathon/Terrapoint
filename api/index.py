@@ -245,6 +245,10 @@ async def _search(kataster_nr: str):
     toetus_features = layers_data.get("toetus_mets", [])
     vaariselupaik = bool(kaitseala_features or toetus_features)
 
+    # Additional data for subsidy eligibility
+    has_kuusk = any(e.get("puuliik_kood") == "KU" for e in eraldised) if eraldised else False
+    max_kuusk_vanus = max((e.get("vanus") or 0) for e in eraldised if e.get("puuliik_kood") == "KU") if has_kuusk else 0
+
     subsidy_data = {
         "natura_2000": natura_2000,
         "vaariselupaik": vaariselupaik,
@@ -254,6 +258,15 @@ async def _search(kataster_nr: str):
         "mets_pindala": pindala if eraldised else 0,
         "siht1": kataster_data.get("sihtotstarve", ""),
         "kaitseala": bool(kaitseala_features),
+        "pindala_ha": kataster_data.get("pindala_ha", 0),
+        "has_kuusk": has_kuusk,
+        "max_kuusk_vanus": max_kuusk_vanus,
+        "sood": bool(layers_data.get("sood")),
+        "veekaitse": bool(layers_data.get("veekaitse")),
+        "natura_elupaik": bool(layers_data.get("natura_elupaik")),
+        "lageraieala": bool(layers_data.get("lageraiealad")),
+        "karuputk": bool(layers_data.get("karuputk")),
+        "yrask_tsoon": bool(yrask_features),
     }
     toetused = check_subsidies(subsidy_data)
 
