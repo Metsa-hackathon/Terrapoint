@@ -641,11 +641,11 @@
         var html = '';
         html += '<div class="info-row"><span class="label">Peapuuliik</span><span class="value">' + speciesName(data.puuliik_kood || data.puuliik) + '</span></div>';
         html += '<div class="info-row"><span class="label">Keskmine vanus</span><span class="value">' + (data.vanus || '—') + ' a</span></div>';
-        html += '<div class="info-row"><span class="label">Tagavara</span><span class="value">' + formatNum(data.tagavara_y_ha) + ' m³/ha</span></div>';
-        html += '<div class="info-row"><span class="label">Boniteet</span><span class="value">' + boniteet + '</span></div>';
+        html += '<div class="info-row"><span class="label" title="Metsa ümarmaterjali kogus hektari kohta. Mida suurem, seda väärtuslikum mets.">Tagavara</span><span class="value">' + formatNum(data.tagavara_y_ha) + ' m³/ha</span></div>';
+        html += '<div class="info-row"><span class="label" title="Metsakasvukoha kvaliteet: I=parim, VII=halvim. Mõjutab metsa kasvukiirust.">Boniteet</span><span class="value">' + boniteet + '</span></div>';
         html += '<div class="info-row"><span class="label">Pindala</span><span class="value">' + formatNum(data.pindala_ha, 2) + ' ha</span></div>';
-        if (data.korgus) html += '<div class="info-row"><span class="label">Kõrgus</span><span class="value">' + formatNum(data.korgus, 1) + ' m</span></div>';
-        if (data.eraldisi_kokku > 1) html += '<div class="info-row"><span class="label">Eraldisi</span><span class="value">' + data.eraldisi_kokku + ' tk</span></div>';
+        if (data.korgus) html += '<div class="info-row"><span class="label" title="Puude keskmine kõrgus">Kõrgus</span><span class="value">' + formatNum(data.korgus, 1) + ' m</span></div>';
+        if (data.eraldisi_kokku > 1) html += '<div class="info-row"><span class="label" title="Metsa eraldised — eraldi majandatavad metsatükid">Eraldisi</span><span class="value">' + data.eraldisi_kokku + ' tk</span></div>';
         html += compHtml;
 
         // Show individual eraldised if multiple
@@ -665,11 +665,11 @@
         if (!data) { el.innerHTML = '<p class="muted">Väärtuse andmeid pole</p>'; return; }
         var html = '';
         html += '<div class="big-number accent"><span id="anim-vaartus">0</span> €</div>';
-        html += '<div class="info-row"><span class="label">Ühikuhind</span><span class="value">' + formatEur(data.value_per_ha) + ' / ha</span></div>';
-        html += '<div class="info-row"><span class="label">Seisuhind</span><span class="value">' + formatNum(data.price_per_m3, 2) + ' €/m³</span></div>';
-        html += '<div class="info-row"><span class="label">Tagavara</span><span class="value">' + formatNum(data.tagavara_m3) + ' m³</span></div>';
-        html += '<div class="info-row"><span class="label">Palk</span><span class="value">' + formatNum(data.log_price, 2) + ' €/m³</span></div>';
-        html += '<div class="info-row"><span class="label">Paberipuit</span><span class="value">' + formatNum(data.pulp_price, 2) + ' €/m³</span></div>';
+        html += '<div class="info-row"><span class="label" title="Metsa väärtus ühe hektari kohta">Ühikuhind</span><span class="value">' + formatEur(data.value_per_ha) + ' / ha</span></div>';
+        html += '<div class="info-row"><span class="label" title="Püsti puistu turuhind — metsaomanik saab selle hinna, kui müüb metsa raiumata">Seisuhind</span><span class="value">' + formatNum(data.price_per_m3, 2) + ' €/m³</span></div>';
+        html += '<div class="info-row"><span class="label" title="Metsa kogu ümarmaterjali maht">Tagavara</span><span class="value">' + formatNum(data.tagavara_m3) + ' m³</span></div>';
+        html += '<div class="info-row"><span class="label" title="Saematerjali hind — kõige väärtuslikum osa metsast">Palk</span><span class="value">' + formatNum(data.log_price, 2) + ' €/m³</span></div>';
+        html += '<div class="info-row"><span class="label" title="Paberipuu hind — väiksemad puud ja oksad">Paberipuit</span><span class="value">' + formatNum(data.pulp_price, 2) + ' €/m³</span></div>';
         if (data.price_source) {
             html += '<div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-muted);font-style:italic">Hinnad: ' + data.price_source + '</div>';
         }
@@ -685,9 +685,9 @@
         if (!data) { el.innerHTML = '<p class="muted">Süsiniku andmeid pole</p>'; return; }
         var html = '';
         html += '<div class="big-number"><span id="anim-co2">0</span><span class="unit"> tCO₂</span></div>';
-        html += '<div class="info-row"><span class="label">CO₂ / ha</span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
-        html += '<div class="info-row"><span class="label">Biomass / ha</span><span class="value">' + formatNum(data.total_biomass_tons_ha, 1) + ' t</span></div>';
-        html += '<div class="info-row"><span class="label">Potentsiaalne tulu</span><span class="value">' + formatEur(data.potential_income_eur) + '</span></div>';
+        html += '<div class="info-row"><span class="label" title="Süsinikdioksiidi kogus, mida mets on sidunud. 1 ton CO₂ = ühe auto aastane heide.">CO₂ / ha</span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
+        html += '<div class="info-row"><span class="label" title="Metsa elusmass — puud, juured, oksad">Biomass / ha</span><span class="value">' + formatNum(data.total_biomass_tons_ha, 1) + ' t</span></div>';
+        html += '<div class="info-row"><span class="label" title="Rahaline väärtus, kui müüa süsinikukrediite (30 €/t CO₂)">Potentsiaalne tulu</span><span class="value">' + formatEur(data.potential_income_eur) + '</span></div>';
 
         // CO2 equivalency illustration
         if (data.cars_equivalent || data.trees_equivalent) {
@@ -714,13 +714,13 @@
         var html = '';
         if (data.raievanus) {
             var r = data.raievanus;
-            html += '<div class="info-row"><span class="label">Raievanus</span>';
+            html += '<div class="info-row"><span class="label" title="Võrdleb metsa praegust vanust liigi ja boniteedi järgse soovitusliku raievanusega">Raievanus</span>';
             html += '<span class="traffic-light ' + r.status + '"><span class="dot"></span>' + r.label + ' (' + Math.round(r.ratio * 100) + '%)</span></div>';
         }
         if (data.yrask) {
             var y = data.yrask;
             var colors = ['#28a745', '#ffc107', '#fd7e14', '#e63946'];
-            html += '<div class="info-row"><span class="label">Üraski risk</span>';
+            html += '<div class="info-row"><span class="label" title="Kuuse-kooreüraski kahjustuste risk. Kõrge risk = vana kuusemets, mis on vastuvõtlik üraskile.">Üraski risk</span>';
             html += '<span style="color:' + colors[y.score] + ';font-weight:600">' + y.label + '</span></div>';
             if (y.detail) {
                 html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem">' + y.detail + '</div>';
@@ -729,14 +729,14 @@
         if (data.terviseindeks != null) {
             var t = data.terviseindeks;
             var barColor = t >= 70 ? 'linear-gradient(90deg, #28a745, #2a9d8f)' : t >= 40 ? 'linear-gradient(90deg, #ffc107, #f4a261)' : 'linear-gradient(90deg, #e63946, #fd7e14)';
-            html += '<div class="info-row"><span class="label">Terviseindeks</span><span class="value">' + t + '/100</span></div>';
+            html += '<div class="info-row"><span class="label" title="Metsa terviseindeks: 100=terve, 0=haige. Arvestab kahjustusi, vanust ja liigilist koosseisu.">Terviseindeks</span><span class="value">' + t + '/100</span></div>';
             html += '<div class="progress-bar"><div class="fill" style="width:' + t + '%;background:' + barColor + '"></div></div>';
         }
         if (data.karuputk) {
-            html += '<div class="info-row"><span class="label">Karuputk</span><span style="color:var(--danger);font-weight:600">Leitud</span></div>';
+            html += '<div class="info-row"><span class="label" title="Mürgise umbrohu esinemine krundil. Kohustuslik tõrjuda.">Karuputk</span><span style="color:var(--danger);font-weight:600">Leitud</span></div>';
         }
         if (data.lageraieala) {
-            html += '<div class="info-row"><span class="label">Lageraieala</span><span class="value">' + data.lageraieala + '</span></div>';
+            html += '<div class="info-row"><span class="label" title="Krunt asub hiljutise lageraie alal — mets on ära raiutud">Lageraieala</span><span class="value">' + data.lageraieala + '</span></div>';
         }
         el.innerHTML = html || '<p class="muted">Riskiandmeid pole</p>';
     }
