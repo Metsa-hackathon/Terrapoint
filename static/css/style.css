@@ -332,6 +332,28 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 .ai-bubble ul, .ai-bubble ol { margin: 0.5rem 0; padding-left: 1.25rem; }
 .ai-bubble li { margin-bottom: 0.25rem; }
 
+.ai-thinking {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ai-thinking-icon {
+    color: var(--primary-light);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+.ai-thinking-text {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
 .ai-typing {
     display: flex;
     align-items: center;

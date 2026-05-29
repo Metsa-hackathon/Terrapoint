@@ -443,7 +443,7 @@
         var div = document.createElement('div');
         div.className = 'ai-message';
         div.id = 'ai-typing-indicator';
-        div.innerHTML = '<div class="ai-avatar"></div><div class="ai-bubble"><div class="ai-typing"><span></span><span></span><span></span></div></div>';
+        div.innerHTML = '<div class="ai-avatar"></div><div class="ai-bubble"><div class="ai-thinking"><div class="ai-thinking-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l-3 5h2l-2 3h6l-2-3h2l-3-5z" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="3" stroke-dasharray="4 2"><animate attributeName="stroke-dashoffset" values="0;6" dur="1s" repeatCount="indefinite"/></circle></svg></div><span class="ai-thinking-text">Terrapoint AI mõtleb...</span><div class="ai-typing"><span></span><span></span><span></span></div></div></div>';
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
     }
@@ -481,15 +481,19 @@
         aiShowTyping();
 
         try {
+            var controller = new AbortController();
+            var timeoutId = setTimeout(function() { controller.abort(); }, 55000);
             var resp = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
                     kataster_nr: aiCurrentKataster,
                     message: message,
-                    history: aiChatHistory.slice(0, -1), // exclude current message
+                    history: aiChatHistory.slice(0, -1),
                 }),
+                signal: controller.signal,
             });
+            clearTimeout(timeoutId);
 
             var data;
             try {
@@ -511,7 +515,8 @@
 
         } catch(err) {
             aiRemoveTyping();
-            aiAppendMessage('assistant', '<span style="color:var(--danger)">Viga: ' + err.message + '</span>');
+            var msg = err.name === 'AbortError' ? 'AI vastus aegus (55s). Proovi uuesti.' : 'Viga: ' + err.message;
+            aiAppendMessage('assistant', '<span style="color:var(--danger)">' + msg + '</span>');
         }
 
         aiStreaming = false;
