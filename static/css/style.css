@@ -360,14 +360,16 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     color: var(--text-muted);
     font-size: 12px;
     font-weight: 700;
-    cursor: pointer;
+    cursor: help;
     border: 1px solid var(--border);
     flex-shrink: 0;
     transition: all var(--transition);
+    position: relative;
 }
 .info-toggle:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
 
 .info-box {
+    display: none;
     margin-top: 0.6rem;
     padding: 0.6rem 0.75rem;
     background: var(--surface);
@@ -377,6 +379,10 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     color: var(--text-secondary);
     line-height: 1.5;
 }
+.card-header:hover ~ .info-box,
+.card-header:hover + .info-box { display: block; }
+.info-box:hover { display: block; }
+
 .info-box strong { color: var(--text); font-weight: 600; }
 .info-box .source { margin-top: 0.3rem; font-size: 0.72rem; color: var(--text-muted); font-style: italic; }
 
