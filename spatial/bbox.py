@@ -8,4 +8,4 @@ def calculate_bbox(geometry: dict, buffer_deg: float = 0.005) -> tuple[float, fl
 
 
 def bbox_to_wfs_string(bbox: tuple[float, float, float, float]) -> str:
-    return f"{bbox[1]},{bbox[0]},{bbox[3]},{bbox[2]}"
+    return f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
