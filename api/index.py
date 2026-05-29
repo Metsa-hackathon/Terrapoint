@@ -372,12 +372,57 @@ async def export_eudr(kataster_nr: str):
     if not kataster_data:
         return json_response({"error": "Krunti ei leitud"}, 404)
 
+    # Get centroid for coordinates
+    from shapely.geometry import shape
+    try:
+        geom = shape(kataster_data["geometry"])
+        centroid = geom.centroid
+        lon, lat = round(centroid.x, 6), round(centroid.y, 6)
+    except Exception:
+        lon, lat = None, None
+
+    # Get forest data
+    eraldised = await query_eraldised(kataster_nr)
+
+    # Get Natura/protected status
+    bbox_str = compute_bbox(kataster_data["geometry"])
+    natura_features = await query_natura(bbox_str) if bbox_str else []
+    layers_data = await query_all_layers(bbox_str) if bbox_str else {}
+
+    # Determine deforestation risk
+    kaitseala = bool(layers_data.get("kaitsealad"))
+    natura_2000 = bool(natura_features)
+    sood = bool(layers_data.get("sood"))
+
     geojson = {
         "type": "FeatureCollection",
+        "name": f"eudr_{kataster_nr}",
+        "crs": {"type": "name", "properties": {"name": "urn:ogc:def:crs:EPSG::4326"}},
         "features": [{
             "type": "Feature",
             "geometry": kataster_data["geometry"],
-            "properties": {"katastri_nr": kataster_nr, "pindala_ha": kataster_data["pindala_ha"]},
+            "properties": {
+                # EUDR required fields
+                "katastri_nr": kataster_nr,
+                "riik": "EE",
+                "pindala_ha": kataster_data["pindala_ha"],
+                "longitude": lon,
+                "latitude": lat,
+                "sihtotstarve": kataster_data.get("sihtotstarve"),
+                "maakond": kataster_data.get("mk_nimi"),
+                "vald": kataster_data.get("ov_nimi"),
+                "aadress": kataster_data.get("l_aadress"),
+                # Forest data
+                "mets_pindala_ha": sum(e.get("pindala_ha", 0) for e in eraldised) if eraldised else 0,
+                "eraldisi": len(eraldised) if eraldised else 0,
+                "peapuuliik": eraldised[0].get("puuliik_kood") if eraldised else None,
+                "keskmine_vanus": int(sum((e.get("vanus") or 0) * (e.get("pindala_ha") or 0) for e in eraldised) / sum(e.get("pindala_ha", 0) for e in eraldised)) if eraldised and sum(e.get("pindala_ha", 0) for e in eraldised) > 0 else None,
+                # EUDR compliance status
+                "natura_2000": natura_2000,
+                "kaitseala": kaitseala,
+                "soode_ala": sood,
+                "export_date": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            },
         }],
     }
     content = orjson.dumps(geojson, option=orjson.OPT_INDENT_2)

@@ -935,8 +935,9 @@
         });
 
         document.getElementById('eudr-btn').addEventListener('click', function() {
-            var nr = document.getElementById('kataster-input').value.trim();
+            var nr = (currentData && currentData.kataster && currentData.kataster.number) || document.getElementById('kataster-input').value.trim();
             if (nr) exportEUDR(nr).catch(function(err) { showError(err.message); });
+            else showError('Otsi esmalt krunt');
         });
 
         document.querySelectorAll('.layer-toggle input[type=checkbox]').forEach(function(cb) {
