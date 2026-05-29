@@ -758,16 +758,40 @@
             if (linkEl) linkEl.style.display = 'none';
             return;
         }
+
+        // Get centroid from current map for deep links
+        var cx = 24.75, cy = 59.44; // default Tallinn
+        if (window.currentData && window.currentData.kataster && window.currentData.kataster.geometry) {
+            try {
+                var g = L.geoJSON(window.currentData.kataster.geometry);
+                var c = g.getBounds().getCenter();
+                cx = c.lng.toFixed(5); cy = c.lat.toFixed(5);
+            } catch(e) {}
+        }
+        var eelisMapUrl = 'https://xgis.maaamet.ee/xgis2/page/app/maainfo?z=15&c=' + cx + ',' + cy + '&l=6';
+        var eelisLink = 'https://infoleht.keskkonnainfo.ee/';
+        var maaametLink = 'https://xgis.maaamet.ee/xgis2/page/app/maainfo?z=15&c=' + cx + ',' + cy;
+
         var html = '<table><thead><tr><th>Tüüp</th><th>Kirjeldus</th><th>Lisainfo</th></tr></thead><tbody>';
-        var links = {
-            'Kaitseala': 'https://kaitsealad.ee',
-            'Natura elupaik': 'https://keskkonnaamet.ee/natura-ala',
-            'Muinsuskaitse': 'https://register.muinas.ee',
-        };
         data.forEach(function(k) {
-            var link = links[k.tyyp] || '#';
+            var tyyp = k.tyyp || '';
+            var link = eelisLink;
+            var linkText = 'EELIS';
+            if (tyyp.indexOf('kaitsealad') >= 0 || tyyp.indexOf('loodusala') >= 0 || tyyp.indexOf('piirang') >= 0 || tyyp.indexOf('sood') >= 0) {
+                link = eelisLink; linkText = 'EELIS';
+            } else if (tyyp.indexOf('veekaitse') >= 0 || tyyp.indexOf('uleujutus') >= 0) {
+                link = eelisLink; linkText = 'EELIS';
+            } else if (tyyp.indexOf('malestised') >= 0 || tyyp.indexOf('muinsus') >= 0) {
+                link = 'https://register.muinas.ee/'; linkText = 'Muinsuskaitse';
+            } else if (tyyp.indexOf('karuputk') >= 0) {
+                link = maaametLink; linkText = 'Maa-amet';
+            } else if (tyyp.indexOf('lageraie') >= 0) {
+                link = maaametLink; linkText = 'Maa-amet';
+            } else if (tyyp.indexOf('yrask') >= 0) {
+                link = eelisLink; linkText = 'EELIS';
+            }
             html += '<tr><td><strong>' + k.tyyp + '</strong></td><td>' + k.kirjeldus + '</td>';
-            html += '<td><a href="' + link + '" target="_blank" rel="noopener" style="color:var(--primary);font-size:0.82rem">Vaata kaardil →</a></td></tr>';
+            html += '<td><a href="' + link + '" target="_blank" rel="noopener" style="color:var(--primary);font-size:0.82rem">' + linkText + ' →</a></td></tr>';
         });
         html += '</tbody></table>';
         el.innerHTML = html;
