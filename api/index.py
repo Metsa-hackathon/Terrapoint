@@ -310,6 +310,34 @@ async def _search(kataster_nr: str):
     mullad = mullad_features[0].get("properties", {}) if mullad_features else None
     clc = clc_features[0].get("properties", {}) if clc_features else None
 
+    # Build map overlay layers with geometry for frontend rendering
+    map_layers = {}
+    LAYER_MAP = {
+        "kaitsealad": {"label": "Kaitsealad", "color": "#2d6a4f"},
+        "piirang": {"label": "Piiranguvööndid", "color": "#52796f"},
+        "loodusala": {"label": "Natura loodusalad", "color": "#354f52"},
+        "linnuala": {"label": "Natura linnualad", "color": "#354f52"},
+        "reservaat": {"label": "Loodusreservaadid", "color": "#1b4332"},
+        "looduslik_skv": {"label": "Looduslikud SKV", "color": "#40916c"},
+        "yrask_eelis": {"label": "Üraski vaatlused", "color": "#e76f51"},
+        "kaadamisalad": {"label": "Kaadamisalad", "color": "#6c757d"},
+        "sood": {"label": "Sood", "color": "#457b9d"},
+        "niidud": {"label": "Niidud", "color": "#a7c957"},
+        "veekogud": {"label": "Järved", "color": "#48cae4"},
+        "vooluveed": {"label": "Vooluveekogud", "color": "#0096c7"},
+        "natura_elupaik": {"label": "Natura elupaigad", "color": "#6a994e"},
+        "veekaitse": {"label": "Veekaitsevööndid", "color": "#0077b6"},
+        "piiranguvoond": {"label": "Ranna piiranguv.", "color": "#023e8a"},
+        "uleujutus": {"label": "Üleujutusala", "color": "#0096c7"},
+        "lageraiealad": {"label": "Lageraiealad", "color": "#adb5bd"},
+        "karuputk": {"label": "Karuputk", "color": "#d63384"},
+        "malestised": {"label": "Mälestised", "color": "#7b2cbf"},
+    }
+    for key, meta in LAYER_MAP.items():
+        features = layers_data.get(key, [])
+        if features:
+            map_layers[key] = {"label": meta["label"], "color": meta["color"], "features": features}
+
     elapsed = round((time.time() - start) * 1000)
 
     return json_response({
@@ -324,6 +352,7 @@ async def _search(kataster_nr: str):
         "kahjustused": kahjustused,
         "mullad": mullad,
         "clc": clc,
+        "map_layers": map_layers,
         "meta": {"cached": False, "response_time_ms": elapsed},
     })
 

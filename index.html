@@ -68,24 +68,36 @@
                 <div class="map-controls">
                     <div class="layer-toggle">
                         <label class="toggle-item">
-                            <input type="checkbox" id="layer-kitsendused" checked>
-                            <span class="toggle-label">Kitsendused</span>
+                            <input type="checkbox" id="layer-kaitsealad" data-layer="kaitsealad" checked>
+                            <span class="toggle-label" style="border-left:3px solid #2d6a4f;padding-left:4px">Kaitsealad</span>
                         </label>
                         <label class="toggle-item">
-                            <input type="checkbox" id="layer-yrask">
-                            <span class="toggle-label">Üraski risk</span>
+                            <input type="checkbox" id="layer-yrask" data-layer="yrask_eelis">
+                            <span class="toggle-label" style="border-left:3px solid #e76f51;padding-left:4px">Ürask</span>
                         </label>
                         <label class="toggle-item">
-                            <input type="checkbox" id="layer-lageraie">
-                            <span class="toggle-label">Lageraiealad</span>
+                            <input type="checkbox" id="layer-lageraie" data-layer="lageraiealad">
+                            <span class="toggle-label" style="border-left:3px solid #adb5bd;padding-left:4px">Lageraie</span>
                         </label>
                         <label class="toggle-item">
-                            <input type="checkbox" id="layer-karuputk">
-                            <span class="toggle-label">Karuputk</span>
+                            <input type="checkbox" id="layer-sood" data-layer="sood">
+                            <span class="toggle-label" style="border-left:3px solid #457b9d;padding-left:4px">Sood</span>
                         </label>
                         <label class="toggle-item">
-                            <input type="checkbox" id="layer-oksjonid">
-                            <span class="toggle-label">RMK oksjonid</span>
+                            <input type="checkbox" id="layer-veekogud" data-layer="veekogud">
+                            <span class="toggle-label" style="border-left:3px solid #48cae4;padding-left:4px">Vesi</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="layer-elupaigad" data-layer="natura_elupaik">
+                            <span class="toggle-label" style="border-left:3px solid #6a994e;padding-left:4px">Elupaigad</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="layer-niidud" data-layer="niidud">
+                            <span class="toggle-label" style="border-left:3px solid #a7c957;padding-left:4px">Niidud</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="layer-kaadamisalad" data-layer="kaadamisalad">
+                            <span class="toggle-label" style="border-left:3px solid #6c757d;padding-left:4px">Kaadamis.</span>
                         </label>
                     </div>
                 </div>
@@ -354,10 +366,45 @@
         if (visible) {
             if (overlayLayers[name]) {
                 map.addLayer(overlayLayers[name]);
+            } else if (currentData && currentData.map_layers && currentData.map_layers[name]) {
+                // First time toggle — load from API data
+                var layerData = currentData.map_layers[name];
+                addOverlayLayer(name, layerData.features, layerData.color, false);
             }
         } else {
             removeOverlayLayer(name);
         }
+    }
+
+    var MAP_LAYER_META = {
+        kaitsealad: {label: 'Kaitsealad', color: '#2d6a4f', checked: true},
+        piirang: {label: 'Piiranguv.', color: '#52796f', checked: false},
+        loodusala: {label: 'Natura loodus.', color: '#354f52', checked: false},
+        yrask_eelis: {label: 'Üraski vaatl.', color: '#e76f51', checked: false},
+        sood: {label: 'Sood', color: '#457b9d', checked: false},
+        niidud: {label: 'Niidud', color: '#a7c957', checked: false},
+        kaadamisalad: {label: 'Kaadamis.', color: '#6c757d', checked: false},
+        veekogud: {label: 'Järved', color: '#48cae4', checked: false},
+        vooluveed: {label: 'Vooluveed', color: '#0096c7', checked: false},
+        natura_elupaik: {label: 'Elupaigad', color: '#6a994e', checked: false},
+        veekaitse: {label: 'Veekaitse', color: '#0077b6', checked: false},
+        lageraiealad: {label: 'Lageraie', color: '#adb5bd', checked: false},
+        karuputk: {label: 'Karuputk', color: '#d63384', checked: false},
+        malestised: {label: 'Mälestised', color: '#7b2cbf', checked: false},
+    };
+
+    function loadMapLayers(mapLayers) {
+        // Clear old overlays
+        Object.keys(overlayLayers).forEach(removeOverlayLayer);
+
+        // Auto-show checked layers
+        var checkboxes = document.querySelectorAll('.layer-toggle input[type=checkbox]');
+        checkboxes.forEach(function(cb) {
+            var key = cb.dataset.layer;
+            if (key && mapLayers[key] && cb.checked) {
+                addOverlayLayer(key, mapLayers[key].features, mapLayers[key].color, false);
+            }
+        });
     }
 
     // ═══ dashboard.js ═══
@@ -852,11 +899,12 @@
             if (nr) exportEUDR(nr).catch(function(err) { showError(err.message); });
         });
 
-        document.getElementById('layer-kitsendused').addEventListener('change', function(e) { toggleOverlayLayer('kitsendused', e.target.checked); });
-        document.getElementById('layer-yrask').addEventListener('change', function(e) { toggleOverlayLayer('yrask', e.target.checked); });
-        document.getElementById('layer-lageraie').addEventListener('change', function(e) { toggleOverlayLayer('lageraie', e.target.checked); });
-        document.getElementById('layer-karuputk').addEventListener('change', function(e) { toggleOverlayLayer('karuputk', e.target.checked); });
-        document.getElementById('layer-oksjonid').addEventListener('change', function(e) { toggleOverlayLayer('oksjonid', e.target.checked); });
+        document.querySelectorAll('.layer-toggle input[type=checkbox]').forEach(function(cb) {
+            cb.addEventListener('change', function(e) {
+                var key = e.target.dataset.layer;
+                if (key) toggleOverlayLayer(key, e.target.checked);
+            });
+        });
     });
 
     async function doSearch() {
@@ -883,6 +931,9 @@
 
             if (data.mets && data.mets.liikide_koosseis) renderCompositionChart(data.mets.liikide_koosseis);
             if (data.vaartus) renderValueChart(data.vaartus);
+
+            // Load map overlay layers
+            if (data.map_layers) loadMapLayers(data.map_layers);
 
             hideLoading();
             showDashboard();
