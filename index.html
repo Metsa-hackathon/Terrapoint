@@ -524,6 +524,7 @@
             }
 
             aiChatHistory.push({role: 'assistant', content: fullText});
+            document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + ' — küsi lisa küsimusi';
 
         } catch(err) {
             aiRemoveTyping();
@@ -539,7 +540,7 @@
         aiCurrentKataster = katasterNr;
         aiChatHistory = [];
         document.getElementById('ai-chat-input-area').style.display = '';
-        document.getElementById('ai-chat-subtitle').textContent = 'Analüüsin katastrit ' + katasterNr + '...';
+        document.querySelector('.ai-chat-subtitle').textContent = 'Analüüsin katastrit ' + katasterNr + '...';
 
         // Auto-send initial analysis request
         aiSendMessage('Analüüsi minu metsaandmeid. Anna lühike kokkuvõte: mis seisus mets on, mis on peamine väärtus, millised riskid on, ja kas peaksin midagi ette võtma? Ole konkreetne numbritega.');

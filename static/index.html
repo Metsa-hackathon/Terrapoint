@@ -245,8 +245,7 @@
                     <span class="info-toggle">?</span>
                 </div>
                 <div id="info-riskid" class="info-box">
-                    <strong>Mis näitab:</strong> Metsa terviseriskid, raievanuse näitaja, üraski risk, karuputk ja lageraiealad.<br>
-                    <strong>Raievanus:</strong> Võrdleb praegust vanust liigi ja boniteedi järgse raievanusega. Roheline &lt;85%, kollane 85–100%, punane ≥100%.<br>
+                    <strong>Mis näitab:</strong> Metsa terviseriskid — üraski risk ja karuputk.<br>
                     <strong>Üraski risk:</strong> 0=madal, 1=keskmine (kuusk &gt;30a), 2=kõrge (kuusk &gt;50a), 3=kriitiline (MKE tsoonis).<br>
                     <strong>Allikas:</strong> Metsaregister (MKE tsoonid), EELIS (looduskaitse).
                     <div class="source">Andmed: Keskkonnaagentuur, metsaregister.ee</div>
@@ -525,6 +524,7 @@
             }
 
             aiChatHistory.push({role: 'assistant', content: fullText});
+            document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + ' — küsi lisa küsimusi';
 
         } catch(err) {
             aiRemoveTyping();
@@ -540,7 +540,7 @@
         aiCurrentKataster = katasterNr;
         aiChatHistory = [];
         document.getElementById('ai-chat-input-area').style.display = '';
-        document.getElementById('ai-chat-subtitle').textContent = 'Analüüsin katastrit ' + katasterNr + '...';
+        document.querySelector('.ai-chat-subtitle').textContent = 'Analüüsin katastrit ' + katasterNr + '...';
 
         // Auto-send initial analysis request
         aiSendMessage('Analüüsi minu metsaandmeid. Anna lühike kokkuvõte: mis seisus mets on, mis on peamine väärtus, millised riskid on, ja kas peaksin midagi ette võtma? Ole konkreetne numbritega.');
@@ -910,19 +910,12 @@
         var el = document.getElementById('riskid-info');
         if (!data) { el.innerHTML = '<p class="muted">Riskiandmeid pole</p>'; return; }
         var html = '';
-        if (data.raievanus) {
-            var r = data.raievanus;
-            html += '<div class="info-row"><span class="label" title="Võrdleb metsa praegust vanust liigi ja boniteedi järgse soovitusliku raievanusega">Raievanus</span>';
-            html += '<span class="traffic-light ' + r.status + '"><span class="dot"></span>' + r.label + ' (' + Math.round(r.ratio * 100) + '%)</span></div>';
-        }
         if (data.yrask) {
             var y = data.yrask;
             var colors = ['#28a745', '#ffc107', '#fd7e14', '#e63946'];
             html += '<div class="info-row"><span class="label" title="Kuuse-kooreüraski kahjustuste risk. Kõrge risk = vana kuusemets, mis on vastuvõtlik üraskile.">Üraski risk</span>';
             html += '<span style="color:' + colors[y.score] + ';font-weight:600">' + y.label + '</span></div>';
-            if (y.detail) {
-                html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem">' + y.detail + '</div>';
-            }
+            if (y.detail) html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem">' + y.detail + '</div>';
         }
         if (data.terviseindeks != null) {
             var t = data.terviseindeks;
@@ -930,12 +923,7 @@
             html += '<div class="info-row"><span class="label" title="Metsa terviseindeks: 100=terve, 0=haige. Arvestab kahjustusi, vanust ja liigilist koosseisu.">Terviseindeks</span><span class="value">' + t + '/100</span></div>';
             html += '<div class="progress-bar"><div class="fill" style="width:' + t + '%;background:' + barColor + '"></div></div>';
         }
-        if (data.karuputk) {
-            html += '<div class="info-row"><span class="label" title="Mürgise umbrohu esinemine krundil. Kohustuslik tõrjuda.">Karuputk</span><span style="color:var(--danger);font-weight:600">Leitud</span></div>';
-        }
-        if (data.lageraieala) {
-            html += '<div class="info-row"><span class="label" title="Krunt asub hiljutise lageraie alal — mets on ära raiutud">Lageraieala</span><span class="value">' + data.lageraieala + '</span></div>';
-        }
+        if (data.karuputk) html += '<div class="info-row"><span class="label" title="Mürgise umbrohu esinemine">Karuputk</span><span style="color:var(--danger);font-weight:600">Leitud</span></div>';
         el.innerHTML = html || '<p class="muted">Riskiandmeid pole</p>';
     }
 
@@ -1261,6 +1249,24 @@
             cb.addEventListener('change', function(e) {
                 var key = e.target.dataset.layer;
                 if (key) toggleOverlayLayer(key, e.target.checked);
+            });
+        });
+
+        // AI Chat input
+        document.getElementById('ai-chat-send').addEventListener('click', function() {
+            var input = document.getElementById('ai-chat-input');
+            aiSendMessage(input.value);
+        });
+        document.getElementById('ai-chat-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                aiSendMessage(this.value);
+            }
+        });
+        document.querySelectorAll('.ai-hint').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var q = btn.getAttribute('data-q');
+                if (q) aiSendMessage(q);
             });
         });
 
