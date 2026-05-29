@@ -427,7 +427,7 @@ def build_system_prompt(data: dict) -> str:
     kahjustused = data.get("kahjustused", [])
 
     lines = []
-    lines.append("Oled TerraPoint metsanõustaja — Eesti metsanduse ja kinnisvara ekspert.")
+    lines.append("Oled Terrapoint AI — Eesti metsanduse ja kinnisvara ekspert.")
     lines.append("Analüüsid kasutaja metsaandmeid ja annad praktilisi, konkreetseid soovitusi.")
     lines.append("Vasta alati eesti keeles. Ole sõbralik, kuid otsekohene. Kasuta numbreid andmetest.")
     lines.append("")
