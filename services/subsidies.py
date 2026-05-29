@@ -3,6 +3,7 @@ SUBSIDY_PROGRAMS = [
     {
         "name": "Looduskaitseliste piirangute hüvitamine (Natura 2000)",
         "condition": lambda d: d.get("natura_2000"),
+        "reject_reason": lambda d: "Krunt ei asu Natura 2000 alal" if not d.get("natura_2000") else None,
         "amount": "60-160 €/ha",
         "asutus": "KIK",
         "voor": "Apr 4–30",
@@ -12,6 +13,7 @@ SUBSIDY_PROGRAMS = [
     {
         "name": "Looduskaitseliste piirangute hüvitamine (väljaspool Natura 2000)",
         "condition": lambda d: d.get("kaitseala") and not d.get("natura_2000"),
+        "reject_reason": lambda d: "Krunt ei asu kaitsealal" if not d.get("kaitseala") else "Krunt on Natura 2000 alal (kasuta Natura programmi)" if d.get("natura_2000") else None,
         "amount": "kuni 60 €/ha",
         "asutus": "KIK",
         "voor": "Apr 4–30",
@@ -21,6 +23,7 @@ SUBSIDY_PROGRAMS = [
     {
         "name": "Vääriselupaiga hooldus",
         "condition": lambda d: d.get("vaariselupaik"),
+        "reject_reason": lambda d: "Vääriselupaika ei tuvastatud" if not d.get("vaariselupaik") else None,
         "amount": "20a leping",
         "asutus": "KIK",
         "voor": "Aastaringselt",
@@ -30,8 +33,19 @@ SUBSIDY_PROGRAMS = [
 
     # === PRIA / Metsameede programs ===
     {
+        "name": "Metsa hooldamise toetus",
+        "condition": lambda d: 10 <= d.get("keskm_vanus", 0) <= 60 and d.get("mets_pindala", 0) >= 0.1,
+        "amount": "kuni 200 €/ha",
+        "asutus": "PRIA",
+        "voor": "Metsameede",
+        "url": "https://www.eramets.ee/toetused/metsameede/",
+        "description": "Hooldusraie ja harvendusraie toetus 10-60a metsas",
+        "reject_reason": "Metsa vanus peab olema 10-60 aastat",
+    },
+    {
         "name": "Kliimakindla metsa kujundamine",
         "condition": lambda d: 11 <= d.get("keskm_vanus", 0) <= 30 and d.get("mets_pindala", 0) >= 0.1,
+        "reject_reason": lambda d: "Metsa vanus peab olema 11-30 aastat (praegu " + str(d.get("keskm_vanus", 0)) + "a)" if not (11 <= d.get("keskm_vanus", 0) <= 30) else "Metsa pindala peab olema vähemalt 0.1 ha" if d.get("mets_pindala", 0) < 0.1 else None,
         "amount": "356 €/ha",
         "asutus": "PRIA",
         "voor": "Apr 7–23",
@@ -41,6 +55,7 @@ SUBSIDY_PROGRAMS = [
     {
         "name": "Metsastamise toetus",
         "condition": lambda d: d.get("mets_pindala", 0) == 0 and d.get("siht1") != "ELAMUMAA" and d.get("pindala_ha", 0) >= 0.3,
+        "reject_reason": lambda d: "Krundil on juba metsa" if d.get("mets_pindala", 0) > 0 else "Krunt on elamumaa" if d.get("siht1") == "ELAMUMAA" else "Krundi pindala peab olema vähemalt 0.3 ha" if d.get("pindala_ha", 0) < 0.3 else None,
         "amount": "kuni 1420 €/ha",
         "asutus": "PRIA",
         "voor": "Apr 16 – May 7",
@@ -50,6 +65,7 @@ SUBSIDY_PROGRAMS = [
     {
         "name": "Metsa uuendamise toetus",
         "condition": lambda d: d.get("keskm_vanus", 0) >= d.get("keskm_raievanus", 999) and d.get("mets_pindala", 0) >= 0.1,
+        "reject_reason": lambda d: "Mets ei ole veel raievanuses (vanus " + str(d.get("keskm_vanus", 0)) + "a, raievanus " + str(d.get("keskm_raievanus", "?")) + "a)" if d.get("keskm_vanus", 0) < d.get("keskm_raievanus", 999) else "Metsa pindala peab olema vähemalt 0.1 ha" if d.get("mets_pindala", 0) < 0.1 else None,
         "amount": "kuni 646 €/ha",
         "asutus": "PRIA",
         "voor": "Jun 16 – Jul 2",
@@ -59,6 +75,7 @@ SUBSIDY_PROGRAMS = [
     {
         "name": "Kooreüraski tõrje",
         "condition": lambda d: d.get("has_kuusk") and d.get("max_kuusk_vanus", 0) > 30,
+        "reject_reason": lambda d: "Krundil ei ole üle 30a kuuski" if not d.get("has_kuusk") or d.get("max_kuusk_vanus", 0) <= 30 else None,
         "amount": "kuni 500 €/ühik",
         "asutus": "PRIA",
         "voor": "Sep 1–15",
@@ -70,6 +87,7 @@ SUBSIDY_PROGRAMS = [
     {
         "name": "Metsa inventeerimise toetus",
         "condition": lambda d: d.get("mets_pindala", 0) >= 0.1,
+        "reject_reason": lambda d: "Metsa pindala peab olema vähemalt 0.1 ha" if d.get("mets_pindala", 0) < 0.1 else None,
         "amount": "kuni 10 €/ha",
         "asutus": "KIK",
         "voor": "Täpsustamisel",
@@ -81,6 +99,7 @@ SUBSIDY_PROGRAMS = [
     {
         "name": "Maaparandussüsteemi korrastamine",
         "condition": lambda d: d.get("mets_pindala", 0) >= 0.1,
+        "reject_reason": lambda d: "Metsa pindala peab olema vähemalt 0.1 ha" if d.get("mets_pindala", 0) < 0.1 else None,
         "amount": "kuni 10 000 €",
         "asutus": "KIK",
         "voor": "Täpsustamisel",
@@ -92,6 +111,7 @@ SUBSIDY_PROGRAMS = [
     {
         "name": "Pärandkultuuri säilitamine",
         "condition": lambda d: d.get("mets_pindala", 0) >= 0.1,
+        "reject_reason": lambda d: "Metsa pindala peab olema vähemalt 0.1 ha" if d.get("mets_pindala", 0) < 0.1 else None,
         "amount": "kuni 2000 €/objekt",
         "asutus": "KIK",
         "voor": "Jun 16 – Jul 2",
@@ -103,6 +123,7 @@ SUBSIDY_PROGRAMS = [
     {
         "name": "Metsaühistu toetus",
         "condition": lambda d: d.get("mets_pindala", 0) >= 0.1,
+        "reject_reason": lambda d: "Metsa pindala peab olema vähemalt 0.1 ha" if d.get("mets_pindala", 0) < 0.1 else None,
         "amount": "kuni 30 000 €",
         "asutus": "PRIA",
         "voor": "Täpsustamisel",
@@ -114,6 +135,7 @@ SUBSIDY_PROGRAMS = [
     {
         "name": "Metssigade küttimise toetus",
         "condition": lambda d: False,  # Only for hunting area holders
+        "reject_reason": lambda d: "Ainult jahipiirkonna kasutusõigust omavatele isikutele",
         "amount": "65 €/metssiga",
         "asutus": "KIK",
         "voor": "Oct 27–31",
@@ -130,6 +152,12 @@ def check_subsidies(data: dict) -> list[dict]:
             eligible = prog["condition"](data)
         except Exception:
             eligible = False
+        pohjus = None
+        if not eligible and "reject_reason" in prog:
+            try:
+                pohjus = prog["reject_reason"](data)
+            except Exception:
+                pohjus = None
         results.append({
             "nimi": prog["name"],
             "sobib": eligible,
@@ -138,5 +166,6 @@ def check_subsidies(data: dict) -> list[dict]:
             "taotlusvoor": prog.get("voor"),
             "url": prog.get("url"),
             "kirjeldus": prog.get("description"),
+            "pohjus": pohjus,
         })
     return results
