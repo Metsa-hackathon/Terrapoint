@@ -3,213 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terrapoint — Eesti metsaandmed</title>
+    <title>Terrapoint, Eesti metsaandmed</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-
-    <!-- Blue Top Bar -->
-    <div class="blue-bar"></div>
-
-    <!-- ═══ Landing Hero ═══ -->
-    <section class="landing" id="landing">
-        <div class="landing-bg">
-            <div class="landing-grain"></div>
-            <div class="landing-gradient"></div>
-        </div>
-
-        <!-- Edge Trees — fade out on scroll -->
-        <div class="edge-trees" id="edge-trees" aria-hidden="true">
-            <!-- Left trees -->
-            <div class="edge-tree left-tree left-tree-1">
-                <svg viewBox="0 0 200 600" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Spruce trunk -->
-                    <rect x="88" y="380" width="24" height="220" rx="4" fill="#3d2b1f"/>
-                    <rect x="92" y="380" width="4" height="220" rx="2" fill="#5c3d2e" opacity="0.4"/>
-                    <!-- Spruce layers -->
-                    <polygon points="100,20 155,120 130,110 170,200 30,200 70,110 45,120" fill="#1a5c3a"/>
-                    <polygon points="100,60 148,150 125,140 165,230 35,230 75,140 52,150" fill="#2d6a4f"/>
-                    <polygon points="100,100 142,180 120,170 160,260 40,260 80,170 58,180" fill="#218838"/>
-                    <polygon points="100,150 138,220 118,210 155,300 45,300 82,210 62,220" fill="#2a9d4a"/>
-                    <polygon points="100,200 135,260 116,252 148,340 52,340 84,252 65,260" fill="#34a853"/>
-                    <!-- Snow/ice highlights -->
-                    <polygon points="100,20 120,60 105,55 115,80 85,80 95,55 80,60" fill="#4ade80" opacity="0.15"/>
-                    <polygon points="100,100 118,135 106,130 115,155 85,155 94,130 82,135" fill="#4ade80" opacity="0.1"/>
+    <!-- Top Navigation Bar -->
+    <header class="hero">
+        <div class="nav-left">
+            <button class="hamburger" id="hamburger-btn" aria-label="Menu">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
                 </svg>
-            </div>
-            <div class="edge-tree left-tree left-tree-2">
-                <svg viewBox="0 0 160 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Pine trunk -->
-                    <rect x="70" y="320" width="20" height="180" rx="3" fill="#4a3728"/>
-                    <rect x="74" y="320" width="3" height="180" rx="1.5" fill="#6b5240" opacity="0.3"/>
-                    <!-- Pine needles — long drooping branches -->
-                    <ellipse cx="80" cy="140" rx="65" ry="130" fill="#1a5c3a"/>
-                    <ellipse cx="80" cy="160" rx="55" ry="110" fill="#226b42"/>
-                    <ellipse cx="80" cy="180" rx="48" ry="90" fill="#2d7a4a"/>
-                    <!-- Branch tips drooping -->
-                    <path d="M20,180 Q40,170 55,190" stroke="#1a5c3a" stroke-width="3" fill="none"/>
-                    <path d="M140,180 Q120,170 105,190" stroke="#1a5c3a" stroke-width="3" fill="none"/>
-                    <path d="M25,220 Q45,210 60,230" stroke="#226b42" stroke-width="2.5" fill="none"/>
-                    <path d="M135,220 Q115,210 100,230" stroke="#226b42" stroke-width="2.5" fill="none"/>
-                    <!-- Light patches -->
-                    <ellipse cx="65" cy="120" rx="15" ry="25" fill="#4ade80" opacity="0.06"/>
-                    <ellipse cx="95" cy="170" rx="12" ry="20" fill="#4ade80" opacity="0.05"/>
-                </svg>
-            </div>
-            <div class="edge-tree left-tree left-tree-3">
-                <svg viewBox="0 0 120 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Small spruce -->
-                    <rect x="52" y="260" width="16" height="140" rx="3" fill="#3d2b1f"/>
-                    <polygon points="60,30 95,100 80,92 105,165 15,165 40,92 25,100" fill="#1a5c3a"/>
-                    <polygon points="60,70 90,130 76,122 100,190 20,190 44,122 30,130" fill="#226b42"/>
-                    <polygon points="60,110 86,155 74,148 95,215 25,215 46,148 34,155" fill="#2d7a4a"/>
-                </svg>
-            </div>
-
-            <!-- Right trees -->
-            <div class="edge-tree right-tree right-tree-1">
-                <svg viewBox="0 0 200 600" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Large spruce -->
-                    <rect x="88" y="380" width="24" height="220" rx="4" fill="#3d2b1f"/>
-                    <rect x="96" y="380" width="4" height="220" rx="2" fill="#5c3d2e" opacity="0.4"/>
-                    <polygon points="100,10 160,120 132,108 175,210 25,210 68,108 40,120" fill="#14432a"/>
-                    <polygon points="100,55 152,155 128,143 168,240 32,240 72,143 48,155" fill="#1a5c3a"/>
-                    <polygon points="100,100 145,190 122,178 160,275 40,275 78,178 55,190" fill="#226b42"/>
-                    <polygon points="100,155 140,235 118,223 152,310 48,310 82,223 60,235" fill="#2d7a4a"/>
-                    <polygon points="100,210 136,280 116,270 148,355 52,355 84,270 64,280" fill="#34a853"/>
-                    <polygon points="100,20 118,55 106,50 115,75 85,75 94,50 82,55" fill="#4ade80" opacity="0.12"/>
-                </svg>
-            </div>
-            <div class="edge-tree right-tree right-tree-2">
-                <svg viewBox="0 0 160 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Pine -->
-                    <rect x="70" y="320" width="20" height="180" rx="3" fill="#4a3728"/>
-                    <ellipse cx="80" cy="150" rx="60" ry="125" fill="#14432a"/>
-                    <ellipse cx="80" cy="170" rx="52" ry="105" fill="#1a5c3a"/>
-                    <ellipse cx="80" cy="190" rx="44" ry="85" fill="#226b42"/>
-                    <path d="M25,190 Q42,180 58,200" stroke="#14432a" stroke-width="3" fill="none"/>
-                    <path d="M135,190 Q118,180 102,200" stroke="#14432a" stroke-width="3" fill="none"/>
-                    <ellipse cx="70" cy="130" rx="14" ry="22" fill="#4ade80" opacity="0.05"/>
-                </svg>
-            </div>
-            <div class="edge-tree right-tree right-tree-3">
-                <svg viewBox="0 0 120 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Small spruce -->
-                    <rect x="52" y="260" width="16" height="140" rx="3" fill="#3d2b1f"/>
-                    <polygon points="60,20 100,100 82,90 110,170 10,170 38,90 20,100" fill="#14432a"/>
-                    <polygon points="60,65 94,135 78,125 105,200 15,200 42,125 26,135" fill="#1a5c3a"/>
-                    <polygon points="60,115 88,165 74,155 98,230 22,230 46,155 32,165" fill="#226b42"/>
-                </svg>
+            </button>
+            <div class="logo-text">
+                <h1>Terrapoint</h1>
             </div>
         </div>
-
-        <!-- Minimal Navbar -->
-        <nav class="landing-nav">
-            <div class="landing-nav-logo">
-                <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-                    <path d="M16 2L12 10H8L4 20H10L6 28H26L22 20H28L24 10H20L16 2Z" fill="#4ade80" opacity="0.9"/>
-                    <path d="M16 6L13 12H10L7 20H12L9 26H23L20 20H25L22 12H19L16 6Z" fill="#22c55e"/>
-                    <rect x="14.5" y="22" width="3" height="6" rx="1" fill="#92400e"/>
-                </svg>
-                <span>Terrapoint</span>
-            </div>
-        </nav>
-
-        <!-- Hero Content -->
-        <div class="landing-content">
-            <div class="landing-badge">Eesti metsaandmed</div>
-            <h1 class="landing-title">
-                <span class="title-line">Avasta oma</span>
-                <span class="title-line accent">metsa väärtus</span>
-            </h1>
-            <p class="landing-subtitle">
-                Sisesta katastri number ja saa täielik ülevaade — puuliigid, tagavara,
-                süsinik, toetused ja riskid. Kõik ühest kohast.
-            </p>
-
-            <!-- Search -->
-            <div class="landing-search">
-                <div class="search-wrap">
-                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <div class="nav-right">
+            <div class="search-box">
+                <div class="search-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                     </svg>
-                    <div class="search-input-wrap">
-                        <input type="text" id="kataster-input" placeholder="Katastri number või aadress" autocomplete="off">
-                        <div id="address-dropdown" class="address-dropdown" style="display:none"></div>
-                    </div>
-                    <button id="search-btn">
-                        <span>Otsi</span>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                    </button>
                 </div>
-                <div id="error-msg" class="error-msg hidden" style="display:none"></div>
+                <div class="search-input-wrap">
+                    <input type="text" id="kataster-input" placeholder="Katastri number (nt 78404:409:0113) või aadress" autocomplete="off">
+                    <div id="address-dropdown" class="address-dropdown" style="display:none"></div>
+                </div>
+                <button id="search-btn" aria-label="Otsi">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </button>
             </div>
-
-            <div class="landing-stats">
-                <div class="stat-item">
-                    <span class="stat-num">1.2M</span>
-                    <span class="stat-label">hektarit metsa</span>
-                </div>
-                <div class="stat-divider"></div>
-                <div class="stat-item">
-                    <span class="stat-num">30+</span>
-                    <span class="stat-label">andmeallikat</span>
-                </div>
-                <div class="stat-divider"></div>
-                <div class="stat-item">
-                    <span class="stat-num">13</span>
-                    <span class="stat-label">toetusprogrammi</span>
-                </div>
-            </div>
+            <div id="error-msg" class="error-msg hidden" style="display:none"></div>
         </div>
+    </header>
 
-        <!-- Forest Silhouette Layers -->
-        <div class="forest-silhouettes" aria-hidden="true">
-            <svg class="forest-layer forest-back" viewBox="0 0 1440 220" preserveAspectRatio="none">
-                <path d="M0,220 L0,140 Q30,100 60,130 Q80,80 100,110 Q120,50 140,90 Q160,30 180,80 Q200,20 220,70 Q240,40 260,80 Q280,10 300,60 Q320,30 340,70 Q360,20 380,60 Q400,40 420,80 Q440,10 460,50 Q480,30 500,70 Q520,20 540,60 Q560,40 580,80 Q600,10 620,50 Q640,30 660,70 Q680,20 700,60 Q720,40 740,80 Q760,10 780,50 Q800,30 820,70 Q840,20 860,60 Q880,40 900,80 Q920,10 940,50 Q960,30 980,70 Q1000,20 1020,60 Q1040,40 1060,80 Q1080,10 1100,50 Q1120,30 1140,70 Q1160,20 1180,60 Q1200,40 1220,80 Q1240,10 1260,50 Q1280,30 1300,70 Q1320,20 1340,60 Q1360,40 1380,80 Q1400,50 1420,90 L1440,80 L1440,220 Z" fill="#0a2518"/>
-            </svg>
-            <svg class="forest-layer forest-mid" viewBox="0 0 1440 200" preserveAspectRatio="none">
-                <path d="M0,200 L0,160 Q20,130 40,150 Q50,100 70,130 Q80,80 100,120 Q110,60 130,100 Q140,50 160,90 Q170,40 190,80 Q200,50 220,90 Q230,30 250,70 Q260,40 280,80 Q290,20 310,60 Q320,40 340,80 Q350,30 370,70 Q380,50 400,90 Q410,30 430,70 Q440,40 460,80 Q470,20 490,60 Q500,40 520,80 Q530,30 550,70 Q560,50 580,90 Q590,30 610,70 Q620,40 640,80 Q650,20 670,60 Q680,40 700,80 Q710,30 730,70 Q740,50 760,90 Q770,30 790,70 Q800,40 820,80 Q830,20 850,60 Q860,40 880,80 Q890,30 910,70 Q920,50 940,90 Q950,30 970,70 Q980,40 1000,80 Q1010,20 1030,60 Q1040,40 1060,80 Q1070,30 1090,70 Q1100,50 1120,90 Q1130,30 1150,70 Q1160,40 1180,80 Q1190,20 1210,60 Q1220,40 1240,80 Q1250,30 1270,70 Q1280,50 1300,90 Q1310,30 1330,70 Q1340,40 1360,80 Q1370,50 1390,90 Q1400,60 1420,100 L1440,90 L1440,200 Z" fill="#0d3320"/>
-            </svg>
-            <svg class="forest-layer forest-front" viewBox="0 0 1440 180" preserveAspectRatio="none">
-                <path d="M0,180 L0,150 Q20,130 40,145 Q45,110 65,135 Q70,100 90,125 Q95,85 115,115 Q120,80 140,110 Q145,75 165,105 Q170,70 190,100 Q195,65 215,95 Q220,60 240,90 Q245,55 265,85 Q270,50 290,80 Q295,45 315,75 Q320,55 340,85 Q345,50 365,80 Q370,45 390,75 Q395,60 415,90 Q420,55 440,85 Q445,50 465,80 Q470,45 490,75 Q495,60 515,90 Q520,55 540,85 Q545,50 565,80 Q570,45 590,75 Q595,60 615,90 Q620,55 640,85 Q645,50 665,80 Q670,45 690,75 Q695,60 715,90 Q720,55 740,85 Q745,50 765,80 Q770,45 790,75 Q795,60 815,90 Q820,55 840,85 Q845,50 865,80 Q870,45 890,75 Q895,60 915,90 Q920,55 940,85 Q945,50 965,80 Q970,45 990,75 Q995,60 1015,90 Q1020,55 1040,85 Q1045,50 1065,80 Q1070,45 1090,75 Q1095,60 1115,90 Q1120,55 1140,85 Q1145,50 1165,80 Q1170,45 1190,75 Q1195,60 1215,90 Q1220,55 1240,85 Q1245,50 1265,80 Q1270,45 1290,75 Q1295,60 1315,90 Q1320,55 1340,85 Q1345,50 1365,80 Q1370,45 1390,75 Q1395,60 1415,90 L1440,80 L1440,180 Z" fill="#14432a"/>
-            </svg>
-            <svg class="forest-trees" viewBox="0 0 1440 180" preserveAspectRatio="none">
-                <g transform="translate(80,50)"><rect x="18" y="60" width="4" height="30" fill="#5c3d2e"/><polygon points="20,0 40,35 30,30 45,55 5,55 20,30 10,35" fill="#2d6a4f"/></g>
-                <g transform="translate(250,30)"><rect x="15" y="55" width="3" height="25" fill="#5c3d2e"/><polygon points="16,0 32,28 24,24 36,48 0,48 12,24 4,28" fill="#1a5c3a"/></g>
-                <g transform="translate(420,45)"><rect x="18" y="60" width="4" height="30" fill="#5c3d2e"/><polygon points="20,0 40,35 30,30 45,55 5,55 20,30 10,35" fill="#2d6a4f"/></g>
-                <g transform="translate(600,25)"><rect x="15" y="50" width="3" height="25" fill="#5c3d2e"/><polygon points="16,0 30,24 22,20 34,44 0,44 12,20 4,24" fill="#1a5c3a"/></g>
-                <g transform="translate(780,40)"><rect x="18" y="60" width="4" height="30" fill="#5c3d2e"/><polygon points="20,0 40,35 30,30 45,55 5,55 20,30 10,35" fill="#2d6a4f"/></g>
-                <g transform="translate(950,35)"><rect x="15" y="55" width="3" height="25" fill="#5c3d2e"/><polygon points="16,0 32,28 24,24 36,48 0,48 12,24 4,28" fill="#1a5c3a"/></g>
-                <g transform="translate(1120,50)"><rect x="18" y="60" width="4" height="30" fill="#5c3d2e"/><polygon points="20,0 40,35 30,30 45,55 5,55 20,30 10,35" fill="#2d6a4f"/></g>
-                <g transform="translate(1300,30)"><rect x="15" y="55" width="3" height="25" fill="#5c3d2e"/><polygon points="16,0 32,28 24,24 36,48 0,48 12,24 4,28" fill="#1a5c3a"/></g>
-            </svg>
-        </div>
-
-        <div class="scroll-hint">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 5v14M19 12l-7 7-7-7"/>
-            </svg>
-        </div>
-    </section>
-
-    <!-- ═══ Loading Bar ═══ -->
+    <!-- Loading State -->
     <div id="loading" class="loading hidden" style="display:none">
-        <div class="loading-bar"></div>
+        <div class="loading-content">
+            <div class="skeleton-grid">
+                <div class="skeleton skeleton-map"></div>
+                <div class="skeleton-cards">
+                    <div class="skeleton skeleton-card"></div>
+                    <div class="skeleton skeleton-card"></div>
+                    <div class="skeleton skeleton-card"></div>
+                </div>
+            </div>
+            <p class="loading-text">Andmeid laaditakse...</p>
+        </div>
     </div>
 
-    <!-- ═══ Dashboard ═══ -->
+    <!-- Dashboard -->
     <section id="dashboard" class="dashboard">
 
-        <!-- Map Section -->
+        <!-- Map Section (always visible) -->
         <div class="map-section">
             <div class="map-wrapper">
                 <div id="map"></div>
@@ -256,7 +111,7 @@
             </div>
         </div>
 
-        <!-- Metric Cards Grid -->
+        <!-- Metric Cards Grid (always visible, empty until search) -->
         <div class="metrics-grid">
             <div class="metric-card" id="card-kataster">
                 <div class="card-header">
@@ -281,7 +136,10 @@
                 <div class="card-header">
                     <div class="card-icon mets-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 22V10"/><path d="M12 10c0-4 4-7 8-7-1 5-4 7-8 7z"/><path d="M12 14c0-3-3-5-6-5 1 4 3 5 6 5z"/><line x1="6" y1="22" x2="18" y2="22"/>
+                            <path d="M12 22V10"/>
+                            <path d="M12 10c0-4 4-7 8-7-1 5-4 7-8 7z"/>
+                            <path d="M12 14c0-3-3-5-6-5 1 4 3 5 6 5z"/>
+                            <line x1="6" y1="22" x2="18" y2="22"/>
                         </svg>
                     </div>
                     <h3>Metsaandmed</h3>
@@ -290,7 +148,7 @@
                 <div id="info-mets" class="info-box">
                     <strong>Mis näitab:</strong> Metsa eraldiste andmed, puuliik, vanus, tagavara (m³/ha), boniteet, kõrgus ja liikide koosseis.<br>
                     <strong>Allikas:</strong> Metsaregister WFS (metsaregister:eraldis, eraldis_element)<br>
-                    <strong>Arvutus:</strong> Keskmine vanus ja tagavara on pindala-kaalutud keskmised kõigist eraldistest.
+                    <strong>Arvutus:</strong> Keskmine vanus ja tagavara on pindala-kaalutud keskmised kõigist eraldistest. Liikide koosseis agregeeritakse eraldiste elementide järgi.
                     <div class="source">Andmed: Keskkonnaagentuur, register.metsad.ee</div>
                 </div>
                 <div id="mets-info"></div>
@@ -308,8 +166,8 @@
                 </div>
                 <div id="info-vaartus" class="info-box">
                     <strong>Mis näitab:</strong> Metsa ümarmaterjali koguväärtus praeguste turuhindade järgi.<br>
-                    <strong>Arvutus:</strong> Koguväärtus = tagavara (m³) × seisuhind (€/m³).<br>
-                    <strong>Allikas:</strong> Eesti Erametsaliidu hinnastatistika (2024).
+                    <strong>Arvutus:</strong> Koguväärtus = tagavara (m³) × seisuhind (€/m³). Hind sõltub peapuuliigist, iga liigi kohta on eraldi seisuhind, palgi- ja paberipuu hind.<br>
+                    <strong>Allikas:</strong> Eesti Erametsaliidu hinnastatistika (2024). Hinnad uuenevad kord kvartalis.
                     <div class="source">Andmed: erametsaliit.ee</div>
                 </div>
                 <div id="vaartus-info"></div>
@@ -327,7 +185,8 @@
                 </div>
                 <div id="info-sinik" class="info-box">
                     <strong>Mis näitab:</strong> Metsa süsinikuvaru ja CO₂ sidumise potentsiaal.<br>
-                    <strong>Arvutus:</strong> Biomass = tagavara × tihedus × BEF. Süsinik = biomass × 0,47. CO₂ = süsinik × 3,67.<br>
+                    <strong>Arvutus:</strong> Biomass = tagavara × tihedus × BEF × (1 + juurte/suhte koefitsient). Süsinik = biomass × 0,47. CO₂ = süsinik × 3,67. Potentsiaalne tulu = CO₂ × 30 €/t.<br>
+                    <strong>Võrdlused:</strong> Auto = 4,6 t CO₂/aasta (EL keskmine). Puu = 22 kg CO₂/aasta.<br>
                     <strong>Allikas:</strong> IPCC tasandusfaktorid, Eesti metsainventuuri andmed.
                     <div class="source">Andmed: IPCC, Keskkonnaagentuur</div>
                 </div>
@@ -345,7 +204,9 @@
                     <span class="info-toggle">?</span>
                 </div>
                 <div id="info-riskid" class="info-box">
-                    <strong>Mis näitab:</strong> Metsa terviseriskid — raievanus, üraski risk, karuputk ja lageraiealad.<br>
+                    <strong>Mis näitab:</strong> Metsa terviseriskid, raievanuse näitaja, üraski risk, karuputk ja lageraiealad.<br>
+                    <strong>Raievanus:</strong> Võrdleb praegust vanust liigi ja boniteedi järgse raievanusega. Roheline &lt;85%, kollane 85–100%, punane ≥100%.<br>
+                    <strong>Üraski risk:</strong> 0=madal, 1=keskmine (kuusk &gt;30a), 2=kõrge (kuusk &gt;50a), 3=kriitiline (MKE tsoonis).<br>
                     <strong>Allikas:</strong> Metsaregister (MKE tsoonid), EELIS (looduskaitse).
                     <div class="source">Andmed: Keskkonnaagentuur, metsaregister.ee</div>
                 </div>
@@ -363,8 +224,9 @@
                     <span class="info-toggle">?</span>
                 </div>
                 <div id="info-teatised" class="info-box">
-                    <strong>Mis näitab:</strong> Krundile registreeritud metsateatised ja nende staatus.<br>
-                    <strong>Allikas:</strong> Metsaregister WFS (metsaregister:teatis)
+                    <strong>Mis näitab:</strong> Krundile registreeritud metsateatised, raie-, uuendus- ja hooldusteatiste staatus ja kehtivus.<br>
+                    <strong>Allikas:</strong> Metsaregister WFS (metsaregister:teatis)<br>
+                    <strong>Märkus:</strong> Aktiivsed teatised (KEHTIV, ESITATUD, MENETLUSED) näitavad kehtivaid raieõigusi.
                     <div class="source">Andmed: Keskkonnaagentuur, register.metsad.ee</div>
                 </div>
                 <div id="teatised-info"></div>
@@ -381,7 +243,8 @@
                     <span class="info-toggle">?</span>
                 </div>
                 <div id="info-eudr" class="info-box">
-                    <strong>Mis näitab:</strong> Krundi geomeetria GeoJSON-formaadis EL deforestatsioonivastase määruse jaoks.<br>
+                    <strong>Mis näitab:</strong> Krundi geomeetria GeoJSON-formaadis EL deforestatsioonivastase määruse (EUDR) jaoks.<br>
+                    <strong>Kasutus:</strong> EUDR nõuab tõestust, et toode ei pärine deforestatsioonitud alalt. GeoJSON sisaldab krundi piire ja katastri numbrit.<br>
                     <strong>Allikas:</strong> Maa-amet WFS (kataster:ky_kehtistus)
                     <div class="source">Andmed: Maa-amet, geoportaal.maaamet.ee</div>
                 </div>
@@ -397,7 +260,7 @@
             </div>
         </div>
 
-        <!-- Charts Section -->
+        <!-- Charts Section (hidden until search) -->
         <div id="charts-section" class="charts-section" style="display:none">
             <div class="section-header">
                 <h2>Graafikud</h2>
@@ -418,7 +281,7 @@
             </div>
         </div>
 
-        <!-- Tables Section -->
+        <!-- Tables Section (hidden until search) -->
         <div id="tables-section" class="tables-section" style="display:none">
             <div class="table-card">
                 <div class="card-header">
@@ -431,8 +294,9 @@
                     <span class="info-toggle">?</span>
                 </div>
                 <div id="info-kitsendused" class="info-box">
-                    <strong>Mis näitab:</strong> Krundile kehtivad keskkonna- ja muinsuskaitse kitsendused.<br>
-                    <strong>Allikas:</strong> EELIS WFS, kitsendused WFS, muinsuskaitse register.
+                    <strong>Mis näitab:</strong> Krundile kehtivad keskkonna- ja muinsuskaitse kitsendused, kaitsealad, piiranguvööndid, veekaitse, üleujutusalad ja muinsuskaitseobjektid.<br>
+                    <strong>Allikas:</strong> EELIS WFS (Keskkonnaagentuur), kitsendused WFS (Maa-amet), muinsuskaitse register.<br>
+                    <strong>Märkus:</strong> Kitsendused mõjutavad raieõigusi, metsauuendust ja toetuste kõlblikkust.
                     <div class="source">Andmed: Keskkonnaagentuur, Maa-amet, Muinsuskaitseamet</div>
                 </div>
                 <div id="kitsendused-info">
@@ -460,7 +324,8 @@
                 </div>
                 <div id="info-toetused" class="info-box">
                     <strong>Mis näitab:</strong> Krundile potentsiaalselt kõlblikud metsatoetused ja hüvitised.<br>
-                    <strong>Allikas:</strong> Erametsakeskus, Keskkonnaagentuur (EELIS).
+                    <strong>Arvutus:</strong> Toetuste kõlblikkus sõltub krundi omadustest, vanus, puuliik, pindala, Natura 2000 kuuluvus, kaitseala staatus ja sihtotstarve.<br>
+                    <strong>Allikas:</strong> Erametsakeskus, Keskkonnaagentuur (EELIS). Tingimused põhinevad metsaseadusel ja EL määrustel.
                     <div class="source">Andmed: eramets.ee, Keskkonnaagentuur</div>
                 </div>
                 <div id="toetused-info">
@@ -559,6 +424,7 @@
             'Esri satelliit': esriFoto,
         }, null, { position: 'bottomleft' }).addTo(map);
 
+        // Center button
         var CenterControl = L.Control.extend({
             options: { position: 'bottomleft' },
             onAdd: function() {
@@ -582,12 +448,21 @@
     function showParcel(geometry) {
         if (parcelLayer) map.removeLayer(parcelLayer);
         parcelLayer = L.geoJSON(geometry, {
-            style: { color: '#e63946', weight: 4, opacity: 1, fillColor: '#ff6b6b', fillOpacity: 0.12 },
+            style: {
+                color: '#e63946',
+                weight: 4,
+                opacity: 1,
+                fillColor: '#ff6b6b',
+                fillOpacity: 0.12,
+                dashArray: null,
+            },
         }).addTo(map);
     }
 
     function fitToParcel(geometry) {
-        if (parcelLayer) map.fitBounds(parcelLayer.getBounds(), { padding: [40, 40], maxZoom: 15 });
+        if (parcelLayer) {
+            map.fitBounds(parcelLayer.getBounds(), { padding: [40, 40], maxZoom: 15 });
+        }
     }
 
     function addOverlayLayer(name, features, color, isMarker) {
@@ -600,7 +475,12 @@
                 const props = f.properties || {};
                 const label = props.purpose || props.nimi || 'Oksjon';
                 return L.marker([coords[1], coords[0]], {
-                    icon: L.divIcon({ className: 'custom-marker', html: '<div style="background:' + color + ';width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>', iconSize: [12,12], iconAnchor: [6,6] }),
+                    icon: L.divIcon({
+                        className: 'custom-marker',
+                        html: '<div style="background:' + color + ';width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>',
+                        iconSize: [12, 12],
+                        iconAnchor: [6, 6],
+                    }),
                 }).bindPopup('<b>' + label + '</b><br>' + (props.starting_price ? props.starting_price + ' €' : ''));
             }).filter(Boolean);
             overlayLayers[name] = L.layerGroup(markers).addTo(map);
@@ -612,14 +492,26 @@
     }
 
     function removeOverlayLayer(name) {
-        if (overlayLayers[name]) { map.removeLayer(overlayLayers[name]); delete overlayLayers[name]; }
+        if (overlayLayers[name]) {
+            map.removeLayer(overlayLayers[name]);
+            delete overlayLayers[name];
+        }
     }
 
     function toggleOverlayLayer(name, visible) {
         if (visible) {
-            if (overlayLayers[name]) { map.addLayer(overlayLayers[name]); }
-            else { var mapLayers = window._mapLayersData || {}; if (mapLayers[name]) addOverlayLayer(name, mapLayers[name].features, mapLayers[name].color, false); }
-        } else { removeOverlayLayer(name); }
+            if (overlayLayers[name]) {
+                map.addLayer(overlayLayers[name]);
+            } else {
+                // First time toggle, load from stored API data
+                var mapLayers = window._mapLayersData || {};
+                if (mapLayers[name]) {
+                    addOverlayLayer(name, mapLayers[name].features, mapLayers[name].color, false);
+                }
+            }
+        } else {
+            removeOverlayLayer(name);
+        }
     }
 
     var MAP_LAYER_META = {
@@ -640,11 +532,19 @@
     };
 
     function loadMapLayers(mapLayers) {
+        // Clear old overlays
         Object.keys(overlayLayers).forEach(removeOverlayLayer);
+
+        // Store for lazy loading on toggle
         window._mapLayersData = mapLayers;
-        document.querySelectorAll('.layer-toggle input[type=checkbox]').forEach(function(cb) {
+
+        // Auto-show checked layers
+        var checkboxes = document.querySelectorAll('.layer-toggle input[type=checkbox]');
+        checkboxes.forEach(function(cb) {
             var key = cb.dataset.layer;
-            if (key && mapLayers[key] && cb.checked) addOverlayLayer(key, mapLayers[key].features, mapLayers[key].color, false);
+            if (key && mapLayers[key] && cb.checked) {
+                addOverlayLayer(key, mapLayers[key].features, mapLayers[key].color, false);
+            }
         });
     }
 
@@ -655,28 +555,52 @@
         SA: 'Saar', VA: 'Vaher', PK: 'Pöök', JA: 'Jalakas',
         RE: 'Remmelgas', SP: 'Seedrip',
     };
+    // Non-species codes from metsaregister (forest types, not tree species)
     const NON_SPECIES_CODES = ['TM', 'PI', 'PS', 'PA', 'LV2', 'MU'];
-    function isValidSpecies(s) { var code = s.puuliik_kood || s.puuliik; return code && NON_SPECIES_CODES.indexOf(code) === -1 && SPECIES_NAMES[code]; }
+    function isValidSpecies(s) {
+        var code = s.puuliik_kood || s.puuliik;
+        return code && NON_SPECIES_CODES.indexOf(code) === -1 && SPECIES_NAMES[code];
+    }
     const BONITEET_LABELS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
 
-    function formatEur(n) { if (n == null) return '—'; return Math.round(n).toLocaleString('et-EE').replace(/,/g, ' ') + ' €'; }
-    function formatNum(n, decimals) { if (n == null) return '—'; if (decimals !== undefined) return n.toFixed(decimals).replace('.', ','); return Math.round(n).toLocaleString('et-EE').replace(/,/g, ' '); }
-    function speciesName(code) { return SPECIES_NAMES[code] || code; }
+    function formatEur(n) {
+        if (n == null) return '—';
+        return Math.round(n).toLocaleString('et-EE').replace(/,/g, ' ') + ' €';
+    }
+
+    function formatNum(n, decimals) {
+        if (n == null) return '—';
+        if (decimals !== undefined) return n.toFixed(decimals).replace('.', ',');
+        return Math.round(n).toLocaleString('et-EE').replace(/,/g, ' ');
+    }
+
+    function speciesName(code) {
+        return SPECIES_NAMES[code] || code;
+    }
 
     function animateNumber(el, target, suffix, decimals) {
         if (target == null) { el.textContent = '—'; return; }
-        const duration = 800, start = performance.now(), startVal = 0;
-        const format = (v) => { if (decimals !== undefined) return v.toFixed(decimals).replace('.', ','); return Math.round(v).toLocaleString('et-EE').replace(/,/g, ' '); };
+        const duration = 800;
+        const start = performance.now();
+        const startVal = 0;
+        const format = (v) => {
+            if (decimals !== undefined) return v.toFixed(decimals).replace('.', ',');
+            return Math.round(v).toLocaleString('et-EE').replace(/,/g, ' ');
+        };
         function tick(now) {
-            const elapsed = now - start, progress = Math.min(elapsed / duration, 1), eased = 1 - Math.pow(1 - progress, 3);
-            el.textContent = format(startVal + (target - startVal) * eased) + (suffix || '');
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const current = startVal + (target - startVal) * eased;
+            el.textContent = format(current) + (suffix || '');
             if (progress < 1) requestAnimationFrame(tick);
         }
         requestAnimationFrame(tick);
     }
 
     function renderKataster(data) {
-        var el = document.getElementById('kataster-info'), html = '';
+        var el = document.getElementById('kataster-info');
+        var html = '';
         html += '<div class="info-row"><span class="label">Number</span><span class="value">' + (data.number || '—') + '</span></div>';
         html += '<div class="info-row"><span class="label">Pindala</span><span class="value">' + formatNum(data.pindala_ha, 2) + ' ha</span></div>';
         if (data.mets_pindala_ha) html += '<div class="info-row"><span class="label">Metsamaa</span><span class="value">' + formatNum(data.mets_pindala_ha, 2) + ' ha</span></div>';
@@ -695,30 +619,52 @@
         var boniteet = data.boniteet || BONITEET_LABELS[data.boniteedi_kood] || data.boniteedi_kood || '—';
         var compHtml = '';
         if (data.liikide_koosseis && data.liikide_koosseis.length > 0) {
-            var species = data.liikide_koosseis.filter(isValidSpecies), merged = {};
-            species.forEach(function(s) { var code = s.puuliik_kood || s.puuliik; merged[code] = (merged[code] || 0) + s.osakaal; });
+            var species = data.liikide_koosseis.filter(isValidSpecies);
+            var merged = {};
+            species.forEach(function(s) {
+                var code = s.puuliik_kood || s.puuliik;
+                if (merged[code]) {
+                    merged[code] += s.osakaal;
+                } else {
+                    merged[code] = s.osakaal;
+                }
+            });
             var total = Object.values(merged).reduce(function(a, b) { return a + b; }, 0);
-            if (total > 100) Object.keys(merged).forEach(function(code) { merged[code] = Math.round(merged[code] / total * 100); });
-            var sorted = Object.keys(merged).map(function(code) { return { code: code, name: speciesName(code), osakaal: merged[code] }; }).sort(function(a, b) { return b.osakaal - a.osakaal; });
+            if (total > 100) {
+                Object.keys(merged).forEach(function(code) {
+                    merged[code] = Math.round(merged[code] / total * 100);
+                });
+            }
+            var sorted = Object.keys(merged).map(function(code) {
+                return { code: code, name: speciesName(code), osakaal: merged[code] };
+            }).sort(function(a, b) { return b.osakaal - a.osakaal; });
+
             if (sorted.length > 0) {
                 compHtml = '<table class="comp-table">';
-                sorted.forEach(function(s) { compHtml += '<tr><td>' + s.name + '</td><td style="font-weight:600">' + s.osakaal + '%</td><td class="bar-cell"><span class="comp-bar" style="width:' + Math.min(s.osakaal, 100) + '%"></span></td></tr>'; });
+                sorted.forEach(function(s) {
+                    compHtml += '<tr><td>' + s.name + '</td><td style="font-weight:600">' + s.osakaal + '%</td><td class="bar-cell"><span class="comp-bar" style="width:' + Math.min(s.osakaal, 100) + '%"></span></td></tr>';
+                });
                 compHtml += '</table>';
             }
         }
         var html = '';
         html += '<div class="info-row"><span class="label">Peapuuliik</span><span class="value">' + speciesName(data.puuliik_kood || data.puuliik) + '</span></div>';
         html += '<div class="info-row"><span class="label">Keskmine vanus</span><span class="value">' + (data.vanus || '—') + ' a</span></div>';
-        html += '<div class="info-row"><span class="label" title="Metsa ümarmaterjali kogus hektari kohta">Tagavara</span><span class="value">' + formatNum(data.tagavara_y_ha) + ' m³/ha</span></div>';
-        html += '<div class="info-row"><span class="label" title="Metsakasvukoha kvaliteet: I=parim, VII=halvim">Boniteet</span><span class="value">' + boniteet + '</span></div>';
+        html += '<div class="info-row"><span class="label" title="Metsa ümarmaterjali kogus hektari kohta. Mida suurem, seda väärtuslikum mets.">Tagavara</span><span class="value">' + formatNum(data.tagavara_y_ha) + ' m³/ha</span></div>';
+        html += '<div class="info-row"><span class="label" title="Metsakasvukoha kvaliteet: I=parim, VII=halvim. Mõjutab metsa kasvukiirust.">Boniteet</span><span class="value">' + boniteet + '</span></div>';
         html += '<div class="info-row"><span class="label">Pindala</span><span class="value">' + formatNum(data.pindala_ha, 2) + ' ha</span></div>';
         if (data.korgus) html += '<div class="info-row"><span class="label" title="Puude keskmine kõrgus">Kõrgus</span><span class="value">' + formatNum(data.korgus, 1) + ' m</span></div>';
-        if (data.eraldisi_kokku > 1) html += '<div class="info-row"><span class="label" title="Metsa eraldised">Eraldisi</span><span class="value">' + data.eraldisi_kokku + ' tk</span></div>';
+        if (data.eraldisi_kokku > 1) html += '<div class="info-row"><span class="label" title="Metsa eraldised — eraldi majandatavad metsatükid">Eraldisi</span><span class="value">' + data.eraldisi_kokku + ' tk</span></div>';
         html += compHtml;
+
+        // Show individual eraldised
         if (data.eraldised && data.eraldised.length > 0) {
             html += '<details style="margin-top:0.75rem"' + (data.eraldised.length <= 5 ? ' open' : '') + '><summary style="cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--primary)">Eraldised (' + data.eraldised.length + ')</summary>';
             html += '<table style="margin-top:0.5rem;font-size:0.78rem"><thead><tr><th>Nr</th><th>Puuliik</th><th>Vanus</th><th>Tagavara</th><th>Pindala</th><th>Boniteet</th></tr></thead><tbody>';
-            data.eraldised.forEach(function(e) { var b = e.boniteet || BONITEET_LABELS[e.boniteedi_kood] || '—'; html += '<tr><td>' + (e.eraldis_nr || '—') + '</td><td>' + speciesName(e.puuliik_kood || e.puuliik) + '</td><td>' + (e.vanus || '—') + ' a</td><td>' + formatNum(e.tagavara_y_ha) + ' m³/ha</td><td>' + formatNum(e.pindala_ha, 2) + ' ha</td><td>' + b + '</td></tr>'; });
+            data.eraldised.forEach(function(e) {
+                var b = e.boniteet || BONITEET_LABELS[e.boniteedi_kood] || '—';
+                html += '<tr><td>' + (e.eraldis_nr || '—') + '</td><td>' + speciesName(e.puuliik_kood || e.puuliik) + '</td><td>' + (e.vanus || '—') + ' a</td><td>' + formatNum(e.tagavara_y_ha) + ' m³/ha</td><td>' + formatNum(e.pindala_ha, 2) + ' ha</td><td>' + b + '</td></tr>';
+            });
             html += '</tbody></table></details>';
         }
         el.innerHTML = html;
@@ -727,33 +673,49 @@
     function renderVaartus(data) {
         var el = document.getElementById('vaartus-info');
         if (!data) { el.innerHTML = '<p class="muted">Väärtuse andmeid pole</p>'; return; }
-        var html = '<div class="big-number accent"><span id="anim-vaartus">0</span> €</div>';
+        var html = '';
+        html += '<div class="big-number accent"><span id="anim-vaartus">0</span> €</div>';
         html += '<div class="info-row"><span class="label" title="Metsa väärtus ühe hektari kohta">Ühikuhind</span><span class="value">' + formatEur(data.value_per_ha) + ' / ha</span></div>';
-        html += '<div class="info-row"><span class="label" title="Püsti puistu turuhind">Seisuhind</span><span class="value">' + formatNum(data.price_per_m3, 2) + ' €/m³</span></div>';
+        html += '<div class="info-row"><span class="label" title="Püsti puistu turuhind — metsaomanik saab selle hinna, kui müüb metsa raiumata">Seisuhind</span><span class="value">' + formatNum(data.price_per_m3, 2) + ' €/m³</span></div>';
         html += '<div class="info-row"><span class="label" title="Metsa kogu ümarmaterjali maht">Tagavara</span><span class="value">' + formatNum(data.tagavara_m3) + ' m³</span></div>';
-        html += '<div class="info-row"><span class="label" title="Saematerjali hind">Palk</span><span class="value">' + formatNum(data.log_price, 2) + ' €/m³</span></div>';
-        html += '<div class="info-row"><span class="label" title="Paberipuu hind">Paberipuit</span><span class="value">' + formatNum(data.pulp_price, 2) + ' €/m³</span></div>';
-        if (data.price_source) html += '<div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-muted);font-style:italic">Hinnad: ' + data.price_source + '</div>';
+        html += '<div class="info-row"><span class="label" title="Saematerjali hind — kõige väärtuslikum osa metsast">Palk</span><span class="value">' + formatNum(data.log_price, 2) + ' €/m³</span></div>';
+        html += '<div class="info-row"><span class="label" title="Paberipuu hind — väiksemad puud ja oksad">Paberipuit</span><span class="value">' + formatNum(data.pulp_price, 2) + ' €/m³</span></div>';
+        if (data.price_source) {
+            html += '<div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-muted);font-style:italic">Hinnad: ' + data.price_source + '</div>';
+        }
         el.innerHTML = html;
-        setTimeout(function() { var animEl = document.getElementById('anim-vaartus'); if (animEl) animateNumber(animEl, data.total_value_eur, '', 0); }, 200);
+        setTimeout(function() {
+            var animEl = document.getElementById('anim-vaartus');
+            if (animEl) animateNumber(animEl, data.total_value_eur, '', 0);
+        }, 200);
     }
 
     function renderSinik(data) {
         var el = document.getElementById('sinik-info');
         if (!data) { el.innerHTML = '<p class="muted">Süsiniku andmeid pole</p>'; return; }
-        var html = '<div class="big-number"><span id="anim-co2">0</span><span class="unit"> tCO₂</span></div>';
-        html += '<div class="info-row"><span class="label" title="CO₂ kogus hektari kohta">CO₂ / ha</span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
-        html += '<div class="info-row"><span class="label" title="Metsa elusmass">Biomass / ha</span><span class="value">' + formatNum(data.total_biomass_tons_ha, 1) + ' t</span></div>';
-        html += '<div class="info-row"><span class="label" title="Rahaline väärtus süsinikukrediitide korral">Potentsiaalne tulu</span><span class="value">' + formatEur(data.potential_income_eur) + '</span></div>';
+        var html = '';
+        html += '<div class="big-number"><span id="anim-co2">0</span><span class="unit"> tCO₂</span></div>';
+        html += '<div class="info-row"><span class="label" title="Süsinikdioksiidi kogus, mida mets on sidunud. 1 ton CO₂ = ühe auto aastane heide.">CO₂ / ha</span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
+        html += '<div class="info-row"><span class="label" title="Metsa elusmass — puud, juured, oksad">Biomass / ha</span><span class="value">' + formatNum(data.total_biomass_tons_ha, 1) + ' t</span></div>';
+        html += '<div class="info-row"><span class="label" title="Rahaline väärtus, kui müüa süsinikukrediite (30 €/t CO₂)">Potentsiaalne tulu</span><span class="value">' + formatEur(data.potential_income_eur) + '</span></div>';
+
+        // CO2 equivalency illustration
         if (data.cars_equivalent || data.trees_equivalent) {
             html += '<div style="margin-top:0.75rem;padding:0.75rem;background:var(--surface);border-radius:var(--radius-sm);font-size:0.82rem">';
             html += '<div style="font-weight:600;color:var(--text-secondary);margin-bottom:0.4rem">Võrdluseks:</div>';
-            if (data.cars_equivalent) html += '<div style="margin-bottom:0.25rem">🚗 ' + formatNum(data.cars_equivalent) + ' auto aastane CO₂ heide</div>';
-            if (data.trees_equivalent) html += '<div>🌳 Vastab ' + formatNum(data.trees_equivalent) + ' puu aastasele CO₂ sidumisele</div>';
+            if (data.cars_equivalent) {
+                html += '<div style="margin-bottom:0.25rem">🚗 ' + formatNum(data.cars_equivalent) + ' auto aastane CO₂ heide</div>';
+            }
+            if (data.trees_equivalent) {
+                html += '<div>🌳 Vastab ' + formatNum(data.trees_equivalent) + ' puu aastasele CO₂ sidumisele</div>';
+            }
             html += '</div>';
         }
         el.innerHTML = html;
-        setTimeout(function() { var animEl = document.getElementById('anim-co2'); if (animEl) animateNumber(animEl, data.co2_tons_total, '', 0); }, 300);
+        setTimeout(function() {
+            var animEl = document.getElementById('anim-co2');
+            if (animEl) animateNumber(animEl, data.co2_tons_total, '', 0);
+        }, 300);
     }
 
     function renderRiskid(data) {
@@ -762,59 +724,100 @@
         var html = '';
         if (data.raievanus) {
             var r = data.raievanus;
-            html += '<div class="info-row"><span class="label" title="Võrdleb praegust vanust raievanusega">Raievanus</span>';
+            html += '<div class="info-row"><span class="label" title="Võrdleb metsa praegust vanust liigi ja boniteedi järgse soovitusliku raievanusega">Raievanus</span>';
             html += '<span class="traffic-light ' + r.status + '"><span class="dot"></span>' + r.label + ' (' + Math.round(r.ratio * 100) + '%)</span></div>';
         }
         if (data.yrask) {
-            var y = data.yrask, colors = ['#28a745', '#ffc107', '#fd7e14', '#e63946'];
-            html += '<div class="info-row"><span class="label" title="Kuuse-kooreüraski risk">Üraski risk</span>';
+            var y = data.yrask;
+            var colors = ['#28a745', '#ffc107', '#fd7e14', '#e63946'];
+            html += '<div class="info-row"><span class="label" title="Kuuse-kooreüraski kahjustuste risk. Kõrge risk = vana kuusemets, mis on vastuvõtlik üraskile.">Üraski risk</span>';
             html += '<span style="color:' + colors[y.score] + ';font-weight:600">' + y.label + '</span></div>';
-            if (y.detail) html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem">' + y.detail + '</div>';
+            if (y.detail) {
+                html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem">' + y.detail + '</div>';
+            }
         }
         if (data.terviseindeks != null) {
             var t = data.terviseindeks;
             var barColor = t >= 70 ? 'linear-gradient(90deg, #28a745, #2a9d8f)' : t >= 40 ? 'linear-gradient(90deg, #ffc107, #f4a261)' : 'linear-gradient(90deg, #e63946, #fd7e14)';
-            html += '<div class="info-row"><span class="label" title="Metsa terviseindeks: 100=terve">Terviseindeks</span><span class="value">' + t + '/100</span></div>';
+            html += '<div class="info-row"><span class="label" title="Metsa terviseindeks: 100=terve, 0=haige. Arvestab kahjustusi, vanust ja liigilist koosseisu.">Terviseindeks</span><span class="value">' + t + '/100</span></div>';
             html += '<div class="progress-bar"><div class="fill" style="width:' + t + '%;background:' + barColor + '"></div></div>';
         }
-        if (data.karuputk) html += '<div class="info-row"><span class="label" title="Mürgise umbrohu esinemine">Karuputk</span><span style="color:var(--danger);font-weight:600">Leitud</span></div>';
-        if (data.lageraieala) html += '<div class="info-row"><span class="label" title="Hiljutise lageraie ala">Lageraieala</span><span class="value">' + data.lageraieala + '</span></div>';
+        if (data.karuputk) {
+            html += '<div class="info-row"><span class="label" title="Mürgise umbrohu esinemine krundil. Kohustuslik tõrjuda.">Karuputk</span><span style="color:var(--danger);font-weight:600">Leitud</span></div>';
+        }
+        if (data.lageraieala) {
+            html += '<div class="info-row"><span class="label" title="Krunt asub hiljutise lageraie alal — mets on ära raiutud">Lageraieala</span><span class="value">' + data.lageraieala + '</span></div>';
+        }
         el.innerHTML = html || '<p class="muted">Riskiandmeid pole</p>';
     }
 
     function renderTeatised(data) {
         var el = document.getElementById('teatised-info');
         if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Metsateatisi pole registreeritud</p>'; return; }
-        var active = data.filter(function(t) { return t.active; }), inactive = data.filter(function(t) { return !t.active; });
+
+        var active = data.filter(function(t) { return t.active; });
+        var inactive = data.filter(function(t) { return !t.active; });
+
         var html = '';
         if (active.length > 0) {
             html += '<div style="margin-bottom:0.5rem"><span style="display:inline-block;padding:0.2rem 0.6rem;background:#e8f5e9;color:#2e7d32;border-radius:var(--radius-full);font-size:0.75rem;font-weight:600">' + active.length + ' aktiivset</span></div>';
             html += '<table style="font-size:0.8rem"><thead><tr><th>Tüüp</th><th>Staatus</th><th>Kehtib kuni</th><th>Pindala</th></tr></thead><tbody>';
-            active.forEach(function(t) { html += '<tr><td><strong>' + (t.tyyp || '—') + '</strong></td><td><span style="color:var(--success);font-weight:600">' + t.staatus + '</span></td><td>' + (t.kehtiv_kuni || '—') + '</td><td>' + (t.pindala_ha ? t.pindala_ha + ' ha' : '—') + '</td></tr>'; });
+            active.forEach(function(t) {
+                html += '<tr><td><strong>' + (t.tyyp || '—') + '</strong></td><td><span style="color:var(--success);font-weight:600">' + t.staatus + '</span></td><td>' + (t.kehtiv_kuni || '—') + '</td><td>' + (t.pindala_ha ? t.pindala_ha + ' ha' : '—') + '</td></tr>';
+            });
             html += '</tbody></table>';
         }
         if (inactive.length > 0) {
             html += '<details style="margin-top:0.5rem"><summary style="cursor:pointer;font-size:0.78rem;color:var(--text-muted)">Aegunud/lõpetatud (' + inactive.length + ')</summary>';
             html += '<table style="margin-top:0.3rem;font-size:0.78rem"><thead><tr><th>Tüüp</th><th>Staatus</th><th>Pindala</th></tr></thead><tbody>';
-            inactive.forEach(function(t) { html += '<tr><td>' + (t.tyyp || '—') + '</td><td class="muted">' + t.staatus + '</td><td>' + (t.pindala_ha ? t.pindala_ha + ' ha' : '—') + '</td></tr>'; });
+            inactive.forEach(function(t) {
+                html += '<tr><td>' + (t.tyyp || '—') + '</td><td class="muted">' + t.staatus + '</td><td>' + (t.pindala_ha ? t.pindala_ha + ' ha' : '—') + '</td></tr>';
+            });
             html += '</tbody></table></details>';
         }
         el.innerHTML = html;
     }
 
     function renderKitsendused(data) {
-        var el = document.getElementById('kitsendused-info'), linkEl = document.getElementById('kitsendused-link');
-        if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Kitsendusi ei leitud</p>'; if (linkEl) linkEl.style.display = 'none'; return; }
-        var cx = 24.75, cy = 59.44;
-        if (window.currentData && window.currentData.kataster && window.currentData.kataster.geometry) {
-            try { var g = L.geoJSON(window.currentData.kataster.geometry), c = g.getBounds().getCenter(); cx = c.lng.toFixed(5); cy = c.lat.toFixed(5); } catch(e) {}
+        var el = document.getElementById('kitsendused-info');
+        var linkEl = document.getElementById('kitsendused-link');
+        if (!data || data.length === 0) {
+            el.innerHTML = '<p class="muted">Kitsendusi ei leitud, krunt asub kitsendusteta alal</p>';
+            if (linkEl) linkEl.style.display = 'none';
+            return;
         }
-        var eelisLink = 'https://infoleht.keskkonnainfo.ee/', maaametLink = 'https://xgis.maaamet.ee/xgis2/page/app/maainfo?z=15&c=' + cx + ',' + cy;
+
+        // Get centroid from current map for deep links
+        var cx = 24.75, cy = 59.44; // default Tallinn
+        if (window.currentData && window.currentData.kataster && window.currentData.kataster.geometry) {
+            try {
+                var g = L.geoJSON(window.currentData.kataster.geometry);
+                var c = g.getBounds().getCenter();
+                cx = c.lng.toFixed(5); cy = c.lat.toFixed(5);
+            } catch(e) {}
+        }
+        var eelisMapUrl = 'https://xgis.maaamet.ee/xgis2/page/app/maainfo?z=15&c=' + cx + ',' + cy + '&l=6';
+        var eelisLink = 'https://infoleht.keskkonnainfo.ee/';
+        var maaametLink = 'https://xgis.maaamet.ee/xgis2/page/app/maainfo?z=15&c=' + cx + ',' + cy;
+
         var html = '<table><thead><tr><th>Tüüp</th><th>Kirjeldus</th><th>Lisainfo</th></tr></thead><tbody>';
         data.forEach(function(k) {
-            var tyyp = k.tyyp || '', link = eelisLink, linkText = 'EELIS';
-            if (tyyp.indexOf('malestised') >= 0 || tyyp.indexOf('muinsus') >= 0) { link = 'https://register.muinas.ee/'; linkText = 'Muinsuskaitse'; }
-            else if (tyyp.indexOf('karuputk') >= 0 || tyyp.indexOf('lageraie') >= 0) { link = maaametLink; linkText = 'Maa-amet'; }
+            var tyyp = k.tyyp || '';
+            var link = eelisLink;
+            var linkText = 'EELIS';
+            if (tyyp.indexOf('kaitsealad') >= 0 || tyyp.indexOf('loodusala') >= 0 || tyyp.indexOf('piirang') >= 0 || tyyp.indexOf('sood') >= 0) {
+                link = eelisLink; linkText = 'EELIS';
+            } else if (tyyp.indexOf('veekaitse') >= 0 || tyyp.indexOf('uleujutus') >= 0) {
+                link = eelisLink; linkText = 'EELIS';
+            } else if (tyyp.indexOf('malestised') >= 0 || tyyp.indexOf('muinsus') >= 0) {
+                link = 'https://register.muinas.ee/'; linkText = 'Muinsuskaitse';
+            } else if (tyyp.indexOf('karuputk') >= 0) {
+                link = maaametLink; linkText = 'Maa-amet';
+            } else if (tyyp.indexOf('lageraie') >= 0) {
+                link = maaametLink; linkText = 'Maa-amet';
+            } else if (tyyp.indexOf('yrask') >= 0) {
+                link = eelisLink; linkText = 'EELIS';
+            }
             html += '<tr><td><strong>' + k.tyyp + '</strong></td><td>' + k.kirjeldus + '</td>';
             html += '<td><a href="' + link + '" target="_blank" rel="noopener" style="color:var(--primary);font-size:0.82rem">' + linkText + ' →</a></td></tr>';
         });
@@ -826,59 +829,161 @@
     function renderToetused(data) {
         var el = document.getElementById('toetused-info');
         if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Toetusi ei leitud</p>'; return; }
-        var eligible = data.filter(function(t) { return t.sobib; }), ineligible = data.filter(function(t) { return !t.sobib; });
+
+        // Separate eligible and ineligible
+        var eligible = data.filter(function(t) { return t.sobib; });
+        var ineligible = data.filter(function(t) { return !t.sobib; });
+
         var html = '';
+
+        // Eligible programs first (highlighted)
         if (eligible.length > 0) {
             html += '<div style="margin-bottom:1rem"><strong style="color:var(--success)">✓ Sobivad toetused (' + eligible.length + ')</strong></div>';
             eligible.forEach(function(t) {
                 var link = t.url || 'https://www.eramets.ee/toetused/';
                 html += '<div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;background:var(--card-bg)">';
                 html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
-                html += '<strong style="color:var(--text)">' + t.nimi + '</strong><span style="color:var(--success);font-weight:600">' + t.summa + '</span></div>';
+                html += '<strong style="color:var(--text)">' + t.nimi + '</strong>';
+                html += '<span style="color:var(--success);font-weight:600">' + t.summa + '</span>';
+                html += '</div>';
                 if (t.kirjeldus) html += '<p style="color:var(--text-muted);font-size:0.82rem;margin:4px 0">' + t.kirjeldus + '</p>';
                 html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">';
                 html += '<span style="color:var(--text-muted);font-size:0.8rem">Taotlusvoor: ' + (t.taotlusvoor || '—') + '</span>';
-                html += '<a href="' + link + '" target="_blank" rel="noopener" style="color:var(--success);font-weight:600;font-size:0.82rem">Kandideeri →</a></div></div>';
+                html += '<a href="' + link + '" target="_blank" rel="noopener" style="color:var(--success);font-weight:600;font-size:0.82rem">Kandideeri →</a>';
+                html += '</div></div>';
             });
         }
+
+        // Ineligible programs (collapsed)
         if (ineligible.length > 0) {
             html += '<details style="margin-top:1rem"><summary style="cursor:pointer;color:var(--text-muted);font-size:0.85rem">Muud toetused (' + ineligible.length + '), ei vasta tingimustele</summary>';
             html += '<table style="margin-top:0.5rem"><thead><tr><th>Programm</th><th>Summa</th><th>Asutus</th><th>Põhjus</th></tr></thead><tbody>';
-            ineligible.forEach(function(t) { html += '<tr><td>' + t.nimi + '</td><td>' + t.summa + '</td><td>' + t.asutus + '</td><td class="muted" style="font-size:0.8rem">' + (t.pohjus || 'Tingimused ei vasta') + '</td></tr>'; });
+            ineligible.forEach(function(t) {
+                html += '<tr><td>' + t.nimi + '</td><td>' + t.summa + '</td><td>' + t.asutus + '</td>';
+                html += '<td class="muted" style="font-size:0.8rem">' + (t.pohjus || 'Tingimused ei vasta') + '</td></tr>';
+            });
             html += '</tbody></table></details>';
         }
+
         el.innerHTML = html;
     }
 
-    function showLoading() { document.getElementById('loading').style.display = 'block'; document.getElementById('loading').classList.remove('hidden'); document.getElementById('error-msg').style.display = 'none'; document.getElementById('error-msg').classList.add('hidden'); }
-    function hideLoading() { document.getElementById('loading').style.display = 'none'; document.getElementById('loading').classList.add('hidden'); }
-    function showError(msg) { var el = document.getElementById('error-msg'); el.textContent = msg; el.style.display = ''; el.classList.remove('hidden'); document.getElementById('loading').style.display = 'none'; document.getElementById('loading').classList.add('hidden'); }
-    function showDashboard() { document.getElementById('charts-section').style.display = ''; document.getElementById('tables-section').style.display = ''; setTimeout(function() { document.getElementById('card-vaartus').scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); }
+    function showLoading() {
+        var loading = document.getElementById('loading');
+        var error = document.getElementById('error-msg');
+        loading.style.display = 'block';
+        loading.classList.remove('hidden');
+        error.style.display = 'none';
+        error.classList.add('hidden');
+    }
+
+    function hideLoading() {
+        var loading = document.getElementById('loading');
+        loading.style.display = 'none';
+        loading.classList.add('hidden');
+    }
+
+    function showError(msg) {
+        var el = document.getElementById('error-msg');
+        el.textContent = msg;
+        el.style.display = '';
+        el.classList.remove('hidden');
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('loading').classList.add('hidden');
+    }
+
+    function showDashboard() {
+        document.getElementById('charts-section').style.display = '';
+        document.getElementById('tables-section').style.display = '';
+        setTimeout(function() {
+            document.getElementById('card-vaartus').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+    }
 
     // ═══ charts.js ═══
-    var SPECIES_COLORS = { KU: '#2d5016', MA: '#4a7c28', KS: '#7ab356', HB: '#a0c4a0', LH: '#3d6b1e', LM: '#6b8e23', LV: '#7a9e3a', TA: '#5c4033', SA: '#7a5c3a', VA: '#8b6f47', PK: '#6b4e2e', JA: '#8b7355', RE: '#a0a060', SP: '#3a6b4a' };
-    var VALUE_COLORS = { log: '#2d5016', pulp: '#4a7c28', harvest: '#e63946', transport: '#f4a261' };
-    var compositionChart = null, valueChart = null;
+    var SPECIES_COLORS = {
+        KU: '#2d5016', MA: '#4a7c28', KS: '#7ab356', HB: '#a0c4a0',
+        LH: '#3d6b1e', LM: '#6b8e23', LV: '#7a9e3a', TA: '#5c4033',
+        SA: '#7a5c3a', VA: '#8b6f47', PK: '#6b4e2e', JA: '#8b7355',
+        RE: '#a0a060', SP: '#3a6b4a',
+    };
 
-    if (typeof Chart !== 'undefined') { Chart.defaults.font.family = "'Outfit', sans-serif"; Chart.defaults.font.size = 12; Chart.defaults.color = '#4a5568'; }
+    var VALUE_COLORS = {
+        log: '#2d5016', pulp: '#4a7c28', harvest: '#e63946', transport: '#f4a261',
+    };
+
+    var compositionChart = null;
+    var valueChart = null;
+
+    if (typeof Chart !== 'undefined') {
+        Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = '#4a5568';
+    }
 
     function renderCompositionChart(species) {
         var ctx = document.getElementById('chart-composition');
         if (!ctx || !species || species.length === 0) return;
         if (compositionChart) compositionChart.destroy();
+
         var names = { MA: 'Mänd', KU: 'Kuusk', KS: 'Kask', HB: 'Haab', LH: 'Lehis', LM: 'Sanglepp', LV: 'Hall lepp', TA: 'Tamm', SA: 'Saar', VA: 'Vaher' };
+        // Filter to actual tree species only, then merge duplicates
         var validSpecies = species.filter(function(s) { return SPECIES_COLORS[s.puuliik_kood || s.puuliik]; });
         if (validSpecies.length === 0) return;
         var merged = {};
-        validSpecies.forEach(function(s) { var code = s.puuliik_kood || s.puuliik; merged[code] = (merged[code] || 0) + s.osakaal; });
+        validSpecies.forEach(function(s) {
+            var code = s.puuliik_kood || s.puuliik;
+            merged[code] = (merged[code] || 0) + s.osakaal;
+        });
+        // Normalize to 100%
         var total = Object.values(merged).reduce(function(a, b) { return a + b; }, 0);
-        if (total > 100) Object.keys(merged).forEach(function(code) { merged[code] = Math.round(merged[code] / total * 100); });
-        var sorted = Object.keys(merged).map(function(code) { return { code: code, osakaal: merged[code] }; }).sort(function(a, b) { return b.osakaal - a.osakaal; });
-        var labels = sorted.map(function(s) { return names[s.code] || s.code; }), values = sorted.map(function(s) { return s.osakaal; }), colors = sorted.map(function(s) { return SPECIES_COLORS[s.code] || '#6c757d'; });
+        if (total > 100) {
+            Object.keys(merged).forEach(function(code) {
+                merged[code] = Math.round(merged[code] / total * 100);
+            });
+        }
+        var sorted = Object.keys(merged).map(function(code) {
+            return { code: code, osakaal: merged[code] };
+        }).sort(function(a, b) { return b.osakaal - a.osakaal; });
+        var labels = sorted.map(function(s) { return names[s.code] || s.code; });
+        var values = sorted.map(function(s) { return s.osakaal; });
+        var colors = sorted.map(function(s) { return SPECIES_COLORS[s.code] || '#6c757d'; });
+
         compositionChart = new Chart(ctx, {
             type: 'doughnut',
-            data: { labels: labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 3, borderColor: '#ffffff', hoverBorderWidth: 0, hoverOffset: 6 }] },
-            options: { responsive: true, maintainAspectRatio: true, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { padding: 16, usePointStyle: true, pointStyleWidth: 10, font: { size: 12, weight: '500' } } }, tooltip: { backgroundColor: 'rgba(26,29,35,0.9)', titleFont: { weight: '600' }, bodyFont: { size: 13 }, padding: 12, cornerRadius: 8, displayColors: true, callbacks: { label: function(ctx) { return ' ' + ctx.label + ': ' + ctx.parsed + '%'; } } } } }
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors,
+                    borderWidth: 3,
+                    borderColor: '#ffffff',
+                    hoverBorderWidth: 0,
+                    hoverOffset: 6,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: '62%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 16, usePointStyle: true, pointStyleWidth: 10, font: { size: 12, weight: '500' } },
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(26, 29, 35, 0.9)',
+                        titleFont: { weight: '600' },
+                        bodyFont: { size: 13 },
+                        padding: 12,
+                        cornerRadius: 8,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(ctx) { return ' ' + ctx.label + ': ' + ctx.parsed + '%'; },
+                        },
+                    },
+                },
+            },
         });
     }
 
@@ -886,11 +991,63 @@
         var ctx = document.getElementById('chart-value');
         if (!ctx || !data) return;
         if (valueChart) valueChart.destroy();
-        var harvestCost = data.tagavara_m3 * 18, transportCost = data.tagavara_m3 * 9, logValue = data.tagavara_m3 * 0.6 * data.log_price, pulpValue = data.tagavara_m3 * 0.4 * data.pulp_price;
+
+        var harvestCost = data.tagavara_m3 * 18;
+        var transportCost = data.tagavara_m3 * 9;
+        var logValue = data.tagavara_m3 * 0.6 * data.log_price;
+        var pulpValue = data.tagavara_m3 * 0.4 * data.pulp_price;
+
         valueChart = new Chart(ctx, {
             type: 'bar',
-            data: { labels: ['Palk', 'Paberipuit', 'Varumine', 'Transport'], datasets: [{ data: [Math.round(logValue), Math.round(pulpValue), Math.round(harvestCost), Math.round(transportCost)], backgroundColor: [VALUE_COLORS.log, VALUE_COLORS.pulp, VALUE_COLORS.harvest, VALUE_COLORS.transport], borderRadius: 8, borderSkipped: false, barPercentage: 0.7, categoryPercentage: 0.8 }] },
-            options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(26,29,35,0.9)', titleFont: { weight: '600' }, bodyFont: { size: 13 }, padding: 12, cornerRadius: 8, callbacks: { label: function(ctx) { return ' ' + ctx.parsed.y.toLocaleString('et-EE').replace(/,/g, ' ') + ' €'; } } } }, scales: { x: { grid: { display: false }, ticks: { font: { size: 11, weight: '500' }, color: '#4a5568' } }, y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }, ticks: { font: { size: 11 }, color: '#8896a6', callback: function(v) { if (v >= 1000) return (v / 1000).toFixed(0) + 'k €'; return v + ' €'; } } } } }
+            data: {
+                labels: ['Palk', 'Paberipuit', 'Varumine', 'Transport'],
+                datasets: [{
+                    data: [Math.round(logValue), Math.round(pulpValue), Math.round(harvestCost), Math.round(transportCost)],
+                    backgroundColor: [VALUE_COLORS.log, VALUE_COLORS.pulp, VALUE_COLORS.harvest, VALUE_COLORS.transport],
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    barPercentage: 0.7,
+                    categoryPercentage: 0.8,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(26, 29, 35, 0.9)',
+                        titleFont: { weight: '600' },
+                        bodyFont: { size: 13 },
+                        padding: 12,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function(ctx) {
+                                var v = ctx.parsed.y;
+                                return ' ' + v.toLocaleString('et-EE').replace(/,/g, ' ') + ' €';
+                            },
+                        },
+                    },
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11, weight: '500' }, color: '#4a5568' },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false },
+                        ticks: {
+                            font: { size: 11 },
+                            color: '#8896a6',
+                            callback: function(v) {
+                                if (v >= 1000) return (v / 1000).toFixed(0) + 'k €';
+                                return v + ' €';
+                            },
+                        },
+                    },
+                },
+            },
         });
     }
 
@@ -898,10 +1055,13 @@
     var currentData = null;
 
     document.addEventListener('DOMContentLoaded', function() {
-        var mapInitialized = false;
+        initMap();
+        document.getElementById('kataster-input').focus();
 
         document.getElementById('search-btn').addEventListener('click', doSearch);
-        document.getElementById('kataster-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') doSearch(); });
+        document.getElementById('kataster-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') doSearch();
+        });
 
         document.getElementById('eudr-btn').addEventListener('click', function() {
             var nr = (currentData && currentData.kataster && currentData.kataster.number) || document.getElementById('kataster-input').value.trim();
@@ -910,90 +1070,84 @@
         });
 
         document.querySelectorAll('.layer-toggle input[type=checkbox]').forEach(function(cb) {
-            cb.addEventListener('change', function(e) { var key = e.target.dataset.layer; if (key) toggleOverlayLayer(key, e.target.checked); });
+            cb.addEventListener('change', function(e) {
+                var key = e.target.dataset.layer;
+                if (key) toggleOverlayLayer(key, e.target.checked);
+            });
         });
 
         // Address search autocomplete
-        var addressTimer = null, input = document.getElementById('kataster-input'), dropdown = document.getElementById('address-dropdown');
+        var addressTimer = null;
+        var input = document.getElementById('kataster-input');
+        var dropdown = document.getElementById('address-dropdown');
+
         input.addEventListener('input', function() {
             var val = input.value.trim();
             clearTimeout(addressTimer);
             if (val.length < 3) { dropdown.style.display = 'none'; return; }
+            // If it looks like a kataster number, don't search addresses
             if (/^\d{5}:\d{3}:\d{4}$/.test(val)) { dropdown.style.display = 'none'; return; }
             addressTimer = setTimeout(function() { searchAddresses(val); }, 350);
         });
-        input.addEventListener('blur', function() { setTimeout(function() { dropdown.style.display = 'none'; }, 200); });
-        input.addEventListener('keydown', function(e) { if (e.key === 'Escape') dropdown.style.display = 'none'; });
 
-        // Edge trees — fade out + parallax on scroll
-        var edgeTrees = document.getElementById('edge-trees');
-        var landingEl = document.getElementById('landing');
-        if (edgeTrees && landingEl) {
-            var ticking = false;
-            window.addEventListener('scroll', function() {
-                if (!ticking) {
-                    requestAnimationFrame(function() {
-                        var scrollY = window.pageYOffset || document.documentElement.scrollTop;
-                        var landingH = landingEl.offsetHeight;
-                        var progress = Math.min(scrollY / (landingH * 0.6), 1);
-                        // Fade and scale out
-                        edgeTrees.style.opacity = 1 - progress;
-                        edgeTrees.style.transform = 'scale(' + (1 - progress * 0.15) + ') translateY(' + (progress * -30) + 'px)';
-                        // Hide completely when faded
-                        edgeTrees.style.pointerEvents = progress > 0.9 ? 'none' : '';
-                        ticking = false;
-                    });
-                    ticking = true;
-                }
-            }, { passive: true });
-        }
+        input.addEventListener('blur', function() {
+            setTimeout(function() { dropdown.style.display = 'none'; }, 200);
+        });
 
-        // Lazy-init map
-        var observer = new IntersectionObserver(function(entries) {
-            if (entries[0].isIntersecting && !mapInitialized) { mapInitialized = true; initMap(); observer.disconnect(); }
-        }, { threshold: 0.1 });
-        observer.observe(document.getElementById('map'));
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') dropdown.style.display = 'none';
+        });
     });
 
     async function searchAddresses(query) {
         var dropdown = document.getElementById('address-dropdown');
         try {
-            var resp = await fetch('/api/address/' + encodeURIComponent(query));
+            var resp = await fetch('/api/address?q=' + encodeURIComponent(query));
             var data = await resp.json();
-            if (!data.results || data.results.length === 0) { dropdown.style.display = 'none'; return; }
+            if (!data.results || data.results.length === 0) {
+                dropdown.style.display = 'none';
+                return;
+            }
             var html = '';
             data.results.forEach(function(r) {
-                var label = r.aadress || r.asula || '', sub = [r.asula, r.vald, r.maakond].filter(Boolean).join(', ');
+                var label = r.aadress || r.asula || '';
+                var sub = [r.asula, r.vald, r.maakond].filter(Boolean).join(', ');
                 html += '<div class="address-item" data-kataster="' + r.katastri_nr + '">';
                 html += '<div class="addr-main">' + label + '</div>';
                 if (sub) html += '<div class="addr-sub">' + sub + '</div>';
-                html += '<div class="addr-kataster">Kataster: ' + r.katastri_nr + '</div></div>';
+                html += '<div class="addr-kataster">Kataster: ' + r.katastri_nr + '</div>';
+                html += '</div>';
             });
             dropdown.innerHTML = html;
             dropdown.style.display = '';
+
             dropdown.querySelectorAll('.address-item').forEach(function(item) {
                 item.addEventListener('mousedown', function(e) {
                     e.preventDefault();
-                    document.getElementById('kataster-input').value = item.dataset.kataster;
+                    var kataster = item.dataset.kataster;
+                    document.getElementById('kataster-input').value = kataster;
                     dropdown.style.display = 'none';
                     doSearch();
                 });
             });
-        } catch(e) { dropdown.style.display = 'none'; }
+        } catch(e) {
+            dropdown.style.display = 'none';
+        }
     }
 
     async function doSearch() {
         var nr = document.getElementById('kataster-input').value.trim();
         if (!nr) { showError('Sisesta katastri number.'); return; }
+
         var btn = document.getElementById('search-btn');
         btn.disabled = true;
+
         showLoading();
-        document.getElementById('dashboard').scrollIntoView({ behavior: 'smooth' });
-        if (!map) setTimeout(function() { initMap(); }, 300);
 
         try {
             var data = await searchParcel(nr);
             currentData = data;
+
             if (data.kataster) renderKataster(data.kataster);
             renderMets(data.mets);
             renderVaartus(data.vaartus);
@@ -1002,20 +1156,31 @@
             renderTeatised(data.teatised);
             renderKitsendused(data.kitsendused);
             renderToetused(data.toetused);
+
             if (data.mets && data.mets.liikide_koosseis) renderCompositionChart(data.mets.liikide_koosseis);
             if (data.vaartus) renderValueChart(data.vaartus);
+
+            // Load map overlay layers
             if (data.map_layers) loadMapLayers(data.map_layers);
             document.getElementById('map-controls').style.display = '';
+
             hideLoading();
             showDashboard();
+
+            // Show parcel on the already-visible map
             setTimeout(function() {
-                if (map) map.invalidateSize();
-                if (data.kataster && data.kataster.geometry) { showParcel(data.kataster.geometry); fitToParcel(data.kataster.geometry); }
-            }, 400);
+                map.invalidateSize();
+                if (data.kataster && data.kataster.geometry) {
+                    showParcel(data.kataster.geometry);
+                    fitToParcel(data.kataster.geometry);
+                }
+            }, 200);
         } catch (err) {
             hideLoading();
             showError(err.message);
-        } finally { btn.disabled = false; }
+        } finally {
+            btn.disabled = false;
+        }
     }
     </script>
 </body>
