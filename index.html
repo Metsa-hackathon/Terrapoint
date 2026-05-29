@@ -710,24 +710,19 @@
         // Eligible programs first (highlighted)
         if (eligible.length > 0) {
             html += '<div style="margin-bottom:1rem"><strong style="color:var(--success)">✓ Sobivad toetused (' + eligible.length + ')</strong></div>';
-            html += '<table><thead><tr><th>Programm</th><th>Summa</th><th>Taotlusvoor</th><th></th></tr></thead><tbody>';
-            var links = {
-                'Natura 2000 metsatoetus': 'https://www.eramets.ee/toetused/natura-metsa-toetus/',
-                'Kliimakindla metsa kujundamine': 'https://www.eramets.ee/metsa-kujundamine/',
-                'Kooreüraski tõrje': 'https://www.eramets.ee/uraskikahjustuste-ennetamine/',
-                'Metsastamise toetus': 'https://www.eramets.ee/metsastamine/',
-                'Vääriselupaiga hooldus': 'https://www.eramets.ee/toetused/vaariselupaiga-kaitseks-lepingu-solmimine/',
-                'Metsa uuendamise toetus': 'https://www.eramets.ee/toetused/metsa-uuendamise-toetus/',
-                'Metsa hooldamise toetus': 'https://www.eramets.ee/toetused/metsameede/',
-                'Looduskaitse erametsas': 'https://www.eramets.ee/toetused/',
-            };
             eligible.forEach(function(t) {
-                var link = links[t.nimi] || 'https://www.eramets.ee/toetused/';
-                html += '<tr><td><strong>' + t.nimi + '</strong></td><td>' + t.summa + '</td>';
-                html += '<td>' + (t.taotlusvoor || '—') + '</td>';
-                html += '<td><a href="' + link + '" target="_blank" rel="noopener" style="color:var(--success);font-weight:600;font-size:0.82rem">Kandideeri →</a></td></tr>';
+                var link = t.url || 'https://www.eramets.ee/toetused/';
+                html += '<div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;background:var(--card-bg)">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
+                html += '<strong style="color:var(--text)">' + t.nimi + '</strong>';
+                html += '<span style="color:var(--success);font-weight:600">' + t.summa + '</span>';
+                html += '</div>';
+                if (t.kirjeldus) html += '<p style="color:var(--text-muted);font-size:0.82rem;margin:4px 0">' + t.kirjeldus + '</p>';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">';
+                html += '<span style="color:var(--text-muted);font-size:0.8rem">Taotlusvoor: ' + (t.taotlusvoor || '—') + '</span>';
+                html += '<a href="' + link + '" target="_blank" rel="noopener" style="color:var(--success);font-weight:600;font-size:0.82rem">Kandideeri →</a>';
+                html += '</div></div>';
             });
-            html += '</tbody></table>';
         }
 
         // Ineligible programs (collapsed)
