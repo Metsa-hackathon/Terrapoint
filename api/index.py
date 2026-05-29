@@ -576,15 +576,24 @@ async def chat(request: Request):
             messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
         messages.append({"role": "user", "content": user_message})
 
-        api_key = os.environ.get("OPENROUTER_API_KEY", "")
-        model = os.environ.get("OPENROUTER_MODEL", "google/gemma-4-31b-it:free")
+        nvidia_key = os.environ.get("NVIDIA_API_KEY", "")
+        openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
 
-        if not api_key:
-            return json_response({"error": "OpenRouter API key not configured"}, 500)
+        # Prefer NVIDIA, fallback to OpenRouter
+        if nvidia_key:
+            api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
+            api_key = nvidia_key
+            model = "minimaxai/minimax-m2.7"
+        elif openrouter_key:
+            api_url = "https://openrouter.ai/api/v1/chat/completions"
+            api_key = openrouter_key
+            model = os.environ.get("OPENROUTER_MODEL", "google/gemma-4-31b-it:free")
+        else:
+            return json_response({"error": "API key not configured"}, 500)
 
         async with httpx.AsyncClient(timeout=55) as client:
             resp = await client.post(
-                "https://openrouter.ai/api/v1/chat/completions",
+                api_url,
                 headers={
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
