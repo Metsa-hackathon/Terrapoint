@@ -380,19 +380,20 @@
             attributionControl: true,
         }).setView([58.5, 25.0], 7);
 
-        const maaametFoto = L.tileLayer('https://tiles.maaamet.ee/tm/tms/1.0.0/foto@GMC/{z}/{x}/{y}.jpg', {
-            maxZoom: 18, minZoom: 6, tms: true,
-            attribution: 'Maa-amet',
+        const maaametFoto = L.tileLayer.wms('https://kaart.maaamet.ee/wms/fotokaart?', {
+            layers: 'of10000',
+            format: 'image/jpeg',
+            transparent: false,
+            maxZoom: 18, minZoom: 6,
+            attribution: '&copy; Maa-amet',
         });
 
-        const maaametKaart = L.tileLayer('https://tiles.maaamet.ee/tm/tms/1.0.0/kaart@GMC/{z}/{x}/{y}.png', {
-            maxZoom: 18, minZoom: 6, tms: true,
-            attribution: 'Maa-amet',
-        });
-
-        const maaametHybriid = L.tileLayer('https://tiles.maaamet.ee/tm/tms/1.0.0/hybriid@GMC/{z}/{x}/{y}.png', {
-            maxZoom: 15, minZoom: 6, tms: true,
-            attribution: 'Maa-amet',
+        const maaametKaart = L.tileLayer.wms('https://kaart.maaamet.ee/wms/kaart?', {
+            layers: 'pohi_vr',
+            format: 'image/png',
+            transparent: false,
+            maxZoom: 18, minZoom: 6,
+            attribution: '&copy; Maa-amet',
         });
 
         const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -410,7 +411,6 @@
         L.control.layers({
             'Ortofoto (Maa-amet)': maaametFoto,
             'Kaart (Maa-amet)': maaametKaart,
-            'Hübriidkaart': maaametHybriid,
             'OpenStreetMap': osm,
             'Esri satelliit': esriFoto,
         }, null, { position: 'bottomleft' }).addTo(map);
