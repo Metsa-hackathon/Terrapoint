@@ -39,7 +39,7 @@ async def health():
     return {"status": "ok", "version": "2.0.0", "timestamp": time.time()}
 
 
-@app.get("/api/address")
+@app.get("/api/address/{q:path}")
 async def address_search(q: str = ""):
     try:
         if not q or len(q) < 2:

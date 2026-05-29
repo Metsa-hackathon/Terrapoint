@@ -1102,7 +1102,7 @@
     async function searchAddresses(query) {
         var dropdown = document.getElementById('address-dropdown');
         try {
-            var resp = await fetch('/api/address?q=' + encodeURIComponent(query));
+            var resp = await fetch('/api/address/' + encodeURIComponent(query));
             var data = await resp.json();
             if (!data.results || data.results.length === 0) {
                 dropdown.style.display = 'none';
