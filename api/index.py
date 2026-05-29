@@ -690,7 +690,10 @@ async def export_eudr(kataster_nr: str):
 async def root():
     html_path = PROJECT_ROOT / "index.html"
     if html_path.exists():
-        return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
+        return HTMLResponse(
+            content=html_path.read_text(encoding="utf-8"),
+            headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+        )
     return HTMLResponse(content="<h1>Terrapoint</h1>", status_code=500)
 
 
