@@ -484,44 +484,15 @@
                 }),
             });
 
-            if (!resp.ok) {
-                var err = await resp.json();
-                throw new Error(err.error || 'Serveri viga');
+            var data = await resp.json();
+
+            if (!resp.ok || data.error) {
+                throw new Error(data.error || 'Serveri viga');
             }
 
             aiRemoveTyping();
-            var bubble = aiAppendMessage('assistant', '');
-            var fullText = '';
-
-            var reader = resp.body.getReader();
-            var decoder = new TextDecoder();
-            var buffer = '';
-
-            while (true) {
-                var result = await reader.read();
-                if (result.done) break;
-
-                buffer += decoder.decode(result.value, {stream: true});
-                var lines = buffer.split('\n');
-                buffer = lines.pop() || '';
-
-                for (var i = 0; i < lines.length; i++) {
-                    var line = lines[i].trim();
-                    if (line.startsWith('data: ')) {
-                        var payload = line.slice(6);
-                        if (payload === '[DONE]') break;
-                        try {
-                            var chunk = JSON.parse(payload);
-                            if (chunk.content) {
-                                fullText += chunk.content;
-                                bubble.innerHTML = aiFormatResponse(fullText);
-                                var container = document.getElementById('ai-chat-messages');
-                                container.scrollTop = container.scrollHeight;
-                            }
-                        } catch(e) {}
-                    }
-                }
-            }
+            var fullText = data.content || '';
+            aiAppendMessage('assistant', aiFormatResponse(fullText));
 
             aiChatHistory.push({role: 'assistant', content: fullText});
             document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + ' — küsi lisa küsimusi';

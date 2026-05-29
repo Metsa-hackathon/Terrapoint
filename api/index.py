@@ -576,49 +576,42 @@ async def chat(request: Request):
             messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
         messages.append({"role": "user", "content": user_message})
 
-        api_key = os.environ.get("OPENROUTER_API_KEY", "")
-        model = os.environ.get("OPENROUTER_MODEL", "deepseek/deepseek-v4-flash:free")
+        nvidia_key = os.environ.get("NVIDIA_API_KEY", "")
+        openrouter_key = os.environ.get("OPENROUTER_API_KEY", "")
 
-        if not api_key:
-            return json_response({"error": "OpenRouter API key not configured"}, 500)
+        # Prefer NVIDIA, fallback to OpenRouter
+        if nvidia_key:
+            api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
+            api_key = nvidia_key
+            model = "minimaxai/minimax-m2.7"
+        elif openrouter_key:
+            api_url = "https://openrouter.ai/api/v1/chat/completions"
+            api_key = openrouter_key
+            model = os.environ.get("OPENROUTER_MODEL", "google/gemma-4-31b-it:free")
+        else:
+            return json_response({"error": "API key not configured"}, 500)
 
-        async def stream_response():
-            async with httpx.AsyncClient(timeout=60) as client:
-                async with client.stream(
-                    "POST",
-                    "https://openrouter.ai/api/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": model,
-                        "messages": messages,
-                        "stream": True,
-                        "temperature": 0.7,
-                        "max_tokens": 4000,
-                    },
-                ) as resp:
-                    async for line in resp.aiter_lines():
-                        if line.startswith("data: "):
-                            chunk = line[6:]
-                            if chunk.strip() == "[DONE]":
-                                yield "data: [DONE]\n\n"
-                                break
-                            try:
-                                chunk_data = orjson.loads(chunk)
-                                delta = chunk_data.get("choices", [{}])[0].get("delta", {})
-                                content = delta.get("content", "")
-                                if content:
-                                    yield f"data: {orjson.dumps({'content': content}).decode()}\n\n"
-                            except Exception:
-                                continue
-
-        return StreamingResponse(
-            stream_response(),
-            media_type="text/event-stream",
-            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-        )
+        async with httpx.AsyncClient(timeout=55) as client:
+            resp = await client.post(
+                api_url,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "stream": False,
+                    "temperature": 0.7,
+                    "max_tokens": 2000,
+                },
+            )
+            result = resp.json()
+            content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
+            if not content:
+                error = result.get("error", {}).get("message", "Tundmatu viga")
+                return json_response({"error": error}, 500)
+            return json_response({"content": content})
 
     except Exception as exc:
         import traceback
