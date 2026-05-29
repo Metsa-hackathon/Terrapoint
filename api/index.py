@@ -39,11 +39,14 @@ async def health():
     return {"status": "ok", "version": "2.0.0", "timestamp": time.time()}
 
 
-@app.get("/api/address/{query:path}")
-async def address_search(query: str):
+@app.get("/api/address")
+async def address_search(q: str = ""):
     try:
+        if not q or len(q) < 2:
+            return json_response({"results": []})
+
         import urllib.parse
-        cql = urllib.parse.quote(f"l_aadress LIKE '%{query}%'")
+        cql = urllib.parse.quote(f"l_aadress LIKE '%{q}%'")
         url = (
             f"{config.GEOBASE}/kataster/wfs?"
             f"service=WFS&request=GetFeature&typeName=kataster:ky_aadress"
