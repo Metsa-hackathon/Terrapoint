@@ -198,18 +198,18 @@ async def _search(kataster_nr: str):
             "eraldisi_kokku": len(eraldised),
         }
 
-        # Timber pricing - species-specific (Erametsaliit 2024 avg, updated periodically)
+        # Timber pricing — Erametsaliit aprill 2026 (palgihinnad, seisuhind ≈ palgihind/2.3)
         SPECIES_PRICES = {
-            "MA": {"seisuhind": 42, "log": 48, "pulp": 28},
-            "KU": {"seisuhind": 50, "log": 58, "pulp": 32},
-            "KS": {"seisuhind": 38, "log": 44, "pulp": 24},
-            "HB": {"seisuhind": 30, "log": 35, "pulp": 18},
-            "LH": {"seisuhind": 45, "log": 52, "pulp": 30},
-            "LM": {"seisuhind": 32, "log": 38, "pulp": 20},
-            "LV": {"seisuhind": 32, "log": 38, "pulp": 20},
-            "TA": {"seisuhind": 55, "log": 65, "pulp": 35},
-            "SA": {"seisuhind": 50, "log": 58, "pulp": 32},
-            "VA": {"seisuhind": 35, "log": 40, "pulp": 22},
+            "MA": {"seisuhind": 45, "log": 104.37, "pulp": 53.14},
+            "KU": {"seisuhind": 48, "log": 109.54, "pulp": 53.00},
+            "KS": {"seisuhind": 43, "log": 98.80, "pulp": 53.79},
+            "HB": {"seisuhind": 27, "log": 62.97, "pulp": 44.77},
+            "LH": {"seisuhind": 40, "log": 85.00, "pulp": 50.00},
+            "LM": {"seisuhind": 28, "log": 65.00, "pulp": 44.00},
+            "LV": {"seisuhind": 28, "log": 65.00, "pulp": 44.00},
+            "TA": {"seisuhind": 50, "log": 110.00, "pulp": 55.00},
+            "SA": {"seisuhind": 45, "log": 100.00, "pulp": 50.00},
+            "VA": {"seisuhind": 32, "log": 72.00, "pulp": 45.00},
         }
         prices = SPECIES_PRICES.get(puuliik, SPECIES_PRICES["MA"])
         price_m3 = prices["seisuhind"]
@@ -221,8 +221,8 @@ async def _search(kataster_nr: str):
             "tagavara_m3": round(total_m3),
             "log_price": prices["log"],
             "pulp_price": prices["pulp"],
-            "price_source": "Erametsaliit 2024 keskmine",
-            "price_updated": "2024",
+            "price_source": "Erametsaliit aprill 2026",
+            "price_updated": "2026-04",
         }
 
         sinik_result = {
