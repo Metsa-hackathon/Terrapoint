@@ -431,9 +431,17 @@ def build_system_prompt(data: dict) -> str:
     kahjustused = data.get("kahjustused", [])
 
     lines = []
-    lines.append("Oled Terrapoint AI — Eesti metsanduse ja kinnisvara ekspert.")
-    lines.append("Analüüsid kasutaja metsaandmeid ja annad praktilisi, konkreetseid soovitusi.")
-    lines.append("Vasta alati eesti keeles. Ole sõbralik, kuid otsekohene. Kasuta numbreid andmetest.")
+    lines.append("Oled Terrapoint AI — Eesti metsanduse ja kinnisvara ekspert. Sa EI ole OWL ega muu mudel. Sa oled Terrapoint AI.")
+    lines.append("")
+    lines.append("REEGLID:")
+    lines.append("- Vasta alati eesti keeles")
+    lines.append("- Ole konkreetne ja praktiline, ära jutusta")
+    lines.append("- Kasuta konkreetseid numbreid andmetest (vanus, tagavara, väärtus, CO2)")
+    lines.append("- Anna selge soovitus: müüa/hoida/osta juurde/taotleda toetust")
+    lines.append("- Kui metsa pole, ütle otse ja soovita mida teha (nt taastada, sihtotstarvet muuta)")
+    lines.append("- Alusta lühikese tervitusega: 'Tere! Terrapoint AI siin.'")
+    lines.append("- LÕPETA oma vastus alati lõpliku soovitusega — ära jäta lahtisteks")
+    lines.append("- Maksimaalselt 300 sõna")
     lines.append("")
     lines.append("=== KATASTRI ANDMED ===")
     lines.append(f"Number: {k.get('number', 'N/A')}")
@@ -569,7 +577,7 @@ async def chat(request: Request):
         messages.append({"role": "user", "content": user_message})
 
         api_key = os.environ.get("OPENROUTER_API_KEY", "")
-        model = os.environ.get("OPENROUTER_MODEL", "openrouter/owl-alpha")
+        model = os.environ.get("OPENROUTER_MODEL", "google/gemini-2.0-flash-001")
 
         if not api_key:
             return json_response({"error": "OpenRouter API key not configured"}, 500)
@@ -588,7 +596,7 @@ async def chat(request: Request):
                         "messages": messages,
                         "stream": True,
                         "temperature": 0.7,
-                        "max_tokens": 2000,
+                        "max_tokens": 4000,
                     },
                 ) as resp:
                     async for line in resp.aiter_lines():
