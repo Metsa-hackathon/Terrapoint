@@ -491,7 +491,12 @@
                 }),
             });
 
-            var data = await resp.json();
+            var data;
+            try {
+                data = await resp.json();
+            } catch(e) {
+                throw new Error('Serveri vastus ei ole korrektne');
+            }
 
             if (!resp.ok || data.error) {
                 throw new Error(data.error || 'Serveri viga');

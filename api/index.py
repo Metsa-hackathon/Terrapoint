@@ -598,11 +598,19 @@ async def chat(request: Request):
                     "max_tokens": 800,
                 },
             )
-            result = resp.json()
-            content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
-            if not content:
-                error = result.get("error", {}).get("message", "Tundmatu viga")
+            if resp.status_code != 200:
+                return json_response({"error": f"API viga: {resp.status_code}"}, 500)
+            try:
+                result = resp.json()
+            except Exception:
+                return json_response({"error": "API vastus ei ole JSON"}, 500)
+            choices = result.get("choices", [])
+            if not choices:
+                error = result.get("error", {}).get("message", "Tühi vastus")
                 return json_response({"error": error}, 500)
+            content = choices[0].get("message", {}).get("content", "")
+            if not content:
+                return json_response({"error": "AI ei vastanud"}, 500)
             return json_response({"content": content})
 
     except Exception as exc:
