@@ -393,10 +393,12 @@
         if (visible) {
             if (overlayLayers[name]) {
                 map.addLayer(overlayLayers[name]);
-            } else if (currentData && currentData.map_layers && currentData.map_layers[name]) {
-                // First time toggle — load from API data
-                var layerData = currentData.map_layers[name];
-                addOverlayLayer(name, layerData.features, layerData.color, false);
+            } else {
+                // First time toggle — load from stored API data
+                var mapLayers = window._mapLayersData || {};
+                if (mapLayers[name]) {
+                    addOverlayLayer(name, mapLayers[name].features, mapLayers[name].color, false);
+                }
             }
         } else {
             removeOverlayLayer(name);
@@ -423,6 +425,9 @@
     function loadMapLayers(mapLayers) {
         // Clear old overlays
         Object.keys(overlayLayers).forEach(removeOverlayLayer);
+
+        // Store for lazy loading on toggle
+        window._mapLayersData = mapLayers;
 
         // Auto-show checked layers
         var checkboxes = document.querySelectorAll('.layer-toggle input[type=checkbox]');
