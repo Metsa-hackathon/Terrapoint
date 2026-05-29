@@ -1,5 +1,6 @@
 import time
 import asyncio
+import httpx
 import orjson
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
