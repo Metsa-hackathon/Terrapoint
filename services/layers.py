@@ -29,7 +29,7 @@ async def _fetch_layer(client, key, workspace, typename, bbox_str):
         f"service=WFS&request=GetFeature&typeName={typename}"
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&count=30"
-        f"&bbox={bbox_str}"
+        f"&bbox={bbox_str},EPSG:4326"
     )
     try:
         resp = await client.get(url)
