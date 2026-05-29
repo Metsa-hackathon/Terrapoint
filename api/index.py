@@ -129,9 +129,22 @@ async def _search(kataster_nr: str):
 
         koosseis_with_osakaal = []
         if liikide_koosseis:
-            total = sum(e.get("tagavara_y_ha", 0) for e in liikide_koosseis) or 1
-            for e in liikide_koosseis:
-                koosseis_with_osakaal.append({**e, "osakaal": round(e.get("tagavara_y_ha", 0) / total * 100)})
+            # Filter out non-species codes (TM, PI, PS, PA, LV2, MU are forest type codes, not species)
+            NON_SPECIES = {"TM", "PI", "PS", "PA", "LV2", "MU"}
+            species_only = [e for e in liikide_koosseis if e.get("puuliik_kood") not in NON_SPECIES]
+            if not species_only:
+                species_only = liikide_koosseis  # fallback to all if no valid species
+
+            # Use tagavara for proportions; fall back to count if all zero
+            total_tagavara = sum((e.get("tagavara_y_ha") or 0) for e in species_only)
+            if total_tagavara > 0:
+                for e in species_only:
+                    koosseis_with_osakaal.append({**e, "osakaal": round((e.get("tagavara_y_ha") or 0) / total_tagavara * 100)})
+            else:
+                # Equal distribution when no tagavara data
+                equal_pct = round(100 / len(species_only)) if species_only else 0
+                for e in species_only:
+                    koosseis_with_osakaal.append({**e, "osakaal": equal_pct})
 
         # Build eraldised summary for frontend
         eraldised_summary = []
