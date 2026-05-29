@@ -259,6 +259,59 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 .forest-trees { position: absolute; bottom: 140px; left: 0; width: 100%; height: 180px; opacity: 0.6; animation: sway 10s ease-in-out infinite alternate; }
 @keyframes sway { 0% { transform: translateX(-2px); } 100% { transform: translateX(2px); } }
 
+/* ═══ Edge Trees ═══ */
+.edge-trees {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+    transition: opacity 0.1s linear;
+}
+
+.edge-tree {
+    position: absolute;
+    bottom: 0;
+    transition: transform 0.1s linear;
+}
+
+.edge-tree svg {
+    display: block;
+    height: 100%;
+    width: auto;
+}
+
+.left-tree { left: 0; transform-origin: bottom left; }
+.right-tree { right: 0; transform-origin: bottom right; }
+
+.left-tree-1 { height: 85vh; left: -30px; bottom: -10px; }
+.left-tree-2 { height: 65vh; left: 40px; bottom: -5px; opacity: 0.7; }
+.left-tree-3 { height: 50vh; left: -10px; bottom: -8px; opacity: 0.5; }
+
+.right-tree-1 { height: 80vh; right: -25px; bottom: -10px; }
+.right-tree-2 { height: 60vh; right: 35px; bottom: -5px; opacity: 0.7; }
+.right-tree-3 { height: 45vh; right: -5px; bottom: -8px; opacity: 0.5; }
+
+@keyframes treeSway {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(0.5deg); }
+}
+
+.left-tree-1 { animation: treeSway 6s ease-in-out infinite; }
+.right-tree-1 { animation: treeSway 7s ease-in-out infinite reverse; }
+.left-tree-2 { animation: treeSway 5s ease-in-out infinite 0.5s; }
+.right-tree-2 { animation: treeSway 8s ease-in-out infinite 1s; }
+
+@media (max-width: 900px) {
+    .left-tree-2, .left-tree-3, .right-tree-2, .right-tree-3 { display: none; }
+    .left-tree-1 { height: 60vh; left: -40px; }
+    .right-tree-1 { height: 55vh; right: -35px; }
+}
+
+@media (max-width: 640px) {
+    .edge-trees { display: none; }
+}
+
 .scroll-hint {
     position: absolute;
     bottom: 2rem;
