@@ -578,7 +578,7 @@
             html += '<table style="margin-top:0.5rem"><thead><tr><th>Programm</th><th>Summa</th><th>Asutus</th><th>Põhjus</th></tr></thead><tbody>';
             ineligible.forEach(function(t) {
                 html += '<tr><td>' + t.nimi + '</td><td>' + t.summa + '</td><td>' + t.asutus + '</td>';
-                html += '<td class="muted" style="font-size:0.8rem">' + (t.reject_reason || 'Tingimused ei vasta') + '</td></tr>';
+                html += '<td class="muted" style="font-size:0.8rem">' + (t.pohjus || 'Tingimused ei vasta') + '</td></tr>';
             });
             html += '</tbody></table></details>';
         }

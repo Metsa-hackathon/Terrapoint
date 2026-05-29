@@ -1,24 +1,14 @@
 SUBSIDY_PROGRAMS = [
     # === KIK / Erametsakeskus programs ===
     {
-        "name": "Looduskaitseliste piirangute hüvitamine (Natura 2000)",
-        "condition": lambda d: d.get("natura_2000"),
-        "reject_reason": lambda d: "Krunt ei asu Natura 2000 alal" if not d.get("natura_2000") else None,
+        "name": "Looduskaitse toetus",
+        "condition": lambda d: d.get("kaitseala") or d.get("natura_2000"),
+        "reject_reason": lambda d: "Krundil puuduvad looduskaitselised piirangud (Natura 2000 või kaitseala)" if not d.get("kaitseala") and not d.get("natura_2000") else None,
         "amount": "60-160 €/ha",
         "asutus": "KIK",
         "voor": "Apr 4–30",
         "url": "https://www.eramets.ee/toetused/natura-metsa-toetus/",
-        "description": "Hüvitis looduskaitseliste piirangute tõttu saamata jääva tulu eest Natura 2000 alal",
-    },
-    {
-        "name": "Looduskaitseliste piirangute hüvitamine (väljaspool Natura 2000)",
-        "condition": lambda d: d.get("kaitseala") and not d.get("natura_2000"),
-        "reject_reason": lambda d: "Krunt ei asu kaitsealal" if not d.get("kaitseala") else "Krunt on Natura 2000 alal (kasuta Natura programmi)" if d.get("natura_2000") else None,
-        "amount": "kuni 60 €/ha",
-        "asutus": "KIK",
-        "voor": "Apr 4–30",
-        "url": "https://www.eramets.ee/toetused/natura-metsa-toetus/",
-        "description": "Hüvitis piirangute tõttu saamata jääva tulu eest kaitsealadel väljaspool Natura 2000",
+        "description": "Looduskaitseliste piirangute hüvitamine Natura 2000 ja kaitsealadel. 160 €/ha metsaelupaigaga tsoonis.",
     },
     {
         "name": "Vääriselupaiga hooldus",
