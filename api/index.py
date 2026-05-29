@@ -334,6 +334,8 @@ async def _search(kataster_nr: str):
         }
         riskid["terviseindeks"] = None
         riskid["karuputk"] = bool(layers_data.get("karuputk"))
+        if layers_data.get("lageraiealad"):
+            riskid["lageraieala"] = True
 
     # Process metsateatised - show active ones prominently
     TOO_NIMETUSED = {
