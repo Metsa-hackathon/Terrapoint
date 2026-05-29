@@ -227,7 +227,7 @@ async def _search(kataster_nr: str):
         yrask_score = 0
         yrask_label = "Madal"
         has_kuusk = any(e.get("puuliik_kood") == "KU" for e in eraldised)
-        max_vanus = max(e.get("vanus", 0) for e in eraldised)
+        max_vanus = max((e.get("vanus") or 0) for e in eraldised)
 
         if yrask_features:
             yrask_score = 3
