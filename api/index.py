@@ -42,17 +42,18 @@ async def health():
 @app.get("/api/address/{query:path}")
 async def address_search(query: str):
     try:
-        from urllib.parse import quote
-        encoded_query = quote(query)
-        url = (
-            f"{config.GEOBASE}/kataster/wfs?"
-            f"service=WFS&request=GetFeature&typeName=kataster:ky_aadress"
-            f"&srsName=EPSG:4326&outputFormat=application/json"
-            f"&count=10"
-            f"&CQL_FILTER=l_aadress%20LIKE%20%27%25{encoded_query}%25%27"
-        )
+        cql = f"l_aadress LIKE '%{query}%'"
+        params = {
+            "service": "WFS",
+            "request": "GetFeature",
+            "typeName": "kataster:ky_aadress",
+            "srsName": "EPSG:4326",
+            "outputFormat": "application/json",
+            "count": "10",
+            "CQL_FILTER": cql,
+        }
         async with httpx.AsyncClient(timeout=5) as client:
-            resp = await client.get(url)
+            resp = await client.get(f"{config.GEOBASE}/kataster/wfs", params=params)
             resp.raise_for_status()
             features = resp.json().get("features", [])
 
