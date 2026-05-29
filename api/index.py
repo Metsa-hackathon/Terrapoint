@@ -315,23 +315,15 @@ async def _search(kataster_nr: str):
     LAYER_MAP = {
         "kaitsealad": {"label": "Kaitsealad", "color": "#2d6a4f"},
         "piirang": {"label": "Piiranguvööndid", "color": "#52796f"},
-        "loodusala": {"label": "Natura loodusalad", "color": "#354f52"},
-        "linnuala": {"label": "Natura linnualad", "color": "#354f52"},
-        "reservaat": {"label": "Loodusreservaadid", "color": "#1b4332"},
-        "looduslik_skv": {"label": "Looduslikud SKV", "color": "#40916c"},
         "yrask_eelis": {"label": "Üraski vaatlused", "color": "#e76f51"},
         "kaadamisalad": {"label": "Kaadamisalad", "color": "#6c757d"},
         "sood": {"label": "Sood", "color": "#457b9d"},
         "niidud": {"label": "Niidud", "color": "#a7c957"},
-        "veekogud": {"label": "Järved", "color": "#48cae4"},
-        "vooluveed": {"label": "Vooluveekogud", "color": "#0096c7"},
         "natura_elupaik": {"label": "Natura elupaigad", "color": "#6a994e"},
         "veekaitse": {"label": "Veekaitsevööndid", "color": "#0077b6"},
-        "piiranguvoond": {"label": "Ranna piiranguv.", "color": "#023e8a"},
         "uleujutus": {"label": "Üleujutusala", "color": "#0096c7"},
         "lageraiealad": {"label": "Lageraiealad", "color": "#adb5bd"},
         "karuputk": {"label": "Karuputk", "color": "#d63384"},
-        "malestised": {"label": "Mälestised", "color": "#7b2cbf"},
     }
     for key, meta in LAYER_MAP.items():
         features = layers_data.get(key, [])

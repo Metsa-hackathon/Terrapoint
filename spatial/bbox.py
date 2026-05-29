@@ -1,7 +1,7 @@
 from shapely.geometry import shape
 
 
-def calculate_bbox(geometry: dict, buffer_deg: float = 0.002) -> tuple[float, float, float, float]:
+def calculate_bbox(geometry: dict, buffer_deg: float = 0.005) -> tuple[float, float, float, float]:
     geom = shape(geometry)
     minx, miny, maxx, maxy = geom.bounds
     return (minx - buffer_deg, miny - buffer_deg, maxx + buffer_deg, maxy + buffer_deg)
