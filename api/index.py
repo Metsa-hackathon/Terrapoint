@@ -1,6 +1,7 @@
 import time
 import asyncio
 import orjson
+import traceback
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, HTMLResponse, FileResponse
@@ -27,6 +28,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Terrapoint", version="2.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    tb = traceback.format_exc()
+    return Response(
+        content=orjson.dumps({"error": str(exc), "traceback": tb}),
+        media_type="application/json",
+        status_code=500,
+    )
 
 
 def json_response(data: dict, status: int = 200) -> Response:
@@ -73,29 +84,30 @@ async def search(kataster_nr: str, request: Request):
         yrask_task = asyncio.create_task(query_yrask_mke(bbox_str))
         teatised_task = asyncio.create_task(query_teatised(kataster_nr))
 
+        remaining = max(1.0, MAX_TIME - (time.time() - start) - 1.0)
         done, pending = await asyncio.wait(
             [eraldis_task, layers_task, natura_task, yrask_task, teatised_task],
-            timeout=max(1.0, MAX_TIME - (time.time() - start) - 1.0),
+            timeout=remaining,
         )
 
-        for coro in done:
+        for t in done:
             try:
-                result = await coro
-                if coro is eraldis_task:
+                result = t.result()
+                if t is eraldis_task:
                     eraldis_data = result
-                elif coro is layers_task:
+                elif t is layers_task:
                     layers_data = result
-                elif coro is natura_task:
+                elif t is natura_task:
                     natura_features = result
-                elif coro is yrask_task:
+                elif t is yrask_task:
                     yrask_features = result
-                elif coro is teatised_task:
+                elif t is teatised_task:
                     teatised_features = result
             except Exception:
                 pass
 
-        for coro in pending:
-            coro.cancel()
+        for t in pending:
+            t.cancel()
     except Exception:
         pass
 
@@ -123,9 +135,9 @@ async def search(kataster_nr: str, request: Request):
 
         tagavara = eraldis_data.get("tagavara_y_ha", 0)
         pindala = eraldis_data.get("pindala_ha", 0)
-        puuliik = eraldis_data.get("puuliik_kood", "MA")
-        vanus = eraldis_data.get("vanus", 0)
-        boniteet = eraldis_data.get("boniteedi_kood", 3)
+        puuliik = eraldis_data.get("puuliik_kood", "MA") or "MA"
+        vanus = int(eraldis_data.get("vanus", 0) or 0)
+        boniteet = int(eraldis_data.get("boniteedi_kood", 3) or 3)
 
         carbon = carbon_potential(tagavara, pindala, puuliik)
         raie = cutting_age_indicator(vanus, puuliik, boniteet)
