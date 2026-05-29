@@ -97,19 +97,17 @@ async def _search(kataster_nr: str):
 
     eraldis_task = query_eraldis(kataster_nr)
     layers_task = query_all_layers(bbox_str)
-    natura_task = query_natura_2000(bbox_str)
-    yrask_task = query_yrask_mke(bbox_str)
     teatised_task = query_teatised(kataster_nr)
 
     results = await asyncio.gather(
-        eraldis_task, layers_task, natura_task, yrask_task, teatised_task,
+        eraldis_task, layers_task, teatised_task,
         return_exceptions=True
     )
     eraldised = results[0] if not isinstance(results[0], Exception) else []
     layers_data = results[1] if not isinstance(results[1], Exception) else {}
-    natura_features = results[2] if not isinstance(results[2], Exception) else []
-    yrask_features = results[3] if not isinstance(results[3], Exception) else []
-    teatised_features = results[4] if not isinstance(results[4], Exception) else []
+    teatised_features = results[2] if not isinstance(results[2], Exception) else []
+    natura_features = layers_data.get("natura_elupaik", [])
+    yrask_features = layers_data.get("yrask_eelis", [])
 
     kitsendused = []
     mets_result = None
