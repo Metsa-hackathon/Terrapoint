@@ -308,8 +308,6 @@ async def _search(kataster_nr: str):
 
     riskid = {}
     if eraldised:
-        riskid["raievanus"] = raie
-
         # Improved ürask risk scoring: consider official zone, species, and age
         yrask_score = 0
         yrask_label = "Madal"
@@ -337,7 +335,6 @@ async def _search(kataster_nr: str):
         }
         riskid["terviseindeks"] = None
         riskid["karuputk"] = bool(layers_data.get("karuputk"))
-        riskid["lageraieala"] = bool(layers_data.get("lageraiealad"))
 
     # Process metsateatised - show active ones prominently
     TOO_NIMETUSED = {

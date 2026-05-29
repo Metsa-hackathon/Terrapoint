@@ -342,7 +342,7 @@
                     <span class="info-toggle">?</span>
                 </div>
                 <div id="info-riskid" class="info-box">
-                    <strong>Mis näitab:</strong> Metsa terviseriskid — raievanus, üraski risk, karuputk ja lageraiealad.<br>
+                    <strong>Mis näitab:</strong> Metsa terviseriskid — üraski risk ja karuputk.<br>
                     <strong>Allikas:</strong> Metsaregister (MKE tsoonid), EELIS (looduskaitse).
                     <div class="source">Andmed: Keskkonnaagentuur, metsaregister.ee</div>
                 </div>
@@ -757,11 +757,6 @@
         var el = document.getElementById('riskid-info');
         if (!data) { el.innerHTML = '<p class="muted">Riskiandmeid pole</p>'; return; }
         var html = '';
-        if (data.raievanus) {
-            var r = data.raievanus;
-            html += '<div class="info-row"><span class="label" title="Võrdleb praegust vanust raievanusega">Raievanus</span>';
-            html += '<span class="traffic-light ' + r.status + '"><span class="dot"></span>' + r.label + ' (' + Math.round(r.ratio * 100) + '%)</span></div>';
-        }
         if (data.yrask) {
             var y = data.yrask, colors = ['#28a745', '#ffc107', '#fd7e14', '#e63946'];
             html += '<div class="info-row"><span class="label" title="Kuuse-kooreüraski risk">Üraski risk</span>';
@@ -775,7 +770,6 @@
             html += '<div class="progress-bar"><div class="fill" style="width:' + t + '%;background:' + barColor + '"></div></div>';
         }
         if (data.karuputk) html += '<div class="info-row"><span class="label" title="Mürgise umbrohu esinemine">Karuputk</span><span style="color:var(--danger);font-weight:600">Leitud</span></div>';
-        if (data.lageraieala) html += '<div class="info-row"><span class="label" title="Hiljutise lageraie ala">Lageraieala</span><span class="value">' + data.lageraieala + '</span></div>';
         el.innerHTML = html || '<p class="muted">Riskiandmeid pole</p>';
     }
 
