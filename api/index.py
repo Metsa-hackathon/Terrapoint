@@ -814,7 +814,7 @@ async def chat(request: Request):
             return json_response({"error": "OpenRouter API key not configured"}, 500)
 
         api_url = "https://openrouter.ai/api/v1/chat/completions"
-        model = "google/gemini-2.0-flash-001"
+        model = "openrouter/owl-alpha"
 
         async with httpx.AsyncClient(timeout=httpx.Timeout(8, connect=3)) as client:
             resp = await client.post(
