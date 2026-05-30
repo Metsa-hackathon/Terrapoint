@@ -902,7 +902,7 @@
         html += '<div class="big-number"><span id="anim-co2">0</span><span class="unit"> tCO₂</span></div>';
         html += '<div class="info-row"><span class="label">CO₂ / ha <span class="q-tip" title="Süsinikdioksiidi kogus hektari kohta, mida mets on sidunud. 1 ton CO₂ = ühe auto aastane heide.">?</span></span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
         html += '<div class="info-row"><span class="label">Biomass / ha <span class="q-tip" title="Metsa elusmass hektari kohta, puud, juured, oksad. Biomassist 47% on süsinik.">?</span></span><span class="value">' + formatNum(data.total_biomass_tons_ha, 1) + ' t</span></div>';
-        html += '<div class="info-row"><span class="label">Potentsiaalne tulu <span class="q-tip" title="Rahaline väärtus, kui müüa süsinikukrediite (65 €/t CO₂, EU ETS 2026). Praegu Eestis veel süsinikuturgu ei ole.">?</span></span><span class="value">' + formatEur(data.potential_income_eur) + '</span></div>';
+        html += '<div class="info-row"><span class="label">Potentsiaalne tulu <span class="q-tip" title="Vabatahtliku süsinikuturu (VCM) hinnaga arvestatud tulu (20 €/t CO₂). Metsakrediitide hind sõltub sertifikaadi tüübist: metsastamine 15-30 €/t, olemasoleva metsa säilitamine 5-15 €/t. EL ETS hind (60-80 €/t) eraomanikule ei laiene.">?</span></span><span class="value">' + formatEur(data.potential_income_eur) + '</span></div>';
 
         // CO2 equivalency illustration
         if (data.cars_equivalent || data.trees_equivalent) {
