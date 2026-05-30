@@ -814,9 +814,9 @@ async def chat(request: Request):
             return json_response({"error": "OpenRouter API key not configured"}, 500)
 
         api_url = "https://openrouter.ai/api/v1/chat/completions"
-        model = "deepseek/deepseek-v4-flash:free"
+        model = "openai/gpt-4.1-mini"
 
-        async with httpx.AsyncClient(timeout=httpx.Timeout(7, connect=3)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(8, connect=3)) as client:
             resp = await client.post(
                 api_url,
                 headers={
@@ -869,9 +869,10 @@ async def chat(request: Request):
                     return json_response({"error": "AI ei vastanud"}, 500)
                 return json_response({"content": content})
 
+    except httpx.ReadTimeout:
+        return json_response({"error": "AI vastus võttis liiga kaua. Proovi lühemat küsimust."}, 504)
     except Exception as exc:
-        import traceback
-        return json_response({"error": str(exc), "trace": traceback.format_exc()}, 500)
+        return json_response({"error": f"Serveri viga: {str(exc)}"}, 500)
 
 
 @app.get("/api/export/eudr/{kataster_nr:path}")
