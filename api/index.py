@@ -321,8 +321,14 @@ async def _search(kataster_nr: str):
     toetused = check_subsidies(subsidy_data)
 
     riskid = {}
+    # Always check layer-based risks (even without forest data)
+    has_karuputk = bool(layers_data.get("karuputk"))
+    has_lageraieala = bool(layers_data.get("lageraiealad"))
+    riskid["karuputk"] = has_karuputk
+    riskid["lageraieala"] = has_lageraieala
+
     if eraldised:
-        # Improved ürask risk scoring: consider official zone, species, and age
+        # Ürask risk scoring
         yrask_score = 0
         yrask_label = "Madal"
         has_kuusk = any(e.get("puuliik_kood") == "KU" for e in eraldised)
@@ -347,10 +353,38 @@ async def _search(kataster_nr: str):
             "official_zone": bool(yrask_features),
             "detail": "Kuusekooreüraski MKE tsoon" if yrask_features else None,
         }
+
+        # Terviseindeks (0-100): arvestab vanust, üraski riski, kahjustusi, liigilist koosseisu
+        health = 100
+        # Vanus: ideaalne 40-80a, alla 20a või üle 100a miinuspunktid
+        avg_vanus = sum((e.get("vanus") or 0) * (e.get("pindala_ha") or 0) for e in eraldised) / max(sum((e.get("pindala_ha") or 0) for e in eraldised), 1)
+        if avg_vanus < 20:
+            health -= 15  # liiga noor mets
+        elif avg_vanus > 100:
+            health -= 20  # ülekasvanud
+        elif avg_vanus > 80:
+            health -= 10  # vanemapoolne
+        # Üraski risk
+        health -= yrask_score * 12  # 0, 12, 24, 36
+        # Kahjustused
+        if kahjustused_features:
+            health -= min(len(kahjustused_features) * 8, 25)
+        # Karuputk
+        if has_karuputk:
+            health -= 10
+        # Lageraieala — mets on ära raiutud
+        if has_lageraieala:
+            health -= 30
+        # Liigiline mitmekesisus: ainult üks liik = madalam
+        unique_species = set(e.get("puuliik_kood") for e in eraldised if e.get("puuliik_kood"))
+        if len(unique_species) == 1:
+            health -= 5
+        elif len(unique_species) >= 3:
+            health += 5  # mitmekesine mets on tervem
+
+        riskid["terviseindeks"] = max(0, min(100, health))
+    else:
         riskid["terviseindeks"] = None
-        riskid["karuputk"] = bool(layers_data.get("karuputk"))
-        if layers_data.get("lageraiealad"):
-            riskid["lageraieala"] = True
 
     # Process metsateatised - show active ones prominently
     TOO_NIMETUSED = {

@@ -274,9 +274,12 @@
                     <span class="info-toggle">?</span>
                 </div>
                 <div id="info-riskid" class="info-box">
-                    <strong>Mis näitab:</strong> Metsa terviseriskid: üraski risk ja karuputk.<br>
+                    <strong>Mis näitab:</strong> Metsa terviseriskid ja terviseindeks.<br>
                     <strong>Üraski risk:</strong> 0=madal, 1=keskmine (kuusk &gt;30a), 2=kõrge (kuusk &gt;50a), 3=kriitiline (MKE tsoonis).<br>
-                    <strong>Allikas:</strong> Metsaregister (MKE tsoonid), EELIS (looduskaitse).
+                    <strong>Terviseindeks:</strong> 100=terve mets, 0=haige. Arvestab vanust (ideaalne 40-80a), üraski riski, kahjustusi ja liigilist koosseisu.<br>
+                    <strong>Karuputk:</strong> Mürgise umbrohu esinemine — kohustuslik tõrjuda.<br>
+                    <strong>Lageraieala:</strong> Hiljutine lageraie tuvastatud — mõjutab väärtust.<br>
+                    <strong>Allikas:</strong> Metsaregister, EELIS, Maa-amet.
                     <div class="source">Andmed: Keskkonnaagentuur, metsaregister.ee</div>
                 </div>
                 <div id="riskid-info"></div>
@@ -953,6 +956,7 @@
         var el = document.getElementById('riskid-info');
         if (!data) { el.innerHTML = '<p class="muted">Riskiandmeid pole</p>'; return; }
         var html = '';
+        // Üraski risk
         if (data.yrask) {
             var y = data.yrask;
             var colors = ['#28a745', '#ffc107', '#fd7e14', '#e63946'];
@@ -960,14 +964,21 @@
             html += '<span style="color:' + colors[y.score] + ';font-weight:600">' + y.label + '</span></div>';
             if (y.detail) html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem">' + y.detail + '</div>';
         }
+        // Terviseindeks
         if (data.terviseindeks != null) {
             var t = data.terviseindeks;
             var barColor = t >= 70 ? 'linear-gradient(90deg, #28a745, #2a9d8f)' : t >= 40 ? 'linear-gradient(90deg, #ffc107, #f4a261)' : 'linear-gradient(90deg, #e63946, #fd7e14)';
-            html += '<div class="info-row"><span class="label" title="Metsa terviseindeks: 100=terve, 0=haige. Arvestab kahjustusi, vanust ja liigilist koosseisu.">Terviseindeks</span><span class="value">' + t + '/100</span></div>';
+            html += '<div class="info-row"><span class="label">Terviseindeks <span class="q-tip" title="Metsa terviseindeks: 100=terve, 0=haige. Arvestab vanust (ideaalne 40-80a), üraski riski, kahjustusi ja liigilist koosseisu.">?</span></span><span class="value">' + t + '/100</span></div>';
             html += '<div class="progress-bar"><div class="fill" style="width:' + t + '%;background:' + barColor + '"></div></div>';
         }
-        if (data.karuputk) html += '<div class="info-row"><span class="label">Karuputk <span class="q-tip" title="Mürgise umbrohu esinemine krundil. Kohustuslik tõrjuda, võib põletada nahka.">?</span></span><span style="color:var(--danger);font-weight:600">Leitud</span></div>';
-        if (data.lageraieala) html += '<div class="info-row"><span class="label">Lageraieala <span class="q-tip" title="Krundil on tuvastatud hiljutine lageraie, mets on ära raiutud. Võib mõjutada väärtust.">?</span></span><span style="color:var(--warning);font-weight:600">Jah</span></div>';
+        // Karuputk - alati näita
+        var karuputk = data.karuputk;
+        html += '<div class="info-row"><span class="label">Karuputk <span class="q-tip" title="Mürgise umbrohu (Heracleum sosnowskyi) esinemine krundil. Kohustuslik tõrjuda, võib põletada nahka.">?</span></span>';
+        html += karuputk ? '<span style="color:var(--danger);font-weight:600">Leitud</span></div>' : '<span style="color:#28a745">Puudub</span></div>';
+        // Lageraieala - alati näita
+        var lageraie = data.lageraieala;
+        html += '<div class="info-row"><span class="label">Lageraieala <span class="q-tip" title="Krundil on tuvastatud hiljutine lageraie (EELIS andmed). Mets on ära raiutud, mõjutab väärtust ja terviseindeksit.">?</span></span>';
+        html += lageraie ? '<span style="color:var(--warning);font-weight:600">Tuvastatud</span></div>' : '<span style="color:#28a745">Puudub</span></div>';
         el.innerHTML = html || '<p class="muted">Riskiandmeid pole</p>';
     }
 
