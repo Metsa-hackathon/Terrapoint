@@ -335,8 +335,9 @@ async def _search(kataster_nr: str):
         prices = SPECIES_PRICES.get(puuliik, SPECIES_PRICES["MA"])
         price_m3 = prices["seisuhind"]
 
-        # Kinnistu turuväärtus = maa turuhind + puidu väärtus
+        # Kinnistu turuväärtus = maa turuhind (sisaldab juba puidu väärtust oksjonil)
         # Maa turuhind: arvutatud sihtotstarbe ja pindala järgi
+        # Maksuhind on Maa-ameti hinnang ~60-70% turuhinnast, seega tegur ~1.3-1.5
         maksuhind = kataster_data.get("maks_hind") or 0
         kogupindala = kataster_data.get("pindala_ha") or 1
         sihtotstarve = kataster_data.get("sihtotstarve", "")
@@ -344,15 +345,15 @@ async def _search(kataster_nr: str):
 
         st = sihtotstarve.upper()
         if "METS" in st or "KAITSE" in st or eraldised:
-            turuhinna_tegur = 4.0  # Metsamaa, kaitsealune maa, või on eraldised olemas
+            turuhinna_tegur = 1.4  # Metsamaa: maksuhind on ~70% turuhinnast
         elif "POLL" in st:
-            turuhinna_tegur = 3.5  # Põllumaa
+            turuhinna_tegur = 1.6  # Põllumaa
         elif "ELAM" in st:
-            turuhinna_tegur = 5.0  # Elamumaa
+            turuhinna_tegur = 2.0  # Elamumaa
         else:
-            turuhinna_tegur = 3.5  # Muu
+            turuhinna_tegur = 1.5  # Muu
 
-        MIN_TURUHIND_HA = 1500
+        MIN_TURUHIND_HA = 500
         turuhind_ha = max(maksuhind_ha * turuhinna_tegur, MIN_TURUHIND_HA)
         maa_turuhind = round(turuhind_ha * kogupindala)
 
@@ -365,8 +366,8 @@ async def _search(kataster_nr: str):
             "pulp_price": prices["pulp"],
             "price_source": "Metzfund 2026",
             "price_updated": "2026-05",
-            # Kinnistu koguväärtus
-            "kinnistu_turuväärtus": maa_turuhind + timber_value,
+            # Kinnistu turuväärtus (maa + puit, oksjonihinna lähedane)
+            "kinnistu_turuväärtus": maa_turuhind + round(timber_value * 0.3),
             "maa_turuhind": maa_turuhind,
             "maa_maksuhind": kataster_data.get("maks_hind") or 0,
         }
