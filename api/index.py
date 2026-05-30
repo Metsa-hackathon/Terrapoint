@@ -262,34 +262,12 @@ async def _search(kataster_nr: str):
             kuivendatud = e.get("kuivendatud", False)
 
             # Per-eraldis valuation
-            # 1. Base: seisuhind * tagavara * pindala
+            # Formula: seisuhind × tagavara × pindala × kuivendus
+            # Note: tagavara (m³/ha) already reflects boniteet and age - no double-counting!
             e_prices = SPECIES_PRICES.get(kood, SPECIES_PRICES["MA"])
             e_seisuhind = e_prices["seisuhind"]
-            base_value = e_seisuhind * tagavara * e_pindala
-
-            # 2. Boniteet factor (I=1.2, II=1.1, III=1.0, IV=0.9, V=0.8, VI+=0.7)
-            boniteet_factor = {1: 1.2, 2: 1.1, 3: 1.0, 4: 0.9, 5: 0.8, 6: 0.7, 7: 0.6, 8: 0.5}.get(boniteet_kood, 1.0)
-
-            # 3. Age factor: young stands worth less, approaching raievanus worth more
-            # Sigmoid-like curve: 0.5 at 20% of raievanus, 1.0 at 100%
-            if raievanus > 0 and vanus > 0:
-                age_ratio = min(vanus / raievanus, 1.5)
-                if age_ratio < 0.2:
-                    age_factor = 0.3
-                elif age_ratio < 0.5:
-                    age_factor = 0.5 + (age_ratio - 0.2) * 1.67  # 0.5 -> 1.0
-                elif age_ratio < 1.0:
-                    age_factor = 1.0
-                else:
-                    age_factor = 1.0  # Over-mature, no penalty
-            else:
-                age_factor = 1.0
-
-            # 4. Drainage bonus: +10% for drained forests
             drainage_factor = 1.1 if kuivendatud else 1.0
-
-            # Final eraldis value
-            eraldis_value = round(base_value * boniteet_factor * age_factor * drainage_factor)
+            eraldis_value = round(e_seisuhind * tagavara * e_pindala * drainage_factor)
             value_per_ha = round(eraldis_value / e_pindala) if e_pindala > 0 else 0
 
             eraldised_summary.append({
@@ -307,8 +285,6 @@ async def _search(kataster_nr: str):
                 "vaartus_eur": eraldis_value,
                 "vaartus_per_ha": value_per_ha,
                 "seisuhind": e_seisuhind,
-                "boniteet_factor": boniteet_factor,
-                "age_factor": round(age_factor, 2),
             })
             if geom:
                 kood = e.get("puuliik_kood", "MA")
