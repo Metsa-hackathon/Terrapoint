@@ -649,6 +649,27 @@
             }
         });
         new CenterControl().addTo(map);
+
+        // Legend for eraldised species colors
+        var LegendControl = L.Control.extend({
+            options: { position: 'bottomright' },
+            onAdd: function() {
+                var div = L.DomUtil.create('div', 'leaflet-control legend-control');
+                div.style.cssText = 'background:white;padding:8px 10px;border-radius:6px;box-shadow:0 1px 5px rgba(0,0,0,0.2);font-size:11px;line-height:1.6;display:none';
+                div.id = 'map-legend';
+                div.innerHTML = '<div style="font-weight:700;margin-bottom:4px;font-size:11px">Eraldised</div>' +
+                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#2d6a4f;margin-right:4px"></span>Mänd</div>' +
+                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#1a8fd4;margin-right:4px"></span>Kuusk</div>' +
+                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f4a261;margin-right:4px"></span>Kask</div>' +
+                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#adb5bd;margin-right:4px"></span>Haab</div>' +
+                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#6a994e;margin-right:4px"></span>Lehis</div>' +
+                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#8d6e63;margin-right:4px"></span>Sanglepp</div>' +
+                    '<div style="margin-top:4px;font-size:10px;color:#666">Lohista hiirega eraldise kohale</div>';
+                L.DomEvent.disableClickPropagation(div);
+                return div;
+            }
+        });
+        new LegendControl().addTo(map);
     }
 
     function showParcel(geometry) {
@@ -780,6 +801,9 @@
             },
         }).addTo(map);
         overlayLayers['eraldised'] = layer;
+        // Show legend
+        var legend = document.getElementById('map-legend');
+        if (legend) legend.style.display = '';
     }
 
     // ═══ dashboard.js ═══
