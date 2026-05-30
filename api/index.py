@@ -231,18 +231,66 @@ async def _search(kataster_nr: str):
                         "osakaal": equal_pct,
                     })
 
-        # Build eraldised summary for frontend (including geometry for map)
+        # Build eraldised summary for frontend (including geometry and per-eraldis value)
         eraldised_summary = []
         for e in eraldised:
             geom = e.get("geometry")
+            kood = e.get("puuliik_kood", "MA")
+            vanus = e.get("vanus") or 0
+            tagavara = e.get("tagavara_y_ha") or 0
+            pindala = e.get("pindala_ha") or 0
+            boniteet_kood = e.get("boniteedi_kood", 3)
+            raievanus = e.get("raievanus") or 0
+            kuivendatud = e.get("kuivendatud", False)
+
+            # Per-eraldis valuation
+            # 1. Base: seisuhind * tagavara * pindala
+            e_prices = SPECIES_PRICES.get(kood, SPECIES_PRICES["MA"])
+            e_seisuhind = e_prices["seisuhind"]
+            base_value = e_seisuhind * tagavara * pindala
+
+            # 2. Boniteet factor (I=1.2, II=1.1, III=1.0, IV=0.9, V=0.8, VI+=0.7)
+            boniteet_factor = {1: 1.2, 2: 1.1, 3: 1.0, 4: 0.9, 5: 0.8, 6: 0.7, 7: 0.6, 8: 0.5}.get(boniteet_kood, 1.0)
+
+            # 3. Age factor: young stands worth less, approaching raievanus worth more
+            # Sigmoid-like curve: 0.5 at 20% of raievanus, 1.0 at 100%
+            if raievanus > 0 and vanus > 0:
+                age_ratio = min(vanus / raievanus, 1.5)
+                if age_ratio < 0.2:
+                    age_factor = 0.3
+                elif age_ratio < 0.5:
+                    age_factor = 0.5 + (age_ratio - 0.2) * 1.67  # 0.5 -> 1.0
+                elif age_ratio < 1.0:
+                    age_factor = 1.0
+                else:
+                    age_factor = 1.0  # Over-mature, no penalty
+            else:
+                age_factor = 1.0
+
+            # 4. Drainage bonus: +10% for drained forests
+            drainage_factor = 1.1 if kuivendatud else 1.0
+
+            # Final eraldis value
+            eraldis_value = round(base_value * boniteet_factor * age_factor * drainage_factor)
+            value_per_ha = round(eraldis_value / pindala) if pindala > 0 else 0
+
             eraldised_summary.append({
                 "eraldis_nr": e.get("eraldis_nr"),
                 "puuliik": e.get("puuliik"),
-                "puuliik_kood": e.get("puuliik_kood"),
-                "vanus": e.get("vanus") or 0,
-                "tagavara_y_ha": e.get("tagavara_y_ha") or 0,
-                "pindala_ha": e.get("pindala_ha") or 0,
+                "puuliik_kood": kood,
+                "vanus": vanus,
+                "tagavara_y_ha": tagavara,
+                "pindala_ha": pindala,
                 "boniteet": e.get("boniteet"),
+                "boniteet_kood": boniteet_kood,
+                "raievanus": raievanus,
+                "kuivendatud": kuivendatud,
+                # Per-eraldis valuation
+                "vaartus_eur": eraldis_value,
+                "vaartus_per_ha": value_per_ha,
+                "seisuhind": e_seisuhind,
+                "boniteet_factor": boniteet_factor,
+                "age_factor": round(age_factor, 2),
             })
             if geom:
                 kood = e.get("puuliik_kood", "MA")
@@ -257,6 +305,8 @@ async def _search(kataster_nr: str):
                         "tagavara_y_ha": e.get("tagavara_y_ha") or 0,
                         "pindala_ha": e.get("pindala_ha") or 0,
                         "color": species_colors.get(kood, "#666"),
+                        "vaartus_eur": eraldis_value,
+                        "vaartus_per_ha": value_per_ha,
                     }
                 })
 
