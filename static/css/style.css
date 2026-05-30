@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════
-   TerraPoint — Premium Forest Dashboard
+   Terrapoint — Premium Forest Dashboard
    ═══════════════════════════════════════════ */
 
 :root {
@@ -17,6 +17,7 @@
     --bg-alt: #f0f4f0;
     --card: #ffffff;
     --surface: #f5f7f5;
+    --surface-alt: #f0f4f0;
 
     --text: #1a1d23;
     --text-secondary: #4a5568;
@@ -592,78 +593,108 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
-    background: var(--surface);
+    background: transparent;
     color: var(--text-muted);
-    font-size: 12px;
-    font-weight: 700;
-    cursor: help;
-    border: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
     flex-shrink: 0;
-    transition: all var(--transition);
-    position: relative;
+    transition: all 0.2s ease;
+    opacity: 0.6;
 }
-.info-toggle:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+.info-toggle:hover {
+    opacity: 1;
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+    transform: scale(1.1);
+}
 
 .info-box {
     display: none;
-    margin-top: 0.6rem;
-    padding: 0.6rem 0.75rem;
-    background: var(--surface);
-    border-radius: var(--radius-sm);
-    border-left: 3px solid var(--primary-light);
+    margin-top: 0.5rem;
+    padding: 0.7rem 0.85rem;
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface-alt, #f8faf8) 100%);
+    border-radius: 8px;
+    border-left: 3px solid var(--primary);
     font-size: 0.78rem;
     color: var(--text-secondary);
-    line-height: 1.5;
+    line-height: 1.55;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
-.card-header:hover ~ .info-box,
-.card-header:hover + .info-box { display: block; }
-.info-box:hover { display: block; }
+.info-box.open { display: block; }
 
-.info-box strong { color: var(--text); font-weight: 600; }
-.info-box .source { margin-top: 0.3rem; font-size: 0.72rem; color: var(--text-muted); font-style: italic; }
+.info-box strong {
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.info-box .source {
+    margin-top: 0.4rem;
+    padding-top: 0.35rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
 
 .q-tip {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
     border-radius: 50%;
-    background: var(--surface-alt, #f0f0f0);
+    background: transparent;
     color: var(--text-muted, #999);
-    font-size: 10px;
-    font-weight: 700;
+    font-size: 9px;
+    font-weight: 600;
     cursor: help;
     vertical-align: middle;
-    margin-left: 3px;
+    margin-left: 4px;
     line-height: 1;
-    border: 1px solid var(--border, #ddd);
-    transition: all 0.15s;
+    border: 1.5px solid var(--border, #ddd);
+    transition: all 0.2s ease;
+    opacity: 0.5;
 }
 .q-tip:hover {
+    opacity: 1;
     background: var(--primary, #1a4d2e);
     color: #fff;
     border-color: var(--primary, #1a4d2e);
+    transform: scale(1.15);
 }
 
 .initial-info {
-    padding: 1rem;
+    padding: 1.2rem 1rem;
     text-align: center;
     color: var(--text-muted);
     font-size: 0.85rem;
 }
-.initial-info .icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
-.initial-info p { margin: 0.25rem 0; }
-.initial-info .hint { font-size: 0.78rem; margin-top: 0.5rem; }
+.initial-info .icon {
+    font-size: 1.3rem;
+    margin-bottom: 0.6rem;
+    opacity: 0.4;
+}
+.initial-info p { margin: 0.3rem 0; }
+.initial-info .hint {
+    font-size: 0.78rem;
+    margin-top: 0.5rem;
+    opacity: 0.7;
+}
 
 .section-desc {
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     color: var(--text-muted);
-    margin: -0.2rem 0 0.6rem 0;
-    line-height: 1.35;
+    margin: -0.1rem 0 0.5rem 0;
+    line-height: 1.4;
+    padding-left: 0.1rem;
+    opacity: 0.85;
 }
 
 .card-header h3 {

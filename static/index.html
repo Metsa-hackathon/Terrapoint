@@ -301,7 +301,7 @@
                     <h3>EUDR</h3>
                     <span class="info-toggle">?</span>
                 </div>
-                <p class="section-desc">EL deforestativastase määruse vastavuskontroll</p>
+                <p class="section-desc">EL deforestatsioonivastase määruse vastavuskontroll</p>
                 <div id="info-eudr" class="info-box">
                     <strong>Mis näitab:</strong> Krundi geomeetria GeoJSON-formaadis EL deforestatsioonivastase määruse (EUDR) jaoks.<br>
                     <strong>Kasutus:</strong> EUDR nõuab tõestust, et toode ei pärine deforestatsioonitud alalt. GeoJSON sisaldab krundi piire ja katastri numbrit.<br>
@@ -363,7 +363,7 @@
                 <div id="kitsendused-info">
                     <div class="initial-info">
                         <div class="icon">&#128269;</div>
-                        <p>Otsi krundi, et näha kitsendusi</p>
+                        <p>Otsi krunti, et näha kitsendusi</p>
                         <p class="hint">Kaitsealad, piiranguvööndid, muinsuskaitse</p>
                     </div>
                 </div>
@@ -393,7 +393,7 @@
                 <div id="toetused-info">
                     <div class="initial-info">
                         <div class="icon">&#128176;</div>
-                        <p>Otsi krundi, et näha toetusi</p>
+                        <p>Otsi krunti, et näha toetusi</p>
                         <p class="hint">Metsauuendus, hooldusraie, Natura 2000, kaitsealade hüvitised</p>
                     </div>
                 </div>
@@ -782,11 +782,24 @@
             },
             onEachFeature: function(feature, layer) {
                 var p = feature.properties || {};
-                var label = (p.puuliik || '?') + ', ' + (p.vanus || '?') + 'a, ' + (p.tagavara_y_ha || '?') + ' m³/ha';
-                var val = p.vaartus_eur ? Math.round(p.vaartus_eur).toLocaleString('et-EE').replace(/,/g, ' ') + ' €' : '';
-                var tip = 'Eraldis ' + (p.eraldis_nr || '?') + ': ' + label;
-                if (val) tip += ' — ' + val;
-                layer.bindTooltip(tip, {sticky: true});
+                var val = p.vaartus_eur ? Math.round(p.vaartus_eur).toLocaleString('et-EE').replace(/,/g, ' ') + ' €' : '—';
+                var valHa = p.vaartus_per_ha ? Math.round(p.vaartus_per_ha).toLocaleString('et-EE').replace(/,/g, ' ') + ' €/ha' : '';
+                layer.bindTooltip('Klikka hinnangu nägemiseks', {sticky: true});
+                var html = '<div style="font-size:13px;min-width:180px">';
+                html += '<div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#2e7d32">Eraldis ' + (p.eraldis_nr || '?') + '</div>';
+                html += '<div style="display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:12px">';
+                html += '<span style="color:#666">Puuliik:</span><strong>' + (p.puuliik || '?') + '</strong>';
+                html += '<span style="color:#666">Vanus:</span><span>' + (p.vanus || '?') + ' a</span>';
+                html += '<span style="color:#666">Tagavara:</span><span>' + (p.tagavara_y_ha || '?') + ' m³/ha</span>';
+                html += '<span style="color:#666">Pindala:</span><span>' + (p.pindala_ha || '?') + ' ha</span>';
+                html += '</div>';
+                html += '<div style="margin-top:8px;padding-top:6px;border-top:1px solid #e0e0e0">';
+                html += '<div style="font-size:18px;font-weight:800;color:#2e7d32">' + val + '</div>';
+                if (valHa) html += '<div style="font-size:11px;color:#666">' + valHa + '</div>';
+                html += '</div>';
+                html += '<div style="font-size:10px;color:#999;margin-top:4px">Klikka mujal sulgemiseks</div>';
+                html += '</div>';
+                layer.bindPopup(html);
             },
         }).addTo(map);
         overlayLayers['eraldised'] = layer;
@@ -975,7 +988,7 @@
         if (!data) { el.innerHTML = '<p class="muted">Süsiniku andmeid pole</p>'; return; }
         var html = '';
         html += '<div class="big-number"><span id="anim-co2">0</span><span class="unit"> tCO₂</span></div>';
-        html += '<div class="info-row"><span class="label">CO₂ / ha <span class="q-tip" title="Süsinikdioksiidi kogus hektari kohta, mida mets on sidunud. 1 ton CO₂ = ühe auto aastane heide.">?</span></span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
+        html += '<div class="info-row"><span class="label">CO₂ / ha <span class="q-tip" title="Süsinikdioksiidi kogus hektari kohta, mida mets on sidunud. 1 tonn CO₂ = ühe auto aastane heide.">?</span></span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
         html += '<div class="info-row"><span class="label">Biomass / ha <span class="q-tip" title="Metsa elusmass hektari kohta, puud, juured, oksad. Biomassist 47% on süsinik.">?</span></span><span class="value">' + formatNum(data.total_biomass_tons_ha, 1) + ' t</span></div>';
 
         // CO2 equivalency illustration
@@ -1364,9 +1377,41 @@
         });
 
         document.getElementById('eudr-btn').addEventListener('click', function() {
+
+        // Info-toggle click to show/hide info-box
+        document.querySelectorAll('info-toggle').forEach(function(toggle) {
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var card = this.closest('metric-card') || this.closest('card');
+                if (!card) return;
+                var box = card.querySelector('info-box');
+                if (!box) return;
+                var isOpen = box.classList.contains('open');
+                document.querySelectorAll('info-box.open').forEach(function(b) { b.classList.remove('open'); });
+                if (!isOpen) box.classList.add('open');
+            });
+        });
+        document.addEventListener('click', function() {
+            document.querySelectorAll('info-box.open').forEach(function(b) { b.classList.remove('open'); });
+        });
             var nr = (currentData && currentData.kataster && currentData.kataster.number) || document.getElementById('kataster-input').value.trim();
-            if (nr) exportEUDR(nr).catch(function(err) { showError(err.message); });
-            else showError('Otsi esmalt krunt');
+
+
+        document.querySelectorAll('info-toggle').forEach(function(toggle) {
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var card = this.closest('metric-card') || this.closest('card');
+                if (!card) return;
+                var box = card.querySelector('info-box');
+                if (!box) return;
+                var isOpen = box.classList.contains('open');
+                document.querySelectorAll('info-box.open').forEach(function(b) { b.classList.remove('open'); });
+                if (!isOpen) box.classList.add('open');
+            });
+        });
+        document.addEventListener('click', function() {
+            document.querySelectorAll('info-box.open').forEach(function(b) { b.classList.remove('open'); });
+        });
         });
 
         document.querySelectorAll('.layer-toggle input[type=checkbox]').forEach(function(cb) {

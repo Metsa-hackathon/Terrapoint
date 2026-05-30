@@ -212,7 +212,7 @@ SUBSIDY_PROGRAMS = [
         "asutus": "PRIA",
         "voor": "Täpsustamisel",
         "url": "https://www.eramets.ee/toetused/uhistutoetus/",
-        "description": "Metsaühistute tegevuse toetamine. Sisaldab liikmetele teenuste osustamist, koolituste korraldamist ja ühiseid metsamajandamise tegevusi.",
+        "description": "Metsaühistute tegevuse toetamine. Sisaldab liikmetele teenuste osutamist, koolituste korraldamist ja ühiseid metsamajandamise tegevusi.",
         "category": "ühistu",
     },
     {

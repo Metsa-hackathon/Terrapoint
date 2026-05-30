@@ -255,7 +255,7 @@ async def _search(kataster_nr: str):
             kood = e.get("puuliik_kood", "MA")
             vanus = e.get("vanus") or 0
             tagavara = e.get("tagavara_y_ha") or 0
-            pindala = e.get("pindala_ha") or 0
+            e_pindala = e.get("pindala_ha") or 0
             boniteet_kood = e.get("boniteedi_kood", 3)
             raievanus = e.get("raievanus") or 0
             kuivendatud = e.get("kuivendatud", False)
@@ -264,7 +264,7 @@ async def _search(kataster_nr: str):
             # 1. Base: seisuhind * tagavara * pindala
             e_prices = SPECIES_PRICES.get(kood, SPECIES_PRICES["MA"])
             e_seisuhind = e_prices["seisuhind"]
-            base_value = e_seisuhind * tagavara * pindala
+            base_value = e_seisuhind * tagavara * e_pindala
 
             # 2. Boniteet factor (I=1.2, II=1.1, III=1.0, IV=0.9, V=0.8, VI+=0.7)
             boniteet_factor = {1: 1.2, 2: 1.1, 3: 1.0, 4: 0.9, 5: 0.8, 6: 0.7, 7: 0.6, 8: 0.5}.get(boniteet_kood, 1.0)
@@ -289,7 +289,7 @@ async def _search(kataster_nr: str):
 
             # Final eraldis value
             eraldis_value = round(base_value * boniteet_factor * age_factor * drainage_factor)
-            value_per_ha = round(eraldis_value / pindala) if pindala > 0 else 0
+            value_per_ha = round(eraldis_value / e_pindala) if e_pindala > 0 else 0
 
             eraldised_summary.append({
                 "eraldis_nr": e.get("eraldis_nr"),
@@ -297,7 +297,7 @@ async def _search(kataster_nr: str):
                 "puuliik_kood": kood,
                 "vanus": vanus,
                 "tagavara_y_ha": tagavara,
-                "pindala_ha": pindala,
+                "pindala_ha": e_pindala,
                 "boniteet": e.get("boniteet"),
                 "boniteet_kood": boniteet_kood,
                 "raievanus": raievanus,
@@ -320,7 +320,7 @@ async def _search(kataster_nr: str):
                         "puuliik_kood": kood,
                         "vanus": e.get("vanus") or 0,
                         "tagavara_y_ha": e.get("tagavara_y_ha") or 0,
-                        "pindala_ha": e.get("pindala_ha") or 0,
+                        "pindala_ha": e_pindala,
                         "color": species_colors.get(kood, "#666"),
                         "vaartus_eur": eraldis_value,
                         "vaartus_per_ha": value_per_ha,
@@ -346,20 +346,35 @@ async def _search(kataster_nr: str):
             "eraldisi_kokku": len(eraldised),
         }
 
-        # Timber pricing — already defined above
+        # Timber value = sum of all eraldiste values (consistent calculation)
+        timber_value = sum(e.get("vaartus_eur", 0) for e in eraldised_summary)
+        total_m3 = sum((e.get("tagavara_y_ha") or 0) * (e.get("pindala_ha") or 0) for e in eraldised)
         prices = SPECIES_PRICES.get(puuliik, SPECIES_PRICES["MA"])
         price_m3 = prices["seisuhind"]
-        total_m3 = avg_tagavara * total_pindala
-        timber_value = round(total_m3 * price_m3)
 
         # Kinnistu turuväärtus = maa turuhind + puidu väärtus
-        # Maa turuhind: maksuhind * turuhinna tegur (Eesti metsamaa keskmine ~2.5x)
-        # Metsamaa turuhind sõltub asukohast, liivikust, juurdepääsust
-        maa_turuhind = round((kataster_data.get("maks_hind") or 0) * 2.5)
+        # Maa turuhind: arvutatud sihtotstarbe ja pindala järgi
+        maksuhind = kataster_data.get("maks_hind") or 0
+        kogupindala = kataster_data.get("pindala_ha") or 1
+        sihtotstarve = kataster_data.get("sihtotstarve", "")
+        maksuhind_ha = maksuhind / kogupindala if kogupindala > 0 else 0
+
+        if "METS" in sihtotstarve.upper():
+            turuhinna_tegur = 4.0
+        elif "POLL" in sihtotstarve.upper():
+            turuhinna_tegur = 3.5
+        elif "ELAM" in sihtotstarve.upper():
+            turuhinna_tegur = 5.0
+        else:
+            turuhinna_tegur = 3.5
+
+        MIN_TURUHIND_HA = 1500
+        turuhind_ha = max(maksuhind_ha * turuhinna_tegur, MIN_TURUHIND_HA)
+        maa_turuhind = round(turuhind_ha * kogupindala)
 
         vaartus_result = {
             "total_value_eur": timber_value,
-            "value_per_ha": round(avg_tagavara * price_m3),
+            "value_per_ha": round(timber_value / total_pindala) if total_pindala > 0 else 0,
             "price_per_m3": price_m3,
             "tagavara_m3": round(total_m3),
             "log_price": prices["log"],
@@ -666,7 +681,7 @@ def build_system_prompt(data: dict) -> str:
         lines.append(f"Kogutagavara: {v.get('tagavara_m3', 0)} m³")
         lines.append(f"Palgi hind: {v.get('log_price', 0)} EUR/m³")
         lines.append(f"Paberipuu hind: {v.get('pulp_price', 0)} EUR/m³")
-        lines.append(f"Hinnallikas: {v.get('price_source', '')} ({v.get('price_updated', '')})")
+        lines.append(f"Hindade allikas: {v.get('price_source', '')} ({v.get('price_updated', '')})")
 
     if s:
         lines.append("")
