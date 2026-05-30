@@ -335,14 +335,15 @@ async def _search(kataster_nr: str):
         sihtotstarve = kataster_data.get("sihtotstarve", "")
         maksuhind_ha = maksuhind / kogupindala if kogupindala > 0 else 0
 
-        if "METS" in sihtotstarve.upper():
-            turuhinna_tegur = 4.0
-        elif "POLL" in sihtotstarve.upper():
-            turuhinna_tegur = 3.5
-        elif "ELAM" in sihtotstarve.upper():
-            turuhinna_tegur = 5.0
+        st = sihtotstarve.upper()
+        if "METS" in st or "KAITSE" in st or eraldised:
+            turuhinna_tegur = 4.0  # Metsamaa, kaitsealune maa, või on eraldised olemas
+        elif "POLL" in st:
+            turuhinna_tegur = 3.5  # Põllumaa
+        elif "ELAM" in st:
+            turuhinna_tegur = 5.0  # Elamumaa
         else:
-            turuhinna_tegur = 3.5
+            turuhinna_tegur = 3.5  # Muu
 
         MIN_TURUHIND_HA = 1500
         turuhind_ha = max(maksuhind_ha * turuhinna_tegur, MIN_TURUHIND_HA)
