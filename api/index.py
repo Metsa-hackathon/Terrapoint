@@ -149,6 +149,23 @@ async def _search(kataster_nr: str):
 
     eraldised_features = []
     species_colors = {"MA": "#2d6a4f", "KU": "#1a8fd4", "KS": "#f4a261", "HB": "#adb5bd", "LH": "#6a994e", "LM": "#8d6e63", "LV": "#a1887f"}
+    # Timber pricing — Eesti turuhinnad 2026 (seisuhind = raiumata puidu hind metsas)
+    SPECIES_PRICES = {
+        "MA": {"seisuhind": 48, "log": 105, "pulp": 53},
+        "KU": {"seisuhind": 52, "log": 110, "pulp": 53},
+        "KS": {"seisuhind": 58, "log": 135, "pulp": 65},
+        "HB": {"seisuhind": 30, "log": 65, "pulp": 45},
+        "LH": {"seisuhind": 42, "log": 88, "pulp": 50},
+        "LM": {"seisuhind": 30, "log": 68, "pulp": 44},
+        "LV": {"seisuhind": 30, "log": 68, "pulp": 44},
+        "TA": {"seisuhind": 55, "log": 115, "pulp": 55},
+        "SA": {"seisuhind": 48, "log": 105, "pulp": 50},
+        "VA": {"seisuhind": 35, "log": 75, "pulp": 45},
+        "PK": {"seisuhind": 48, "log": 105, "pulp": 50},
+        "JA": {"seisuhind": 40, "log": 88, "pulp": 48},
+        "RE": {"seisuhind": 30, "log": 68, "pulp": 44},
+        "SP": {"seisuhind": 42, "log": 92, "pulp": 50},
+    }
 
     if eraldised:
         # Fetch element data for all eraldised in parallel
@@ -329,24 +346,7 @@ async def _search(kataster_nr: str):
             "eraldisi_kokku": len(eraldised),
         }
 
-        # Timber pricing — Eesti turuhinnad 2026 (seisuhind = raiumata puidu hind metsas)
-        # Allikad: Erametsaliit, RMK enampakkumised, metsaühistute hinnakirjad
-        SPECIES_PRICES = {
-            "MA": {"seisuhind": 48, "log": 105, "pulp": 53},
-            "KU": {"seisuhind": 52, "log": 110, "pulp": 53},
-            "KS": {"seisuhind": 58, "log": 135, "pulp": 65},
-            "HB": {"seisuhind": 30, "log": 65, "pulp": 45},
-            "LH": {"seisuhind": 42, "log": 88, "pulp": 50},
-            "LM": {"seisuhind": 30, "log": 68, "pulp": 44},
-            "LV": {"seisuhind": 30, "log": 68, "pulp": 44},
-            "TA": {"seisuhind": 55, "log": 115, "pulp": 55},
-            "SA": {"seisuhind": 48, "log": 105, "pulp": 50},
-            "VA": {"seisuhind": 35, "log": 75, "pulp": 45},
-            "PK": {"seisuhind": 48, "log": 105, "pulp": 50},
-            "JA": {"seisuhind": 40, "log": 88, "pulp": 48},
-            "RE": {"seisuhind": 30, "log": 68, "pulp": 44},
-            "SP": {"seisuhind": 42, "log": 92, "pulp": 50},
-        }
+        # Timber pricing — already defined above
         prices = SPECIES_PRICES.get(puuliik, SPECIES_PRICES["MA"])
         price_m3 = prices["seisuhind"]
         total_m3 = avg_tagavara * total_pindala
