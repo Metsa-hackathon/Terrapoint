@@ -468,7 +468,7 @@
 
         try {
             var controller = new AbortController();
-            var timeoutId = setTimeout(function() { controller.abort(); }, 20000);
+            var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
             var resp = await fetch(`${AI_API_BASE}/chat`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
