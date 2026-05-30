@@ -760,7 +760,7 @@
     }
 
     function addEraldisedLayer(features) {
-        if (!window._map) return;
+        if (typeof map === 'undefined' || !map) return;
         var geojson = { type: 'FeatureCollection', features: features };
         var layer = L.geoJSON(geojson, {
             style: function(feature) {
@@ -778,7 +778,7 @@
                 var label = (p.puuliik || '?') + ', ' + (p.vanus || '?') + 'a, ' + (p.tagavara_y_ha || '?') + ' m³/ha';
                 layer.bindTooltip('Eraldis ' + (p.eraldis_nr || '?') + ': ' + label, {sticky: true});
             },
-        }).addTo(window._map);
+        }).addTo(map);
         overlayLayers['eraldised'] = layer;
     }
 
