@@ -771,7 +771,7 @@ async def chat(request: Request):
             return json_response({"error": "OpenRouter API key not configured"}, 500)
 
         api_url = "https://openrouter.ai/api/v1/chat/completions"
-        model = "openrouter/owl-alpha"
+        model = os.environ.get("OPENROUTER_MODEL", "google/gemini-2.0-flash-001")
 
         async with httpx.AsyncClient(timeout=httpx.Timeout(7, connect=3)) as client:
             resp = await client.post(
@@ -785,7 +785,7 @@ async def chat(request: Request):
                     "messages": messages,
                     "stream": False,
                     "temperature": 0.7,
-                    "max_tokens": 300,
+                    "max_tokens": 800,
                 },
             )
             if resp.status_code != 200:
@@ -810,6 +810,8 @@ async def chat(request: Request):
                             continue
                 if not full_text:
                     return json_response({"error": "AI ei vastanud"}, 500)
+                import re
+                full_text = re.sub(r'<𝑎𝑛𝑡𝑚𝑙:thinking_mode>[^<]*</𝑎𝑛𝑡𝑚𝑙:thinking_mode>', '', full_text).strip()
                 return json_response({"content": full_text})
             else:
                 # Standard JSON response
@@ -824,6 +826,9 @@ async def chat(request: Request):
                 content = choices[0].get("message", {}).get("content", "")
                 if not content:
                     return json_response({"error": "AI ei vastanud"}, 500)
+                # Strip thinking tags that leak from reasoning models
+                import re
+                content = re.sub(r'<𝑎𝑛𝑡𝑚𝑙:thinking_mode>[^<]*</𝑎𝑛𝑡𝑚𝑙:thinking_mode>', '', content).strip()
                 return json_response({"content": content})
 
     except httpx.ReadTimeout:
