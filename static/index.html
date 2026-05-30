@@ -1154,6 +1154,17 @@
         var eligible = data.filter(function(t) { return t.sobib; });
         var ineligible = data.filter(function(t) { return !t.sobib; });
 
+        var categoryIcons = {
+            'looduskaitse': '🛡️', 'metsahooldus': '🌲', 'metsastamine': '🌱',
+            'kahjuritõrje': '🐛', 'inventeerimine': '📋', 'maaparandus': '💧',
+            'kultuur': '🏛️', 'ühistu': '🤝'
+        };
+        var categoryNames = {
+            'looduskaitse': 'Looduskaitse', 'metsahooldus': 'Metsahooldus', 'metsastamine': 'Metsastamine',
+            'kahjuritõrje': 'Kahjuritõrje', 'inventeerimine': 'Inventeerimine', 'maaparandus': 'Maaparandus',
+            'kultuur': 'Pärandkultuur', 'ühistu': 'Ühistu'
+        };
+
         function badgeColor(status) {
             if (status === 'open') return 'background:#16a34a;color:#fff';
             if (status === 'upcoming') return 'background:#f59e0b;color:#fff';
@@ -1167,55 +1178,51 @@
             if (t.voor_status === 'closed') return 'Lõppenud';
             return '';
         }
+        function renderCard(t, isEligible) {
+            var link = t.url || 'https://www.eramets.ee/toetused/';
+            var badge = badgeLabel(t);
+            var badgeStyle = badgeColor(t.voor_status);
+            var icon = categoryIcons[t.category] || '📌';
+            var catName = categoryNames[t.category] || t.category;
+            var borderCol = isEligible ? '#16a34a' : 'var(--border)';
+            var bg = isEligible ? 'linear-gradient(135deg,#f0fdf4,#ecfdf5)' : 'var(--card-bg)';
+            var html = '<div style="border:1px solid ' + borderCol + ';border-radius:10px;padding:14px;margin-bottom:10px;background:' + bg + '">';
+            html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;flex-wrap:wrap;gap:6px">';
+            html += '<div><span style="font-size:1rem;margin-right:4px">' + icon + '</span><strong style="color:var(--text);font-size:0.9rem">' + t.nimi + '</strong>';
+            html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;margin-left:20px">' + catName + ' · ' + t.asutus + '</div></div>';
+            html += '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">';
+            if (badge) html += '<span style="' + badgeStyle + ';font-size:0.68rem;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap">' + badge + '</span>';
+            html += '<span style="color:' + (isEligible ? 'var(--success)' : 'var(--text-muted)') + ';font-weight:700;font-size:0.85rem;white-space:nowrap">' + t.summa + '</span>';
+            html += '</div></div>';
+            if (t.kirjeldus) html += '<p style="color:var(--text-muted);font-size:0.78rem;margin:4px 0 8px 0;line-height:1.5">' + t.kirjeldus + '</p>';
+            if (!isEligible && t.pohjus) html += '<p style="color:var(--danger);font-size:0.78rem;margin:0 0 8px 0;padding:6px 8px;background:#fef2f2;border-radius:6px">✗ ' + t.pohjus + '</p>';
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">';
+            html += '<span style="color:var(--text-muted);font-size:0.75rem">Taotlusvoor: ' + (t.taotlusvoor || '—') + '</span>';
+            html += '<div style="display:flex;gap:12px">';
+            if (t.voor_url) html += '<a href="' + t.voor_url + '" target="_blank" rel="noopener" style="color:var(--text-muted);font-size:0.78rem;text-decoration:none">Tähtajad →</a>';
+            html += '<a href="' + link + '" target="_blank" rel="noopener" style="color:var(--success);font-weight:600;font-size:0.82rem;text-decoration:none">' + (isEligible ? 'Kandideeri →' : 'Info →') + '</a>';
+            html += '</div></div></div>';
+            return html;
+        }
 
         var html = '';
 
         // Eligible programs
         if (eligible.length > 0) {
-            html += '<div style="margin-bottom:0.8rem"><strong style="color:var(--success)">Sobivad toetused (' + eligible.length + ')</strong></div>';
-            eligible.forEach(function(t) {
-                var link = t.url || 'https://www.eramets.ee/toetused/';
-                var badge = badgeLabel(t);
-                var badgeStyle = badgeColor(t.voor_status);
-                html += '<div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;background:var(--card-bg)">';
-                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:4px">';
-                html += '<strong style="color:var(--text)">' + t.nimi + '</strong>';
-                html += '<div style="display:flex;gap:6px;align-items:center">';
-                if (badge) html += '<span style="' + badgeStyle + ';font-size:0.7rem;padding:2px 8px;border-radius:10px;font-weight:600">' + badge + '</span>';
-                html += '<span style="color:var(--success);font-weight:600;font-size:0.85rem">' + t.summa + '</span>';
-                html += '</div></div>';
-                if (t.kirjeldus) html += '<p style="color:var(--text-muted);font-size:0.8rem;margin:4px 0 6px 0;line-height:1.4">' + t.kirjeldus + '</p>';
-                html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">';
-                html += '<span style="color:var(--text-muted);font-size:0.78rem">Taotlusvoor: ' + (t.taotlusvoor || '—') + ' · ' + t.asutus + '</span>';
-                html += '<div style="display:flex;gap:10px">';
-                if (t.voor_url) html += '<a href="' + t.voor_url + '" target="_blank" rel="noopener" style="color:var(--text-muted);font-size:0.78rem">Tähtajad →</a>';
-                html += '<a href="' + link + '" target="_blank" rel="noopener" style="color:var(--success);font-weight:600;font-size:0.82rem">Kandideeri →</a>';
-                html += '</div></div></div>';
-            });
+            html += '<div style="margin-bottom:10px;padding:8px 12px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0"><strong style="color:#16a34a;font-size:0.85rem">Sobivad toetused (' + eligible.length + ')</strong></div>';
+            eligible.forEach(function(t) { html += renderCard(t, true); });
         }
 
         // Ineligible programs
         if (ineligible.length > 0) {
             html += '<details style="margin-top:1rem"' + (eligible.length === 0 ? ' open' : '') + '><summary style="cursor:pointer;color:var(--text-muted);font-size:0.85rem;font-weight:600">Muud toetused (' + ineligible.length + '), ei vasta tingimustele</summary>';
-            ineligible.forEach(function(t) {
-                var link = t.url || 'https://www.eramets.ee/toetused/';
-                var badge = badgeLabel(t);
-                var badgeStyle = badgeColor(t.voor_status);
-                html += '<div style="border:1px solid var(--border-light);border-radius:6px;padding:10px;margin-top:6px;opacity:0.8">';
-                html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">';
-                html += '<strong style="font-size:0.85rem">' + t.nimi + '</strong>';
-                html += '<div style="display:flex;gap:6px;align-items:center">';
-                if (badge) html += '<span style="' + badgeStyle + ';font-size:0.65rem;padding:1px 6px;border-radius:8px">' + badge + '</span>';
-                html += '<span style="color:var(--text-muted);font-size:0.8rem">' + t.summa + '</span>';
-                html += '</div></div>';
-                if (t.pohjus) html += '<p style="color:var(--danger);font-size:0.78rem;margin:4px 0 0 0">✗ ' + t.pohjus + '</p>';
-                html += '<div style="display:flex;gap:10px;margin-top:4px">';
-                if (t.voor_url) html += '<a href="' + t.voor_url + '" target="_blank" rel="noopener" style="color:var(--text-muted);font-size:0.75rem">Tähtajad →</a>';
-                html += '<a href="' + link + '" target="_blank" rel="noopener" style="color:var(--text-muted);font-size:0.75rem">Info →</a>';
-                html += '</div></div>';
-            });
-            html += '</details>';
+            html += '<div style="margin-top:8px">';
+            ineligible.forEach(function(t) { html += renderCard(t, false); });
+            html += '</div></details>';
         }
+
+        // Source
+        html += '<div style="margin-top:12px;font-size:0.72rem;color:var(--text-muted);text-align:right">Allikas: <a href="https://www.eramets.ee/toetused/" target="_blank" rel="noopener" style="color:var(--text-muted)">eramets.ee</a></div>';
 
         el.innerHTML = html;
     }

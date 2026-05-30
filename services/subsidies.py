@@ -89,7 +89,7 @@ SUBSIDY_PROGRAMS = [
         ),
         "amount": "kuni 200 €/ha",
         "asutus": "KIK",
-        "voor": "2025: 16.09–07.10 (2026 täpsustamisel)",
+        "voor": "Täpsustamisel (2025: 16.09–07.10)",
         "url": "https://www.eramets.ee/toetused/metsameede/",
         "description": "Hooldusraie kuni 10a puistus, metsakahjustuste ennetamine (männikärsakas, juurepess), loodusõnnetuses kahjustada saanud metsa uuendamine. Elurikkuse nõuded: säilikpuud ja lamapuit.",
         "category": "metsahooldus",
@@ -214,17 +214,6 @@ SUBSIDY_PROGRAMS = [
         "url": "https://www.eramets.ee/toetused/uhistutoetus/",
         "description": "Metsaühistute tegevuse toetamine. Sisaldab liikmetele teenuste osutamist, koolituste korraldamist ja ühiseid metsamajandamise tegevusi.",
         "category": "ühistu",
-    },
-    {
-        "name": "Metsandusalane nõustamine",
-        "condition": lambda d: d.get("mets_pindala", 0) >= 0.1,
-        "reject_reason": lambda d: "Metsa pindala peab olema vähemalt 0,1 ha",
-        "amount": "riik kompenseerib osaliselt",
-        "asutus": "KIK",
-        "voor": "Aastaringselt",
-        "url": "https://www.eramets.ee/metsaomanike-noustamine/",
-        "description": "Metsanduse konsulendi nõuandeteenus metsaühistu kaudu. Sisaldab metsa seisundi hindamist, majandamisnõu, toetuste taotlemist, kahjustuste likvideerimist. Riik kompenseerib osaliselt teenuse maksumuse.",
-        "category": "nõustamine",
     },
 
     # === KIK / Metssigad ===
