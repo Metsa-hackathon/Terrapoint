@@ -744,6 +744,11 @@
         // Store for lazy loading on toggle
         window._mapLayersData = mapLayers;
 
+        // Auto-add eraldised (parcel-specific, always shown)
+        if (mapLayers.eraldised && mapLayers.eraldised.features && mapLayers.eraldised.features.length > 0) {
+            addEraldisedLayer(mapLayers.eraldised.features);
+        }
+
         // Auto-show checked layers
         var checkboxes = document.querySelectorAll('.layer-toggle input[type=checkbox]');
         checkboxes.forEach(function(cb) {
@@ -752,6 +757,29 @@
                 addOverlayLayer(key, mapLayers[key].features, mapLayers[key].color, false);
             }
         });
+    }
+
+    function addEraldisedLayer(features) {
+        if (!window._map) return;
+        var geojson = { type: 'FeatureCollection', features: features };
+        var layer = L.geoJSON(geojson, {
+            style: function(feature) {
+                var p = feature.properties || {};
+                return {
+                    fillColor: p.color || '#2d6a4f',
+                    fillOpacity: 0.35,
+                    color: p.color || '#2d6a4f',
+                    weight: 2,
+                    opacity: 0.8,
+                };
+            },
+            onEachFeature: function(feature, layer) {
+                var p = feature.properties || {};
+                var label = (p.puuliik || '?') + ', ' + (p.vanus || '?') + 'a, ' + (p.tagavara_y_ha || '?') + ' m³/ha';
+                layer.bindTooltip('Eraldis ' + (p.eraldis_nr || '?') + ': ' + label, {sticky: true});
+            },
+        }).addTo(window._map);
+        overlayLayers['eraldised'] = layer;
     }
 
     // ═══ dashboard.js ═══

@@ -206,9 +206,12 @@ async def _search(kataster_nr: str):
                         "osakaal": equal_pct,
                     })
 
-        # Build eraldised summary for frontend
+        # Build eraldised summary for frontend (including geometry for map)
         eraldised_summary = []
+        eraldised_features = []
+        species_colors = {"MA": "#2d6a4f", "KU": "#1a8fd4", "KS": "#f4a261", "HB": "#adb5bd", "LH": "#6a994e", "LM": "#8d6e63", "LV": "#a1887f"}
         for e in eraldised:
+            geom = e.get("geometry")
             eraldised_summary.append({
                 "eraldis_nr": e.get("eraldis_nr"),
                 "puuliik": e.get("puuliik"),
@@ -218,6 +221,21 @@ async def _search(kataster_nr: str):
                 "pindala_ha": e.get("pindala_ha") or 0,
                 "boniteet": e.get("boniteet"),
             })
+            if geom:
+                kood = e.get("puuliik_kood", "MA")
+                eraldised_features.append({
+                    "type": "Feature",
+                    "geometry": geom,
+                    "properties": {
+                        "eraldis_nr": e.get("eraldis_nr"),
+                        "puuliik": e.get("puuliik"),
+                        "puuliik_kood": kood,
+                        "vanus": e.get("vanus") or 0,
+                        "tagavara_y_ha": e.get("tagavara_y_ha") or 0,
+                        "pindala_ha": e.get("pindala_ha") or 0,
+                        "color": species_colors.get(kood, "#666"),
+                    }
+                })
 
         mets_result = {
             "puuliik": primary.get("puuliik"),
@@ -461,6 +479,15 @@ async def _search(kataster_nr: str):
         features = layers_data.get(key, [])
         if features:
             map_layers[key] = {"label": meta["label"], "color": meta["color"], "features": features}
+
+    # Add eraldised as a map layer (colored by species)
+    if eraldised_features:
+        map_layers["eraldised"] = {
+            "label": "Eraldised",
+            "color": "#2d6a4f",
+            "features": eraldised_features,
+            "type": "eraldised",
+        }
 
     elapsed = round((time.time() - start) * 1000)
 
