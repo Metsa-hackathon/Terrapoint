@@ -3,10 +3,10 @@ import asyncio
 import os
 import httpx
 import orjson
-from shapely.geometry import shape, Point, Polygon, MultiPolygon
+from shapely.geometry import shape
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, HTMLResponse, FileResponse, StreamingResponse
+from fastapi.responses import Response, HTMLResponse, FileResponse
 from contextlib import asynccontextmanager
 
 import sys
@@ -15,7 +15,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from services.kataster import query_kataster
-from services.metsaregister import query_eraldis, query_eraldis_element, query_natura_2000, query_yrask_mke, query_teatised, query_kahjustused
+from services.metsaregister import query_eraldis, query_eraldis_element, query_natura_2000, query_teatised, query_kahjustused
 from services.layers import query_all_layers
 from services.subsidies import check_subsidies
 from calculators.carbon import carbon_potential
@@ -567,6 +567,7 @@ async def _search(kataster_nr: str):
         "mets": mets_result,
         "vaartus": vaartus_result,
         "sinik": sinik_result,
+        "raie": raie,
         "kitsendused": kitsendused,
         "toetused": toetused,
         "riskid": riskid,
@@ -699,12 +700,15 @@ def build_system_prompt(data: dict) -> str:
             if t.get("taotlusvoor"):
                 lines.append(f"    Taotlusvoor: {t['taotlusvoor']}")
 
+    raie = data.get("raie", {})
+    if raie:
+        lines.append("")
+        lines.append("=== RAIEVALMIDUS ===")
+        lines.append(f"Raievanus: {raie.get('raievanus', '?')} a, hetkel {raie.get('ratio', 0)}x. Staatus: {raie.get('label', '?')}")
+
     if riskid:
         lines.append("")
         lines.append("=== RISKID ===")
-        raie = riskid.get("raievanus", {})
-        if raie:
-            lines.append(f"Raievanus: {raie.get('label', 'N/A')} (suhe: {raie.get('ratio', 0)})")
         yrask = riskid.get("yrask", {})
         if yrask:
             lines.append(f"Üraski risk: {yrask.get('label', 'N/A')} (skoor: {yrask.get('score', 0)})")
@@ -836,7 +840,6 @@ async def export_eudr(kataster_nr: str):
         return json_response({"error": "Krunti ei leitud"}, 404)
 
     # Get centroid for coordinates
-    from shapely.geometry import shape
     try:
         geom = shape(kataster_data["geometry"])
         centroid = geom.centroid

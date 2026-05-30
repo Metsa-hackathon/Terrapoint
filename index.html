@@ -103,10 +103,12 @@
                         </svg>
                     </button>
                 </div>
-                <div class="ai-chat-hints">
+                <div class="ai-chat-hints" id="ai-chat-hints">
                     <button class="ai-hint" data-q="Kas peaksin metsa müüma või hoidma?">Müüa või hoida?</button>
                     <button class="ai-hint" data-q="Milliseid toetusi ma saan taotleda?">Toetused</button>
                     <button class="ai-hint" data-q="Millised on riskid ja kuidas neid maandada?">Riskid</button>
+                    <button class="ai-hint" data-q="Kas sinu hinnang on õigustatud? Too välja, mis andmeid sa kasutasid ja mis võib puudu olla.">Kas AI õigustatud?</button>
+                    <div id="ai-eraldis-hints"></div>
                 </div>
             </div>
         </div>
@@ -544,14 +546,39 @@
         input.focus();
     }
 
-    function aiAnalyzeKataster(katasterNr) {
+    function aiAnalyzeKataster(katasterNr, eraldised) {
         aiCurrentKataster = katasterNr;
         aiChatHistory = [];
         document.getElementById('ai-chat-input-area').style.display = '';
         document.querySelector('.ai-chat-subtitle').textContent = 'Analüüsin katastrit ' + katasterNr + '...';
 
+        // Generate per-eraldis analysis buttons
+        aiRenderEraldisHints(eraldised);
+
         // Auto-send initial analysis request
         aiSendMessage('Anna mulle täielik metsa hinnang: seisukord, väärtus, riskid ja konkreetne soovitus mida teha. Kasuta kõiki andmeid.');
+    }
+
+    function aiRenderEraldisHints(eraldised) {
+        var container = document.getElementById('ai-eraldis-hints');
+        if (!container) return;
+        container.innerHTML = '';
+        if (!eraldised || eraldised.length < 2) return;
+
+        eraldised.forEach(function(e) {
+            var nr = e.eraldis_nr || '?';
+            var liik = e.puuliik || '';
+            var vanus = e.vanus || '';
+            var btn = document.createElement('button');
+            btn.className = 'ai-hint ai-hint-eraldis';
+            btn.setAttribute('data-eraldis', nr);
+            btn.textContent = 'Eraldis ' + nr + (liik ? ' (' + liik : '') + (vanus ? ', ' + vanus + 'a)' : liik ? ')' : '');
+            btn.addEventListener('click', function() {
+                var q = 'Analüüsi eraldist ' + nr + ': anna hinnang selle eraldise seisukorrale, väärtusele ja soovitus (müüa, hoida, hooldusraie). Too välja kõik numbrid. Ära tee midagi drastilist, anna tasakaalustatud hinnang.';
+                aiSendMessage(q);
+            });
+            container.appendChild(btn);
+        });
     }
 
     async function exportEUDR(katasterNr) {
@@ -875,10 +902,10 @@
         var el = document.getElementById('kataster-info');
         var html = '';
         html += '<div class="info-row"><span class="label">Number</span><span class="value">' + (data.number || '—') + '</span></div>';
-        html += '<div class="info-row"><span class="label">Pindala' + ddInfo('Krundi kogupindala hektarites, arvutatud geomeetriast') + '</span><span class="value">' + formatNum(data.pindala_ha, 2) + ' ha</span></div>';
-        if (data.mets_pindala_ha) html += '<div class="info-row"><span class="label">Metsamaa' + ddInfo('Metsamaa pindala, eraldiste kogupindala') + '</span><span class="value">' + formatNum(data.mets_pindala_ha, 2) + ' ha</span></div>';
-        html += '<div class="info-row"><span class="label">Sihtotstarve' + ddInfo('Maa sihtotstarve: metsamaa, põllumaa, elamumaa vms') + '</span><span class="value">' + (data.sihtotstarve || '—') + '</span></div>';
-        html += '<div class="info-row"><span class="label">Omandivorm' + ddInfo('Kinnistu omandivorm: era, riigi või ühisomand') + '</span><span class="value">' + (data.omvorm || '—') + '</span></div>';
+        html += '<div class="info-row"><span class="label">Pindala ' + ddInfo('Krundi kogupindala hektarites, arvutatud geomeetriast') + '</span><span class="value">' + formatNum(data.pindala_ha, 2) + ' ha</span></div>';
+        if (data.mets_pindala_ha) html += '<div class="info-row"><span class="label">Metsamaa ' + ddInfo('Metsamaa pindala, eraldiste kogupindala') + '</span><span class="value">' + formatNum(data.mets_pindala_ha, 2) + ' ha</span></div>';
+        html += '<div class="info-row"><span class="label">Sihtotstarve ' + ddInfo('Maa sihtotstarve: metsamaa, põllumaa, elamumaa vms') + '</span><span class="value">' + (data.sihtotstarve || '—') + '</span></div>';
+        html += '<div class="info-row"><span class="label">Omandivorm ' + ddInfo('Kinnistu omandivorm: era, riigi või ühisomand') + '</span><span class="value">' + (data.omvorm || '—') + '</span></div>';
         if (data.mk_nimi) html += '<div class="info-row"><span class="label">Maakond</span><span class="value">' + data.mk_nimi + '</span></div>';
         if (data.ov_nimi) html += '<div class="info-row"><span class="label">Omavalitsus</span><span class="value">' + data.ov_nimi + '</span></div>';
         if (data.l_aadress) html += '<div class="info-row"><span class="label">Aadress</span><span class="value">' + data.l_aadress + '</span></div>';
@@ -890,11 +917,11 @@
         var totalValue = vaartus.kinnistu_turuväärtus || (maaTuruhind + puitValue);
         if (totalValue > 0) {
             html += '<div style="background:linear-gradient(135deg,#f0f7f0,#e8f5e9);border-radius:var(--radius);padding:1rem;margin:0.75rem 0;border:1px solid #c8e6c9">';
-            html += '<div style="font-size:0.78rem;color:#2e7d32;font-weight:600;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.05em">Kinnistu turuväärtus' + ddInfo('Maa turuhind + seisuhinnaga arvestatud puidu väärtus. Tegelik müügihind sõltub asukohast, juurdepääsust ja turuolukorrast.') + '</div>';
+            html += '<div style="font-size:0.78rem;color:#2e7d32;font-weight:600;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.05em">Kinnistu turuväärtus ' + ddInfo('Maa turuhind (maksuhind x 2.5) + seisuhinnaga arvestatud puidu väärtus. Tegelik müügihind sõltub asukohast, juurdepääsust ja turuolukorrast.') + '</div>';
             html += '<div style="font-size:1.6rem;font-weight:800;color:#1b5e20;line-height:1.2">' + formatEur(totalValue) + '</div>';
             html += '<div style="display:flex;gap:1.5rem;margin-top:0.6rem;font-size:0.82rem">';
-            html += '<div><span style="color:var(--text-muted)">Maa:</span> <strong>' + formatEur(maaTuruhind) + '</strong>' + ddInfo('Maa-ameti maksuhind ' + formatEur(maaMaksuhind) + ', turuhinnaks korrutatud ' + (maaTuruhind > 0 ? (maaTuruhind / maaMaksuhind).toFixed(1) : '?') + 'x-ga') + '</div>';
-            html += '<div><span style="color:var(--text-muted)">Puit:</span> <strong>' + formatEur(puitValue) + '</strong>' + ddInfo('Seisuhind x kogutagavara (m³). Seisuhind = raiumata puidu hind metsas.') + '</div>';
+            html += '<div><span style="color:var(--text-muted)">Maa:</span> <strong>' + formatEur(maaTuruhind) + '</strong> ' + ddInfo('Maa-ameti maksuhind ' + formatEur(maaMaksuhind) + ', turuhinnaks korrutatud 2.5x-ga') + '</div>';
+            html += '<div><span style="color:var(--text-muted)">Puit:</span> <strong>' + formatEur(puitValue) + '</strong> ' + ddInfo('Seisuhind x kogutagavara (m³). Seisuhind = raiumata puidu hind metsas.') + '</div>';
             html += '</div>';
             html += '</div>';
         }
@@ -939,13 +966,13 @@
             }
         }
         var html = '';
-        html += '<div class="info-row"><span class="label">Peapuuliik' + ddInfo('Krundi peamine puuliik, suurima tagavaraga liik') + '</span><span class="value">' + speciesName(data.puuliik_kood || data.puuliik, data.puuliik) + '</span></div>';
-        html += '<div class="info-row"><span class="label">Keskmine vanus' + ddInfo('Kõigi eraldiste pindala-kaalutud keskmine vanus aastates') + '</span><span class="value">' + (data.vanus || '—') + ' a</span></div>';
-        html += '<div class="info-row"><span class="label">Tagavara' + ddInfo('Metsa ümarmaterjali kogus hektari kohta (m³/ha). Mida suurem, seda väärtuslikum mets.') + '</span><span class="value">' + formatNum(data.tagavara_y_ha) + ' m³/ha</span></div>';
-        html += '<div class="info-row"><span class="label">Boniteet' + ddInfo('Metsakasvukoha kvaliteet: I=parim, VII=halvim. Mõjutab metsa kasvukiirust ja raievanust.') + '</span><span class="value">' + boniteet + '</span></div>';
-        html += '<div class="info-row"><span class="label">Pindala' + ddInfo('Metsamaa kogupindala, eraldiste pindalade summa') + '</span><span class="value">' + formatNum(data.pindala_ha, 2) + ' ha</span></div>';
-        if (data.korgus) html += '<div class="info-row"><span class="label">Kõrgus' + ddInfo('Puude keskmine kõrgus meetrites') + '</span><span class="value">' + formatNum(data.korgus, 1) + ' m</span></div>';
-        if (data.eraldisi_kokku > 1) html += '<div class="info-row"><span class="label">Eraldisi' + ddInfo('Eraldised on eraldi majandatavad metsatükid, millel on oma puuliik, vanus ja tagavara') + '</span><span class="value">' + data.eraldisi_kokku + ' tk</span></div>';
+        html += '<div class="info-row"><span class="label">Peapuuliik ' + ddInfo('Krundi peamine puuliik, suurima tagavaraga liik') + '</span><span class="value">' + speciesName(data.puuliik_kood || data.puuliik, data.puuliik) + '</span></div>';
+        html += '<div class="info-row"><span class="label">Keskmine vanus ' + ddInfo('Kõigi eraldiste pindala-kaalutud keskmine vanus aastates') + '</span><span class="value">' + (data.vanus || '—') + ' a</span></div>';
+        html += '<div class="info-row"><span class="label">Tagavara ' + ddInfo('Metsa ümarmaterjali kogus hektari kohta (m³/ha). Mida suurem, seda väärtuslikum mets.') + '</span><span class="value">' + formatNum(data.tagavara_y_ha) + ' m³/ha</span></div>';
+        html += '<div class="info-row"><span class="label">Boniteet ' + ddInfo('Metsakasvukoha kvaliteet: I=parim, VII=halvim. Mõjutab metsa kasvukiirust ja raievanust.') + '</span><span class="value">' + boniteet + '</span></div>';
+        html += '<div class="info-row"><span class="label">Pindala ' + ddInfo('Metsamaa kogupindala, eraldiste pindalade summa') + '</span><span class="value">' + formatNum(data.pindala_ha, 2) + ' ha</span></div>';
+        if (data.korgus) html += '<div class="info-row"><span class="label">Kõrgus ' + ddInfo('Puude keskmine kõrgus meetrites') + '</span><span class="value">' + formatNum(data.korgus, 1) + ' m</span></div>';
+        if (data.eraldisi_kokku > 1) html += '<div class="info-row"><span class="label">Eraldisi ' + ddInfo('Eraldised on eraldi majandatavad metsatükid, millel on oma puuliik, vanus ja tagavara') + '</span><span class="value">' + data.eraldisi_kokku + ' tk</span></div>';
         html += compHtml;
 
         // Show individual eraldised with per-eraldis value
@@ -980,11 +1007,11 @@
         html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.3rem">Seisuhind × kogutagavara — metsaomanik saaks selle summa müües metsa raiumata</div>';
         html += '</div>';
 
-        html += '<div class="info-row"><span class="label">Ühikuhind' + ddInfo('Metsa väärtus ühe hektari kohta. Arvutatakse: koguväärtus / pindala.') + '</span><span class="value">' + formatEur(data.value_per_ha) + ' / ha</span></div>';
-        html += '<div class="info-row"><span class="label">Seisuhind' + ddInfo('Püsti puistu turuhind €/m³. Metsaomanik saab selle hinna kui müüb metsa raiumata. Põhineb Eesti turuhindadel.') + '</span><span class="value">' + formatNum(data.price_per_m3, 2) + ' €/m³</span></div>';
-        html += '<div class="info-row"><span class="label">Tagavara' + ddInfo('Metsa kogu ümarmaterjali maht kuupmeetrites. Arvutatakse: tagavara (m³/ha) × pindala (ha).') + '</span><span class="value">' + formatNum(data.tagavara_m3) + ' m³</span></div>';
-        html += '<div class="info-row"><span class="label">Palk' + ddInfo('Saematerjali hind, kõige väärtuslikum osa metsast') + '</span><span class="value">' + formatNum(data.log_price, 2) + ' €/m³</span></div>';
-        html += '<div class="info-row"><span class="label">Paberipuit' + ddInfo('Paberipuu hind, väiksemad puud ja oksad') + '</span><span class="value">' + formatNum(data.pulp_price, 2) + ' €/m³</span></div>';
+        html += '<div class="info-row"><span class="label" title="Metsa väärtus ühe hektari kohta. Arvutatakse: koguväärtus / pindala.">Ühikuhind ' + ddInfo('Metsa väärtus ühe hektari kohta') + '</span><span class="value">' + formatEur(data.value_per_ha) + ' / ha</span></div>';
+        html += '<div class="info-row"><span class="label">Seisuhind ' + ddInfo('Raiumata puidu hind metsas €/m³. Põhineb Metzfund 2026 turuhindadel.') + '</span><span class="value">' + formatNum(data.price_per_m3, 2) + ' €/m³</span></div>';
+        html += '<div class="info-row"><span class="label" title="Metsa kogu ümarmaterjali maht kuupmeetrites. Arvutatakse: tagavara (m³/ha) × pindala (ha).">Tagavara ' + ddInfo('Metsa kogu ümarmaterjali maht') + '</span><span class="value">' + formatNum(data.tagavara_m3) + ' m³</span></div>';
+        html += '<div class="info-row"><span class="label" title="Saematerjali hind, kõige väärtuslikum osa metsast">Palk ' + ddInfo('Saematerjali hind, kõige väärtuslikum osa metsast') + '</span><span class="value">' + formatNum(data.log_price, 2) + ' €/m³</span></div>';
+        html += '<div class="info-row"><span class="label" title="Paberipuu hind, väiksemad puud ja oksad">Paberipuit ' + ddInfo('Paberipuu hind, väiksemad puud ja oksad') + '</span><span class="value">' + formatNum(data.pulp_price, 2) + ' €/m³</span></div>';
         if (data.price_source) {
             html += '<div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-muted);font-style:italic">Hinnad: ' + data.price_source + '</div>';
         }
@@ -1000,8 +1027,8 @@
         if (!data) { el.innerHTML = '<p class="muted">Süsiniku andmeid pole</p>'; return; }
         var html = '';
         html += '<div class="big-number"><span id="anim-co2">0</span><span class="unit"> tCO₂</span></div>';
-        html += '<div class="info-row"><span class="label">CO₂ / ha' + ddInfo('Süsinikdioksiidi kogus hektari kohta, mida mets on sidunud. 1 tonn CO₂ = ühe auto aastane heide.') + '</span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
-        html += '<div class="info-row"><span class="label">Biomass / ha' + ddInfo('Metsa elusmass hektari kohta: puud, juured, oksad. Biomassist 47% on süsinik.') + '</span><span class="value">' + formatNum(data.total_biomass_tons_ha, 1) + ' t</span></div>';
+        html += '<div class="info-row"><span class="label">CO₂ / ha ' + ddInfo('Süsinikdioksiidi kogus hektari kohta, mida mets on sidunud. 1 tonn CO₂ = ühe auto aastane heide.') + '</span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
+        html += '<div class="info-row"><span class="label">Biomass / ha ' + ddInfo('Metsa elusmass hektari kohta, puud, juured, oksad. Biomassist 47% on süsinik.') + '</span><span class="value">' + formatNum(data.total_biomass_tons_ha, 1) + ' t</span></div>';
 
         // CO2 equivalency illustration
         if (data.cars_equivalent || data.trees_equivalent) {
@@ -1030,7 +1057,7 @@
         if (data.yrask) {
             var y = data.yrask;
             var colors = ['#28a745', '#ffc107', '#fd7e14', '#e63946'];
-            html += '<div class="info-row"><span class="label">Üraski risk' + ddInfo('Kuuse-kooreüraski kahjustuste risk. 0=madal, 1=keskmine (kuusk >30a), 2=kõrge (kuusk >50a), 3=kriitiline (MKE tsoonis).') + '</span>';
+            html += '<div class="info-row"><span class="label">Üraski risk ' + ddInfo('Kuuse-kooreüraski kahjustuste risk. 0=madal, 1=keskmine (kuusk >30a), 2=kõrge (kuusk >50a), 3=kriitiline (MKE tsoonis).') + '</span>';
             html += '<span style="color:' + colors[y.score] + ';font-weight:600">' + y.label + '</span></div>';
             if (y.detail) html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem">' + y.detail + '</div>';
         }
@@ -1038,16 +1065,16 @@
         if (data.terviseindeks != null) {
             var t = data.terviseindeks;
             var barColor = t >= 70 ? 'linear-gradient(90deg, #28a745, #2a9d8f)' : t >= 40 ? 'linear-gradient(90deg, #ffc107, #f4a261)' : 'linear-gradient(90deg, #e63946, #fd7e14)';
-            html += '<div class="info-row"><span class="label">Terviseindeks' + ddInfo('Metsa terviseindeks: 100=terve, 0=haige. Arvestab vanust (ideaalne 40-80a), üraski riski, kahjustusi ja liigilist koosseisu.') + '</span><span class="value">' + t + '/100</span></div>';
+            html += '<div class="info-row"><span class="label">Terviseindeks ' + ddInfo('Metsa terviseindeks: 100=terve, 0=haige. Arvestab vanust (ideaalne 40-80a), üraski riski, kahjustusi ja liigilist koosseisu.') + '</span><span class="value">' + t + '/100</span></div>';
             html += '<div class="progress-bar"><div class="fill" style="width:' + t + '%;background:' + barColor + '"></div></div>';
         }
         // Karuputk - alati näita
         var karuputk = data.karuputk;
-        html += '<div class="info-row"><span class="label">Karuputk' + ddInfo('Mürgise umbrohu (Heracleum sosnowskyi) esinemine krundil. Kohustuslik tõrjuda, võib põletada nahka.') + '</span>';
+        html += '<div class="info-row"><span class="label">Karuputk ' + ddInfo('Mürgise umbrohu (Heracleum sosnowskyi) esinemine krundil. Kohustuslik tõrjuda, võib põletada nahka.') + '</span>';
         html += karuputk ? '<span style="color:var(--danger);font-weight:600">Leitud</span></div>' : '<span style="color:#28a745">Puudub</span></div>';
         // Lageraieala - alati näita
         var lageraie = data.lageraieala;
-        html += '<div class="info-row"><span class="label">Lageraieala' + ddInfo('Krundil on tuvastatud hiljutine lageraie (EELIS andmed). Mets on ära raiutud, mõjutab väärtust ja terviseindeksit.') + '</span>';
+        html += '<div class="info-row"><span class="label">Lageraieala ' + ddInfo('Krundil on tuvastatud hiljutine lageraie (EELIS andmed). Mets on ära raiutud, mõjutab väärtust ja terviseindeksit.') + '</span>';
         html += lageraie ? '<span style="color:var(--warning);font-weight:600">Tuvastatud</span></div>' : '<span style="color:#28a745">Puudub</span></div>';
         el.innerHTML = html || '<p class="muted">Riskiandmeid pole</p>';
     }
@@ -1396,28 +1423,41 @@
         });
 
         document.getElementById('eudr-btn').addEventListener('click', function() {
-            var nr = (currentData && currentData.kataster && currentData.kataster.number) || document.getElementById('kataster-input').value.trim();
-            if (nr) exportEUDR(nr).catch(function(err) { showError(err.message); });
-            else showError('Otsi esmalt krunt');
-        });
 
         // Info-toggle click to show/hide info-box
-        document.querySelectorAll('.info-toggle').forEach(function(toggle) {
+        document.querySelectorAll('info-toggle').forEach(function(toggle) {
             toggle.addEventListener('click', function(e) {
                 e.stopPropagation();
-                var card = this.closest('.metric-card') || this.closest('.card');
+                var card = this.closest('metric-card') || this.closest('card');
                 if (!card) return;
-                var box = card.querySelector('.info-box');
+                var box = card.querySelector('info-box');
                 if (!box) return;
                 var isOpen = box.classList.contains('open');
-                // Close all other info-boxes first
-                document.querySelectorAll('.info-box.open').forEach(function(b) { b.classList.remove('open'); });
+                document.querySelectorAll('info-box.open').forEach(function(b) { b.classList.remove('open'); });
                 if (!isOpen) box.classList.add('open');
             });
         });
-        // Close info-box when clicking outside
         document.addEventListener('click', function() {
-            document.querySelectorAll('.info-box.open').forEach(function(b) { b.classList.remove('open'); });
+            document.querySelectorAll('info-box.open').forEach(function(b) { b.classList.remove('open'); });
+        });
+            var nr = (currentData && currentData.kataster && currentData.kataster.number) || document.getElementById('kataster-input').value.trim();
+
+
+        document.querySelectorAll('info-toggle').forEach(function(toggle) {
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var card = this.closest('metric-card') || this.closest('card');
+                if (!card) return;
+                var box = card.querySelector('info-box');
+                if (!box) return;
+                var isOpen = box.classList.contains('open');
+                document.querySelectorAll('info-box.open').forEach(function(b) { b.classList.remove('open'); });
+                if (!isOpen) box.classList.add('open');
+            });
+        });
+        document.addEventListener('click', function() {
+            document.querySelectorAll('info-box.open').forEach(function(b) { b.classList.remove('open'); });
+        });
         });
 
         document.querySelectorAll('.layer-toggle input[type=checkbox]').forEach(function(cb) {
@@ -1541,7 +1581,7 @@
             showDashboard();
 
             // Trigger AI analysis
-            aiAnalyzeKataster(data.kataster.number);
+            aiAnalyzeKataster(data.kataster.number, data.mets ? data.mets.eraldised : null);
 
             // Show parcel on the already-visible map
             setTimeout(function() {

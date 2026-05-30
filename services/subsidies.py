@@ -1,13 +1,13 @@
 from datetime import datetime, date
 
-TODAY = date(2026, 5, 30)
+TODAY = date.today()
 
 
 def _parse_date(d: str) -> date:
-    """Parse 'DD.MM.YYYY' or 'DD.MM' (assumes 2026) to date."""
+    """Parse 'DD.MM.YYYY' or 'DD.MM' (assumes current year) to date."""
     parts = d.strip().split(".")
     day, month = int(parts[0]), int(parts[1])
-    year = int(parts[2]) if len(parts) > 2 else 2026
+    year = int(parts[2]) if len(parts) > 2 else TODAY.year
     return date(year, month, day)
 
 

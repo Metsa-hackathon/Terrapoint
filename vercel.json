@@ -3,7 +3,7 @@
   "functions": {
     "api/index.py": {
       "memory": 512,
-      "maxDuration": 60
+      "maxDuration": 10
     }
   },
   "rewrites": [
