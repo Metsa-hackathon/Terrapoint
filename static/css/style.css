@@ -814,13 +814,19 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     display: none;
     font-size: 0.75rem;
     color: var(--text-muted, #666);
-    margin-top: 4px;
     padding: 6px 8px;
     background: #f8f9fa;
     border-radius: 6px;
     border-left: 3px solid var(--primary, #1a4d2e);
     line-height: 1.5;
     font-weight: 400;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-top: 2px;
 }
 .info-dd-text.show { display: block; }
 .info-dd-text .dd-field {
@@ -885,6 +891,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     padding: 0.5rem 0;
     font-size: 0.9rem;
     border-bottom: 1px solid var(--border-light);
+    position: relative;
 }
 
 .info-row:last-child { border-bottom: none; }

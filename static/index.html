@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=3">
+    <link rel="stylesheet" href="/static/css/style.css?v=4">
 </head>
 <body>
     <!-- Top Navigation Bar -->
@@ -1074,7 +1074,7 @@
         if (data.yrask) {
             var y = data.yrask;
             var colors = ['#28a745', '#ffc107', '#fd7e14', '#e63946'];
-            html += '<div class="info-row"><span class="label">Üraski risk ' + ddInfo('Kuuse-kooreüraski kahjustuste risk. 0=madal, 1=keskmine (kuusk >30a), 2=kõrge (kuusk >50a), 3=kriitiline (MKE tsoonis).') + '</span>';
+            html += '<div class="info-row"><span class="label">Üraski risk ' + ddInfo('Kuuse-kooreürask (Ips typographus) on kuuse suurim kahjur Eestis – ta kaevab koore alla käike, mis katkestavad puu toitainete transpordi ja tapavad selle. Risk sõltub kuuse vanusest ja asukohast: vanemad puud (>30a) on vastuvõtlikumad, sest nende koor on paksem ja sobib üraskile paremini. MKE tsoonid on Keskkonnaameti määratud massiüraski kolded, kus populatsioon on plahvatuslikult kasvanud. Kuivad suved ja tormikahjustused suurendavad riski, sest nõrgestatud puud meelitavad üraskit.') + '</span>';
             html += '<span style="color:' + colors[y.score] + ';font-weight:600">' + y.label + '</span></div>';
             if (y.detail) html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem">' + y.detail + '</div>';
         }
