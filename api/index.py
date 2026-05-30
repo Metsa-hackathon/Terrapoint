@@ -149,7 +149,7 @@ async def _search(kataster_nr: str):
 
     eraldised_features = []
     species_colors = {"MA": "#2d6a4f", "KU": "#1a8fd4", "KS": "#f4a261", "HB": "#adb5bd", "LH": "#6a994e", "LM": "#8d6e63", "LV": "#a1887f"}
-    # Timber pricing — Eesti turuhinnad 2026 (seisuhind = raiumata puidu hind metsas)
+    # Timber pricing — Metzfund 2026 (seisuhind = raiumata puidu hind metsas)
     SPECIES_PRICES = {
         "MA": {"seisuhind": 48, "log": 105, "pulp": 53},
         "KU": {"seisuhind": 52, "log": 110, "pulp": 53},
@@ -356,7 +356,7 @@ async def _search(kataster_nr: str):
             "tagavara_m3": round(total_m3),
             "log_price": prices["log"],
             "pulp_price": prices["pulp"],
-            "price_source": "Eesti turuhinnad 2026",
+            "price_source": "Metzfund 2026",
             "price_updated": "2026-05",
             # Kinnistu koguväärtus
             "kinnistu_turuväärtus": maa_turuhind + timber_value,
