@@ -66,6 +66,17 @@ SUBSIDY_PROGRAMS = [
         "description": "Vääriselupaiga kaitseks 20-aastase lepingu sõlmimine. Sisaldab kaitse-eeskirja koostamist ja hoolduskava. Taotlemine aastaringselt.",
         "category": "looduskaitse",
     },
+    {
+        "name": "Metsakasutuse kitsendustest hüvitis",
+        "condition": lambda d: d.get("kaitseala") or d.get("natura_2000") or d.get("natura_elupaik"),
+        "reject_reason": lambda d: "Krundil puuduvad metsakasutuse kitsendused (kaitseala, Natura 2000 või Natura elupaik)",
+        "amount": "hüvitis arvutatakse kahjude ja kulude alusel",
+        "asutus": "KIK",
+        "voor": "Täpsustamisel",
+        "url": "https://www.kik.ee/et/toetatavad-tegevused",
+        "description": "Metsakasutuse kitsendustest põhjustatud kahjude ja kulude hüvitamine erametsaomanikele. Erinevalt looduskaitse hüvitisest (saamata jäänud tulu), kompenseerib tegelikud kahjud ja kulud.",
+        "category": "looduskaitse",
+    },
 
     # === Metsameede (PRIA/KIK) ===
     {
@@ -203,6 +214,17 @@ SUBSIDY_PROGRAMS = [
         "url": "https://www.eramets.ee/toetused/uhistutoetus/",
         "description": "Metsaühistute tegevuse toetamine. Sisaldab liikmetele teenuste osustamist, koolituste korraldamist ja ühiseid metsamajandamise tegevusi.",
         "category": "ühistu",
+    },
+    {
+        "name": "Metsandusalane nõustamine",
+        "condition": lambda d: d.get("mets_pindala", 0) >= 0.1,
+        "reject_reason": lambda d: "Metsa pindala peab olema vähemalt 0,1 ha",
+        "amount": "riik kompenseerib osaliselt",
+        "asutus": "KIK",
+        "voor": "Aastaringselt",
+        "url": "https://www.eramets.ee/metsaomanike-noustamine/",
+        "description": "Metsanduse konsulendi nõuandeteenus metsaühistu kaudu. Sisaldab metsa seisundi hindamist, majandamisnõu, toetuste taotlemist, kahjustuste likvideerimist. Riik kompenseerib osaliselt teenuse maksumuse.",
+        "category": "nõustamine",
     },
 
     # === KIK / Metssigad ===
