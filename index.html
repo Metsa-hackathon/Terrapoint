@@ -444,9 +444,9 @@
         // Code blocks
         text = text.replace(/```([\s\S]*?)```/g, '<pre style="background:var(--surface);padding:0.5rem;border-radius:4px;font-size:0.82rem;overflow-x:auto">$1</pre>');
         text = text.replace(/`([^`]+)`/g, '<code style="background:var(--surface);padding:0.1rem 0.3rem;border-radius:3px;font-size:0.85em">$1</code>');
-        // Unordered lists
+        // Unordered lists - wrap consecutive <li> in <ul>
         text = text.replace(/^\- (.+)$/gm, '<li>$1</li>');
-        text = text.replace(/(<li>.*<\/li>)/s, '<ul style="margin:0.3rem 0;padding-left:1.2rem">$1</ul>');
+        text = text.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul style="margin:0.3rem 0;padding-left:1.2rem">$1</ul>');
         // Ordered lists
         text = text.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
         // Paragraphs
