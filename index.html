@@ -90,7 +90,7 @@
                     <div class="ai-avatar"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22V10"/><path d="M12 10c-3-4-8-4-8-4s5 0 8 4z"/><path d="M12 10c3-4 8-4 8-4s-5 0-8 4z"/><path d="M12 6c-2-3-6-3-6-3s4 0 6 3z"/><path d="M12 6c2-3 6-3 6-3s-4 0-6 3z"/></svg></div>
                     <div class="ai-bubble">
                         <p>Tere! Olen Terrapoint AI.</p>
-                        <p>Otsi ülevalt oma katastri number ja ma analüüsin su metsaandmeid. Annan nõu kas müüa, hoida, osta juurde või taotleda toetusi.</p>
+                        <p>Otsi ülevalt oma katastri number ja ma analüüsin su metsaandmeid. Annan nõu kas müüa, hoida või taotleda toetusi.</p>
                     </div>
                 </div>
             </div>
@@ -106,7 +106,6 @@
                 <div class="ai-chat-hints">
                     <button class="ai-hint" data-q="Kas peaksin metsa müüma või hoidma?">Müüa või hoida?</button>
                     <button class="ai-hint" data-q="Milliseid toetusi ma saan taotleda?">Toetused</button>
-                    <button class="ai-hint" data-q="Kas peaksin kõrvalkatastrit juurde ostma?">Osta juurde?</button>
                     <button class="ai-hint" data-q="Millised on riskid ja kuidas neid maandada?">Riskid</button>
                 </div>
             </div>
@@ -552,7 +551,7 @@
         document.querySelector('.ai-chat-subtitle').textContent = 'Analüüsin katastrit ' + katasterNr + '...';
 
         // Auto-send initial analysis request
-        aiSendMessage('Analüüsi minu metsaandmeid. Anna lühike kokkuvõte: mis seisus mets on, mis on peamine väärtus, millised riskid on, ja kas peaksin midagi ette võtma? Ole konkreetne numbritega.');
+        aiSendMessage('Anna mulle täielik metsa hinnang: seisukord, väärtus, riskid ja konkreetne soovitus mida teha. Kasuta kõiki andmeid.');
     }
 
     async function exportEUDR(katasterNr) {
@@ -784,7 +783,10 @@
             onEachFeature: function(feature, layer) {
                 var p = feature.properties || {};
                 var label = (p.puuliik || '?') + ', ' + (p.vanus || '?') + 'a, ' + (p.tagavara_y_ha || '?') + ' m³/ha';
-                layer.bindTooltip('Eraldis ' + (p.eraldis_nr || '?') + ': ' + label, {sticky: true});
+                var val = p.vaartus_eur ? Math.round(p.vaartus_eur).toLocaleString('et-EE').replace(/,/g, ' ') + ' €' : '';
+                var tip = 'Eraldis ' + (p.eraldis_nr || '?') + ': ' + label;
+                if (val) tip += ' — ' + val;
+                layer.bindTooltip(tip, {sticky: true});
             },
         }).addTo(map);
         overlayLayers['eraldised'] = layer;
@@ -921,15 +923,20 @@
         if (data.eraldisi_kokku > 1) html += '<div class="info-row"><span class="label">Eraldisi <span class="q-tip" title="Eraldised on eraldi majandatavad metsatükid, millel on oma puuliik, vanus ja tagavara">?</span></span><span class="value">' + data.eraldisi_kokku + ' tk</span></div>';
         html += compHtml;
 
-        // Show individual eraldised
+        // Show individual eraldised with per-eraldis value
         if (data.eraldised && data.eraldised.length > 0) {
-            html += '<details style="margin-top:0.75rem"' + (data.eraldised.length <= 5 ? ' open' : '') + '><summary style="cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--primary)">Eraldised (' + data.eraldised.length + ')</summary>';
-            html += '<table style="margin-top:0.5rem;font-size:0.78rem"><thead><tr><th>Nr</th><th>Puuliik</th><th>Vanus</th><th>Tagavara</th><th>Pindala</th><th>Boniteet</th></tr></thead><tbody>';
+            var totalEraldisValue = 0;
+            data.eraldised.forEach(function(e) { totalEraldisValue += (e.vaartus_eur || 0); });
+            html += '<details style="margin-top:0.75rem"' + (data.eraldised.length <= 5 ? ' open' : '') + '><summary style="cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--primary)">Eraldised (' + data.eraldised.length + ') — kokku ' + formatEur(totalEraldisValue) + '</summary>';
+            html += '<table style="margin-top:0.5rem;font-size:0.78rem"><thead><tr><th>Nr</th><th>Puuliik</th><th>Vanus</th><th>Tagavara</th><th>Pindala</th><th>Boniteet</th><th>Väärtus</th></tr></thead><tbody>';
             data.eraldised.forEach(function(e) {
                 var b = e.boniteet || BONITEET_LABELS[e.boniteedi_kood] || '—';
-                html += '<tr><td>' + (e.eraldis_nr || '—') + '</td><td>' + speciesName(e.puuliik_kood || e.puuliik, e.puuliik) + '</td><td>' + (e.vanus || '—') + ' a</td><td>' + formatNum(e.tagavara_y_ha) + ' m³/ha</td><td>' + formatNum(e.pindala_ha, 2) + ' ha</td><td>' + b + '</td></tr>';
+                var v = e.vaartus_eur ? formatEur(e.vaartus_eur) : '—';
+                html += '<tr><td>' + (e.eraldis_nr || '—') + '</td><td>' + speciesName(e.puuliik_kood || e.puuliik, e.puuliik) + '</td><td>' + (e.vanus || '—') + ' a</td><td>' + formatNum(e.tagavara_y_ha) + ' m³/ha</td><td>' + formatNum(e.pindala_ha, 2) + ' ha</td><td>' + b + '</td><td style="font-weight:600;color:#2e7d32">' + v + '</td></tr>';
             });
-            html += '</tbody></table></details>';
+            html += '</tbody></table>';
+            html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.4rem">Hinnang: seisuhind × tagavara × pindala, korrigeeritud boniteedi ja vanuse järgi</div>';
+            html += '</details>';
         }
         el.innerHTML = html;
     }

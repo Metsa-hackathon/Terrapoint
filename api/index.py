@@ -149,6 +149,23 @@ async def _search(kataster_nr: str):
 
     eraldised_features = []
     species_colors = {"MA": "#2d6a4f", "KU": "#1a8fd4", "KS": "#f4a261", "HB": "#adb5bd", "LH": "#6a994e", "LM": "#8d6e63", "LV": "#a1887f"}
+    # Timber pricing — Eesti turuhinnad 2026 (seisuhind = raiumata puidu hind metsas)
+    SPECIES_PRICES = {
+        "MA": {"seisuhind": 48, "log": 105, "pulp": 53},
+        "KU": {"seisuhind": 52, "log": 110, "pulp": 53},
+        "KS": {"seisuhind": 58, "log": 135, "pulp": 65},
+        "HB": {"seisuhind": 30, "log": 65, "pulp": 45},
+        "LH": {"seisuhind": 42, "log": 88, "pulp": 50},
+        "LM": {"seisuhind": 30, "log": 68, "pulp": 44},
+        "LV": {"seisuhind": 30, "log": 68, "pulp": 44},
+        "TA": {"seisuhind": 55, "log": 115, "pulp": 55},
+        "SA": {"seisuhind": 48, "log": 105, "pulp": 50},
+        "VA": {"seisuhind": 35, "log": 75, "pulp": 45},
+        "PK": {"seisuhind": 48, "log": 105, "pulp": 50},
+        "JA": {"seisuhind": 40, "log": 88, "pulp": 48},
+        "RE": {"seisuhind": 30, "log": 68, "pulp": 44},
+        "SP": {"seisuhind": 42, "log": 92, "pulp": 50},
+    }
 
     if eraldised:
         # Fetch element data for all eraldised in parallel
@@ -231,18 +248,66 @@ async def _search(kataster_nr: str):
                         "osakaal": equal_pct,
                     })
 
-        # Build eraldised summary for frontend (including geometry for map)
+        # Build eraldised summary for frontend (including geometry and per-eraldis value)
         eraldised_summary = []
         for e in eraldised:
             geom = e.get("geometry")
+            kood = e.get("puuliik_kood", "MA")
+            vanus = e.get("vanus") or 0
+            tagavara = e.get("tagavara_y_ha") or 0
+            pindala = e.get("pindala_ha") or 0
+            boniteet_kood = e.get("boniteedi_kood", 3)
+            raievanus = e.get("raievanus") or 0
+            kuivendatud = e.get("kuivendatud", False)
+
+            # Per-eraldis valuation
+            # 1. Base: seisuhind * tagavara * pindala
+            e_prices = SPECIES_PRICES.get(kood, SPECIES_PRICES["MA"])
+            e_seisuhind = e_prices["seisuhind"]
+            base_value = e_seisuhind * tagavara * pindala
+
+            # 2. Boniteet factor (I=1.2, II=1.1, III=1.0, IV=0.9, V=0.8, VI+=0.7)
+            boniteet_factor = {1: 1.2, 2: 1.1, 3: 1.0, 4: 0.9, 5: 0.8, 6: 0.7, 7: 0.6, 8: 0.5}.get(boniteet_kood, 1.0)
+
+            # 3. Age factor: young stands worth less, approaching raievanus worth more
+            # Sigmoid-like curve: 0.5 at 20% of raievanus, 1.0 at 100%
+            if raievanus > 0 and vanus > 0:
+                age_ratio = min(vanus / raievanus, 1.5)
+                if age_ratio < 0.2:
+                    age_factor = 0.3
+                elif age_ratio < 0.5:
+                    age_factor = 0.5 + (age_ratio - 0.2) * 1.67  # 0.5 -> 1.0
+                elif age_ratio < 1.0:
+                    age_factor = 1.0
+                else:
+                    age_factor = 1.0  # Over-mature, no penalty
+            else:
+                age_factor = 1.0
+
+            # 4. Drainage bonus: +10% for drained forests
+            drainage_factor = 1.1 if kuivendatud else 1.0
+
+            # Final eraldis value
+            eraldis_value = round(base_value * boniteet_factor * age_factor * drainage_factor)
+            value_per_ha = round(eraldis_value / pindala) if pindala > 0 else 0
+
             eraldised_summary.append({
                 "eraldis_nr": e.get("eraldis_nr"),
                 "puuliik": e.get("puuliik"),
-                "puuliik_kood": e.get("puuliik_kood"),
-                "vanus": e.get("vanus") or 0,
-                "tagavara_y_ha": e.get("tagavara_y_ha") or 0,
-                "pindala_ha": e.get("pindala_ha") or 0,
+                "puuliik_kood": kood,
+                "vanus": vanus,
+                "tagavara_y_ha": tagavara,
+                "pindala_ha": pindala,
                 "boniteet": e.get("boniteet"),
+                "boniteet_kood": boniteet_kood,
+                "raievanus": raievanus,
+                "kuivendatud": kuivendatud,
+                # Per-eraldis valuation
+                "vaartus_eur": eraldis_value,
+                "vaartus_per_ha": value_per_ha,
+                "seisuhind": e_seisuhind,
+                "boniteet_factor": boniteet_factor,
+                "age_factor": round(age_factor, 2),
             })
             if geom:
                 kood = e.get("puuliik_kood", "MA")
@@ -257,6 +322,8 @@ async def _search(kataster_nr: str):
                         "tagavara_y_ha": e.get("tagavara_y_ha") or 0,
                         "pindala_ha": e.get("pindala_ha") or 0,
                         "color": species_colors.get(kood, "#666"),
+                        "vaartus_eur": eraldis_value,
+                        "vaartus_per_ha": value_per_ha,
                     }
                 })
 
@@ -279,24 +346,7 @@ async def _search(kataster_nr: str):
             "eraldisi_kokku": len(eraldised),
         }
 
-        # Timber pricing — Eesti turuhinnad 2026 (seisuhind = raiumata puidu hind metsas)
-        # Allikad: Erametsaliit, RMK enampakkumised, metsaühistute hinnakirjad
-        SPECIES_PRICES = {
-            "MA": {"seisuhind": 48, "log": 105, "pulp": 53},
-            "KU": {"seisuhind": 52, "log": 110, "pulp": 53},
-            "KS": {"seisuhind": 58, "log": 135, "pulp": 65},
-            "HB": {"seisuhind": 30, "log": 65, "pulp": 45},
-            "LH": {"seisuhind": 42, "log": 88, "pulp": 50},
-            "LM": {"seisuhind": 30, "log": 68, "pulp": 44},
-            "LV": {"seisuhind": 30, "log": 68, "pulp": 44},
-            "TA": {"seisuhind": 55, "log": 115, "pulp": 55},
-            "SA": {"seisuhind": 48, "log": 105, "pulp": 50},
-            "VA": {"seisuhind": 35, "log": 75, "pulp": 45},
-            "PK": {"seisuhind": 48, "log": 105, "pulp": 50},
-            "JA": {"seisuhind": 40, "log": 88, "pulp": 48},
-            "RE": {"seisuhind": 30, "log": 68, "pulp": 44},
-            "SP": {"seisuhind": 42, "log": 92, "pulp": 50},
-        }
+        # Timber pricing — already defined above
         prices = SPECIES_PRICES.get(puuliik, SPECIES_PRICES["MA"])
         price_m3 = prices["seisuhind"]
         total_m3 = avg_tagavara * total_pindala
@@ -545,16 +595,35 @@ def build_system_prompt(data: dict) -> str:
     lines = []
     lines.append("Oled Terrapoint AI — Eesti metsanduse ja kinnisvara ekspert. Sa EI ole OWL ega muu mudel. Sa oled Terrapoint AI.")
     lines.append("")
+    lines.append("ROLL:")
+    lines.append("Sa oled kogenud metsakonsulent, kes aitab metsaomanikel oma metsast aru saada. Sa hindad metsa seisukorda, väärtust, riske ja võimalusi. Sa räägid lihtsas keeles, aga kasutad õigeid termineid. Sa annad alati konkreetseid soovitusi, mitte üldisi jutte.")
+    lines.append("")
+    lines.append("HINDAMISE JUHIS:")
+    lines.append("Vanus: ideaalne 40-80a (küps mets). Alla 20a = noor, investeering. 60-80a = parim müügiaeg. Üle 100a = ülekasvanud, kaaluda raiet.")
+    lines.append("Tagavara: hea >150 m³/ha, keskmine 80-150, madal <80. Kõrge tagavara = kõrge väärtus.")
+    lines.append("Boniteet: I-III = hea kasvukoht, IV-V = keskmine, VI-VII = kehv. Hea boniteet tõstab väärtust.")
+    lines.append("Liik: mänd = kõige väärtuslikum palgipuu, kuusk = hea aga üraskioht, kask = paberipuu, madalam väärtus.")
+    lines.append("Üraski risk: 0-1 = normaalne, 2 = tegutse kohe (hooldusraie), 3 = kriitiline (ränne tsoonis).")
+    lines.append("Terviseindeks: 80-100 = hea, 60-80 = rahuldav, alla 60 = probleemid, alla 40 = halb seisukord.")
+    lines.append("CO2: iga hektar seob keskmiselt 5-15 t CO₂. Kõrge süsinikuvaru = hea kliimainvesteering.")
+    lines.append("")
+    lines.append("VASTUSE STRUKTUUR (kasuta seda alati):")
+    lines.append("1. Lühike kokkuvõte (1 lause): mis seisus mets on")
+    lines.append("2. Peamised näitajad: vanus, tagavara, väärtus, terviseindeks (konkreetsete numbritega)")
+    lines.append("3. Riskid: mis on peamised ohud ja kui tõsised")
+    lines.append("4. Soovitus: mida konkreetselt teha (müüa, hoida, hooldusraie, toetusi taotleda)")
+    lines.append("")
     lines.append("REEGLID:")
     lines.append("- Vasta alati eesti keeles")
-    lines.append("- Ole konkreetne ja praktiline, ära jutusta")
     lines.append("- Kasuta konkreetseid numbreid andmetest (vanus, tagavara, väärtus, CO2)")
-    lines.append("- Anna selge soovitus: müüa/hoida/osta juurde/taotleda toetust")
-    lines.append("- Kui metsa pole, ütle otse ja soovita mida teha (nt taastada, sihtotstarvet muuta)")
-    lines.append("- Alusta lühikese tervitusega: 'Tere! Terrapoint AI siin.'")
-    lines.append("- LÕPETA oma vastus alati lõpliku soovitusega — ära jäta lahtisteks")
+    lines.append("- Anna selge soovitus: müüa/hoida/taotleda toetust")
+    lines.append("- Kui metsa pole, ütle otse ja soovita mida teha (nt metsastamine, sihtotstarve muuta)")
+    lines.append("- Kui küsitakse toetusi, loe sobivad ja ütle miks nad sobivad")
+    lines.append("- Kui küsitakse müüki, arvuta konkreetne summa puidu väärtuse andmetest")
     lines.append("- Ära kasuta sidekriipse (– või -) vastustes, kirjuta laused tervikuna")
-    lines.append("- Maksimaalselt 300 sõna")
+    lines.append("- Ära kasuta emoji-sid")
+    lines.append("- Maksimaalselt 400 sõna")
+    lines.append("- LÕPETA alati konkreetse soovitusega, ära jäta lahtisteks")
     lines.append("")
     lines.append("=== KATASTRI ANDMED ===")
     lines.append(f"Number: {k.get('number', 'N/A')}")
