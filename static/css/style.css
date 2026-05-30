@@ -46,7 +46,7 @@
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
-body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; overflow-x: hidden; }
 
 /* ═══ Navbar ═══ */
 .hero {
@@ -946,25 +946,42 @@ footer {
 /* ═══ Responsive ═══ */
 @media (max-width: 1024px) {
     .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    .search-box { min-width: 280px; }
 }
 
 @media (max-width: 900px) {
     #map { height: 400px; }
     .charts-grid { grid-template-columns: 1fr; }
     .tables-section { grid-template-columns: 1fr; }
+    .dashboard { padding: 1rem 1rem 2rem; }
 }
 
 @media (max-width: 640px) {
-    .hero { padding: 0 0.75rem; height: 50px; }
-    .nav-left .logo-text h1 { font-size: 1rem; }
-    .search-box input { width: 120px; font-size: 0.8rem; padding: 0.35rem 0.5rem; }
-    .search-box button { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
+    html, body { overflow-x: hidden; width: 100%; max-width: 100vw; }
+    .hero { padding: 0 0.5rem; height: 50px; gap: 0.3rem; }
+    .nav-left .logo-text h1 { font-size: 0.95rem; }
+    .nav-left { gap: 0.4rem; }
+    .search-box { min-width: 0; max-width: none; flex: 1; }
+    .search-input-wrap { min-width: 0; flex: 1; }
+    .search-box input { width: 100%; min-width: 0; font-size: 0.8rem; padding: 0.3rem 0.4rem; }
+    .search-box button { width: 30px; height: 28px; padding: 0; }
     .search-box button .btn-text { display: none; }
-    .metrics-grid { grid-template-columns: 1fr; }
-    #map { height: 320px; }
-    .big-number { font-size: 1.8rem; }
-    .layer-toggle { font-size: 0.75rem; }
-    .error-msg { right: 0.75rem; left: 0.75rem; max-width: none; }
+    .metrics-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+    .dashboard { padding: 0.75rem 0.75rem 2rem; }
+    #map { height: 300px; }
+    .map-controls { top: 8px; right: 8px; }
+    .layer-toggle { font-size: 0.7rem; padding: 0.5rem 0.7rem; }
+    .big-number { font-size: 1.6rem; }
+    .error-msg { right: 0.5rem; left: 0.5rem; max-width: none; }
+    .metric-card { padding: 1rem; }
+    .ai-chat-messages { max-height: 350px; padding: 0.75rem; }
+    .ai-chat-input-wrap input { font-size: 0.85rem; padding: 0.5rem 0.75rem; }
+    .ai-hint { font-size: 0.7rem; padding: 0.3rem 0.6rem; }
+    .info-row { font-size: 0.82rem; padding: 0.4rem 0; }
+    .info-row .label { font-size: 0.78rem; }
+    .card-header h3 { font-size: 0.72rem; }
+    .section-desc { font-size: 0.7rem; }
+    footer { padding: 1rem 0.75rem; }
 }
 
 /* ═══ Leaflet ═══ */
@@ -1028,7 +1045,7 @@ footer {
 ::selection { background: rgba(26,77,46,0.15); color: var(--text); }
 
 /* ═══ Address Dropdown ═══ */
-.search-input-wrap { position: relative; flex: 1; min-width: 380px; }
+.search-input-wrap { position: relative; flex: 1; min-width: 0; }
 .search-input-wrap input { width: 100%; }
 
 .address-dropdown {
