@@ -526,6 +526,7 @@ def build_system_prompt(data: dict) -> str:
     lines.append("- Kui metsa pole, ütle otse ja soovita mida teha (nt taastada, sihtotstarvet muuta)")
     lines.append("- Alusta lühikese tervitusega: 'Tere! Terrapoint AI siin.'")
     lines.append("- LÕPETA oma vastus alati lõpliku soovitusega — ära jäta lahtisteks")
+    lines.append("- Ära kasuta sidekriipse (– või -) vastustes, kirjuta laused tervikuna")
     lines.append("- Maksimaalselt 300 sõna")
     lines.append("")
     lines.append("=== KATASTRI ANDMED ===")
