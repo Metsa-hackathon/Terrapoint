@@ -368,27 +368,39 @@ async def _search(kataster_nr: str):
         prices = SPECIES_PRICES.get(puuliik, SPECIES_PRICES["MA"])
         price_m3 = prices["seisuhind"]
 
-        # Kinnistu turuväärtus = maa turuhind (sisaldab juba puidu väärtust oksjonil)
-        # Maa turuhind: arvutatud sihtotstarbe ja pindala järgi
-        # Maksuhind on Maa-ameti hinnang ~60-70% turuhinnast, seega tegur ~1.3-1.5
+        # Kinnistu turuväärtus = maa turuhind (metsamaal sisaldab puidu väärtust)
+        # Maksuhind on Maa-ameti hinnang, metsamaal sageli ainult 500-1500 EUR/ha
+        # Tegelik turuhind sõltub metsa vanusest, tagavarast ja liigist
         maksuhind = kataster_data.get("maks_hind") or 0
         kogupindala = kataster_data.get("pindala_ha") or 1
         sihtotstarve = kataster_data.get("sihtotstarve", "")
         maksuhind_ha = maksuhind / kogupindala if kogupindala > 0 else 0
 
         st = sihtotstarve.upper()
-        if "METS" in st or "KAITSE" in st or eraldised:
-            turuhinna_tegur = 1.4  # Metsamaa: maksuhind on ~70% turuhinnast
+        if "ELAM" in st or "ÄRI" in st:
+            # Elamu- ja ärimaa: maksuhind on lähemal turuhinnale
+            turuhinna_tegur = 2.0
+            MIN_TURUHIND_HA = 3000
         elif "POLL" in st:
-            turuhinna_tegur = 1.6  # Põllumaa
-        elif "ELAM" in st:
-            turuhinna_tegur = 2.0  # Elamumaa
+            turuhinna_tegur = 1.8
+            MIN_TURUHIND_HA = 2000
         else:
-            turuhinna_tegur = 1.5  # Muu
+            # Metsamaa ja muu: maksuhind on väga madal, arvestame metsa väärtust
+            turuhinna_tegur = 1.5
+            MIN_TURUHIND_HA = 500
 
-        MIN_TURUHIND_HA = 500
         turuhind_ha = max(maksuhind_ha * turuhinna_tegur, MIN_TURUHIND_HA)
-        maa_turuhind = round(turuhind_ha * kogupindala)
+
+        # Metsamaa: lisa puidu turuväärtus (seisuhind × tagavara) maa hinnale
+        # Oksjonihind = maa + puit, aga puit arvestatakse seisuhinnaga (mitte palgihinnaga)
+        if eraldised and timber_value > 0:
+            # Seisuhind on ~40-60% palgi hinnast (raiekulud, transport, risk)
+            timber_market_factor = 0.5
+            maa_turuhind = round(turuhind_ha * kogupindala + timber_value * timber_market_factor)
+        else:
+            maa_turuhind = round(turuhind_ha * kogupindala)
+
+        kinnistu_turuväärtus = maa_turuhind
 
         vaartus_result = {
             "total_value_eur": timber_value,
@@ -399,8 +411,8 @@ async def _search(kataster_nr: str):
             "pulp_price": prices["pulp"],
             "price_source": "Metzfund 2026",
             "price_updated": "2026-05",
-            # Kinnistu turuväärtus (maa + puit)
-            "kinnistu_turuväärtus": maa_turuhind + timber_value,
+            # Kinnistu turuväärtus
+            "kinnistu_turuväärtus": kinnistu_turuväärtus,
             "maa_turuhind": maa_turuhind,
             "maa_maksuhind": kataster_data.get("maks_hind") or 0,
         }
@@ -814,7 +826,7 @@ async def chat(request: Request):
         api_url = "https://openrouter.ai/api/v1/chat/completions"
         model = "openrouter/owl-alpha"
 
-        async with httpx.AsyncClient(timeout=25) as client:
+        async with httpx.AsyncClient(timeout=8) as client:
             resp = await client.post(
                 api_url,
                 headers={
