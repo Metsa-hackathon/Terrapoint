@@ -220,9 +220,9 @@
                 <p class="section-desc">Metsa ümarmaterjali turuväärtus praeguste hindadega</p>
                 <div id="info-vaartus" class="info-box">
                     <strong>Mis näitab:</strong> Metsa ümarmaterjali koguväärtus praeguste turuhindade järgi.<br>
-                    <strong>Arvutus:</strong> Koguväärtus = tagavara (m³) × seisuhind (€/m³). Hind sõltub peapuuliigist, iga liigi kohta on eraldi seisuhind, palgi- ja paberipuu hind.<br>
-                    <strong>Allikas:</strong> Eesti Erametsaliidu hinnastatistika (2024). Hinnad uuenevad kord kvartalis.
-                    <div class="source">Andmed: erametsaliit.ee</div>
+                    <strong>Arvutus:</strong> Iga eraldise väärtus = seisuhind × tagavara (m³/ha) × pindala (ha). Seisuhind = raiumata puidu hind metsas (palk + paberipuu keskmine, maha arvatud raiumiskulud).<br>
+                    <strong>Allikas:</strong> Metzfund 2026 turuhinnad. Mänd 48, kuusk 52, kask 58 €/m³.
+                    <div class="source">Andmed: metzfund.ee, Eesti turuhinnad 2026</div>
                 </div>
                 <div id="vaartus-info"></div>
             </div>
@@ -404,7 +404,7 @@
     <footer>
         <div class="footer-content">
             <p class="footer-brand">Terrapoint &copy; 2026</p>
-            <p class="footer-sources">Andmed: Keskkonnaagentuur, Maa-amet, Erametsaliit</p>
+            <p class="footer-sources">Andmed: Keskkonnaagentuur, Maa-amet, Metzfund</p>
         </div>
     </footer>
 
@@ -981,7 +981,7 @@
         html += '</div>';
 
         html += '<div class="info-row"><span class="label" title="Metsa väärtus ühe hektari kohta. Arvutatakse: koguväärtus / pindala.">Ühikuhind ' + ddInfo('Metsa väärtus ühe hektari kohta') + '</span><span class="value">' + formatEur(data.value_per_ha) + ' / ha</span></div>';
-        html += '<div class="info-row"><span class="label" title="Püsti puistu turuhind eurodes kuupmeetri kohta. Põhineb Eesti Erametsaliidu hinnastatistikal.">Seisuhind ' + ddInfo('Püsti puistu turuhind, metsaomanik saab selle hinna kui müüb metsa raiumata') + '</span><span class="value">' + formatNum(data.price_per_m3, 2) + ' €/m³</span></div>';
+        html += '<div class="info-row"><span class="label">Seisuhind ' + ddInfo('Raiumata puidu hind metsas €/m³. Põhineb Metzfund 2026 turuhindadel.') + '</span><span class="value">' + formatNum(data.price_per_m3, 2) + ' €/m³</span></div>';
         html += '<div class="info-row"><span class="label" title="Metsa kogu ümarmaterjali maht kuupmeetrites. Arvutatakse: tagavara (m³/ha) × pindala (ha).">Tagavara ' + ddInfo('Metsa kogu ümarmaterjali maht') + '</span><span class="value">' + formatNum(data.tagavara_m3) + ' m³</span></div>';
         html += '<div class="info-row"><span class="label" title="Saematerjali hind, kõige väärtuslikum osa metsast">Palk ' + ddInfo('Saematerjali hind, kõige väärtuslikum osa metsast') + '</span><span class="value">' + formatNum(data.log_price, 2) + ' €/m³</span></div>';
         html += '<div class="info-row"><span class="label" title="Paberipuu hind, väiksemad puud ja oksad">Paberipuit ' + ddInfo('Paberipuu hind, väiksemad puud ja oksad') + '</span><span class="value">' + formatNum(data.pulp_price, 2) + ' €/m³</span></div>';
