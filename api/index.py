@@ -758,15 +758,6 @@ async def chat(request: Request):
         if not data:
             return json_response({"error": "Otsi kinnistu esimesena, seejärel küsi AI-lt."}, 400)
 
-        # Proxy to VPS for AI call (owl-alpha too slow for Vercel 10s timeout)
-        vps_url = "http://46.62.230.110:8099/api/chat"
-        try:
-            async with httpx.AsyncClient(timeout=20) as vps_client:
-                vps_resp = await vps_client.post(vps_url, json=body)
-                return json_response(vps_resp.json(), vps_resp.status_code)
-        except Exception:
-            pass  # Fall through to local processing
-
         system_prompt = build_system_prompt(data)
 
         # Build messages array
