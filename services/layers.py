@@ -16,6 +16,8 @@ LAYER_CONFIGS = [
     ("uleujutus", "eelis", "eelis:kr_yleujutusohuga_ala"),
     ("lageraiealad", "veeveeb", "veeveeb:lageraiealad"),
     ("malestised", "muinsuskaitse", "muinsuskaitse:kpo_malestised"),
+    ("veekogud", "eelis", "eelis:avalikud_jarved"),
+    ("vooluveed", "eelis", "eelis:avalikud_vooluveekogud"),
 ]
 
 

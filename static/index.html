@@ -90,7 +90,7 @@
                     <div class="ai-avatar"></div>
                     <div class="ai-bubble">
                         <p>Tere! Olen Terrapoint AI.</p>
-                        <p>Otsi ülevalt oma katastri number ja ma analüüsin su metsaandmeid — annan nõu kas müüa, hoida, osta juurde või taotleda toetusi.</p>
+                        <p>Otsi ülevalt oma katastri number ja ma analüüsin su metsaandmeid. Annan nõu kas müüa, hoida, osta juurde või taotleda toetusi.</p>
                     </div>
                 </div>
             </div>
@@ -165,6 +165,14 @@
                         <label class="toggle-item">
                             <input type="checkbox" id="layer-malestised" data-layer="malestised">
                             <span class="toggle-label" style="border-left:3px solid #7b2cbf;padding-left:4px">Mälestised</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="layer-veekogud" data-layer="veekogud">
+                            <span class="toggle-label" style="border-left:3px solid #48cae4;padding-left:4px">Järved</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="layer-vooluveed" data-layer="vooluveed">
+                            <span class="toggle-label" style="border-left:3px solid #0096c7;padding-left:4px">Vooluveed</span>
                         </label>
                     </div>
                 </div>
@@ -264,7 +272,7 @@
                     <span class="info-toggle">?</span>
                 </div>
                 <div id="info-riskid" class="info-box">
-                    <strong>Mis näitab:</strong> Metsa terviseriskid — üraski risk ja karuputk.<br>
+                    <strong>Mis näitab:</strong> Metsa terviseriskid: üraski risk ja karuputk.<br>
                     <strong>Üraski risk:</strong> 0=madal, 1=keskmine (kuusk &gt;30a), 2=kõrge (kuusk &gt;50a), 3=kriitiline (MKE tsoonis).<br>
                     <strong>Allikas:</strong> Metsaregister (MKE tsoonid), EELIS (looduskaitse).
                     <div class="source">Andmed: Keskkonnaagentuur, metsaregister.ee</div>
@@ -408,6 +416,7 @@
     <script>
     // ═══ api.js ═══
     const API_BASE = '/api';
+    const AI_API_BASE = 'http://46.62.230.110:8001/api';
 
     async function searchParcel(katasterNr) {
         const res = await fetch(`${API_BASE}/search/${encodeURIComponent(katasterNr)}`);
@@ -495,7 +504,7 @@
         try {
             var controller = new AbortController();
             var timeoutId = setTimeout(function() { controller.abort(); }, 55000);
-            var resp = await fetch('/api/chat', {
+            var resp = await fetch(`${AI_API_BASE}/chat`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
@@ -523,7 +532,7 @@
             aiAppendMessage('assistant', aiFormatResponse(fullText));
 
             aiChatHistory.push({role: 'assistant', content: fullText});
-            document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + ' — küsi lisa küsimusi';
+            document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + '. Küsi lisa küsimusi';
 
         } catch(err) {
             aiRemoveTyping();
@@ -715,6 +724,8 @@
         lageraiealad: {label: 'Lageraie', color: '#adb5bd', checked: false},
         karuputk: {label: 'Karuputk', color: '#d63384', checked: false},
         malestised: {label: 'Mälestised', color: '#7b2cbf', checked: false},
+        veekogud: {label: 'Järved', color: '#48cae4', checked: false},
+        vooluveed: {label: 'Vooluveed', color: '#0096c7', checked: false},
     };
 
     function loadMapLayers(mapLayers) {

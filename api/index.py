@@ -405,6 +405,8 @@ async def _search(kataster_nr: str):
         "karuputk": {"label": "Karuputk", "color": "#d63384"},
         "lageraiealad": {"label": "Lageraiealad", "color": "#adb5bd"},
         "malestised": {"label": "Mälestised", "color": "#7b2cbf"},
+        "veekogud": {"label": "Järved", "color": "#48cae4"},
+        "vooluveed": {"label": "Vooluveed", "color": "#0096c7"},
     }
     for key, meta in LAYER_MAP.items():
         features = layers_data.get(key, [])
