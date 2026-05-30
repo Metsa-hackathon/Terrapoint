@@ -1,3 +1,10 @@
+"""
+Terrapoint — Eesti metsa- ja kinnistuandmete API
+
+Versioon: 2.1.0
+Autor: Terrapoint
+"""
+
 import time
 import asyncio
 import os
@@ -7,6 +14,8 @@ from shapely.geometry import shape
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, HTMLResponse, FileResponse
+from fastapi import HTTPException
+from pydantic import BaseModel, Field
 from contextlib import asynccontextmanager
 
 import sys
@@ -22,13 +31,42 @@ from calculators.carbon import carbon_potential
 from calculators.cutting_age import cutting_age_indicator
 from spatial.bbox import calculate_bbox, bbox_to_wfs_string
 import config
+from api.cache import search_cache
+
+
+# ── Pydantic schemas ──────────────────────────────────────────────
+
+class ChatRequest(BaseModel):
+    """AI vestluse päring."""
+    kataster_nr: str = Field(..., min_length=1, description="Katastritunnus (nt 78404:409:0113)")
+    message: str = Field(..., min_length=1, max_length=2000, description="Kasutaja sõnum")
+    history: list[dict] = Field(default_factory=list, description="Vestluse ajalugu")
+    data: dict | None = Field(default=None, description="Eelnevalt laetud kinnistuandmed")
+
+
+class ErrorResponse(BaseModel):
+    """Standardne veavastus."""
+    error: str = Field(..., description="Inimloetav veateade")
+    code: str | None = Field(default=None, description="Veakood (nt NOT_FOUND, VALIDATION_ERROR)")
+
+
+# ── Application setup ─────────────────────────────────────────────
+
+_uptime_start = time.time()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
 
-app = FastAPI(title="Terrapoint", version="2.0.0", lifespan=lifespan)
+app = FastAPI(
+    title="Terrapoint",
+    description="Eesti metsa- ja kinnistuandmete API. Otsing katastritunnuse järgi, metsaeraldiste analüüs, väärtuse hindamine, süsinikuarvutus, toetused ja riskihinnang.",
+    version="2.1.0",
+    lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 
@@ -38,7 +76,23 @@ def json_response(data: dict, status: int = 200) -> Response:
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "version": "2.0.0", "timestamp": time.time()}
+    """API tervisekontroll.
+
+    Tagastab API oleku, versiooni, tööaja ja vahemälu statistika.
+    Kasuta monitorimiseks ja load balanceri tervisekontrolliks.
+    """
+    uptime_seconds = int(time.time() - _uptime_start)
+    return {
+        "status": "ok",
+        "version": "2.1.0",
+        "uptime_seconds": uptime_seconds,
+        "uptime_formatted": f"{uptime_seconds // 86400}d {(uptime_seconds % 86400) // 3600}h {(uptime_seconds % 3600) // 60}m",
+        "cache": {
+            "hits": 0,  # tracked below
+            "size": search_cache.size if hasattr(search_cache, 'size') else "—",
+        },
+        "timestamp": time.time(),
+    }
 
 
 @app.get("/api/address/{q:path}")
@@ -107,14 +161,24 @@ def _filter_features_by_geometry(features, parcel_geom):
 
 
 # Simple in-memory search cache (TTL 5 min) to avoid re-fetching on chat
-_search_cache = {}
-_SEARCH_CACHE_TTL = 300  # seconds
+# Search cache: track hits/misses
+_search_cache_hits = 0
+_search_cache_misses = 0
 
-async def _search(kataster_nr: str):
+async def _search(kataster_nr: str) -> Response:
+    """Täielik kinnistu päring: kataster + eraldised + kihid + teatised.
+
+    Kogub kõik andmed paralleelselt ja tagastab JSON-vastuse.
+    Kasutab 5-minutilist vahemälu, et vältida topeltpäringuid.
+    """
+    global _search_cache_hits, _search_cache_misses
+
     # Check cache
-    cached = _search_cache.get(kataster_nr)
-    if cached and (time.time() - cached["ts"]) < _SEARCH_CACHE_TTL:
-        return cached["response"]
+    cached_response = search_cache.get(kataster_nr)
+    if cached_response is not None:
+        _search_cache_hits += 1
+        return cached_response
+    _search_cache_misses += 1
 
     start = time.time()
     MAX_TIME = 8.5  # Vercel Hobby has 10s timeout, leave buffer
@@ -615,11 +679,11 @@ async def _search(kataster_nr: str):
         "mullad": mullad,
         "clc": clc,
         "map_layers": map_layers,
-        "meta": {"cached": False, "response_time_ms": elapsed},
+        "meta": {"response_time_ms": elapsed},
     })
 
     # Store in cache for chat endpoint reuse
-    _search_cache[kataster_nr] = {"response": response, "ts": time.time()}
+    search_cache.set(kataster_nr, response, ttl=300)
     return response
 
 
@@ -636,20 +700,20 @@ def build_system_prompt(data: dict) -> str:
     kahjustused = data.get("kahjustused", [])
 
     lines = []
-    lines.append("Oled Terrapoint AI, Eesti metsanduse ekspert. Vasta eesti keeles, kasuta konkreetseid numbreid. Maks 300 sõna. Ära kasuta sidekriipse ega emoji-sid. Struktuur: 1) kokkuvõte 2) näitajad 3) riskid 4) soovitus. Lõpeta alati konkreetse soovitusega. Vanus 40-80a=küps, tagavara >150m³/ha=hea, boniteet I-II=hea. Mänd=väärtuslik, kuusk=üraskioht. Ära soovita kohe lageraiet.")
+    lines.append("Oled Terrapoint AI, Eesti metsanduse ekspert. Vasta eesti keeles, kasuta konkreetseid numbreid. Maks 300 sõna. Ära kasuta sidekriipse ega emoji-sid. Struktuur: 1) kokkuvõte 2) näitajad 3) ohutegurid 4) soovitus. Lõpeta alati konkreetse soovitusega. Vanus 40-80a=küps, tagavara >150m³/ha=hea, boniteet I-II=hea. Mänd=väärtuslik, kuusk=üraskioht. Ära soovita kohe lageraiet.")
     lines.append("")
-    lines.append("=== KATASTRI ANDMED ===")
+    lines.append("=== KATASTRIÜKSUSE ANDMED ===")
     lines.append(f"Number: {k.get('number', 'N/A')}")
     lines.append(f"Pindala: {k.get('pindala_ha', 0)} ha")
     lines.append(f"Asukoht: {k.get('l_aadress', '')}, {k.get('ov_nimi', '')}, {k.get('mk_nimi', '')}")
     lines.append(f"Sihtotstarve: {k.get('sihtotstarve', 'N/A')}")
-    lines.append(f"Omandivorm: {k.get('omvorm', 'N/A')}")
+    lines.append(f"Omand: {k.get('omvorm', 'N/A')}")
     lines.append(f"Maksuhind: {k.get('maks_hind', 'N/A')} EUR")
     lines.append(f"Metsa pindala: {k.get('mets_pindala_ha', 0)} ha")
 
     if m:
         lines.append("")
-        lines.append("=== METSA ANDMED ===")
+        lines.append("=== METSA ERALDISED ===")
         lines.append(f"Peapuuliik: {m.get('puuliik', 'N/A')} ({m.get('puuliik_kood', '')})")
         lines.append(f"Keskmine vanus: {m.get('vanus', 0)} aastat")
         lines.append(f"Tagavara: {m.get('tagavara_y_ha', 0)} m³/ha")
@@ -676,7 +740,7 @@ def build_system_prompt(data: dict) -> str:
 
     if v:
         lines.append("")
-        lines.append("=== PUIDU VÄÄRTUS ===")
+        lines.append("=== METSA MAJANDUSLIK VÄÄRTUS ===")
         lines.append(f"Koguväärtus: {v.get('total_value_eur', 0)} EUR")
         lines.append(f"Väärtus hektari kohta: {v.get('value_per_ha', 0)} EUR/ha")
         lines.append(f"Seisuhind: {v.get('price_per_m3', 0)} EUR/m³")
@@ -687,7 +751,7 @@ def build_system_prompt(data: dict) -> str:
 
     if s:
         lines.append("")
-        lines.append("=== SÜSINIK ===")
+        lines.append("=== SÜSINIKUVARU ===")
         lines.append(f"CO2 kogus: {s.get('co2_tons_total', 0)} tonni")
         lines.append(f"CO2 hektari kohta: {s.get('co2_tons_ha', 0)} t/ha")
         lines.append(f"Biomass: {s.get('total_biomass_tons_ha', 0)} t/ha")
@@ -708,7 +772,7 @@ def build_system_prompt(data: dict) -> str:
 
     if riskid:
         lines.append("")
-        lines.append("=== RISKID ===")
+        lines.append("=== OHUTEGURID ===")
         yrask = riskid.get("yrask", {})
         if yrask:
             lines.append(f"Üraski risk: {yrask.get('label', 'N/A')} (skoor: {yrask.get('score', 0)})")
@@ -744,6 +808,12 @@ def build_system_prompt(data: dict) -> str:
 
 @app.post("/api/chat")
 async def chat(request: Request):
+    """AI metsanduse nõustaja.
+
+    Kasutab OpenRouter AI-d, et vastata küsimustele
+    kinnistu andmete põhjal. Edastab eelnevalt laaditud
+    andmed (data) koos süsteemi promptiga AI-le.
+    """
     try:
         body = await request.json()
         kataster_nr = body.get("kataster_nr", "")
@@ -841,6 +911,12 @@ async def chat(request: Request):
 
 @app.get("/api/export/eudr/{kataster_nr:path}")
 async def export_eudr(kataster_nr: str):
+    """Ekspordi EUDR GeoJSON fail.
+
+    Tagastab EL deforestatsioonivastase määruse nõuetele
+    vastava GeoJSON faili alla laadimiseks.
+    Sisaldab katastriandmeid, metsaeraldiseid ja looduskaitsestaatust.
+    """
     kataster_data = await query_kataster(kataster_nr)
     if not kataster_data:
         return json_response({"error": "Krunti ei leitud"}, 404)
@@ -908,6 +984,7 @@ async def export_eudr(kataster_nr: str):
 
 @app.get("/")
 async def root():
+    """Lehe avaleht — esitleb HTML index faili."""
     html_path = PROJECT_ROOT / "index.html"
     if html_path.exists():
         return HTMLResponse(
@@ -919,6 +996,7 @@ async def root():
 
 @app.get("/static/{filename:path}")
 async def serve_static(filename: str):
+    """Teeninda staatilisi faile (/static/ kataloogist)."""
     file_path = PROJECT_ROOT / "static" / filename
     if file_path.exists():
         if filename.endswith(".css"):
@@ -931,6 +1009,7 @@ async def serve_static(filename: str):
 
 @app.get("/static/css/{filename:path}")
 async def serve_css(filename: str):
+    """Teeninda CSS faile (/static/css/ kataloogist)."""
     file_path = PROJECT_ROOT / "static" / "css" / filename
     if file_path.exists():
         return FileResponse(str(file_path), media_type="text/css")
@@ -939,6 +1018,7 @@ async def serve_css(filename: str):
 
 @app.get("/static/js/{filename:path}")
 async def serve_js(filename: str):
+    """Teeninda JavaScript faile (/static/js/ kataloogist)."""
     file_path = PROJECT_ROOT / "static" / "js" / filename
     if file_path.exists():
         return FileResponse(str(file_path), media_type="application/javascript")
