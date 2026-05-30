@@ -696,27 +696,15 @@ def build_system_prompt(data: dict) -> str:
         lines.append(f"Puuekivalent: {s.get('trees_equivalent', 0)} küpset puud")
 
     if kitsendused:
-        lines.append("")
-        lines.append("=== KITSENDUSED ===")
-        for kit in kitsendused:
-            lines.append(f"  - {kit.get('tyyp', '?')}: {kit.get('kirjeldus', '')}")
+        lines.append("KITSENDUSED: " + ", ".join(f"{kit.get('tyyp','?')}" for kit in kitsendused[:3]))
 
     if toetused:
-        lines.append("")
-        lines.append("=== TOETUSED ===")
-        for t in toetused:
-            sobib = "SOBIB" if t.get("sobib") else "EI SOBI"
-            lines.append(f"  - {t.get('nimi', '?')} ({t.get('asutus', '')}): {sobib}, {t.get('summa', '')} EUR")
-            if t.get("pohjus"):
-                lines.append(f"    Põhjus: {t['pohjus']}")
-            if t.get("taotlusvoor"):
-                lines.append(f"    Taotlusvoor: {t['taotlusvoor']}")
+        sobivad = [t for t in toetused if t.get("sobib")]
+        lines.append("TOETUSED: " + ", ".join(f"{t.get('nimi','?')} ({t.get('summa','')} EUR)" for t in sobivad[:3]))
 
     raie = data.get("raie", {})
     if raie:
-        lines.append("")
-        lines.append("=== RAIEVALMIDUS ===")
-        lines.append(f"Raievanus: {raie.get('raievanus', '?')} a, hetkel {raie.get('ratio', 0)}x. Staatus: {raie.get('label', '?')}")
+        lines.append(f"RAIE: {raie.get('label','?')} ({raie.get('ratio',0)}x)")
 
     if riskid:
         lines.append("")
