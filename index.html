@@ -1095,39 +1095,70 @@
         var el = document.getElementById('toetused-info');
         if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Toetusi ei leitud</p>'; return; }
 
-        // Separate eligible and ineligible
         var eligible = data.filter(function(t) { return t.sobib; });
         var ineligible = data.filter(function(t) { return !t.sobib; });
 
+        function badgeColor(status) {
+            if (status === 'open') return 'background:#16a34a;color:#fff';
+            if (status === 'upcoming') return 'background:#f59e0b;color:#fff';
+            if (status === 'closed') return 'background:#6b7280;color:#fff';
+            return 'background:#64748b;color:#fff';
+        }
+        function badgeLabel(t) {
+            if (t.voor_badge) return t.voor_badge;
+            if (t.voor_status === 'open') return 'Avatud';
+            if (t.voor_status === 'upcoming') return 'Tulemas';
+            if (t.voor_status === 'closed') return 'Lõppenud';
+            return '';
+        }
+
         var html = '';
 
-        // Eligible programs first (highlighted)
+        // Eligible programs
         if (eligible.length > 0) {
-            html += '<div style="margin-bottom:1rem"><strong style="color:var(--success)">✓ Sobivad toetused (' + eligible.length + ')</strong></div>';
+            html += '<div style="margin-bottom:0.8rem"><strong style="color:var(--success)">Sobivad toetused (' + eligible.length + ')</strong></div>';
             eligible.forEach(function(t) {
                 var link = t.url || 'https://www.eramets.ee/toetused/';
+                var badge = badgeLabel(t);
+                var badgeStyle = badgeColor(t.voor_status);
                 html += '<div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;background:var(--card-bg)">';
-                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:4px">';
                 html += '<strong style="color:var(--text)">' + t.nimi + '</strong>';
-                html += '<span style="color:var(--success);font-weight:600">' + t.summa + '</span>';
-                html += '</div>';
-                if (t.kirjeldus) html += '<p style="color:var(--text-muted);font-size:0.82rem;margin:4px 0">' + t.kirjeldus + '</p>';
-                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">';
-                html += '<span style="color:var(--text-muted);font-size:0.8rem">Taotlusvoor: ' + (t.taotlusvoor || '—') + '</span>';
-                html += '<a href="' + link + '" target="_blank" rel="noopener" style="color:var(--success);font-weight:600;font-size:0.82rem">Kandideeri →</a>';
+                html += '<div style="display:flex;gap:6px;align-items:center">';
+                if (badge) html += '<span style="' + badgeStyle + ';font-size:0.7rem;padding:2px 8px;border-radius:10px;font-weight:600">' + badge + '</span>';
+                html += '<span style="color:var(--success);font-weight:600;font-size:0.85rem">' + t.summa + '</span>';
                 html += '</div></div>';
+                if (t.kirjeldus) html += '<p style="color:var(--text-muted);font-size:0.8rem;margin:4px 0 6px 0;line-height:1.4">' + t.kirjeldus + '</p>';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">';
+                html += '<span style="color:var(--text-muted);font-size:0.78rem">Taotlusvoor: ' + (t.taotlusvoor || '—') + ' · ' + t.asutus + '</span>';
+                html += '<div style="display:flex;gap:10px">';
+                if (t.voor_url) html += '<a href="' + t.voor_url + '" target="_blank" rel="noopener" style="color:var(--text-muted);font-size:0.78rem">Tähtajad →</a>';
+                html += '<a href="' + link + '" target="_blank" rel="noopener" style="color:var(--success);font-weight:600;font-size:0.82rem">Kandideeri →</a>';
+                html += '</div></div></div>';
             });
         }
 
-        // Ineligible programs (collapsed)
+        // Ineligible programs
         if (ineligible.length > 0) {
-            html += '<details style="margin-top:1rem"><summary style="cursor:pointer;color:var(--text-muted);font-size:0.85rem">Muud toetused (' + ineligible.length + '), ei vasta tingimustele</summary>';
-            html += '<table style="margin-top:0.5rem"><thead><tr><th>Programm</th><th>Summa</th><th>Asutus</th><th>Põhjus</th></tr></thead><tbody>';
+            html += '<details style="margin-top:1rem"' + (eligible.length === 0 ? ' open' : '') + '><summary style="cursor:pointer;color:var(--text-muted);font-size:0.85rem;font-weight:600">Muud toetused (' + ineligible.length + '), ei vasta tingimustele</summary>';
             ineligible.forEach(function(t) {
-                html += '<tr><td>' + t.nimi + '</td><td>' + t.summa + '</td><td>' + t.asutus + '</td>';
-                html += '<td class="muted" style="font-size:0.8rem">' + (t.pohjus || 'Tingimused ei vasta') + '</td></tr>';
+                var link = t.url || 'https://www.eramets.ee/toetused/';
+                var badge = badgeLabel(t);
+                var badgeStyle = badgeColor(t.voor_status);
+                html += '<div style="border:1px solid var(--border-light);border-radius:6px;padding:10px;margin-top:6px;opacity:0.8">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">';
+                html += '<strong style="font-size:0.85rem">' + t.nimi + '</strong>';
+                html += '<div style="display:flex;gap:6px;align-items:center">';
+                if (badge) html += '<span style="' + badgeStyle + ';font-size:0.65rem;padding:1px 6px;border-radius:8px">' + badge + '</span>';
+                html += '<span style="color:var(--text-muted);font-size:0.8rem">' + t.summa + '</span>';
+                html += '</div></div>';
+                if (t.pohjus) html += '<p style="color:var(--danger);font-size:0.78rem;margin:4px 0 0 0">✗ ' + t.pohjus + '</p>';
+                html += '<div style="display:flex;gap:10px;margin-top:4px">';
+                if (t.voor_url) html += '<a href="' + t.voor_url + '" target="_blank" rel="noopener" style="color:var(--text-muted);font-size:0.75rem">Tähtajad →</a>';
+                html += '<a href="' + link + '" target="_blank" rel="noopener" style="color:var(--text-muted);font-size:0.75rem">Info →</a>';
+                html += '</div></div>';
             });
-            html += '</tbody></table></details>';
+            html += '</details>';
         }
 
         el.innerHTML = html;
