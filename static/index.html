@@ -458,7 +458,7 @@
 
         try {
             var controller = new AbortController();
-            var timeoutId = setTimeout(function() { controller.abort(); }, 55000);
+            var timeoutId = setTimeout(function() { controller.abort(); }, 20000);
             var resp = await fetch(`${AI_API_BASE}/chat`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -476,7 +476,12 @@
             try {
                 data = await resp.json();
             } catch(e) {
-                throw new Error('Serveri vastus ei ole korrektne');
+                // Vercel returns HTML on timeout/error — not JSON
+                var text = await resp.text().catch(function() { return ''; });
+                if (text.indexOf('FUNCTION_INVOCATION_TIMEOUT') > -1 || resp.status === 504) {
+                    throw new Error('AI vastus aegus. Proovi lühemat küsimust.');
+                }
+                throw new Error('Serveri viga (HTTP ' + resp.status + ')');
             }
 
             if (!resp.ok || data.error) {
@@ -492,7 +497,7 @@
 
         } catch(err) {
             aiRemoveTyping();
-            var msg = err.name === 'AbortError' ? 'AI vastus aegus (55s). Proovi uuesti.' : 'Viga: ' + err.message;
+            var msg = err.name === 'AbortError' ? 'AI vastus aegus. Proovi lühemat küsimust.' : 'Viga: ' + err.message;
             aiAppendMessage('assistant', '<span style="color:var(--danger)">' + msg + '</span>');
         }
 
