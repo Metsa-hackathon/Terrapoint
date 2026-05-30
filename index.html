@@ -504,7 +504,7 @@
 
         try {
             var controller = new AbortController();
-            var timeoutId = setTimeout(function() { controller.abort(); }, 55000);
+            var timeoutId = setTimeout(function() { controller.abort(); }, 25000);
             var resp = await fetch(`${AI_API_BASE}/chat`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -521,7 +521,7 @@
             try {
                 data = await resp.json();
             } catch(e) {
-                throw new Error('Serveri vastus ei ole korrektne');
+                throw new Error('Server ei vastanud JSON-is. Proovi uuesti.');
             }
 
             if (!resp.ok || data.error) {
@@ -537,7 +537,7 @@
 
         } catch(err) {
             aiRemoveTyping();
-            var msg = err.name === 'AbortError' ? 'AI vastus aegus (55s). Proovi uuesti.' : 'Viga: ' + err.message;
+            var msg = err.name === 'AbortError' ? 'AI vastus aegus. Proovi uuesti.' : 'Viga: ' + err.message;
             aiAppendMessage('assistant', '<span style="color:var(--danger)">' + msg + '</span>');
         }
 

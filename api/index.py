@@ -106,7 +106,16 @@ def _filter_features_by_geometry(features, parcel_geom):
         return features
 
 
+# Simple in-memory search cache (TTL 5 min) to avoid re-fetching on chat
+_search_cache = {}
+_SEARCH_CACHE_TTL = 300  # seconds
+
 async def _search(kataster_nr: str):
+    # Check cache
+    cached = _search_cache.get(kataster_nr)
+    if cached and (time.time() - cached["ts"]) < _SEARCH_CACHE_TTL:
+        return cached["response"]
+
     start = time.time()
     MAX_TIME = 8.5  # Vercel Hobby has 10s timeout, leave buffer
 
@@ -563,7 +572,7 @@ async def _search(kataster_nr: str):
 
     elapsed = round((time.time() - start) * 1000)
 
-    return json_response({
+    response = json_response({
         "kataster": kataster_data,
         "mets": mets_result,
         "vaartus": vaartus_result,
@@ -579,6 +588,10 @@ async def _search(kataster_nr: str):
         "map_layers": map_layers,
         "meta": {"cached": False, "response_time_ms": elapsed},
     })
+
+    # Store in cache for chat endpoint reuse
+    _search_cache[kataster_nr] = {"response": response, "ts": time.time()}
+    return response
 
 
 def build_system_prompt(data: dict) -> str:
@@ -776,7 +789,7 @@ async def chat(request: Request):
         api_url = "https://openrouter.ai/api/v1/chat/completions"
         model = "openrouter/owl-alpha"
 
-        async with httpx.AsyncClient(timeout=55) as client:
+        async with httpx.AsyncClient(timeout=25) as client:
             resp = await client.post(
                 api_url,
                 headers={
