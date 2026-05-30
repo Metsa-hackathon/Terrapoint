@@ -205,9 +205,6 @@ async def _search(kataster_nr: str):
         primary = max(eraldised, key=lambda e: (e.get("pindala_ha") or 0))
         boniteet = primary.get("boniteedi_kood") or 3
 
-        carbon = carbon_potential(avg_tagavara, total_pindala, puuliik)
-        raie = cutting_age_indicator(int(avg_vanus or 0), puuliik, boniteet)
-
         koosseis_with_osakaal = []
         if liikide_koosseis:
             # Filter out non-species codes (TM, PI, PS, PA, LV2, MU are forest type codes, not species)
@@ -247,6 +244,16 @@ async def _search(kataster_nr: str):
                         "vanus": round(s["vanus_sum"] / s["count"]) if s["count"] else 0,
                         "osakaal": equal_pct,
                     })
+
+            # Update peapuuliik to match dominant species from composition percentages
+            if koosseis_with_osakaal:
+                dominant = max(koosseis_with_osakaal, key=lambda x: x.get("osakaal", 0))
+                if dominant.get("puuliik_kood"):
+                    puuliik = dominant["puuliik_kood"]
+
+        # Carbon and cutting age use the final peapuuliik
+        carbon = carbon_potential(avg_tagavara, total_pindala, puuliik)
+        raie = cutting_age_indicator(int(avg_vanus or 0), puuliik, boniteet)
 
         # Build eraldised summary for frontend (including geometry and per-eraldis value)
         puuliik_nimi_map = {"MA": "harilik mänd", "KU": "harilik kuusk", "KS": "ainuroheline kask", "HB": "harilik haab", "LH": "harilik lehis", "LM": "hall lepp", "LV": "salu-lepp"}
