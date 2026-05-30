@@ -814,7 +814,7 @@ async def chat(request: Request):
             return json_response({"error": "OpenRouter API key not configured"}, 500)
 
         api_url = "https://openrouter.ai/api/v1/chat/completions"
-        model = "moonshotai/kimi-k2.6:free"
+        model = "deepseek/deepseek-v4-flash:free"
 
         async with httpx.AsyncClient(timeout=httpx.Timeout(7, connect=3)) as client:
             resp = await client.post(
