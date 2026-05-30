@@ -328,30 +328,45 @@ async def _search(kataster_nr: str):
     riskid["lageraieala"] = has_lageraieala
 
     if eraldised:
-        # Ürask risk scoring
+        # Ürask risk scoring — kuusekooreürask ohustab ainult kuuske
         yrask_score = 0
         yrask_label = "Madal"
         has_kuusk = any(e.get("puuliik_kood") == "KU" for e in eraldised)
-        max_vanus = max((e.get("vanus") or 0) for e in eraldised)
+        # Kuuse vanus eraldi — mitte kõigi eraldiste max!
+        kuusk_eradised = [e for e in eraldised if e.get("puuliik_kood") == "KU"]
+        max_kuusk_v = max((e.get("vanus") or 0) for e in kuusk_eradised) if kuusk_eradised else 0
+        # Peapuuliik (kõige suurema pindalaga)
+        peapuuliik = max(eraldised, key=lambda e: e.get("pindala_ha") or 0).get("puuliik_kood", "")
+        peapuuliik_nimi = {"MA": "mänd", "KU": "kuusk", "KS": "kask", "HB": "haab", "LH": "lehis", "LM": "sanglepp", "LV": "hall lepp"}.get(peapuuliik, peapuuliik)
 
         if yrask_features:
             yrask_score = 3
-            yrask_label = "Kriitiline — tsoonis"
-        elif has_kuusk and max_vanus > 50:
+            yrask_label = "Kriitiline — MKE tsoonis"
+        elif has_kuusk and max_kuusk_v > 50:
             yrask_score = 2
-            yrask_label = "Kõrge — vana kuusemets"
-        elif has_kuusk and max_vanus > 30:
+            yrask_label = "Kõrge — vana kuusk (" + str(max_kuusk_v) + "a)"
+        elif has_kuusk and max_kuusk_v > 30:
             yrask_score = 1
             yrask_label = "Keskmine — kuusk üle 30a"
         else:
             yrask_score = 0
             yrask_label = "Madal"
 
+        detail_parts = []
+        if yrask_features:
+            detail_parts.append("Kuusekooreüraski MKE tsoon")
+        if has_kuusk:
+            detail_parts.append("Kuuske on " + str(max_kuusk_v) + "a")
+        else:
+            detail_parts.append("Kuuske pole — üraski risk puudub")
+        detail_parts.append("Peapuuliik: " + peapuuliik_nimi)
+
         riskid["yrask"] = {
             "score": yrask_score,
             "label": yrask_label,
             "official_zone": bool(yrask_features),
-            "detail": "Kuusekooreüraski MKE tsoon" if yrask_features else None,
+            "detail": ". ".join(detail_parts),
+            "peapuuliik": peapuuliik_nimi,
         }
 
         # Terviseindeks (0-100): arvestab vanust, üraski riski, kahjustusi, liigilist koosseisu
@@ -570,6 +585,8 @@ def build_system_prompt(data: dict) -> str:
         yrask = riskid.get("yrask", {})
         if yrask:
             lines.append(f"Üraski risk: {yrask.get('label', 'N/A')} (skoor: {yrask.get('score', 0)})")
+            if yrask.get('detail'):
+                lines.append(f"  Detail: {yrask['detail']}")
         if riskid.get("karuputk"):
             lines.append("Karuputk: LEITUD")
         if riskid.get("lageraieala"):
