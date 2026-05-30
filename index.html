@@ -177,6 +177,7 @@
                     <h3>Katastri andmed</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">Krundi number, pindala, sihtotstarve, omandivorm ja asukoht</p>
                 <div id="info-kataster" class="info-box">
                     <strong>Mis näitab:</strong> Krundi põhiandmed, number, pindala, sihtotstarve, omandivorm, asukoht ja maksuhind.<br>
                     <strong>Allikas:</strong> Maa-amet WFS (kataster:ky_kehtistus)<br>
@@ -199,6 +200,7 @@
                     <h3>Metsaandmed</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">Puuliik, vanus, tagavara, boniteet ja liikide koosseis</p>
                 <div id="info-mets" class="info-box">
                     <strong>Mis näitab:</strong> Metsa eraldiste andmed, puuliik, vanus, tagavara (m³/ha), boniteet, kõrgus ja liikide koosseis.<br>
                     <strong>Allikas:</strong> Metsaregister WFS (metsaregister:eraldis, eraldis_element)<br>
@@ -218,6 +220,7 @@
                     <h3>Puidu väärtus</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">Metsa ümarmaterjali turuväärtus praeguste hindadega</p>
                 <div id="info-vaartus" class="info-box">
                     <strong>Mis näitab:</strong> Metsa ümarmaterjali koguväärtus praeguste turuhindade järgi.<br>
                     <strong>Arvutus:</strong> Koguväärtus = tagavara (m³) × seisuhind (€/m³). Hind sõltub peapuuliigist, iga liigi kohta on eraldi seisuhind, palgi- ja paberipuu hind.<br>
@@ -237,6 +240,7 @@
                     <h3>Süsinik</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">Metsa süsinikuvaru ja CO2 sidumise potentsiaal</p>
                 <div id="info-sinik" class="info-box">
                     <strong>Mis näitab:</strong> Metsa süsinikuvaru ja CO₂ sidumise potentsiaal.<br>
                     <strong>Arvutus:</strong> Biomass = tagavara × tihedus × BEF × (1 + juurte/suhte koefitsient). Süsinik = biomass × 0,47. CO₂ = süsinik × 3,67. Potentsiaalne tulu = CO₂ × 30 €/t.<br>
@@ -257,6 +261,7 @@
                     <h3>Riskid</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">Ürask, kuivendamatus, raiesurve ja muud ohud</p>
                 <div id="info-riskid" class="info-box">
                     <strong>Mis näitab:</strong> Metsa terviseriskid ja terviseindeks.<br>
                     <strong>Üraski risk:</strong> 0=madal, 1=keskmine (kuusk &gt;30a), 2=kõrge (kuusk &gt;50a), 3=kriitiline (MKE tsoonis).<br>
@@ -279,6 +284,7 @@
                     <h3>Metsateatised</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">Kehtivad raie ja metsauuenduse teatised</p>
                 <div id="info-teatised" class="info-box">
                     <strong>Mis näitab:</strong> Krundile registreeritud metsateatised, raie-, uuendus- ja hooldusteatiste staatus ja kehtivus.<br>
                     <strong>Allikas:</strong> Metsaregister WFS (metsaregister:teatis)<br>
@@ -298,6 +304,7 @@
                     <h3>EUDR</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">EL deforestativastase määruse vastavuskontroll</p>
                 <div id="info-eudr" class="info-box">
                     <strong>Mis näitab:</strong> Krundi geomeetria GeoJSON-formaadis EL deforestatsioonivastase määruse (EUDR) jaoks.<br>
                     <strong>Kasutus:</strong> EUDR nõuab tõestust, et toode ei pärine deforestatsioonitud alalt. GeoJSON sisaldab krundi piire ja katastri numbrit.<br>
@@ -337,8 +344,8 @@
             </div>
         </div>
 
-        <!-- Tables Section (hidden until search) -->
-        <div id="tables-section" class="tables-section" style="display:none">
+        <!-- Tables Section -->
+        <div id="tables-section" class="tables-section">
             <div class="table-card">
                 <div class="card-header">
                     <div class="card-icon risk-icon">
@@ -349,6 +356,7 @@
                     <h3>Kitsendused</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">Kaitsealad, piiranguvööndid, veekaitse ja muinsuskaitse kitsendused</p>
                 <div id="info-kitsendused" class="info-box">
                     <strong>Mis näitab:</strong> Krundile kehtivad keskkonna- ja muinsuskaitse kitsendused, kaitsealad, piiranguvööndid ja muinsuskaitseobjektid.<br>
                     <strong>Allikas:</strong> EELIS WFS (Keskkonnaagentuur), kitsendused WFS (Maa-amet), muinsuskaitse register.<br>
@@ -378,6 +386,7 @@
                     <h3>Toetused</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">Metsatoetused, hüvitised ja EL rahastuse võimalused</p>
                 <div id="info-toetused" class="info-box">
                     <strong>Mis näitab:</strong> Krundile potentsiaalselt kõlblikud metsatoetused ja hüvitised.<br>
                     <strong>Arvutus:</strong> Toetuste kõlblikkus sõltub krundi omadustest, vanus, puuliik, pindala, Natura 2000 kuuluvus, kaitseala staatus ja sihtotstarve.<br>
