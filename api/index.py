@@ -249,6 +249,7 @@ async def _search(kataster_nr: str):
                     })
 
         # Build eraldised summary for frontend (including geometry and per-eraldis value)
+        puuliik_nimi_map = {"MA": "harilik mänd", "KU": "harilik kuusk", "KS": "ainuroheline kask", "HB": "harilik haab", "LH": "harilik lehis", "LM": "hall lepp", "LV": "salu-lepp"}
         eraldised_summary = []
         for e in eraldised:
             geom = e.get("geometry")
@@ -316,7 +317,7 @@ async def _search(kataster_nr: str):
                     "geometry": geom,
                     "properties": {
                         "eraldis_nr": e.get("eraldis_nr"),
-                        "puuliik": e.get("puuliik"),
+                        "puuliik": puuliik_nimi_map.get(kood, e.get("puuliik")),
                         "puuliik_kood": kood,
                         "vanus": e.get("vanus") or 0,
                         "tagavara_y_ha": e.get("tagavara_y_ha") or 0,
@@ -327,7 +328,6 @@ async def _search(kataster_nr: str):
                     }
                 })
 
-        puuliik_nimi_map = {"MA": "harilik mänd", "KU": "harilik kuusk", "KS": "ainuroheline kask", "HB": "harilik haab", "LH": "harilik lehis", "LM": "hall lepp", "LV": "salu-lepp"}
         mets_result = {
             "puuliik": puuliik_nimi_map.get(puuliik, primary.get("puuliik", puuliik)),
             "puuliik_kood": puuliik,
