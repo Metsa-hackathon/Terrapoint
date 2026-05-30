@@ -823,7 +823,7 @@ async def chat(request: Request):
         api_url = "https://openrouter.ai/api/v1/chat/completions"
         model = "openrouter/owl-alpha"
 
-        async with httpx.AsyncClient(timeout=8) as client:
+        async with httpx.AsyncClient(timeout=5) as client:
             resp = await client.post(
                 api_url,
                 headers={
@@ -835,7 +835,7 @@ async def chat(request: Request):
                     "messages": messages,
                     "stream": False,
                     "temperature": 0.7,
-                    "max_tokens": 800,
+                    "max_tokens": 500,
                 },
             )
             if resp.status_code != 200:
