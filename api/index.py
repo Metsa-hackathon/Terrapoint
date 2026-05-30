@@ -864,7 +864,7 @@ async def chat(request: Request):
         api_url = "https://openrouter.ai/api/v1/chat/completions"
         model = os.environ.get("OPENROUTER_MODEL", "moonshotai/kimi-k2.6:free")
 
-        async with httpx.AsyncClient(timeout=httpx.Timeout(7, connect=3)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(25, connect=5)) as client:
             resp = await client.post(
                 api_url,
                 headers={
