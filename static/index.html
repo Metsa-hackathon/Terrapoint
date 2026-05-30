@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/style.css?v=2">
 </head>
 <body>
     <!-- Top Navigation Bar -->
@@ -75,10 +75,10 @@
             </div>
             <div class="ai-chat-messages" id="ai-chat-messages">
                 <div class="ai-message ai-welcome">
-                    <div class="ai-avatar"></div>
+                    <div class="ai-avatar"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22V10"/><path d="M12 10c-3-4-8-4-8-4s5 0 8 4z"/><path d="M12 10c3-4 8-4 8-4s-5 0-8 4z"/><path d="M12 6c-2-3-6-3-6-3s4 0 6 3z"/><path d="M12 6c2-3 6-3 6-3s-4 0-6 3z"/></svg></div>
                     <div class="ai-bubble">
                         <p>Tere! Olen Terrapoint AI.</p>
-                        <p>Otsi ülevalt oma katastri number ja ma analüüsin su metsaandmeid — annan nõu kas müüa, hoida, osta juurde või taotleda toetusi.</p>
+                        <p>Otsi ülevalt oma katastri number ja ma analüüsin su metsaandmeid. Annan nõu kas müüa, hoida, osta juurde või taotleda toetusi.</p>
                     </div>
                 </div>
             </div>
@@ -127,20 +127,24 @@
                             <span class="toggle-label" style="border-left:3px solid #457b9d;padding-left:4px">Sood</span>
                         </label>
                         <label class="toggle-item">
-                            <input type="checkbox" id="layer-kaadamisalad" data-layer="kaadamisalad">
-                            <span class="toggle-label" style="border-left:3px solid #6c757d;padding-left:4px">Kaadamis.</span>
-                        </label>
-                        <label class="toggle-item">
                             <input type="checkbox" id="layer-elupaigad" data-layer="natura_elupaik">
                             <span class="toggle-label" style="border-left:3px solid #6a994e;padding-left:4px">Elupaigad</span>
                         </label>
                         <label class="toggle-item">
-                            <input type="checkbox" id="layer-niidud" data-layer="niidud">
-                            <span class="toggle-label" style="border-left:3px solid #a7c957;padding-left:4px">Niidud</span>
+                            <input type="checkbox" id="layer-karuputk" data-layer="karuputk">
+                            <span class="toggle-label" style="border-left:3px solid #d63384;padding-left:4px">Karuputk</span>
                         </label>
                         <label class="toggle-item">
-                            <input type="checkbox" id="layer-uleujutus" data-layer="uleujutus">
-                            <span class="toggle-label" style="border-left:3px solid #0096c7;padding-left:4px">Üleujutus</span>
+                            <input type="checkbox" id="layer-malestised" data-layer="malestised">
+                            <span class="toggle-label" style="border-left:3px solid #7b2cbf;padding-left:4px">Mälestised</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="layer-veekogud" data-layer="veekogud">
+                            <span class="toggle-label" style="border-left:3px solid #48cae4;padding-left:4px">Järved</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="layer-vooluveed" data-layer="vooluveed">
+                            <span class="toggle-label" style="border-left:3px solid #0096c7;padding-left:4px">Vooluveed</span>
                         </label>
                     </div>
                 </div>
@@ -159,6 +163,7 @@
                     <h3>Katastri andmed</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">Krundi number, pindala, sihtotstarve, omandivorm ja asukoht</p>
                 <div id="info-kataster" class="info-box">
                     <strong>Mis näitab:</strong> Krundi põhiandmed, number, pindala, sihtotstarve, omandivorm, asukoht ja maksuhind.<br>
                     <strong>Allikas:</strong> Maa-amet WFS (kataster:ky_kehtistus)<br>
@@ -181,6 +186,7 @@
                     <h3>Metsaandmed</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">Puuliik, vanus, tagavara, boniteet ja liikide koosseis</p>
                 <div id="info-mets" class="info-box">
                     <strong>Mis näitab:</strong> Metsa eraldiste andmed, puuliik, vanus, tagavara (m³/ha), boniteet, kõrgus ja liikide koosseis.<br>
                     <strong>Allikas:</strong> Metsaregister WFS (metsaregister:eraldis, eraldis_element)<br>
@@ -200,6 +206,7 @@
                     <h3>Puidu väärtus</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">Metsa ümarmaterjali turuväärtus praeguste hindadega</p>
                 <div id="info-vaartus" class="info-box">
                     <strong>Mis näitab:</strong> Metsa ümarmaterjali koguväärtus praeguste turuhindade järgi.<br>
                     <strong>Arvutus:</strong> Koguväärtus = tagavara (m³) × seisuhind (€/m³). Hind sõltub peapuuliigist, iga liigi kohta on eraldi seisuhind, palgi- ja paberipuu hind.<br>
@@ -219,6 +226,7 @@
                     <h3>Süsinik</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">Metsa süsinikuvaru ja CO2 sidumise potentsiaal</p>
                 <div id="info-sinik" class="info-box">
                     <strong>Mis näitab:</strong> Metsa süsinikuvaru ja CO₂ sidumise potentsiaal.<br>
                     <strong>Arvutus:</strong> Biomass = tagavara × tihedus × BEF × (1 + juurte/suhte koefitsient). Süsinik = biomass × 0,47. CO₂ = süsinik × 3,67. Potentsiaalne tulu = CO₂ × 30 €/t.<br>
@@ -239,10 +247,14 @@
                     <h3>Riskid</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">Ürask, kuivendamatus, raiesurve ja muud ohud</p>
                 <div id="info-riskid" class="info-box">
-                    <strong>Mis näitab:</strong> Metsa terviseriskid — üraski risk ja karuputk.<br>
+                    <strong>Mis näitab:</strong> Metsa terviseriskid ja terviseindeks.<br>
                     <strong>Üraski risk:</strong> 0=madal, 1=keskmine (kuusk &gt;30a), 2=kõrge (kuusk &gt;50a), 3=kriitiline (MKE tsoonis).<br>
-                    <strong>Allikas:</strong> Metsaregister (MKE tsoonid), EELIS (looduskaitse).
+                    <strong>Terviseindeks:</strong> 100=terve mets, 0=haige. Arvestab vanust (ideaalne 40-80a), üraski riski, kahjustusi ja liigilist koosseisu.<br>
+                    <strong>Karuputk:</strong> Mürgise umbrohu esinemine — kohustuslik tõrjuda.<br>
+                    <strong>Lageraieala:</strong> Hiljutine lageraie tuvastatud — mõjutab väärtust.<br>
+                    <strong>Allikas:</strong> Metsaregister, EELIS, Maa-amet.
                     <div class="source">Andmed: Keskkonnaagentuur, metsaregister.ee</div>
                 </div>
                 <div id="riskid-info"></div>
@@ -258,6 +270,7 @@
                     <h3>Metsateatised</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">Kehtivad raie ja metsauuenduse teatised</p>
                 <div id="info-teatised" class="info-box">
                     <strong>Mis näitab:</strong> Krundile registreeritud metsateatised, raie-, uuendus- ja hooldusteatiste staatus ja kehtivus.<br>
                     <strong>Allikas:</strong> Metsaregister WFS (metsaregister:teatis)<br>
@@ -277,6 +290,7 @@
                     <h3>EUDR</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">EL deforestativastase määruse vastavuskontroll</p>
                 <div id="info-eudr" class="info-box">
                     <strong>Mis näitab:</strong> Krundi geomeetria GeoJSON-formaadis EL deforestatsioonivastase määruse (EUDR) jaoks.<br>
                     <strong>Kasutus:</strong> EUDR nõuab tõestust, et toode ei pärine deforestatsioonitud alalt. GeoJSON sisaldab krundi piire ja katastri numbrit.<br>
@@ -316,8 +330,8 @@
             </div>
         </div>
 
-        <!-- Tables Section (hidden until search) -->
-        <div id="tables-section" class="tables-section" style="display:none">
+        <!-- Tables Section -->
+        <div id="tables-section" class="tables-section">
             <div class="table-card">
                 <div class="card-header">
                     <div class="card-icon risk-icon">
@@ -328,8 +342,9 @@
                     <h3>Kitsendused</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">Kaitsealad, piiranguvööndid, veekaitse ja muinsuskaitse kitsendused</p>
                 <div id="info-kitsendused" class="info-box">
-                    <strong>Mis näitab:</strong> Krundile kehtivad keskkonna- ja muinsuskaitse kitsendused, kaitsealad, piiranguvööndid, veekaitse, üleujutusalad ja muinsuskaitseobjektid.<br>
+                    <strong>Mis näitab:</strong> Krundile kehtivad keskkonna- ja muinsuskaitse kitsendused, kaitsealad, piiranguvööndid ja muinsuskaitseobjektid.<br>
                     <strong>Allikas:</strong> EELIS WFS (Keskkonnaagentuur), kitsendused WFS (Maa-amet), muinsuskaitse register.<br>
                     <strong>Märkus:</strong> Kitsendused mõjutavad raieõigusi, metsauuendust ja toetuste kõlblikkust.
                     <div class="source">Andmed: Keskkonnaagentuur, Maa-amet, Muinsuskaitseamet</div>
@@ -338,7 +353,7 @@
                     <div class="initial-info">
                         <div class="icon">&#128269;</div>
                         <p>Otsi krundi, et näha kitsendusi</p>
-                        <p class="hint">Kaitsealad, piiranguvööndid, veekaitse, üleujutusalad, muinsuskaitse</p>
+                        <p class="hint">Kaitsealad, piiranguvööndid, muinsuskaitse</p>
                     </div>
                 </div>
                 <div id="kitsendused-link" style="display:none;margin-top:8px">
@@ -357,6 +372,7 @@
                     <h3>Toetused</h3>
                     <span class="info-toggle">?</span>
                 </div>
+                <p class="section-desc">Metsatoetused, hüvitised ja EL rahastuse võimalused</p>
                 <div id="info-toetused" class="info-box">
                     <strong>Mis näitab:</strong> Krundile potentsiaalselt kõlblikud metsatoetused ja hüvitised.<br>
                     <strong>Arvutus:</strong> Toetuste kõlblikkus sõltub krundi omadustest, vanus, puuliik, pindala, Natura 2000 kuuluvus, kaitseala staatus ja sihtotstarve.<br>
@@ -384,6 +400,7 @@
     <script>
     // ═══ api.js ═══
     const API_BASE = '/api';
+    const AI_API_BASE = '/api';
 
     async function searchParcel(katasterNr) {
         const res = await fetch(`${API_BASE}/search/${encodeURIComponent(katasterNr)}`);
@@ -408,7 +425,11 @@
 
         var avatar = document.createElement('div');
         avatar.className = 'ai-avatar';
-        avatar.textContent = role === 'user' ? 'Sina' : '';
+        if (role === 'user') {
+            avatar.style.display = 'none';
+        } else {
+            avatar.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22V10"/><path d="M12 10c-3-4-8-4-8-4s5 0 8 4z"/><path d="M12 10c3-4 8-4 8-4s-5 0-8 4z"/><path d="M12 6c-2-3-6-3-6-3s4 0 6 3z"/><path d="M12 6c2-3 6-3 6-3s-4 0-6 3z"/></svg>';
+        }
 
         var bubble = document.createElement('div');
         bubble.className = 'ai-bubble';
@@ -431,7 +452,7 @@
         var div = document.createElement('div');
         div.className = 'ai-message';
         div.id = 'ai-typing-indicator';
-        div.innerHTML = '<div class="ai-avatar"></div><div class="ai-bubble"><div class="ai-thinking"><div class="ai-thinking-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l-3 5h2l-2 3h6l-2-3h2l-3-5z" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="3" stroke-dasharray="4 2"><animate attributeName="stroke-dashoffset" values="0;6" dur="1s" repeatCount="indefinite"/></circle></svg></div><span class="ai-thinking-text">Terrapoint AI mõtleb...</span><div class="ai-typing"><span></span><span></span><span></span></div></div></div>';
+        div.innerHTML = '<div class="ai-avatar"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22V10"/><path d="M12 10c-3-4-8-4-8-4s5 0 8 4z"/><path d="M12 10c3-4 8-4 8-4s-5 0-8 4z"/><path d="M12 6c-2-3-6-3-6-3s4 0 6 3z"/><path d="M12 6c2-3 6-3 6-3s-4 0-6 3z"/></svg></div><div class="ai-bubble"><div class="ai-thinking"><div class="ai-thinking-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l-3 5h2l-2 3h6l-2-3h2l-3-5z" fill="currentColor" stroke="none"/><circle cx="12" cy="18" r="3" stroke-dasharray="4 2"><animate attributeName="stroke-dashoffset" values="0;6" dur="1s" repeatCount="indefinite"/></circle></svg></div><span class="ai-thinking-text">Terrapoint AI mõtleb...</span><div class="ai-typing"><span></span><span></span><span></span></div></div></div>';
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
     }
@@ -471,7 +492,7 @@
         try {
             var controller = new AbortController();
             var timeoutId = setTimeout(function() { controller.abort(); }, 55000);
-            var resp = await fetch('/api/chat', {
+            var resp = await fetch(`${AI_API_BASE}/chat`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
@@ -499,7 +520,7 @@
             aiAppendMessage('assistant', aiFormatResponse(fullText));
 
             aiChatHistory.push({role: 'assistant', content: fullText});
-            document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + ' — küsi lisa küsimusi';
+            document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + '. Küsi lisa küsimusi';
 
         } catch(err) {
             aiRemoveTyping();
@@ -607,6 +628,27 @@
             }
         });
         new CenterControl().addTo(map);
+
+        // Legend for eraldised species colors
+        var LegendControl = L.Control.extend({
+            options: { position: 'bottomleft' },
+            onAdd: function() {
+                var div = L.DomUtil.create('div', 'leaflet-control legend-control');
+                div.style.cssText = 'background:white;padding:8px 10px;border-radius:6px;box-shadow:0 1px 5px rgba(0,0,0,0.2);font-size:11px;line-height:1.6;display:none';
+                div.id = 'map-legend';
+                div.innerHTML = '<div style="font-weight:700;margin-bottom:4px;font-size:11px">Eraldised</div>' +
+                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#2d6a4f;margin-right:4px"></span>Mänd</div>' +
+                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#1a8fd4;margin-right:4px"></span>Kuusk</div>' +
+                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f4a261;margin-right:4px"></span>Kask</div>' +
+                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#adb5bd;margin-right:4px"></span>Haab</div>' +
+                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#6a994e;margin-right:4px"></span>Lehis</div>' +
+                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#8d6e63;margin-right:4px"></span>Sanglepp</div>' +
+                    '<div style="margin-top:4px;font-size:10px;color:#666">Lohista hiirega eraldise kohale</div>';
+                L.DomEvent.disableClickPropagation(div);
+                return div;
+            }
+        });
+        new LegendControl().addTo(map);
     }
 
     function showParcel(geometry) {
@@ -681,18 +723,14 @@
     var MAP_LAYER_META = {
         kaitsealad: {label: 'Kaitsealad', color: '#2d6a4f', checked: true},
         piirang: {label: 'Piiranguv.', color: '#52796f', checked: false},
-        loodusala: {label: 'Natura loodus.', color: '#354f52', checked: false},
         yrask_eelis: {label: 'Üraski vaatl.', color: '#e76f51', checked: false},
         sood: {label: 'Sood', color: '#457b9d', checked: false},
-        niidud: {label: 'Niidud', color: '#a7c957', checked: false},
-        kaadamisalad: {label: 'Kaadamis.', color: '#6c757d', checked: false},
-        veekogud: {label: 'Järved', color: '#48cae4', checked: false},
-        vooluveed: {label: 'Vooluveed', color: '#0096c7', checked: false},
         natura_elupaik: {label: 'Elupaigad', color: '#6a994e', checked: false},
-        veekaitse: {label: 'Veekaitse', color: '#0077b6', checked: false},
         lageraiealad: {label: 'Lageraie', color: '#adb5bd', checked: false},
         karuputk: {label: 'Karuputk', color: '#d63384', checked: false},
         malestised: {label: 'Mälestised', color: '#7b2cbf', checked: false},
+        veekogud: {label: 'Järved', color: '#48cae4', checked: false},
+        vooluveed: {label: 'Vooluveed', color: '#0096c7', checked: false},
     };
 
     function loadMapLayers(mapLayers) {
@@ -702,6 +740,11 @@
         // Store for lazy loading on toggle
         window._mapLayersData = mapLayers;
 
+        // Auto-add eraldised (parcel-specific, always shown)
+        if (mapLayers.eraldised && mapLayers.eraldised.features && mapLayers.eraldised.features.length > 0) {
+            addEraldisedLayer(mapLayers.eraldised.features);
+        }
+
         // Auto-show checked layers
         var checkboxes = document.querySelectorAll('.layer-toggle input[type=checkbox]');
         checkboxes.forEach(function(cb) {
@@ -710,6 +753,32 @@
                 addOverlayLayer(key, mapLayers[key].features, mapLayers[key].color, false);
             }
         });
+    }
+
+    function addEraldisedLayer(features) {
+        if (typeof map === 'undefined' || !map) return;
+        var geojson = { type: 'FeatureCollection', features: features };
+        var layer = L.geoJSON(geojson, {
+            style: function(feature) {
+                var p = feature.properties || {};
+                return {
+                    fillColor: p.color || '#2d6a4f',
+                    fillOpacity: 0.35,
+                    color: p.color || '#2d6a4f',
+                    weight: 2,
+                    opacity: 0.8,
+                };
+            },
+            onEachFeature: function(feature, layer) {
+                var p = feature.properties || {};
+                var label = (p.puuliik || '?') + ', ' + (p.vanus || '?') + 'a, ' + (p.tagavara_y_ha || '?') + ' m³/ha';
+                layer.bindTooltip('Eraldis ' + (p.eraldis_nr || '?') + ': ' + label, {sticky: true});
+            },
+        }).addTo(map);
+        overlayLayers['eraldised'] = layer;
+        // Show legend
+        var legend = document.getElementById('map-legend');
+        if (legend) legend.style.display = '';
     }
 
     // ═══ dashboard.js ═══
@@ -774,17 +843,19 @@
         if (data.mk_nimi) html += '<div class="info-row"><span class="label">Maakond</span><span class="value">' + data.mk_nimi + '</span></div>';
         if (data.ov_nimi) html += '<div class="info-row"><span class="label">Omavalitsus</span><span class="value">' + data.ov_nimi + '</span></div>';
         if (data.l_aadress) html += '<div class="info-row"><span class="label">Aadress</span><span class="value">' + data.l_aadress + '</span></div>';
-        // Total value = land + timber — big prominent display
-        var maaValue = data.maks_hind || 0;
+        // Total value = land market value + timber value — big prominent display
+        var vaartus = window._vaartusData || {};
+        var maaMaksuhind = data.maks_hind || 0;
+        var maaTuruhind = vaartus.maa_turuhind || Math.round(maaMaksuhind * 2.5);
         var puitValue = window._timberValue || 0;
-        var totalValue = maaValue + puitValue;
+        var totalValue = vaartus.kinnistu_turuväärtus || (maaTuruhind + puitValue);
         if (totalValue > 0) {
             html += '<div style="background:linear-gradient(135deg,#f0f7f0,#e8f5e9);border-radius:var(--radius);padding:1rem;margin:0.75rem 0;border:1px solid #c8e6c9">';
-            html += '<div style="font-size:0.78rem;color:#2e7d32;font-weight:600;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.05em">Kinnistu koguväärtus</div>';
+            html += '<div style="font-size:0.78rem;color:#2e7d32;font-weight:600;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.05em">Kinnistu turuväärtus <span class="q-tip" title="Maa turuhind (maksuhind x 2.5) + seisuhinnaga arvestatud puidu väärtus. Tegelik müügihind sõltub asukohast, juurdepääsust ja turuolukorrast.">?</span></div>';
             html += '<div style="font-size:1.6rem;font-weight:800;color:#1b5e20;line-height:1.2">' + formatEur(totalValue) + '</div>';
             html += '<div style="display:flex;gap:1.5rem;margin-top:0.6rem;font-size:0.82rem">';
-            html += '<div><span style="color:var(--text-muted)">Maa väärtus:</span> <strong>' + formatEur(maaValue) + '</strong></div>';
-            html += '<div><span style="color:var(--text-muted)">Puidu väärtus:</span> <strong>' + formatEur(puitValue) + '</strong></div>';
+            html += '<div><span style="color:var(--text-muted)">Maa:</span> <strong>' + formatEur(maaTuruhind) + '</strong> <span class="q-tip" title="Maa-ameti maksuhind ' + formatEur(maaMaksuhind) + ', turuhinnaks korrutatud 2.5x-ga">?</span></div>';
+            html += '<div><span style="color:var(--text-muted)">Puit:</span> <strong>' + formatEur(puitValue) + '</strong> <span class="q-tip" title="Seisuhind x kogutagavara (m³). Seisuhind = raiumata puidu hind metsas.">?</span></div>';
             html += '</div>';
             html += '</div>';
         }
@@ -829,7 +900,7 @@
             }
         }
         var html = '';
-        html += '<div class="info-row"><span class="label">Peapuuliik <span class="q-tip" title="Krundi peamine puuliik, suurima pindalaga eraldise liik">?</span></span><span class="value">' + speciesName(data.puuliik_kood || data.puuliik, data.puuliik) + '</span></div>';
+        html += '<div class="info-row"><span class="label">Peapuuliik <span class="q-tip" title="Krundi peamine puuliik, suurima tagavaraga liik">?</span></span><span class="value">' + speciesName(data.puuliik_kood || data.puuliik, data.puuliik) + '</span></div>';
         html += '<div class="info-row"><span class="label">Keskmine vanus <span class="q-tip" title="Kõigi eraldiste pindala-kaalutud keskmine vanus aastates">?</span></span><span class="value">' + (data.vanus || '—') + ' a</span></div>';
         html += '<div class="info-row"><span class="label">Tagavara <span class="q-tip" title="Metsa ümarmaterjali kogus hektari kohta (m³/ha). Mida suurem, seda väärtuslikum mets.">?</span></span><span class="value">' + formatNum(data.tagavara_y_ha) + ' m³/ha</span></div>';
         html += '<div class="info-row"><span class="label">Boniteet <span class="q-tip" title="Metsakasvukoha kvaliteet: I=parim, VII=halvim. Mõjutab metsa kasvukiirust ja raievanust.">?</span></span><span class="value">' + boniteet + '</span></div>';
@@ -855,13 +926,14 @@
         var el = document.getElementById('vaartus-info');
         if (!data) { el.innerHTML = '<p class="muted">Väärtuse andmeid pole</p>'; return; }
         window._timberValue = data.total_value_eur || 0;
+        window._vaartusData = data;
         var html = '';
 
         // Big timber value display
         html += '<div style="background:linear-gradient(135deg,#fff8e1,#fff3e0);border-radius:var(--radius);padding:1rem;margin-bottom:0.75rem;border:1px solid #ffe0b2">';
         html += '<div style="font-size:0.78rem;color:#e65100;font-weight:600;margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.05em">Puidu väärtus</div>';
         html += '<div class="big-number accent"><span id="anim-vaartus">0</span> €</div>';
-        html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.3rem">Kogu metsast saadava materjali turuhind</div>';
+        html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.3rem">Seisuhind × kogutagavara — metsaomanik saaks selle summa müües metsa raiumata</div>';
         html += '</div>';
 
         html += '<div class="info-row"><span class="label" title="Metsa väärtus ühe hektari kohta. Arvutatakse: koguväärtus / pindala.">Ühikuhind <span class="q-tip" title="Metsa väärtus ühe hektari kohta">?</span></span><span class="value">' + formatEur(data.value_per_ha) + ' / ha</span></div>';
@@ -886,7 +958,7 @@
         html += '<div class="big-number"><span id="anim-co2">0</span><span class="unit"> tCO₂</span></div>';
         html += '<div class="info-row"><span class="label">CO₂ / ha <span class="q-tip" title="Süsinikdioksiidi kogus hektari kohta, mida mets on sidunud. 1 ton CO₂ = ühe auto aastane heide.">?</span></span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
         html += '<div class="info-row"><span class="label">Biomass / ha <span class="q-tip" title="Metsa elusmass hektari kohta, puud, juured, oksad. Biomassist 47% on süsinik.">?</span></span><span class="value">' + formatNum(data.total_biomass_tons_ha, 1) + ' t</span></div>';
-        html += '<div class="info-row"><span class="label">Potentsiaalne tulu <span class="q-tip" title="Rahaline väärtus, kui müüa süsinikukrediite (30 €/t CO₂). Praegu Eestis veel süsinikuturgu ei ole.">?</span></span><span class="value">' + formatEur(data.potential_income_eur) + '</span></div>';
+        html += '<div class="info-row"><span class="label">Potentsiaalne tulu <span class="q-tip" title="Vabatahtliku süsinikuturu (VCM) hinnaga arvestatud tulu (20 €/t CO₂). Metsakrediitide hind sõltub sertifikaadi tüübist: metsastamine 15-30 €/t, olemasoleva metsa säilitamine 5-15 €/t. EL ETS hind (60-80 €/t) eraomanikule ei laiene.">?</span></span><span class="value">' + formatEur(data.potential_income_eur) + '</span></div>';
 
         // CO2 equivalency illustration
         if (data.cars_equivalent || data.trees_equivalent) {
@@ -911,6 +983,7 @@
         var el = document.getElementById('riskid-info');
         if (!data) { el.innerHTML = '<p class="muted">Riskiandmeid pole</p>'; return; }
         var html = '';
+        // Üraski risk
         if (data.yrask) {
             var y = data.yrask;
             var colors = ['#28a745', '#ffc107', '#fd7e14', '#e63946'];
@@ -918,14 +991,21 @@
             html += '<span style="color:' + colors[y.score] + ';font-weight:600">' + y.label + '</span></div>';
             if (y.detail) html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem">' + y.detail + '</div>';
         }
+        // Terviseindeks
         if (data.terviseindeks != null) {
             var t = data.terviseindeks;
             var barColor = t >= 70 ? 'linear-gradient(90deg, #28a745, #2a9d8f)' : t >= 40 ? 'linear-gradient(90deg, #ffc107, #f4a261)' : 'linear-gradient(90deg, #e63946, #fd7e14)';
-            html += '<div class="info-row"><span class="label" title="Metsa terviseindeks: 100=terve, 0=haige. Arvestab kahjustusi, vanust ja liigilist koosseisu.">Terviseindeks</span><span class="value">' + t + '/100</span></div>';
+            html += '<div class="info-row"><span class="label">Terviseindeks <span class="q-tip" title="Metsa terviseindeks: 100=terve, 0=haige. Arvestab vanust (ideaalne 40-80a), üraski riski, kahjustusi ja liigilist koosseisu.">?</span></span><span class="value">' + t + '/100</span></div>';
             html += '<div class="progress-bar"><div class="fill" style="width:' + t + '%;background:' + barColor + '"></div></div>';
         }
-        if (data.karuputk) html += '<div class="info-row"><span class="label">Karuputk <span class="q-tip" title="Mürgise umbrohu esinemine krundil. Kohustuslik tõrjuda, võib põletada nahka.">?</span></span><span style="color:var(--danger);font-weight:600">Leitud</span></div>';
-        if (data.lageraieala) html += '<div class="info-row"><span class="label">Lageraieala <span class="q-tip" title="Krundil on tuvastatud hiljutine lageraie, mets on ära raiutud. Võib mõjutada väärtust.">?</span></span><span style="color:var(--warning);font-weight:600">Jah</span></div>';
+        // Karuputk - alati näita
+        var karuputk = data.karuputk;
+        html += '<div class="info-row"><span class="label">Karuputk <span class="q-tip" title="Mürgise umbrohu (Heracleum sosnowskyi) esinemine krundil. Kohustuslik tõrjuda, võib põletada nahka.">?</span></span>';
+        html += karuputk ? '<span style="color:var(--danger);font-weight:600">Leitud</span></div>' : '<span style="color:#28a745">Puudub</span></div>';
+        // Lageraieala - alati näita
+        var lageraie = data.lageraieala;
+        html += '<div class="info-row"><span class="label">Lageraieala <span class="q-tip" title="Krundil on tuvastatud hiljutine lageraie (EELIS andmed). Mets on ära raiutud, mõjutab väärtust ja terviseindeksit.">?</span></span>';
+        html += lageraie ? '<span style="color:var(--warning);font-weight:600">Tuvastatud</span></div>' : '<span style="color:#28a745">Puudub</span></div>';
         el.innerHTML = html || '<p class="muted">Riskiandmeid pole</p>';
     }
 
@@ -980,8 +1060,6 @@
             var linkText = 'EELIS';
             if (tyyp.indexOf('kaitsealad') >= 0 || tyyp.indexOf('loodusala') >= 0 || tyyp.indexOf('piirang') >= 0 || tyyp.indexOf('sood') >= 0) {
                 link = eelisLink; linkText = 'EELIS';
-            } else if (tyyp.indexOf('veekaitse') >= 0 || tyyp.indexOf('uleujutus') >= 0) {
-                link = eelisLink; linkText = 'EELIS';
             } else if (tyyp.indexOf('malestised') >= 0 || tyyp.indexOf('muinsus') >= 0) {
                 link = 'https://register.muinas.ee/'; linkText = 'Muinsuskaitse';
             } else if (tyyp.indexOf('karuputk') >= 0) {
@@ -1003,39 +1081,70 @@
         var el = document.getElementById('toetused-info');
         if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Toetusi ei leitud</p>'; return; }
 
-        // Separate eligible and ineligible
         var eligible = data.filter(function(t) { return t.sobib; });
         var ineligible = data.filter(function(t) { return !t.sobib; });
 
+        function badgeColor(status) {
+            if (status === 'open') return 'background:#16a34a;color:#fff';
+            if (status === 'upcoming') return 'background:#f59e0b;color:#fff';
+            if (status === 'closed') return 'background:#6b7280;color:#fff';
+            return 'background:#64748b;color:#fff';
+        }
+        function badgeLabel(t) {
+            if (t.voor_badge) return t.voor_badge;
+            if (t.voor_status === 'open') return 'Avatud';
+            if (t.voor_status === 'upcoming') return 'Tulemas';
+            if (t.voor_status === 'closed') return 'Lõppenud';
+            return '';
+        }
+
         var html = '';
 
-        // Eligible programs first (highlighted)
+        // Eligible programs
         if (eligible.length > 0) {
-            html += '<div style="margin-bottom:1rem"><strong style="color:var(--success)">✓ Sobivad toetused (' + eligible.length + ')</strong></div>';
+            html += '<div style="margin-bottom:0.8rem"><strong style="color:var(--success)">Sobivad toetused (' + eligible.length + ')</strong></div>';
             eligible.forEach(function(t) {
                 var link = t.url || 'https://www.eramets.ee/toetused/';
+                var badge = badgeLabel(t);
+                var badgeStyle = badgeColor(t.voor_status);
                 html += '<div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;background:var(--card-bg)">';
-                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:4px">';
                 html += '<strong style="color:var(--text)">' + t.nimi + '</strong>';
-                html += '<span style="color:var(--success);font-weight:600">' + t.summa + '</span>';
-                html += '</div>';
-                if (t.kirjeldus) html += '<p style="color:var(--text-muted);font-size:0.82rem;margin:4px 0">' + t.kirjeldus + '</p>';
-                html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">';
-                html += '<span style="color:var(--text-muted);font-size:0.8rem">Taotlusvoor: ' + (t.taotlusvoor || '—') + '</span>';
-                html += '<a href="' + link + '" target="_blank" rel="noopener" style="color:var(--success);font-weight:600;font-size:0.82rem">Kandideeri →</a>';
+                html += '<div style="display:flex;gap:6px;align-items:center">';
+                if (badge) html += '<span style="' + badgeStyle + ';font-size:0.7rem;padding:2px 8px;border-radius:10px;font-weight:600">' + badge + '</span>';
+                html += '<span style="color:var(--success);font-weight:600;font-size:0.85rem">' + t.summa + '</span>';
                 html += '</div></div>';
+                if (t.kirjeldus) html += '<p style="color:var(--text-muted);font-size:0.8rem;margin:4px 0 6px 0;line-height:1.4">' + t.kirjeldus + '</p>';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">';
+                html += '<span style="color:var(--text-muted);font-size:0.78rem">Taotlusvoor: ' + (t.taotlusvoor || '—') + ' · ' + t.asutus + '</span>';
+                html += '<div style="display:flex;gap:10px">';
+                if (t.voor_url) html += '<a href="' + t.voor_url + '" target="_blank" rel="noopener" style="color:var(--text-muted);font-size:0.78rem">Tähtajad →</a>';
+                html += '<a href="' + link + '" target="_blank" rel="noopener" style="color:var(--success);font-weight:600;font-size:0.82rem">Kandideeri →</a>';
+                html += '</div></div></div>';
             });
         }
 
-        // Ineligible programs (collapsed)
+        // Ineligible programs
         if (ineligible.length > 0) {
-            html += '<details style="margin-top:1rem"><summary style="cursor:pointer;color:var(--text-muted);font-size:0.85rem">Muud toetused (' + ineligible.length + '), ei vasta tingimustele</summary>';
-            html += '<table style="margin-top:0.5rem"><thead><tr><th>Programm</th><th>Summa</th><th>Asutus</th><th>Põhjus</th></tr></thead><tbody>';
+            html += '<details style="margin-top:1rem"' + (eligible.length === 0 ? ' open' : '') + '><summary style="cursor:pointer;color:var(--text-muted);font-size:0.85rem;font-weight:600">Muud toetused (' + ineligible.length + '), ei vasta tingimustele</summary>';
             ineligible.forEach(function(t) {
-                html += '<tr><td>' + t.nimi + '</td><td>' + t.summa + '</td><td>' + t.asutus + '</td>';
-                html += '<td class="muted" style="font-size:0.8rem">' + (t.pohjus || 'Tingimused ei vasta') + '</td></tr>';
+                var link = t.url || 'https://www.eramets.ee/toetused/';
+                var badge = badgeLabel(t);
+                var badgeStyle = badgeColor(t.voor_status);
+                html += '<div style="border:1px solid var(--border-light);border-radius:6px;padding:10px;margin-top:6px;opacity:0.8">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px">';
+                html += '<strong style="font-size:0.85rem">' + t.nimi + '</strong>';
+                html += '<div style="display:flex;gap:6px;align-items:center">';
+                if (badge) html += '<span style="' + badgeStyle + ';font-size:0.65rem;padding:1px 6px;border-radius:8px">' + badge + '</span>';
+                html += '<span style="color:var(--text-muted);font-size:0.8rem">' + t.summa + '</span>';
+                html += '</div></div>';
+                if (t.pohjus) html += '<p style="color:var(--danger);font-size:0.78rem;margin:4px 0 0 0">✗ ' + t.pohjus + '</p>';
+                html += '<div style="display:flex;gap:10px;margin-top:4px">';
+                if (t.voor_url) html += '<a href="' + t.voor_url + '" target="_blank" rel="noopener" style="color:var(--text-muted);font-size:0.75rem">Tähtajad →</a>';
+                html += '<a href="' + link + '" target="_blank" rel="noopener" style="color:var(--text-muted);font-size:0.75rem">Info →</a>';
+                html += '</div></div>';
             });
-            html += '</tbody></table></details>';
+            html += '</details>';
         }
 
         el.innerHTML = html;
@@ -1293,7 +1402,9 @@
     async function searchAddresses(query) {
         var dropdown = document.getElementById('address-dropdown');
         try {
+            console.log('Searching addresses for:', query);
             var resp = await fetch('/api/address/' + encodeURIComponent(query));
+            console.log('Response status:', resp.status);
             var data = await resp.json();
             if (!data.results || data.results.length === 0) {
                 dropdown.style.display = 'none';
@@ -1340,6 +1451,7 @@
             currentData = data;
 
             window._timberValue = (data.vaartus && data.vaartus.total_value_eur) || 0;
+            window._vaartusData = data.vaartus || {};
             if (data.kataster) renderKataster(data.kataster);
             renderMets(data.mets);
             renderVaartus(data.vaartus);

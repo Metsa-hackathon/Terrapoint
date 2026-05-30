@@ -1,0 +1,58 @@
+"""
+Terrapoint — In-memory TTL Cache
+"""
+import time
+import threading
+
+
+class TTLCache:
+    """Thread-safe in-memory cache with TTL per key."""
+
+    def __init__(self, default_ttl: int = 300):
+        self._data: dict[str, tuple[float, object]] = {}
+        self._default_ttl = default_ttl
+        self._lock = threading.Lock()
+
+    def get(self, key: str) -> object | None:
+        with self._lock:
+            entry = self._data.get(key)
+            if entry is None:
+                return None
+            expires_at, value = entry
+            if time.time() > expires_at:
+                del self._data[key]
+                return None
+            return value
+
+    def set(self, key: str, value: object, ttl: int | None = None) -> None:
+        expires_at = time.time() + (ttl if ttl is not None else self._default_ttl)
+        with self._lock:
+            self._data[key] = (expires_at, value)
+
+    def make_key(self, *parts: str) -> str:
+        return ":".join(str(p) for p in parts)
+
+    def invalidate(self, prefix: str) -> int:
+        """Remove all keys starting with prefix. Returns count removed."""
+        removed = 0
+        with self._lock:
+            keys = list(self._data.keys())
+            for k in keys:
+                if k.startswith(prefix):
+                    del self._data[k]
+                    removed += 1
+        return removed
+
+    def clear(self) -> None:
+        with self._lock:
+            self._data.clear()
+
+    @property
+    def size(self) -> int:
+        with self._lock:
+            return len(self._data)
+
+
+# Singleton instances
+wfs_cache = TTLCache(default_ttl=7200)    # 2h for WFS queries
+search_cache = TTLCache(default_ttl=600)   # 10min for search results

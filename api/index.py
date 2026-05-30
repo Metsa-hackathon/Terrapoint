@@ -97,19 +97,17 @@ async def _search(kataster_nr: str):
 
     eraldis_task = query_eraldis(kataster_nr)
     layers_task = query_all_layers(bbox_str)
-    natura_task = query_natura_2000(bbox_str)
-    yrask_task = query_yrask_mke(bbox_str)
     teatised_task = query_teatised(kataster_nr)
 
     results = await asyncio.gather(
-        eraldis_task, layers_task, natura_task, yrask_task, teatised_task,
+        eraldis_task, layers_task, teatised_task,
         return_exceptions=True
     )
     eraldised = results[0] if not isinstance(results[0], Exception) else []
     layers_data = results[1] if not isinstance(results[1], Exception) else {}
-    natura_features = results[2] if not isinstance(results[2], Exception) else []
-    yrask_features = results[3] if not isinstance(results[3], Exception) else []
-    teatised_features = results[4] if not isinstance(results[4], Exception) else []
+    teatised_features = results[2] if not isinstance(results[2], Exception) else []
+    natura_features = layers_data.get("natura_elupaik", [])
+    yrask_features = layers_data.get("yrask_eelis", [])
 
     kitsendused = []
     mets_result = None
@@ -122,10 +120,13 @@ async def _search(kataster_nr: str):
     pindala = 0
 
     # Process kitsendused from layers
-    for key in ["kaitsealad", "veekaitse", "piiranguvoond", "uleujutus", "kotkas", "malestised"]:
+    for key in ["kaitsealad", "piirang", "karuputk", "malestised"]:
         for feat in layers_data.get(key, []):
             props = feat.get("properties", {})
             kitsendused.append({"tyyp": key, "kirjeldus": props.get("nimi", props.get("nimetus", key))})
+
+    eraldised_features = []
+    species_colors = {"MA": "#2d6a4f", "KU": "#1a8fd4", "KS": "#f4a261", "HB": "#adb5bd", "LH": "#6a994e", "LM": "#8d6e63", "LV": "#a1887f"}
 
     if eraldised:
         # Fetch element data for all eraldised in parallel
@@ -208,9 +209,10 @@ async def _search(kataster_nr: str):
                         "osakaal": equal_pct,
                     })
 
-        # Build eraldised summary for frontend
+        # Build eraldised summary for frontend (including geometry for map)
         eraldised_summary = []
         for e in eraldised:
+            geom = e.get("geometry")
             eraldised_summary.append({
                 "eraldis_nr": e.get("eraldis_nr"),
                 "puuliik": e.get("puuliik"),
@@ -220,9 +222,25 @@ async def _search(kataster_nr: str):
                 "pindala_ha": e.get("pindala_ha") or 0,
                 "boniteet": e.get("boniteet"),
             })
+            if geom:
+                kood = e.get("puuliik_kood", "MA")
+                eraldised_features.append({
+                    "type": "Feature",
+                    "geometry": geom,
+                    "properties": {
+                        "eraldis_nr": e.get("eraldis_nr"),
+                        "puuliik": e.get("puuliik"),
+                        "puuliik_kood": kood,
+                        "vanus": e.get("vanus") or 0,
+                        "tagavara_y_ha": e.get("tagavara_y_ha") or 0,
+                        "pindala_ha": e.get("pindala_ha") or 0,
+                        "color": species_colors.get(kood, "#666"),
+                    }
+                })
 
+        puuliik_nimi_map = {"MA": "mänd", "KU": "kuusk", "KS": "kask", "HB": "haab", "LH": "lehis", "LM": "sanglepp", "LV": "hall lepp"}
         mets_result = {
-            "puuliik": primary.get("puuliik"),
+            "puuliik": puuliik_nimi_map.get(puuliik, primary.get("puuliik", puuliik)),
             "puuliik_kood": puuliik,
             "vanus": int(avg_vanus),
             "tagavara_y_ha": round(avg_tagavara, 1),
@@ -239,35 +257,47 @@ async def _search(kataster_nr: str):
             "eraldisi_kokku": len(eraldised),
         }
 
-        # Timber pricing — Erametsaliit aprill 2026 (palgihinnad, seisuhind ≈ palgihind/2.3)
+        # Timber pricing — Eesti turuhinnad 2026 (seisuhind = raiumata puidu hind metsas)
+        # Allikad: Erametsaliit, RMK enampakkumised, metsaühistute hinnakirjad
         SPECIES_PRICES = {
-            "MA": {"seisuhind": 45, "log": 104.37, "pulp": 53.14},
-            "KU": {"seisuhind": 48, "log": 109.54, "pulp": 53.00},
-            "KS": {"seisuhind": 43, "log": 98.80, "pulp": 53.79},
-            "HB": {"seisuhind": 27, "log": 62.97, "pulp": 44.77},
-            "LH": {"seisuhind": 40, "log": 85.00, "pulp": 50.00},
-            "LM": {"seisuhind": 28, "log": 65.00, "pulp": 44.00},
-            "LV": {"seisuhind": 28, "log": 65.00, "pulp": 44.00},
-            "TA": {"seisuhind": 50, "log": 110.00, "pulp": 55.00},
-            "SA": {"seisuhind": 45, "log": 100.00, "pulp": 50.00},
-            "VA": {"seisuhind": 32, "log": 72.00, "pulp": 45.00},
-            "PK": {"seisuhind": 45, "log": 100.00, "pulp": 50.00},
-            "JA": {"seisuhind": 38, "log": 85.00, "pulp": 48.00},
-            "RE": {"seisuhind": 28, "log": 65.00, "pulp": 44.00},
-            "SP": {"seisuhind": 40, "log": 90.00, "pulp": 50.00},
+            "MA": {"seisuhind": 48, "log": 105, "pulp": 53},
+            "KU": {"seisuhind": 52, "log": 110, "pulp": 53},
+            "KS": {"seisuhind": 58, "log": 135, "pulp": 65},
+            "HB": {"seisuhind": 30, "log": 65, "pulp": 45},
+            "LH": {"seisuhind": 42, "log": 88, "pulp": 50},
+            "LM": {"seisuhind": 30, "log": 68, "pulp": 44},
+            "LV": {"seisuhind": 30, "log": 68, "pulp": 44},
+            "TA": {"seisuhind": 55, "log": 115, "pulp": 55},
+            "SA": {"seisuhind": 48, "log": 105, "pulp": 50},
+            "VA": {"seisuhind": 35, "log": 75, "pulp": 45},
+            "PK": {"seisuhind": 48, "log": 105, "pulp": 50},
+            "JA": {"seisuhind": 40, "log": 88, "pulp": 48},
+            "RE": {"seisuhind": 30, "log": 68, "pulp": 44},
+            "SP": {"seisuhind": 42, "log": 92, "pulp": 50},
         }
         prices = SPECIES_PRICES.get(puuliik, SPECIES_PRICES["MA"])
         price_m3 = prices["seisuhind"]
         total_m3 = avg_tagavara * total_pindala
+        timber_value = round(total_m3 * price_m3)
+
+        # Kinnistu turuväärtus = maa turuhind + puidu väärtus
+        # Maa turuhind: maksuhind * turuhinna tegur (Eesti metsamaa keskmine ~2.5x)
+        # Metsamaa turuhind sõltub asukohast, liivikust, juurdepääsust
+        maa_turuhind = round((kataster_data.get("maks_hind") or 0) * 2.5)
+
         vaartus_result = {
-            "total_value_eur": round(total_m3 * price_m3),
+            "total_value_eur": timber_value,
             "value_per_ha": round(avg_tagavara * price_m3),
             "price_per_m3": price_m3,
             "tagavara_m3": round(total_m3),
             "log_price": prices["log"],
             "pulp_price": prices["pulp"],
-            "price_source": "Erametsaliit aprill 2026",
-            "price_updated": "2026-04",
+            "price_source": "Eesti turuhinnad 2026",
+            "price_updated": "2026-05",
+            # Kinnistu koguväärtus
+            "kinnistu_turuväärtus": maa_turuhind + timber_value,
+            "maa_turuhind": maa_turuhind,
+            "maa_maksuhind": kataster_data.get("maks_hind") or 0,
         }
 
         sinik_result = {
@@ -294,7 +324,7 @@ async def _search(kataster_nr: str):
         "natura_2000": natura_2000,
         "vaariselupaik": vaariselupaik,
         "keskm_vanus": int(avg_vanus) if eraldised else 0,
-        "peapuuliik_kood": eraldised[0].get("puuliik_kood") if eraldised else None,
+        "peapuuliik_kood": puuliik if eraldised else None,
         "keskm_raievanus": eraldised[0].get("raievanus") if eraldised else None,
         "mets_pindala": pindala if eraldised else 0,
         "siht1": kataster_data.get("sihtotstarve", ""),
@@ -303,7 +333,6 @@ async def _search(kataster_nr: str):
         "has_kuusk": has_kuusk,
         "max_kuusk_vanus": max_kuusk_vanus,
         "sood": bool(layers_data.get("sood")),
-        "veekaitse": bool(layers_data.get("veekaitse")),
         "natura_elupaik": bool(layers_data.get("natura_elupaik")),
         "karuputk": bool(layers_data.get("karuputk")),
         "yrask_tsoon": bool(yrask_features),
@@ -311,36 +340,84 @@ async def _search(kataster_nr: str):
     toetused = check_subsidies(subsidy_data)
 
     riskid = {}
+    # Always check layer-based risks (even without forest data)
+    has_karuputk = bool(layers_data.get("karuputk"))
+    has_lageraieala = bool(layers_data.get("lageraiealad"))
+    riskid["karuputk"] = has_karuputk
+    riskid["lageraieala"] = has_lageraieala
+
     if eraldised:
-        # Improved ürask risk scoring: consider official zone, species, and age
+        # Ürask risk scoring — kuusekooreürask ohustab ainult kuuske
         yrask_score = 0
         yrask_label = "Madal"
         has_kuusk = any(e.get("puuliik_kood") == "KU" for e in eraldised)
-        max_vanus = max((e.get("vanus") or 0) for e in eraldised)
+        # Kuuse vanus eraldi — mitte kõigi eraldiste max!
+        kuusk_eradised = [e for e in eraldised if e.get("puuliik_kood") == "KU"]
+        max_kuusk_v = max((e.get("vanus") or 0) for e in kuusk_eradised) if kuusk_eradised else 0
+        # Peapuuliik — already calculated above by tagavara*area
+        peapuuliik_nimi = {"MA": "mänd", "KU": "kuusk", "KS": "kask", "HB": "haab", "LH": "lehis", "LM": "sanglepp", "LV": "hall lepp"}.get(puuliik, puuliik)
 
         if yrask_features:
             yrask_score = 3
-            yrask_label = "Kriitiline — tsoonis"
-        elif has_kuusk and max_vanus > 50:
+            yrask_label = "Kriitiline — MKE tsoonis"
+        elif has_kuusk and max_kuusk_v > 50:
             yrask_score = 2
-            yrask_label = "Kõrge — vana kuusemets"
-        elif has_kuusk and max_vanus > 30:
+            yrask_label = "Kõrge — vana kuusk (" + str(max_kuusk_v) + "a)"
+        elif has_kuusk and max_kuusk_v > 30:
             yrask_score = 1
             yrask_label = "Keskmine — kuusk üle 30a"
         else:
             yrask_score = 0
             yrask_label = "Madal"
 
+        detail_parts = []
+        if yrask_features:
+            detail_parts.append("Kuusekooreüraski MKE tsoon")
+        if has_kuusk:
+            detail_parts.append("Kuuske on " + str(max_kuusk_v) + "a")
+        else:
+            detail_parts.append("Kuuske pole — üraski risk puudub")
+        detail_parts.append("Peapuuliik: " + peapuuliik_nimi)
+
         riskid["yrask"] = {
             "score": yrask_score,
             "label": yrask_label,
             "official_zone": bool(yrask_features),
-            "detail": "Kuusekooreüraski MKE tsoon" if yrask_features else None,
+            "detail": ". ".join(detail_parts),
+            "peapuuliik": peapuuliik_nimi,
         }
+
+        # Terviseindeks (0-100): arvestab vanust, üraski riski, kahjustusi, liigilist koosseisu
+        health = 100
+        # Vanus: ideaalne 40-80a, alla 20a või üle 100a miinuspunktid
+        avg_vanus = sum((e.get("vanus") or 0) * (e.get("pindala_ha") or 0) for e in eraldised) / max(sum((e.get("pindala_ha") or 0) for e in eraldised), 1)
+        if avg_vanus < 20:
+            health -= 15  # liiga noor mets
+        elif avg_vanus > 100:
+            health -= 20  # ülekasvanud
+        elif avg_vanus > 80:
+            health -= 10  # vanemapoolne
+        # Üraski risk
+        health -= yrask_score * 12  # 0, 12, 24, 36
+        # Kahjustused
+        if kahjustused_features:
+            health -= min(len(kahjustused_features) * 8, 25)
+        # Karuputk
+        if has_karuputk:
+            health -= 10
+        # Lageraieala — mets on ära raiutud
+        if has_lageraieala:
+            health -= 30
+        # Liigiline mitmekesisus: ainult üks liik = madalam
+        unique_species = set(e.get("puuliik_kood") for e in eraldised if e.get("puuliik_kood"))
+        if len(unique_species) == 1:
+            health -= 5
+        elif len(unique_species) >= 3:
+            health += 5  # mitmekesine mets on tervem
+
+        riskid["terviseindeks"] = max(0, min(100, health))
+    else:
         riskid["terviseindeks"] = None
-        riskid["karuputk"] = bool(layers_data.get("karuputk"))
-        if layers_data.get("lageraiealad"):
-            riskid["lageraieala"] = True
 
     # Process metsateatised - show active ones prominently
     TOO_NIMETUSED = {
@@ -386,18 +463,27 @@ async def _search(kataster_nr: str):
         "kaitsealad": {"label": "Kaitsealad", "color": "#2d6a4f"},
         "piirang": {"label": "Piiranguvööndid", "color": "#52796f"},
         "yrask_eelis": {"label": "Üraski vaatlused", "color": "#e76f51"},
-        "kaadamisalad": {"label": "Kaadamisalad", "color": "#6c757d"},
         "sood": {"label": "Sood", "color": "#457b9d"},
-        "niidud": {"label": "Niidud", "color": "#a7c957"},
         "natura_elupaik": {"label": "Natura elupaigad", "color": "#6a994e"},
-        "veekaitse": {"label": "Veekaitsevööndid", "color": "#0077b6"},
-        "uleujutus": {"label": "Üleujutusala", "color": "#0096c7"},
         "karuputk": {"label": "Karuputk", "color": "#d63384"},
+        "lageraiealad": {"label": "Lageraiealad", "color": "#adb5bd"},
+        "malestised": {"label": "Mälestised", "color": "#7b2cbf"},
+        "veekogud": {"label": "Järved", "color": "#48cae4"},
+        "vooluveed": {"label": "Vooluveed", "color": "#0096c7"},
     }
     for key, meta in LAYER_MAP.items():
         features = layers_data.get(key, [])
         if features:
             map_layers[key] = {"label": meta["label"], "color": meta["color"], "features": features}
+
+    # Add eraldised as a map layer (colored by species)
+    if eraldised_features:
+        map_layers["eraldised"] = {
+            "label": "Eraldised",
+            "color": "#2d6a4f",
+            "features": eraldised_features,
+            "type": "eraldised",
+        }
 
     elapsed = round((time.time() - start) * 1000)
 
@@ -441,6 +527,7 @@ def build_system_prompt(data: dict) -> str:
     lines.append("- Kui metsa pole, ütle otse ja soovita mida teha (nt taastada, sihtotstarvet muuta)")
     lines.append("- Alusta lühikese tervitusega: 'Tere! Terrapoint AI siin.'")
     lines.append("- LÕPETA oma vastus alati lõpliku soovitusega — ära jäta lahtisteks")
+    lines.append("- Ära kasuta sidekriipse (– või -) vastustes, kirjuta laused tervikuna")
     lines.append("- Maksimaalselt 300 sõna")
     lines.append("")
     lines.append("=== KATASTRI ANDMED ===")
@@ -522,6 +609,8 @@ def build_system_prompt(data: dict) -> str:
         yrask = riskid.get("yrask", {})
         if yrask:
             lines.append(f"Üraski risk: {yrask.get('label', 'N/A')} (skoor: {yrask.get('score', 0)})")
+            if yrask.get('detail'):
+                lines.append(f"  Detail: {yrask['detail']}")
         if riskid.get("karuputk"):
             lines.append("Karuputk: LEITUD")
         if riskid.get("lageraieala"):
@@ -600,18 +689,41 @@ async def chat(request: Request):
             )
             if resp.status_code != 200:
                 return json_response({"error": f"API viga: {resp.status_code}"}, 500)
-            try:
-                result = resp.json()
-            except Exception:
-                return json_response({"error": "API vastus ei ole JSON"}, 500)
-            choices = result.get("choices", [])
-            if not choices:
-                error = result.get("error", {}).get("message", "Tühi vastus")
-                return json_response({"error": error}, 500)
-            content = choices[0].get("message", {}).get("content", "")
-            if not content:
-                return json_response({"error": "AI ei vastanud"}, 500)
-            return json_response({"content": content})
+
+            # Handle both JSON and SSE streaming responses
+            content_type = resp.headers.get("content-type", "")
+            if "text/event-stream" in content_type:
+                # Parse SSE stream and collect full response
+                full_text = ""
+                for line in resp.text.split("\n"):
+                    line = line.strip()
+                    if line.startswith("data: "):
+                        data_str = line[6:]
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            chunk = orjson.loads(data_str)
+                            delta = chunk.get("choices", [{}])[0].get("delta", {})
+                            full_text += delta.get("content", "")
+                        except Exception:
+                            continue
+                if not full_text:
+                    return json_response({"error": "AI ei vastanud"}, 500)
+                return json_response({"content": full_text})
+            else:
+                # Standard JSON response
+                try:
+                    result = resp.json()
+                except Exception:
+                    return json_response({"error": "API vastus ei ole JSON"}, 500)
+                choices = result.get("choices", [])
+                if not choices:
+                    error = result.get("error", {}).get("message", "Tühi vastus")
+                    return json_response({"error": error}, 500)
+                content = choices[0].get("message", {}).get("content", "")
+                if not content:
+                    return json_response({"error": "AI ei vastanud"}, 500)
+                return json_response({"content": content})
 
     except Exception as exc:
         import traceback
@@ -690,7 +802,10 @@ async def export_eudr(kataster_nr: str):
 async def root():
     html_path = PROJECT_ROOT / "index.html"
     if html_path.exists():
-        return HTMLResponse(content=html_path.read_text(encoding="utf-8"))
+        return HTMLResponse(
+            content=html_path.read_text(encoding="utf-8"),
+            headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+        )
     return HTMLResponse(content="<h1>Terrapoint</h1>", status_code=500)
 
 
@@ -698,7 +813,11 @@ async def root():
 async def serve_static(filename: str):
     file_path = PROJECT_ROOT / "static" / filename
     if file_path.exists():
-        return FileResponse(str(file_path))
+        if filename.endswith(".css"):
+            return FileResponse(str(file_path), media_type="text/css", headers={"Cache-Control": "no-cache, must-revalidate"})
+        if filename.endswith(".js"):
+            return FileResponse(str(file_path), media_type="application/javascript", headers={"Cache-Control": "no-cache, must-revalidate"})
+        return FileResponse(str(file_path), headers={"Cache-Control": "no-cache, must-revalidate"})
     return Response(status_code=404)
 
 
