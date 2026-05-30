@@ -310,8 +310,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 }
 
 .user-message .ai-avatar {
-    background: transparent;
-    border-color: var(--accent);
+    display: none;
 }
 
 .ai-bubble {
