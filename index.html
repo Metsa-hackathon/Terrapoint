@@ -430,6 +430,7 @@
     // ═══ AI Chat ═══
     var aiChatHistory = [];
     var aiCurrentKataster = null;
+    var aiCurrentData = null;
     var aiStreaming = false;
 
     function aiAppendMessage(role, content) {
@@ -516,6 +517,7 @@
                     kataster_nr: aiCurrentKataster,
                     message: message,
                     history: aiChatHistory.slice(0, -1),
+                    data: aiCurrentData,
                 }),
                 signal: controller.signal,
             });
@@ -550,8 +552,9 @@
         input.focus();
     }
 
-    function aiAnalyzeKataster(katasterNr, eraldised) {
+    function aiAnalyzeKataster(katasterNr, eraldised, searchData) {
         aiCurrentKataster = katasterNr;
+        aiCurrentData = searchData || null;
         aiChatHistory = [];
         document.getElementById('ai-chat-input-area').style.display = '';
         document.querySelector('.ai-chat-subtitle').textContent = 'Analüüsin katastrit ' + katasterNr + '...';
@@ -1594,7 +1597,7 @@
             showDashboard();
 
             // Trigger AI analysis
-            aiAnalyzeKataster(data.kataster.number, data.mets ? data.mets.eraldised : null);
+            aiAnalyzeKataster(data.kataster.number, data.mets ? data.mets.eraldised : null, data);
 
             // Show parcel on the already-visible map
             setTimeout(function() {

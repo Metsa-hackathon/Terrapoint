@@ -802,12 +802,13 @@ async def chat(request: Request):
         if not kataster_nr or not user_message:
             return json_response({"error": "kataster_nr and message required"}, 400)
 
-        # Fetch all forest data via existing _search function
-        search_response = await _search(kataster_nr)
-        data = orjson.loads(search_response.body)
-
-        if "error" in data:
-            return json_response({"error": data["error"]}, 400)
+        # Use cached data from frontend if available, otherwise fetch
+        data = body.get("data")
+        if not data:
+            search_response = await _search(kataster_nr)
+            data = orjson.loads(search_response.body)
+            if "error" in data:
+                return json_response({"error": data["error"]}, 400)
 
         system_prompt = build_system_prompt(data)
 
