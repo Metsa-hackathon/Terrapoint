@@ -82,6 +82,78 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 
 .hamburger:hover { background: rgba(255,255,255,0.15); }
 
+/* ═══ Sidebar ═══ */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 1500;
+}
+.sidebar-overlay.open { display: block; }
+
+.sidebar {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    background: var(--card, #fff);
+    border-right: 1px solid var(--border, #e2e8e0);
+    box-shadow: var(--shadow-lg);
+    z-index: 1600;
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+}
+.sidebar.open { transform: translateX(0); }
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border, #e2e8e0);
+}
+.sidebar-header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text, #1a1d23);
+}
+.sidebar-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.3rem;
+    border-radius: var(--radius-sm, 3px);
+    color: var(--text-muted, #8896a6);
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.sidebar-close:hover {
+    background: var(--bg-alt, #f0f4f0);
+    color: var(--text, #1a1d23);
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.25rem;
+}
+.sidebar-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem 0;
+    color: var(--text-muted, #8896a6);
+    font-size: 0.85rem;
+}
+
 .nav-left .logo-text h1 {
     font-size: 1.25rem;
     font-weight: 700;
@@ -473,6 +545,44 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     color: white;
 }
 
+.eraldis-dropdown { position: relative; display: inline-block; }
+.eraldis-dropdown-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.eraldis-dropdown-toggle svg {
+    transition: transform 0.2s ease;
+}
+.eraldis-dropdown.open .eraldis-dropdown-toggle svg {
+    transform: rotate(180deg);
+}
+.eraldis-dropdown-list {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 10;
+    background: var(--bg, #fff);
+    border: 1px solid var(--border);
+    border-radius: var(--radius, 6px);
+    padding: 6px;
+    min-width: 160px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    max-height: 200px;
+    overflow-y: auto;
+}
+.eraldis-dropdown.open .eraldis-dropdown-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.eraldis-dropdown-list .ai-hint {
+    white-space: nowrap;
+    border-radius: var(--radius-sm, 4px);
+    text-align: left;
+}
+
 /* ═══ Dashboard ═══ */
 .dashboard { max-width: 1280px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
 
@@ -685,15 +795,18 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 
 /* Info dropdown arrow */
 .info-dd {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     margin-left: 4px;
-    font-size: 10px;
+    width: 14px;
+    height: 14px;
     color: var(--text-muted, #999);
-    transition: transform 0.2s ease;
+    transition: transform 0.25s ease, color 0.2s ease, opacity 0.2s ease;
     vertical-align: middle;
     user-select: none;
-    opacity: 0.6;
+    opacity: 0.5;
 }
 .info-dd:hover { opacity: 1; color: var(--primary, #1a4d2e); }
 .info-dd.open { transform: rotate(180deg); color: var(--primary, #1a4d2e); opacity: 1; }
@@ -710,6 +823,24 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     font-weight: 400;
 }
 .info-dd-text.show { display: block; }
+.info-dd-text .dd-field {
+    font-size: 0.75rem;
+    color: var(--text-secondary, #555);
+    line-height: 1.5;
+}
+.info-dd-text .dd-value {
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px solid var(--border, #e0e0e0);
+    font-size: 0.73rem;
+    color: var(--primary, #1a4d2e);
+    font-weight: 500;
+    line-height: 1.5;
+}
+.info-dd-text .dd-value::before {
+    content: '▸ ';
+    opacity: 0.5;
+}
 
 .initial-info {
     padding: 1.2rem 1rem;
