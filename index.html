@@ -90,7 +90,7 @@
                     <div class="ai-avatar"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22V10"/><path d="M12 10c-3-4-8-4-8-4s5 0 8 4z"/><path d="M12 10c3-4 8-4 8-4s-5 0-8 4z"/><path d="M12 6c-2-3-6-3-6-3s4 0 6 3z"/><path d="M12 6c2-3 6-3 6-3s-4 0-6 3z"/></svg></div>
                     <div class="ai-bubble">
                         <p>Tere! Olen Terrapoint AI.</p>
-                        <p>Otsi ülevalt oma katastri number ja ma analüüsin su metsaandmeid. Annan nõu kas müüa, hoida, osta juurde või taotleda toetusi.</p>
+                        <p>Otsi ülevalt oma katastri number ja ma analüüsin su metsaandmeid. Annan nõu kas müüa, hoida või taotleda toetusi.</p>
                     </div>
                 </div>
             </div>
@@ -106,7 +106,6 @@
                 <div class="ai-chat-hints">
                     <button class="ai-hint" data-q="Kas peaksin metsa müüma või hoidma?">Müüa või hoida?</button>
                     <button class="ai-hint" data-q="Milliseid toetusi ma saan taotleda?">Toetused</button>
-                    <button class="ai-hint" data-q="Kas peaksin kõrvalkatastrit juurde ostma?">Osta juurde?</button>
                     <button class="ai-hint" data-q="Millised on riskid ja kuidas neid maandada?">Riskid</button>
                 </div>
             </div>
@@ -552,7 +551,7 @@
         document.querySelector('.ai-chat-subtitle').textContent = 'Analüüsin katastrit ' + katasterNr + '...';
 
         // Auto-send initial analysis request
-        aiSendMessage('Analüüsi minu metsaandmeid. Anna lühike kokkuvõte: mis seisus mets on, mis on peamine väärtus, millised riskid on, ja kas peaksin midagi ette võtma? Ole konkreetne numbritega.');
+        aiSendMessage('Anna mulle täielik metsa hinnang: seisukord, väärtus, riskid ja konkreetne soovitus mida teha. Kasuta kõiki andmeid.');
     }
 
     async function exportEUDR(katasterNr) {
