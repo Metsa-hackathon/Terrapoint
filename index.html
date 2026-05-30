@@ -1382,6 +1382,25 @@
             else showError('Otsi esmalt krunt');
         });
 
+        // Info-toggle click to show/hide info-box
+        document.querySelectorAll('.info-toggle').forEach(function(toggle) {
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var card = this.closest('.metric-card') || this.closest('.card');
+                if (!card) return;
+                var box = card.querySelector('.info-box');
+                if (!box) return;
+                var isOpen = box.classList.contains('open');
+                // Close all other info-boxes first
+                document.querySelectorAll('.info-box.open').forEach(function(b) { b.classList.remove('open'); });
+                if (!isOpen) box.classList.add('open');
+            });
+        });
+        // Close info-box when clicking outside
+        document.addEventListener('click', function() {
+            document.querySelectorAll('.info-box.open').forEach(function(b) { b.classList.remove('open'); });
+        });
+
         document.querySelectorAll('.layer-toggle input[type=checkbox]').forEach(function(cb) {
             cb.addEventListener('change', function(e) {
                 var key = e.target.dataset.layer;

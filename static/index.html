@@ -1377,9 +1377,41 @@
         });
 
         document.getElementById('eudr-btn').addEventListener('click', function() {
+
+        // Info-toggle click to show/hide info-box
+        document.querySelectorAll('info-toggle').forEach(function(toggle) {
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var card = this.closest('metric-card') || this.closest('card');
+                if (!card) return;
+                var box = card.querySelector('info-box');
+                if (!box) return;
+                var isOpen = box.classList.contains('open');
+                document.querySelectorAll('info-box.open').forEach(function(b) { b.classList.remove('open'); });
+                if (!isOpen) box.classList.add('open');
+            });
+        });
+        document.addEventListener('click', function() {
+            document.querySelectorAll('info-box.open').forEach(function(b) { b.classList.remove('open'); });
+        });
             var nr = (currentData && currentData.kataster && currentData.kataster.number) || document.getElementById('kataster-input').value.trim();
-            if (nr) exportEUDR(nr).catch(function(err) { showError(err.message); });
-            else showError('Otsi esmalt krunt');
+
+
+        document.querySelectorAll('info-toggle').forEach(function(toggle) {
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var card = this.closest('metric-card') || this.closest('card');
+                if (!card) return;
+                var box = card.querySelector('info-box');
+                if (!box) return;
+                var isOpen = box.classList.contains('open');
+                document.querySelectorAll('info-box.open').forEach(function(b) { b.classList.remove('open'); });
+                if (!isOpen) box.classList.add('open');
+            });
+        });
+        document.addEventListener('click', function() {
+            document.querySelectorAll('info-box.open').forEach(function(b) { b.classList.remove('open'); });
+        });
         });
 
         document.querySelectorAll('.layer-toggle input[type=checkbox]').forEach(function(cb) {

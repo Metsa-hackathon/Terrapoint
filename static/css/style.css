@@ -17,6 +17,7 @@
     --bg-alt: #f0f4f0;
     --card: #ffffff;
     --surface: #f5f7f5;
+    --surface-alt: #f0f4f0;
 
     --text: #1a1d23;
     --text-secondary: #4a5568;
@@ -625,9 +626,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     line-height: 1.55;
     box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
-.card-header:hover ~ .info-box,
-.card-header:hover + .info-box { display: block; }
-.info-box:hover { display: block; }
+.info-box.open { display: block; }
 
 .info-box strong {
     color: var(--primary);
