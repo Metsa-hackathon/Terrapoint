@@ -238,8 +238,9 @@ async def _search(kataster_nr: str):
                     }
                 })
 
+        puuliik_nimi_map = {"MA": "mänd", "KU": "kuusk", "KS": "kask", "HB": "haab", "LH": "lehis", "LM": "sanglepp", "LV": "hall lepp"}
         mets_result = {
-            "puuliik": primary.get("puuliik"),
+            "puuliik": puuliik_nimi_map.get(puuliik, primary.get("puuliik", puuliik)),
             "puuliik_kood": puuliik,
             "vanus": int(avg_vanus),
             "tagavara_y_ha": round(avg_tagavara, 1),
@@ -323,7 +324,7 @@ async def _search(kataster_nr: str):
         "natura_2000": natura_2000,
         "vaariselupaik": vaariselupaik,
         "keskm_vanus": int(avg_vanus) if eraldised else 0,
-        "peapuuliik_kood": eraldised[0].get("puuliik_kood") if eraldised else None,
+        "peapuuliik_kood": puuliik if eraldised else None,
         "keskm_raievanus": eraldised[0].get("raievanus") if eraldised else None,
         "mets_pindala": pindala if eraldised else 0,
         "siht1": kataster_data.get("sihtotstarve", ""),
@@ -353,9 +354,8 @@ async def _search(kataster_nr: str):
         # Kuuse vanus eraldi — mitte kõigi eraldiste max!
         kuusk_eradised = [e for e in eraldised if e.get("puuliik_kood") == "KU"]
         max_kuusk_v = max((e.get("vanus") or 0) for e in kuusk_eradised) if kuusk_eradised else 0
-        # Peapuuliik (kõige suurema pindalaga)
-        peapuuliik = max(eraldised, key=lambda e: e.get("pindala_ha") or 0).get("puuliik_kood", "")
-        peapuuliik_nimi = {"MA": "mänd", "KU": "kuusk", "KS": "kask", "HB": "haab", "LH": "lehis", "LM": "sanglepp", "LV": "hall lepp"}.get(peapuuliik, peapuuliik)
+        # Peapuuliik — already calculated above by tagavara*area
+        peapuuliik_nimi = {"MA": "mänd", "KU": "kuusk", "KS": "kask", "HB": "haab", "LH": "lehis", "LM": "sanglepp", "LV": "hall lepp"}.get(puuliik, puuliik)
 
         if yrask_features:
             yrask_score = 3

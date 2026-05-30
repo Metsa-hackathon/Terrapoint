@@ -914,7 +914,7 @@
             }
         }
         var html = '';
-        html += '<div class="info-row"><span class="label">Peapuuliik <span class="q-tip" title="Krundi peamine puuliik, suurima pindalaga eraldise liik">?</span></span><span class="value">' + speciesName(data.puuliik_kood || data.puuliik, data.puuliik) + '</span></div>';
+        html += '<div class="info-row"><span class="label">Peapuuliik <span class="q-tip" title="Krundi peamine puuliik, suurima tagavaraga liik">?</span></span><span class="value">' + speciesName(data.puuliik_kood || data.puuliik, data.puuliik) + '</span></div>';
         html += '<div class="info-row"><span class="label">Keskmine vanus <span class="q-tip" title="Kõigi eraldiste pindala-kaalutud keskmine vanus aastates">?</span></span><span class="value">' + (data.vanus || '—') + ' a</span></div>';
         html += '<div class="info-row"><span class="label">Tagavara <span class="q-tip" title="Metsa ümarmaterjali kogus hektari kohta (m³/ha). Mida suurem, seda väärtuslikum mets.">?</span></span><span class="value">' + formatNum(data.tagavara_y_ha) + ' m³/ha</span></div>';
         html += '<div class="info-row"><span class="label">Boniteet <span class="q-tip" title="Metsakasvukoha kvaliteet: I=parim, VII=halvim. Mõjutab metsa kasvukiirust ja raievanust.">?</span></span><span class="value">' + boniteet + '</span></div>';
