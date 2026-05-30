@@ -34,7 +34,7 @@ async def query_eraldis(kataster_nr: str) -> list[dict]:
             "puuliik": SPECIES_NAMES.get(kood, kood),
             "puuliik_kood": kood,
             "vanus": props.get("keskm_vanus", 0),
-            "tagavara_y_ha": props.get("tagavara_1_ha") or props.get("tagavara_y_ha") or 0,
+            "tagavara_y_ha": props.get("tagavara_1_ha") or props.get("tagavara_l_ha") or props.get("tagavara_y_ha") or 0,
             "boniteet": BONITEET_MAP.get(int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3, "III"),
             "boniteedi_kood": int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3,
             "raievanus": props.get("keskm_raievanus"),
