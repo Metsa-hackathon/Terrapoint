@@ -811,7 +811,8 @@ async def chat(request: Request):
                 if not full_text:
                     return json_response({"error": "AI ei vastanud"}, 500)
                 import re
-                full_text = re.sub(r'<𝑎𝑛𝑡𝑚𝑙:thinking_mode>[^<]*</𝑎𝑛𝑡𝑚𝑙:thinking_mode>', '', full_text).strip()
+                full_text = re.sub(r'<𝑎𝑛𝑡𝑚𝑙:thinking_mode>[^<]*</𝑎𝑛𝑡𝑚𝑙:thinking_mode>', '', full_text)
+                full_text = re.sub(r'</?assistant>', '', full_text).strip()
                 return json_response({"content": full_text})
             else:
                 # Standard JSON response
@@ -826,9 +827,10 @@ async def chat(request: Request):
                 content = choices[0].get("message", {}).get("content", "")
                 if not content:
                     return json_response({"error": "AI ei vastanud"}, 500)
-                # Strip thinking tags that leak from reasoning models
+                # Strip thinking/assistant tags that leak from reasoning models
                 import re
-                content = re.sub(r'<𝑎𝑛𝑡𝑚𝑙:thinking_mode>[^<]*</𝑎𝑛𝑡𝑚𝑙:thinking_mode>', '', content).strip()
+                content = re.sub(r'<𝑎𝑛𝑡𝑚𝑙:thinking_mode>[^<]*</𝑎𝑛𝑡𝑚𝑙:thinking_mode>', '', content)
+                content = re.sub(r'</?assistant>', '', content).strip()
                 return json_response({"content": content})
 
     except httpx.ReadTimeout:
