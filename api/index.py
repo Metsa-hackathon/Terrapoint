@@ -120,7 +120,7 @@ async def _search(kataster_nr: str):
     pindala = 0
 
     # Process kitsendused from layers
-    for key in ["kaitsealad", "veekaitse", "piirang", "uleujutus", "karuputk", "malestised"]:
+    for key in ["kaitsealad", "piirang", "karuputk", "malestised"]:
         for feat in layers_data.get(key, []):
             props = feat.get("properties", {})
             kitsendused.append({"tyyp": key, "kirjeldus": props.get("nimi", props.get("nimetus", key))})
@@ -331,7 +331,6 @@ async def _search(kataster_nr: str):
         "has_kuusk": has_kuusk,
         "max_kuusk_vanus": max_kuusk_vanus,
         "sood": bool(layers_data.get("sood")),
-        "veekaitse": bool(layers_data.get("veekaitse")),
         "natura_elupaik": bool(layers_data.get("natura_elupaik")),
         "karuputk": bool(layers_data.get("karuputk")),
         "yrask_tsoon": bool(yrask_features),
@@ -463,12 +462,8 @@ async def _search(kataster_nr: str):
         "kaitsealad": {"label": "Kaitsealad", "color": "#2d6a4f"},
         "piirang": {"label": "Piiranguvööndid", "color": "#52796f"},
         "yrask_eelis": {"label": "Üraski vaatlused", "color": "#e76f51"},
-        "kaadamisalad": {"label": "Kaadamisalad", "color": "#6c757d"},
         "sood": {"label": "Sood", "color": "#457b9d"},
-        "niidud": {"label": "Niidud", "color": "#a7c957"},
         "natura_elupaik": {"label": "Natura elupaigad", "color": "#6a994e"},
-        "veekaitse": {"label": "Veekaitsevööndid", "color": "#0077b6"},
-        "uleujutus": {"label": "Üleujutusala", "color": "#0096c7"},
         "karuputk": {"label": "Karuputk", "color": "#d63384"},
         "lageraiealad": {"label": "Lageraiealad", "color": "#adb5bd"},
         "malestised": {"label": "Mälestised", "color": "#7b2cbf"},
