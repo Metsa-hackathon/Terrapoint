@@ -876,7 +876,7 @@ async def chat(request: Request):
                     "messages": messages,
                     "stream": False,
                     "temperature": 0.7,
-                    "max_tokens": 2000,
+                    "max_tokens": 10000,
                 },
             )
             if resp.status_code != 200:

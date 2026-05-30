@@ -432,16 +432,27 @@
     }
 
     function aiFormatResponse(text) {
-        // Simple markdown-like formatting
+        // Escape HTML
+        text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        // Headers
+        text = text.replace(/^### (.+)$/gm, '<h4>$1</h4>');
+        text = text.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+        text = text.replace(/^# (.+)$/gm, '<h2>$1</h2>');
+        // Bold and italic
         text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        // Code blocks
+        text = text.replace(/```([\s\S]*?)```/g, '<pre style="background:var(--surface);padding:0.5rem;border-radius:4px;font-size:0.82rem;overflow-x:auto">$1</pre>');
+        text = text.replace(/`([^`]+)`/g, '<code style="background:var(--surface);padding:0.1rem 0.3rem;border-radius:3px;font-size:0.85em">$1</code>');
+        // Unordered lists
+        text = text.replace(/^\- (.+)$/gm, '<li>$1</li>');
+        text = text.replace(/(<li>.*<\/li>)/s, '<ul style="margin:0.3rem 0;padding-left:1.2rem">$1</ul>');
+        // Ordered lists
+        text = text.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+        // Paragraphs
         text = text.replace(/\n\n/g, '</p><p>');
-        text = text.replace(/\n- /g, '</p><ul><li>');
-        text = text.replace(/\n(\d+)\. /g, '</p><ol><li>');
-        // Close any open lists
-        if (text.includes('<li>')) {
-            text = text.replace(/<\/li>(?!<\/ul>|<\/ol>)/g, '</li></ul>');
-        }
+        // Single newlines to <br>
+        text = text.replace(/\n/g, '<br>');
         return '<p>' + text + '</p>';
     }
 
