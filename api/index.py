@@ -3,6 +3,7 @@ import asyncio
 import os
 import httpx
 import orjson
+from shapely.geometry import shape, Point, Polygon, MultiPolygon
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, HTMLResponse, FileResponse, StreamingResponse
@@ -84,6 +85,27 @@ async def search(kataster_nr: str, request: Request):
         return json_response({"error": str(exc), "trace": traceback.format_exc()}, 500)
 
 
+def _filter_features_by_geometry(features, parcel_geom):
+    """Filter WFS features to only those that actually intersect the parcel geometry."""
+    if not features or not parcel_geom:
+        return features
+    try:
+        parcel_shape = shape(parcel_geom)
+        if not parcel_shape.is_valid:
+            parcel_shape = parcel_shape.buffer(0)
+        filtered = []
+        for f in features:
+            try:
+                feat_shape = shape(f.get("geometry", {}))
+                if feat_shape.intersects(parcel_shape):
+                    filtered.append(f)
+            except Exception:
+                filtered.append(f)  # include if can't parse geometry
+        return filtered
+    except Exception:
+        return features
+
+
 async def _search(kataster_nr: str):
     start = time.time()
     MAX_TIME = 8.5  # Vercel Hobby has 10s timeout, leave buffer
@@ -107,7 +129,7 @@ async def _search(kataster_nr: str):
     layers_data = results[1] if not isinstance(results[1], Exception) else {}
     teatised_features = results[2] if not isinstance(results[2], Exception) else []
     natura_features = layers_data.get("natura_elupaik", [])
-    yrask_features = layers_data.get("yrask_eelis", [])
+    yrask_features = _filter_features_by_geometry(layers_data.get("yrask_eelis", []), kataster_data.get("geometry"))
 
     kitsendused = []
     mets_result = None
@@ -392,28 +414,32 @@ async def _search(kataster_nr: str):
         # Vanus: ideaalne 40-80a, alla 20a või üle 100a miinuspunktid
         avg_vanus = sum((e.get("vanus") or 0) * (e.get("pindala_ha") or 0) for e in eraldised) / max(sum((e.get("pindala_ha") or 0) for e in eraldised), 1)
         if avg_vanus < 20:
-            health -= 15  # liiga noor mets
+            health -= 10  # liiga noor mets
         elif avg_vanus > 100:
-            health -= 20  # ülekasvanud
+            health -= 15  # ülekasvanud
         elif avg_vanus > 80:
-            health -= 10  # vanemapoolne
-        # Üraski risk
-        health -= yrask_score * 12  # 0, 12, 24, 36
+            health -= 5  # vanemapoolne
+        # Üraski risk — ainult kui päriselt krundil
+        health -= yrask_score * 8  # 0, 8, 16, 24
         # Kahjustused
         if kahjustused_features:
-            health -= min(len(kahjustused_features) * 8, 25)
+            health -= min(len(kahjustused_features) * 5, 20)
         # Karuputk
         if has_karuputk:
             health -= 10
         # Lageraieala — mets on ära raiutud
         if has_lageraieala:
-            health -= 30
+            health -= 20
         # Liigiline mitmekesisus: ainult üks liik = madalam
         unique_species = set(e.get("puuliik_kood") for e in eraldised if e.get("puuliik_kood"))
         if len(unique_species) == 1:
             health -= 5
         elif len(unique_species) >= 3:
             health += 5  # mitmekesine mets on tervem
+        # Kuivendamata mets — positiivne
+        drained = [e for e in eraldised if e.get("kuivendatud")]
+        if not drained and len(eraldised) > 0:
+            health += 3  # loomulik veerežiim
 
         riskid["terviseindeks"] = max(0, min(100, health))
     else:
