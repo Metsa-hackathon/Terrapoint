@@ -125,6 +125,9 @@ async def _search(kataster_nr: str):
             props = feat.get("properties", {})
             kitsendused.append({"tyyp": key, "kirjeldus": props.get("nimi", props.get("nimetus", key))})
 
+    eraldised_features = []
+    species_colors = {"MA": "#2d6a4f", "KU": "#1a8fd4", "KS": "#f4a261", "HB": "#adb5bd", "LH": "#6a994e", "LM": "#8d6e63", "LV": "#a1887f"}
+
     if eraldised:
         # Fetch element data for all eraldised in parallel
         element_tasks = [query_eraldis_element(e.get("id")) for e in eraldised]
@@ -208,8 +211,6 @@ async def _search(kataster_nr: str):
 
         # Build eraldised summary for frontend (including geometry for map)
         eraldised_summary = []
-        eraldised_features = []
-        species_colors = {"MA": "#2d6a4f", "KU": "#1a8fd4", "KS": "#f4a261", "HB": "#adb5bd", "LH": "#6a994e", "LM": "#8d6e63", "LV": "#a1887f"}
         for e in eraldised:
             geom = e.get("geometry")
             eraldised_summary.append({
