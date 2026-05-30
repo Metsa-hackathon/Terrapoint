@@ -237,35 +237,47 @@ async def _search(kataster_nr: str):
             "eraldisi_kokku": len(eraldised),
         }
 
-        # Timber pricing — Erametsaliit aprill 2026 (palgihinnad, seisuhind ≈ palgihind/2.3)
+        # Timber pricing — Eesti turuhinnad 2026 (seisuhind = raiumata puidu hind metsas)
+        # Allikad: Erametsaliit, RMK enampakkumised, metsaühistute hinnakirjad
         SPECIES_PRICES = {
-            "MA": {"seisuhind": 45, "log": 104.37, "pulp": 53.14},
-            "KU": {"seisuhind": 48, "log": 109.54, "pulp": 53.00},
-            "KS": {"seisuhind": 43, "log": 98.80, "pulp": 53.79},
-            "HB": {"seisuhind": 27, "log": 62.97, "pulp": 44.77},
-            "LH": {"seisuhind": 40, "log": 85.00, "pulp": 50.00},
-            "LM": {"seisuhind": 28, "log": 65.00, "pulp": 44.00},
-            "LV": {"seisuhind": 28, "log": 65.00, "pulp": 44.00},
-            "TA": {"seisuhind": 50, "log": 110.00, "pulp": 55.00},
-            "SA": {"seisuhind": 45, "log": 100.00, "pulp": 50.00},
-            "VA": {"seisuhind": 32, "log": 72.00, "pulp": 45.00},
-            "PK": {"seisuhind": 45, "log": 100.00, "pulp": 50.00},
-            "JA": {"seisuhind": 38, "log": 85.00, "pulp": 48.00},
-            "RE": {"seisuhind": 28, "log": 65.00, "pulp": 44.00},
-            "SP": {"seisuhind": 40, "log": 90.00, "pulp": 50.00},
+            "MA": {"seisuhind": 48, "log": 105, "pulp": 53},
+            "KU": {"seisuhind": 52, "log": 110, "pulp": 53},
+            "KS": {"seisuhind": 58, "log": 135, "pulp": 65},
+            "HB": {"seisuhind": 30, "log": 65, "pulp": 45},
+            "LH": {"seisuhind": 42, "log": 88, "pulp": 50},
+            "LM": {"seisuhind": 30, "log": 68, "pulp": 44},
+            "LV": {"seisuhind": 30, "log": 68, "pulp": 44},
+            "TA": {"seisuhind": 55, "log": 115, "pulp": 55},
+            "SA": {"seisuhind": 48, "log": 105, "pulp": 50},
+            "VA": {"seisuhind": 35, "log": 75, "pulp": 45},
+            "PK": {"seisuhind": 48, "log": 105, "pulp": 50},
+            "JA": {"seisuhind": 40, "log": 88, "pulp": 48},
+            "RE": {"seisuhind": 30, "log": 68, "pulp": 44},
+            "SP": {"seisuhind": 42, "log": 92, "pulp": 50},
         }
         prices = SPECIES_PRICES.get(puuliik, SPECIES_PRICES["MA"])
         price_m3 = prices["seisuhind"]
         total_m3 = avg_tagavara * total_pindala
+        timber_value = round(total_m3 * price_m3)
+
+        # Kinnistu turuväärtus = maa turuhind + puidu väärtus
+        # Maa turuhind: maksuhind * turuhinna tegur (Eesti metsamaa keskmine ~2.5x)
+        # Metsamaa turuhind sõltub asukohast, liivikust, juurdepääsust
+        maa_turuhind = round((kataster_data.get("maks_hind") or 0) * 2.5)
+
         vaartus_result = {
-            "total_value_eur": round(total_m3 * price_m3),
+            "total_value_eur": timber_value,
             "value_per_ha": round(avg_tagavara * price_m3),
             "price_per_m3": price_m3,
             "tagavara_m3": round(total_m3),
             "log_price": prices["log"],
             "pulp_price": prices["pulp"],
-            "price_source": "Erametsaliit aprill 2026",
-            "price_updated": "2026-04",
+            "price_source": "Eesti turuhinnad 2026",
+            "price_updated": "2026-05",
+            # Kinnistu koguväärtus
+            "kinnistu_turuväärtus": maa_turuhind + timber_value,
+            "maa_turuhind": maa_turuhind,
+            "maa_maksuhind": kataster_data.get("maks_hind") or 0,
         }
 
         sinik_result = {

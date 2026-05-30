@@ -787,17 +787,19 @@
         if (data.mk_nimi) html += '<div class="info-row"><span class="label">Maakond</span><span class="value">' + data.mk_nimi + '</span></div>';
         if (data.ov_nimi) html += '<div class="info-row"><span class="label">Omavalitsus</span><span class="value">' + data.ov_nimi + '</span></div>';
         if (data.l_aadress) html += '<div class="info-row"><span class="label">Aadress</span><span class="value">' + data.l_aadress + '</span></div>';
-        // Total value = land + timber — big prominent display
-        var maaValue = data.maks_hind || 0;
+        // Total value = land market value + timber value — big prominent display
+        var vaartus = window._vaartusData || {};
+        var maaMaksuhind = data.maks_hind || 0;
+        var maaTuruhind = vaartus.maa_turuhind || Math.round(maaMaksuhind * 2.5);
         var puitValue = window._timberValue || 0;
-        var totalValue = maaValue + puitValue;
+        var totalValue = vaartus.kinnistu_turuväärtus || (maaTuruhind + puitValue);
         if (totalValue > 0) {
             html += '<div style="background:linear-gradient(135deg,#f0f7f0,#e8f5e9);border-radius:var(--radius);padding:1rem;margin:0.75rem 0;border:1px solid #c8e6c9">';
-            html += '<div style="font-size:0.78rem;color:#2e7d32;font-weight:600;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.05em">Kinnistu koguväärtus</div>';
+            html += '<div style="font-size:0.78rem;color:#2e7d32;font-weight:600;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.05em">Kinnistu turuväärtus <span class="q-tip" title="Maa turuhind (maksuhind x 2.5) + seisuhinnaga arvestatud puidu väärtus. Tegelik müügihind sõltub asukohast, juurdepääsust ja turuolukorrast.">?</span></div>';
             html += '<div style="font-size:1.6rem;font-weight:800;color:#1b5e20;line-height:1.2">' + formatEur(totalValue) + '</div>';
             html += '<div style="display:flex;gap:1.5rem;margin-top:0.6rem;font-size:0.82rem">';
-            html += '<div><span style="color:var(--text-muted)">Maa väärtus:</span> <strong>' + formatEur(maaValue) + '</strong></div>';
-            html += '<div><span style="color:var(--text-muted)">Puidu väärtus:</span> <strong>' + formatEur(puitValue) + '</strong></div>';
+            html += '<div><span style="color:var(--text-muted)">Maa:</span> <strong>' + formatEur(maaTuruhind) + '</strong> <span class="q-tip" title="Maa-ameti maksuhind ' + formatEur(maaMaksuhind) + ', turuhinnaks korrutatud 2.5x-ga">?</span></div>';
+            html += '<div><span style="color:var(--text-muted)">Puit:</span> <strong>' + formatEur(puitValue) + '</strong> <span class="q-tip" title="Seisuhind x kogutagavara (m³). Seisuhind = raiumata puidu hind metsas.">?</span></div>';
             html += '</div>';
             html += '</div>';
         }
@@ -868,13 +870,14 @@
         var el = document.getElementById('vaartus-info');
         if (!data) { el.innerHTML = '<p class="muted">Väärtuse andmeid pole</p>'; return; }
         window._timberValue = data.total_value_eur || 0;
+        window._vaartusData = data;
         var html = '';
 
         // Big timber value display
         html += '<div style="background:linear-gradient(135deg,#fff8e1,#fff3e0);border-radius:var(--radius);padding:1rem;margin-bottom:0.75rem;border:1px solid #ffe0b2">';
         html += '<div style="font-size:0.78rem;color:#e65100;font-weight:600;margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.05em">Puidu väärtus</div>';
         html += '<div class="big-number accent"><span id="anim-vaartus">0</span> €</div>';
-        html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.3rem">Kogu metsast saadava materjali turuhind</div>';
+        html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.3rem">Seisuhind × kogutagavara — metsaomanik saaks selle summa müües metsa raiumata</div>';
         html += '</div>';
 
         html += '<div class="info-row"><span class="label" title="Metsa väärtus ühe hektari kohta. Arvutatakse: koguväärtus / pindala.">Ühikuhind <span class="q-tip" title="Metsa väärtus ühe hektari kohta">?</span></span><span class="value">' + formatEur(data.value_per_ha) + ' / ha</span></div>';
@@ -899,7 +902,7 @@
         html += '<div class="big-number"><span id="anim-co2">0</span><span class="unit"> tCO₂</span></div>';
         html += '<div class="info-row"><span class="label">CO₂ / ha <span class="q-tip" title="Süsinikdioksiidi kogus hektari kohta, mida mets on sidunud. 1 ton CO₂ = ühe auto aastane heide.">?</span></span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
         html += '<div class="info-row"><span class="label">Biomass / ha <span class="q-tip" title="Metsa elusmass hektari kohta, puud, juured, oksad. Biomassist 47% on süsinik.">?</span></span><span class="value">' + formatNum(data.total_biomass_tons_ha, 1) + ' t</span></div>';
-        html += '<div class="info-row"><span class="label">Potentsiaalne tulu <span class="q-tip" title="Rahaline väärtus, kui müüa süsinikukrediite (30 €/t CO₂). Praegu Eestis veel süsinikuturgu ei ole.">?</span></span><span class="value">' + formatEur(data.potential_income_eur) + '</span></div>';
+        html += '<div class="info-row"><span class="label">Potentsiaalne tulu <span class="q-tip" title="Rahaline väärtus, kui müüa süsinikukrediite (65 €/t CO₂, EU ETS 2026). Praegu Eestis veel süsinikuturgu ei ole.">?</span></span><span class="value">' + formatEur(data.potential_income_eur) + '</span></div>';
 
         // CO2 equivalency illustration
         if (data.cars_equivalent || data.trees_equivalent) {
@@ -1355,6 +1358,7 @@
             currentData = data;
 
             window._timberValue = (data.vaartus && data.vaartus.total_value_eur) || 0;
+            window._vaartusData = data.vaartus || {};
             if (data.kataster) renderKataster(data.kataster);
             renderMets(data.mets);
             renderVaartus(data.vaartus);

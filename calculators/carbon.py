@@ -17,7 +17,7 @@ SPECIES_DATA = {
 
 CARBON_FRACTION = 0.47
 CO2_C_RATIO = 3.67
-CO2_PRICE_EUR = 30
+CO2_PRICE_EUR = 65  # EU ETS keskmine 2026 (~60-70 EUR/t)
 # Average car emits ~4.6 t CO2/year (EU average passenger car)
 CO2_PER_CAR_YEAR = 4.6
 # A mature tree absorbs ~22 kg CO2/year
