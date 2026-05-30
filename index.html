@@ -229,7 +229,7 @@
                 <p class="section-desc">Metsa süsinikuvaru ja CO2 sidumise potentsiaal</p>
                 <div id="info-sinik" class="info-box">
                     <strong>Mis näitab:</strong> Metsa süsinikuvaru ja CO₂ sidumise potentsiaal.<br>
-                    <strong>Arvutus:</strong> Biomass = tagavara × tihedus × BEF × (1 + juurte/suhte koefitsient). Süsinik = biomass × 0,47. CO₂ = süsinik × 3,67. Potentsiaalne tulu = CO₂ × 30 €/t.<br>
+                    <strong>Arvutus:</strong> Biomass = tagavara × tihedus × BEF × (1 + juurte/suhte koefitsient). Süsinik = biomass × 0,47. CO₂ = süsinik × 3,67.<br>
                     <strong>Võrdlused:</strong> Auto = 4,6 t CO₂/aasta (EL keskmine). Puu = 22 kg CO₂/aasta.<br>
                     <strong>Allikas:</strong> IPCC tasandusfaktorid, Eesti metsainventuuri andmed.
                     <div class="source">Andmed: IPCC, Keskkonnaagentuur</div>
@@ -783,10 +783,10 @@
 
     // ═══ dashboard.js ═══
     const SPECIES_NAMES = {
-        MA: 'Mänd', KU: 'Kuusk', KS: 'Kask', HB: 'Haab',
-        LH: 'Lehis', LM: 'Sanglepp', LV: 'Hall lepp', TA: 'Tamm',
-        SA: 'Saar', VA: 'Vaher', PK: 'Pöök', JA: 'Jalakas',
-        RE: 'Remmelgas', SP: 'Seedrip',
+        MA: 'Harilik mänd', KU: 'Harilik kuusk', KS: 'Ainuroheline kask', HB: 'Harilik haab',
+        LH: 'Harilik lehis', LM: 'Hall lepp', LV: 'Salu-lepp', TA: 'Harilik tamm',
+        SA: 'Harilik saar', VA: 'Harilik vaher', PK: 'Harilik pöök', JA: 'Harilik jalakas',
+        RE: 'Harilik remmelgas', SP: 'Siberi seedermänd',
     };
     // Non-species codes from metsaregister (forest types, not tree species)
     const NON_SPECIES_CODES = ['TM', 'PI', 'PS', 'PA', 'LV2', 'MU'];
@@ -958,7 +958,6 @@
         html += '<div class="big-number"><span id="anim-co2">0</span><span class="unit"> tCO₂</span></div>';
         html += '<div class="info-row"><span class="label">CO₂ / ha <span class="q-tip" title="Süsinikdioksiidi kogus hektari kohta, mida mets on sidunud. 1 ton CO₂ = ühe auto aastane heide.">?</span></span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
         html += '<div class="info-row"><span class="label">Biomass / ha <span class="q-tip" title="Metsa elusmass hektari kohta, puud, juured, oksad. Biomassist 47% on süsinik.">?</span></span><span class="value">' + formatNum(data.total_biomass_tons_ha, 1) + ' t</span></div>';
-        html += '<div class="info-row"><span class="label">Potentsiaalne tulu <span class="q-tip" title="Vabatahtliku süsinikuturu (VCM) hinnaga arvestatud tulu (20 €/t CO₂). Metsakrediitide hind sõltub sertifikaadi tüübist: metsastamine 15-30 €/t, olemasoleva metsa säilitamine 5-15 €/t. EL ETS hind (60-80 €/t) eraomanikule ei laiene.">?</span></span><span class="value">' + formatEur(data.potential_income_eur) + '</span></div>';
 
         // CO2 equivalency illustration
         if (data.cars_equivalent || data.trees_equivalent) {

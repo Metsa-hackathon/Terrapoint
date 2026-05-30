@@ -238,7 +238,7 @@ async def _search(kataster_nr: str):
                     }
                 })
 
-        puuliik_nimi_map = {"MA": "mänd", "KU": "kuusk", "KS": "kask", "HB": "haab", "LH": "lehis", "LM": "sanglepp", "LV": "hall lepp"}
+        puuliik_nimi_map = {"MA": "harilik mänd", "KU": "harilik kuusk", "KS": "ainuroheline kask", "HB": "harilik haab", "LH": "harilik lehis", "LM": "hall lepp", "LV": "salu-lepp"}
         mets_result = {
             "puuliik": puuliik_nimi_map.get(puuliik, primary.get("puuliik", puuliik)),
             "puuliik_kood": puuliik,
@@ -355,7 +355,7 @@ async def _search(kataster_nr: str):
         kuusk_eradised = [e for e in eraldised if e.get("puuliik_kood") == "KU"]
         max_kuusk_v = max((e.get("vanus") or 0) for e in kuusk_eradised) if kuusk_eradised else 0
         # Peapuuliik — already calculated above by tagavara*area
-        peapuuliik_nimi = {"MA": "mänd", "KU": "kuusk", "KS": "kask", "HB": "haab", "LH": "lehis", "LM": "sanglepp", "LV": "hall lepp"}.get(puuliik, puuliik)
+        peapuuliik_nimi = {"MA": "harilik mänd", "KU": "harilik kuusk", "KS": "ainuroheline kask", "HB": "harilik haab", "LH": "harilik lehis", "LM": "hall lepp", "LV": "salu-lepp"}.get(puuliik, puuliik)
 
         if yrask_features:
             yrask_score = 3
