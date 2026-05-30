@@ -346,39 +346,35 @@ async def _search(kataster_nr: str):
             "eraldisi_kokku": len(eraldised),
         }
 
-        # Timber pricing — already defined above
+        # Timber value = sum of all eraldiste values (consistent calculation)
+        timber_value = sum(e.get("vaartus_eur", 0) for e in eraldised_summary)
+        total_m3 = sum((e.get("tagavara_y_ha") or 0) * (e.get("pindala_ha") or 0) for e in eraldised)
         prices = SPECIES_PRICES.get(puuliik, SPECIES_PRICES["MA"])
         price_m3 = prices["seisuhind"]
-        total_m3 = avg_tagavara * total_pindala
-        timber_value = round(total_m3 * price_m3)
 
         # Kinnistu turuväärtus = maa turuhind + puidu väärtus
         # Maa turuhind: arvutatud sihtotstarbe ja pindala järgi
-        # Eesti metsamaa turuhind: 2000-5000 EUR/ha sõltuvalt asukohast
         maksuhind = kataster_data.get("maks_hind") or 0
         kogupindala = kataster_data.get("pindala_ha") or 1
         sihtotstarve = kataster_data.get("sihtotstarve", "")
         maksuhind_ha = maksuhind / kogupindala if kogupindala > 0 else 0
 
-        # Turuhinna tegur sõltuvalt sihtotstarbest
         if "METS" in sihtotstarve.upper():
-            turuhinna_tegur = 4.0  # Metsamaa: 4x maksuhind
+            turuhinna_tegur = 4.0
         elif "POLL" in sihtotstarve.upper():
-            turuhinna_tegur = 3.5  # Põllumaa
+            turuhinna_tegur = 3.5
         elif "ELAM" in sihtotstarve.upper():
-            turuhinna_tegur = 5.0  # Elamumaa
+            turuhinna_tegur = 5.0
         else:
-            turuhinna_tegur = 3.5  # Muu
+            turuhinna_tegur = 3.5
 
-        # Minimaalne turuhind hektari kohta (ei saa olla alla 1500 EUR/ha metsamaa)
         MIN_TURUHIND_HA = 1500
-        arvutatud_ha = maksuhind_ha * turuhinna_tegur
-        turuhind_ha = max(arvutatud_ha, MIN_TURUHIND_HA)
+        turuhind_ha = max(maksuhind_ha * turuhinna_tegur, MIN_TURUHIND_HA)
         maa_turuhind = round(turuhind_ha * kogupindala)
 
         vaartus_result = {
             "total_value_eur": timber_value,
-            "value_per_ha": round(avg_tagavara * price_m3),
+            "value_per_ha": round(timber_value / total_pindala) if total_pindala > 0 else 0,
             "price_per_m3": price_m3,
             "tagavara_m3": round(total_m3),
             "log_price": prices["log"],
