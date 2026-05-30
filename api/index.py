@@ -120,7 +120,7 @@ async def _search(kataster_nr: str):
     pindala = 0
 
     # Process kitsendused from layers
-    for key in ["kaitsealad", "veekaitse", "piiranguvoond", "uleujutus", "kotkas", "malestised"]:
+    for key in ["kaitsealad", "veekaitse", "piirang", "uleujutus", "karuputk", "malestised"]:
         for feat in layers_data.get(key, []):
             props = feat.get("properties", {})
             kitsendused.append({"tyyp": key, "kirjeldus": props.get("nimi", props.get("nimetus", key))})
@@ -403,6 +403,8 @@ async def _search(kataster_nr: str):
         "veekaitse": {"label": "Veekaitsevööndid", "color": "#0077b6"},
         "uleujutus": {"label": "Üleujutusala", "color": "#0096c7"},
         "karuputk": {"label": "Karuputk", "color": "#d63384"},
+        "lageraiealad": {"label": "Lageraiealad", "color": "#adb5bd"},
+        "malestised": {"label": "Mälestised", "color": "#7b2cbf"},
     }
     for key, meta in LAYER_MAP.items():
         features = layers_data.get(key, [])

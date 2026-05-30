@@ -2,13 +2,20 @@ import asyncio
 import httpx
 import config
 
-# Minimal layers for fast response (~1-2s total)
+# All map overlay layers
 LAYER_CONFIGS = [
     ("kaitsealad", "eelis", "eelis:kr_kaitseala"),
     ("yrask_eelis", "eelis", "eelis:kuusekooreyrask_eelis"),
     ("piirang", "eelis", "eelis:kr_piirang"),
     ("veekaitse", "kitsendused", "kitsendused:metsakas_kpois_RANNA_VOI_KALDA_VEEKAITSEVOOND"),
     ("karuputk", "maaamet", "maaamet:karuputk"),
+    ("sood", "eelis", "eelis:sood"),
+    ("niidud", "eelis", "eelis:niidud"),
+    ("kaadamisalad", "eelis", "eelis:kaadamisalad"),
+    ("natura_elupaik", "eelis", "eelis:natura_elupaik"),
+    ("uleujutus", "eelis", "eelis:kr_yleujutusohuga_ala"),
+    ("lageraiealad", "veeveeb", "veeveeb:lageraiealad"),
+    ("malestised", "muinsuskaitse", "muinsuskaitse:kpo_malestised"),
 ]
 
 

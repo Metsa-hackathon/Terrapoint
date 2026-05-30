@@ -154,6 +154,18 @@
                             <input type="checkbox" id="layer-uleujutus" data-layer="uleujutus">
                             <span class="toggle-label" style="border-left:3px solid #0096c7;padding-left:4px">Üleujutus</span>
                         </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="layer-veekaitse" data-layer="veekaitse">
+                            <span class="toggle-label" style="border-left:3px solid #0077b6;padding-left:4px">Veekaitse</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="layer-karuputk" data-layer="karuputk">
+                            <span class="toggle-label" style="border-left:3px solid #d63384;padding-left:4px">Karuputk</span>
+                        </label>
+                        <label class="toggle-item">
+                            <input type="checkbox" id="layer-malestised" data-layer="malestised">
+                            <span class="toggle-label" style="border-left:3px solid #7b2cbf;padding-left:4px">Mälestised</span>
+                        </label>
                     </div>
                 </div>
             </div>
@@ -694,14 +706,12 @@
     var MAP_LAYER_META = {
         kaitsealad: {label: 'Kaitsealad', color: '#2d6a4f', checked: true},
         piirang: {label: 'Piiranguv.', color: '#52796f', checked: false},
-        loodusala: {label: 'Natura loodus.', color: '#354f52', checked: false},
         yrask_eelis: {label: 'Üraski vaatl.', color: '#e76f51', checked: false},
         sood: {label: 'Sood', color: '#457b9d', checked: false},
         niidud: {label: 'Niidud', color: '#a7c957', checked: false},
         kaadamisalad: {label: 'Kaadamis.', color: '#6c757d', checked: false},
-        veekogud: {label: 'Järved', color: '#48cae4', checked: false},
-        vooluveed: {label: 'Vooluveed', color: '#0096c7', checked: false},
         natura_elupaik: {label: 'Elupaigad', color: '#6a994e', checked: false},
+        uleujutus: {label: 'Üleujutus', color: '#0096c7', checked: false},
         veekaitse: {label: 'Veekaitse', color: '#0077b6', checked: false},
         lageraiealad: {label: 'Lageraie', color: '#adb5bd', checked: false},
         karuputk: {label: 'Karuputk', color: '#d63384', checked: false},
