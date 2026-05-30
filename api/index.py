@@ -380,14 +380,15 @@ async def _search(kataster_nr: str):
 
         st = sihtotstarve.upper()
         if "ELAM" in st or "ÄRI" in st:
-            # Elamu- ja ärimaa: maksuhind on lähemal turuhinnale
             turuhinna_tegur = 2.0
             MIN_TURUHIND_HA = 3000
         elif "POLL" in st:
             turuhinna_tegur = 1.8
             MIN_TURUHIND_HA = 2000
+        elif "METS" in st or eraldised:
+            turuhinna_tegur = 2.5
+            MIN_TURUHIND_HA = 1500
         else:
-            # Metsamaa ja muu: maksuhind on väga madal, arvestame metsa väärtust
             turuhinna_tegur = 1.5
             MIN_TURUHIND_HA = 500
 
