@@ -15,7 +15,6 @@ def _voor_status(voor: str) -> str:
     """Return 'open', 'closed', or 'upcoming' based on date ranges in voor string."""
     if not voor or voor in ("Aastaringselt", "Täpsustamisel"):
         return "open" if voor == "Aastaringselt" else "unknown"
-    # Handle "I voor" and "II voor" — check all date ranges
     import re
     ranges = re.findall(r"(\d{2}\.\d{2}(?:\.\d{4})?)\s*[-–]\s*(\d{2}\.\d{2}(?:\.\d{4})?)", voor)
     if not ranges:
@@ -53,7 +52,7 @@ SUBSIDY_PROGRAMS = [
         "voor": "04.04–30.04.2026",
         "url": "https://www.eramets.ee/toetused/natura-metsa-toetus/",
         "voor_url": "https://www.eramets.ee/toetuste_tahtajad/",
-        "description": "Natura 2000 alal ja kaitsealadel metsaelupaigaga tsoonis kuni 160 €/ha, mujal 60 €/ha. Hüvitab looduskaitseliste piirangute tõttu saamata jäänud tulu.",
+        "description": "Natura 2000 alal kuni 160 €/ha, mujal kaitsealadel 60 €/ha. Hüvitab looduskaitseliste piirangute tõttu saamata jäänud tulu. Taotlus esitada igal aastal uuesti e-PRIAs. Min 0,3 ha.",
         "category": "looduskaitse",
     },
     {
@@ -64,13 +63,13 @@ SUBSIDY_PROGRAMS = [
         "asutus": "KIK",
         "voor": "Aastaringselt",
         "url": "https://www.eramets.ee/toetused/vaariselupaiga-kaitseks-lepingu-solmimine/",
-        "description": "Vääriselupaiga kaitseks 20-aastase lepingu sõlmimine. Sisaldab kaitse-eeskirja koostamist ja hoolduskava.",
+        "description": "Vääriselupaiga kaitseks 20-aastase lepingu sõlmimine. Sisaldab kaitse-eeskirja koostamist ja hoolduskava. Taotlemine aastaringselt.",
         "category": "looduskaitse",
     },
 
-    # === Forest management (PRIA / Metsameede) ===
+    # === Metsameede (PRIA/KIK) ===
     {
-        "name": "Metsa hooldamise toetus",
+        "name": "Metsameede",
         "condition": lambda d: 10 <= d.get("keskm_vanus", 0) <= 60 and d.get("mets_pindala", 0) >= 0.1,
         "reject_reason": lambda d: (
             "Metsa vanus peab olema 10–60 aastat (praegu " + str(d.get("keskm_vanus", 0)) + "a)"
@@ -78,10 +77,10 @@ SUBSIDY_PROGRAMS = [
             else "Metsa pindala peab olema vähemalt 0,1 ha (praegu " + str(round(d.get("mets_pindala", 0), 2)) + " ha)"
         ),
         "amount": "kuni 200 €/ha",
-        "asutus": "PRIA",
-        "voor": "Metsameede (täpne kuupäev selgub)",
+        "asutus": "KIK",
+        "voor": "2025: 16.09–07.10 (2026 täpsustamisel)",
         "url": "https://www.eramets.ee/toetused/metsameede/",
-        "description": "Hooldusraie ja harvendusraie toetus 10–60a metsas. Eesmärk on parandada metsa seisundit ja kasvutingimusi.",
+        "description": "Hooldusraie kuni 10a puistus, metsakahjustuste ennetamine (männikärsakas, juurepess), loodusõnnetuses kahjustada saanud metsa uuendamine. Elurikkuse nõuded: säilikpuud ja lamapuit.",
         "category": "metsahooldus",
     },
     {
@@ -92,14 +91,16 @@ SUBSIDY_PROGRAMS = [
             if not (11 <= d.get("keskm_vanus", 0) <= 30)
             else "Metsa pindala peab olema vähemalt 0,1 ha"
         ),
-        "amount": "356 €/ha",
-        "asutus": "PRIA",
+        "amount": "356 €/ha (eraisik) / 297 €/ha (juriidiline)",
+        "asutus": "KIK",
         "voor": "07.04–23.04.2026",
         "url": "https://www.eramets.ee/metsa-kujundamine/",
         "voor_url": "https://www.eramets.ee/toetuste_tahtajad/",
-        "description": "Hooldusraie toetus 11–30a metsas. Mitmeliigilise ja struktuuririkka metsa kujundamine, kliimamuutustele vastupidava metsa loomine.",
+        "description": "Hooldusraie 11–30a metsas. Mitmeliigilise ja struktuuririkka metsa kujundamine. Min 1 ha aastas, max 30 ha. Ainult e-PRIA kaudu. Eelarve 1,6M €.",
         "category": "metsahooldus",
     },
+
+    # === Metsastamine (KIK) ===
     {
         "name": "Metsastamise toetus",
         "condition": lambda d: d.get("mets_pindala", 0) == 0 and d.get("siht1") != "ELAMUMAA" and d.get("pindala_ha", 0) >= 0.3,
@@ -110,14 +111,16 @@ SUBSIDY_PROGRAMS = [
             if d.get("siht1") == "ELAMUMAA"
             else "Krundi pindala peab olema vähemalt 0,3 ha (praegu " + str(round(d.get("pindala_ha", 0), 2)) + " ha)"
         ),
-        "amount": "kuni 1420 €/ha",
-        "asutus": "PRIA",
+        "amount": "1420 €/ha (rajamine) + 260 €/ha/aasta (hooldus)",
+        "asutus": "KIK",
         "voor": "16.04–07.05.2026",
         "url": "https://www.eramets.ee/metsastamine/",
         "voor_url": "https://www.eramets.ee/toetuste_tahtajad/",
-        "description": "Uue metsa rajamine paljastele põllumaadele. Sisaldab istutamist, hooldust ja kuni 30 ha omaniku kohta.",
+        "description": "Uue metsa rajamine. Min 0,3 ha, laius vähemalt 15m, max 30 ha omaniku kohta. Ainult metsaühistu kaudu (min 200 liiget). Eelarve 840 000 €.",
         "category": "metsastamine",
     },
+
+    # === Metsa uuendamine (KIK) ===
     {
         "name": "Metsa uuendamise toetus",
         "condition": lambda d: d.get("keskm_vanus", 0) >= d.get("keskm_raievanus", 999) and d.get("mets_pindala", 0) >= 0.1,
@@ -127,27 +130,25 @@ SUBSIDY_PROGRAMS = [
             else "Metsa pindala peab olema vähemalt 0,1 ha"
         ),
         "amount": "kuni 646 €/ha",
-        "asutus": "PRIA",
+        "asutus": "KIK",
         "voor": "I voor 16.06–02.07.2026, II voor 17.11–01.12.2026",
         "url": "https://www.eramets.ee/toetused/metsa-uuendamise-toetus/",
         "voor_url": "https://www.eramets.ee/toetuste_tahtajad/metsa-uuendamine/",
-        "description": "Metsa uuendamine pärast raievanuse saabumist. Sisaldab mullapinna ettevalmistust, istutamist ja hooldust. Kaks taotlusvooru aastas.",
+        "description": "Metsa uuendamine pärast raievanust või metsa hukkumist. Ainult metsaühistu kaudu (min 200 liiget). Taimede soetamine, istutamine, maapinna ettevalmistus, hooldus. Eelarve 622 000 €.",
         "category": "metsastamine",
     },
+
+    # === Kooreürask (KIK) ===
     {
         "name": "Kooreüraski tõrje",
         "condition": lambda d: d.get("has_kuusk") and d.get("max_kuusk_vanus", 0) > 30,
-        "reject_reason": lambda d: (
-            "Krundil ei ole üle 30a kuuski"
-            if not d.get("has_kuusk") or d.get("max_kuusk_vanus", 0) <= 30
-            else None
-        ),
-        "amount": "kuni 500 €/ühik",
-        "asutus": "PRIA",
+        "reject_reason": lambda d: "Krundil ei ole üle 30a kuuski",
+        "amount": "püünispuud 500 €/üksus, feromoonpüünised 40 €/komplekt, tormikahjustus 500 €/üksus",
+        "asutus": "KIK",
         "voor": "01.09–15.09.2026",
         "url": "https://www.eramets.ee/uraskikahjustuste-ennetamine/",
         "voor_url": "https://www.eramets.ee/toetuste_tahtajad/uraskikahjustuste-ennetamise-toetus/",
-        "description": "Püünispuude kasutamine, feromoonpüüniste paigaldamine ja tormikahjustuste likvideerimine kuuseüraski kahjustuste ennetamiseks.",
+        "description": "Püünispuud, feromoonpüünised ja tormikahjustuste likvideerimine. Kehtivad inventeerimisandmed nõutud. Konsulendi kinnitus tööde kohta vajalik. Eelarve 30 000 €.",
         "category": "kahjuritõrje",
     },
 
@@ -187,7 +188,7 @@ SUBSIDY_PROGRAMS = [
         "voor": "16.06–02.07.2026",
         "url": "https://www.eramets.ee/toetused/parandkultuuri-sailitamise-toetus/",
         "voor_url": "https://www.eramets.ee/toetuste_tahtajad/parandkultuuri-sailitamise-ja-eksponeerimise-toetus/",
-        "description": "Pärandkultuuri objektide (kiviaiad, vanad puud, ajaloolised paigad) taastamine, hooldamine ja avalikuks kasutamiseks kohandamine.",
+        "description": "Pärandkultuuri objektide (kiviaiad, vanad puud, ajaloolised paigad) taastamine, hooldamine ja avalikuks kasutamiseks kohandamine. Eelarve 10 000 €.",
         "category": "kultuur",
     },
 
