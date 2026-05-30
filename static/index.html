@@ -1155,9 +1155,9 @@
         var ineligible = data.filter(function(t) { return !t.sobib; });
 
         var categoryIcons = {
-            'looduskaitse': '🛡️', 'metsahooldus': '🌲', 'metsastamine': '🌱',
-            'kahjuritõrje': '🐛', 'inventeerimine': '📋', 'maaparandus': '💧',
-            'kultuur': '🏛️', 'ühistu': '🤝'
+            'looduskaitse': '', 'metsahooldus': '', 'metsastamine': '',
+            'kahjuritõrje': '', 'inventeerimine': '', 'maaparandus': '',
+            'kultuur': '', 'ühistu': ''
         };
         var categoryNames = {
             'looduskaitse': 'Looduskaitse', 'metsahooldus': 'Metsahooldus', 'metsastamine': 'Metsastamine',
@@ -1188,8 +1188,8 @@
             var bg = isEligible ? 'linear-gradient(135deg,#f0fdf4,#ecfdf5)' : 'var(--card-bg)';
             var html = '<div style="border:1px solid ' + borderCol + ';border-radius:10px;padding:14px;margin-bottom:10px;background:' + bg + '">';
             html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;flex-wrap:wrap;gap:6px">';
-            html += '<div><span style="font-size:1rem;margin-right:4px">' + icon + '</span><strong style="color:var(--text);font-size:0.9rem">' + t.nimi + '</strong>';
-            html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;margin-left:20px">' + catName + ' · ' + t.asutus + '</div></div>';
+            html += '<div><strong style="color:var(--text);font-size:0.9rem">' + t.nimi + '</strong>';
+            html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">' + catName + ' · ' + t.asutus + '</div></div>';
             html += '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">';
             if (badge) html += '<span style="' + badgeStyle + ';font-size:0.68rem;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap">' + badge + '</span>';
             html += '<span style="color:' + (isEligible ? 'var(--success)' : 'var(--text-muted)') + ';font-weight:700;font-size:0.85rem;white-space:nowrap">' + t.summa + '</span>';
