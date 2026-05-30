@@ -238,7 +238,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     align-items: center;
     gap: 0.75rem;
     padding: 1rem 1.25rem;
-    background: #0a3d9e;
+    background: #0076b5;
     color: white;
 }
 
@@ -298,7 +298,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     width: 18px;
     height: 18px;
     background: transparent;
-    border: 2px solid #1a8fd4;
+    border: 2px solid #0076b5;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -324,7 +324,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 }
 
 .user-message .ai-bubble {
-    background: #1a8fd4;
+    background: #0076b5;
     color: white;
 }
 
