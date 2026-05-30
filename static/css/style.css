@@ -545,7 +545,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     color: white;
 }
 
-.eraldis-dropdown { position: relative; display: inline-block; }
+.eraldis-dropdown { display: block; width: 100%; }
 .eraldis-dropdown-toggle {
     display: inline-flex;
     align-items: center;
@@ -559,27 +559,15 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 }
 .eraldis-dropdown-list {
     display: none;
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    z-index: 10;
-    background: var(--bg, #fff);
-    border: 1px solid var(--border);
-    border-radius: var(--radius, 6px);
-    padding: 6px;
-    min-width: 160px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    max-height: 200px;
-    overflow-y: auto;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
 }
 .eraldis-dropdown.open .eraldis-dropdown-list {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
 }
 .eraldis-dropdown-list .ai-hint {
     white-space: nowrap;
-    border-radius: var(--radius-sm, 4px);
     text-align: left;
 }
 
