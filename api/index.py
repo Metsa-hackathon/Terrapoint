@@ -338,8 +338,6 @@ async def _search(kataster_nr: str) -> Response:
             kuivendatud = e.get("kuivendatud", False)
 
             # Per-eraldis valuation
-            # Formula: seisuhind × tagavara × pindala × kuivendus
-            # Note: tagavara (m³/ha) already reflects boniteet and age - no double-counting!
             e_prices = SPECIES_PRICES.get(kood, SPECIES_PRICES["MA"])
             e_seisuhind = e_prices["seisuhind"]
             drainage_factor = 1.1 if kuivendatud else 1.0
@@ -362,6 +360,24 @@ async def _search(kataster_nr: str) -> Response:
                 raie_liik = "Noor mets"
                 raie_color = "#17a2b8"  # teal — too young for any cutting
 
+            # Vanuserühm metsaomaniku jaoks
+            if vanus <= 20:
+                vanuseruhm = "noormets"
+                vanuseruhm_label = "Noormets (kuni 20a)"
+                vanuseruhm_desc = "Mets on veel noor, vajab hooldust ja harvendusraiet"
+            elif vanus <= 60:
+                vanuseruhm = "keskmine"
+                vanuseruhm_label = "Keskmine mets (20-60a)"
+                vanuseruhm_desc = "Mets kasvab aktiivselt, hea aeg hooldusraieks"
+            elif vanus <= 100:
+                vanuseruhm = "kups"
+                vanuseruhm_label = "Küps mets (60-100a)"
+                vanuseruhm_desc = "Mets on küps, kaaluda raiet või müüki"
+            else:
+                vanuseruhm = "vanamets"
+                vanuseruhm_label = "Vana mets (100a+)"
+                vanuseruhm_desc = "Ülekasvanud mets, raiumine soovitatav"
+
             eraldised_summary.append({
                 "eraldis_nr": e.get("eraldis_nr"),
                 "puuliik": e.get("puuliik"),
@@ -376,10 +392,12 @@ async def _search(kataster_nr: str) -> Response:
                 "raie_status": e_raie.get("status"),
                 "raie_liik": raie_liik,
                 "kuivendatud": kuivendatud,
-                # Per-eraldis valuation
                 "vaartus_eur": eraldis_value,
                 "vaartus_per_ha": value_per_ha,
                 "seisuhind": e_seisuhind,
+                "vanuseruhm": vanuseruhm,
+                "vanuseruhm_label": vanuseruhm_label,
+                "vanuseruhm_desc": vanuseruhm_desc,
             })
             if geom:
                 kood = e.get("puuliik_kood", "MA")
@@ -401,6 +419,9 @@ async def _search(kataster_nr: str) -> Response:
                         "raievanus": e_raie.get("raievanus"),
                         "vaartus_eur": eraldis_value,
                         "vaartus_per_ha": value_per_ha,
+                        "vanuseruhm": vanuseruhm,
+                        "vanuseruhm_label": vanuseruhm_label,
+                        "vanuseruhm_desc": vanuseruhm_desc,
                     }
                 })
 
@@ -855,7 +876,7 @@ async def chat(request: Request):
                     "messages": messages,
                     "stream": False,
                     "temperature": 0.7,
-                    "max_tokens": 800,
+                    "max_tokens": 2000,
                 },
             )
             if resp.status_code != 200:

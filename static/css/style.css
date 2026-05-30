@@ -571,6 +571,19 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     text-align: left;
 }
 
+.ai-hint-custom {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-color: transparent;
+    color: white;
+    font-weight: 600;
+}
+
+.ai-hint-custom:hover {
+    background: linear-gradient(135deg, #5a6fd6, #6a4294);
+    border-color: transparent;
+    color: white;
+}
+
 /* ═══ Dashboard ═══ */
 .dashboard { max-width: 1280px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
 
