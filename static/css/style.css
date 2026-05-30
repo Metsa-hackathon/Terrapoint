@@ -460,6 +460,19 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     border-color: var(--primary);
 }
 
+.ai-hint-eraldis {
+    background: var(--surface);
+    border-color: var(--primary);
+    color: var(--primary);
+    font-weight: 500;
+}
+
+.ai-hint-eraldis:hover {
+    background: #2e7d32;
+    border-color: #2e7d32;
+    color: white;
+}
+
 /* ═══ Dashboard ═══ */
 .dashboard { max-width: 1280px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
 

@@ -103,10 +103,12 @@
                         </svg>
                     </button>
                 </div>
-                <div class="ai-chat-hints">
+                <div class="ai-chat-hints" id="ai-chat-hints">
                     <button class="ai-hint" data-q="Kas peaksin metsa müüma või hoidma?">Müüa või hoida?</button>
                     <button class="ai-hint" data-q="Milliseid toetusi ma saan taotleda?">Toetused</button>
                     <button class="ai-hint" data-q="Millised on riskid ja kuidas neid maandada?">Riskid</button>
+                    <button class="ai-hint" data-q="Kas sinu hinnang on õigustatud? Too välja, mis andmeid sa kasutasid ja mis võib puudu olla.">Kas AI õigustatud?</button>
+                    <div id="ai-eraldis-hints"></div>
                 </div>
             </div>
         </div>
@@ -544,14 +546,39 @@
         input.focus();
     }
 
-    function aiAnalyzeKataster(katasterNr) {
+    function aiAnalyzeKataster(katasterNr, eraldised) {
         aiCurrentKataster = katasterNr;
         aiChatHistory = [];
         document.getElementById('ai-chat-input-area').style.display = '';
         document.querySelector('.ai-chat-subtitle').textContent = 'Analüüsin katastrit ' + katasterNr + '...';
 
+        // Generate per-eraldis analysis buttons
+        aiRenderEraldisHints(eraldised);
+
         // Auto-send initial analysis request
         aiSendMessage('Anna mulle täielik metsa hinnang: seisukord, väärtus, riskid ja konkreetne soovitus mida teha. Kasuta kõiki andmeid.');
+    }
+
+    function aiRenderEraldisHints(eraldised) {
+        var container = document.getElementById('ai-eraldis-hints');
+        if (!container) return;
+        container.innerHTML = '';
+        if (!eraldised || eraldised.length < 2) return;
+
+        eraldised.forEach(function(e) {
+            var nr = e.eraldis_nr || '?';
+            var liik = e.puuliik || '';
+            var vanus = e.vanus || '';
+            var btn = document.createElement('button');
+            btn.className = 'ai-hint ai-hint-eraldis';
+            btn.setAttribute('data-eraldis', nr);
+            btn.textContent = 'Eraldis ' + nr + (liik ? ' (' + liik : '') + (vanus ? ', ' + vanus + 'a)' : liik ? ')' : '');
+            btn.addEventListener('click', function() {
+                var q = 'Analüüsi eraldist ' + nr + ': anna hinnang selle eraldise seisukorrale, väärtusele ja soovitus (müüa, hoida, hooldusraie). Too välja kõik numbrid. Ära tee midagi drastilist, anna tasakaalustatud hinnang.';
+                aiSendMessage(q);
+            });
+            container.appendChild(btn);
+        });
     }
 
     async function exportEUDR(katasterNr) {
@@ -1547,7 +1574,7 @@
             showDashboard();
 
             // Trigger AI analysis
-            aiAnalyzeKataster(data.kataster.number);
+            aiAnalyzeKataster(data.kataster.number, data.mets ? data.mets.eraldised : null);
 
             // Show parcel on the already-visible map
             setTimeout(function() {

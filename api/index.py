@@ -615,6 +615,8 @@ def build_system_prompt(data: dict) -> str:
     lines.append("- Ära kasuta sidekriipse (– või -) vastustes, kirjuta laused tervikuna")
     lines.append("- Ära kasuta emoji-sid")
     lines.append("- Maksimaalselt 400 sõna")
+    lines.append("- Kui küsitakse ühe eraldise kohta, keskendu ainult sellele eraldisele. Anna konkreetne hinnang: kas see eraldis on küps, noor, ülekasvanud. Soovita müüa, hoida või hooldusraie. Arvuta selle eraldise väärtus eraldi.")
+    lines.append("- Ära soovita kunagi kohe lageraiet ilma muudeta. Kaalud alati hooldusraiet, harvendusraiet ja metsa hoidmist enne müüki.")
     lines.append("- LÕPETA alati konkreetse soovitusega, ära jäta lahtisteks")
     lines.append("")
     lines.append("=== KATASTRI ANDMED ===")
@@ -647,7 +649,10 @@ def build_system_prompt(data: dict) -> str:
         if eraldised:
             lines.append("Eraldised:")
             for e in eraldised:
-                lines.append(f"  - Eraldis {e.get('eraldis_nr', '?')}: {e.get('puuliik', '?')}, {e.get('vanus', 0)} a, {e.get('tagavara_y_ha', 0)} m³/ha, {e.get('pindala_ha', 0)} ha, boniteet {e.get('boniteet', '?')}")
+                vaartus = e.get('vaartus_eur', 0)
+                vaartus_str = f", väärtus {vaartus} EUR" if vaartus else ""
+                drained = ", kuivendatud" if e.get('kuivendatud') else ""
+                lines.append(f"  - Eraldis {e.get('eraldis_nr', '?')}: {e.get('puuliik', '?')}, {e.get('vanus', 0)} a, {e.get('tagavara_y_ha', 0)} m³/ha, {e.get('pindala_ha', 0)} ha, boniteet {e.get('boniteet', '?')}{vaartus_str}{drained}")
 
     if v:
         lines.append("")
