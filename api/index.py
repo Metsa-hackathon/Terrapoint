@@ -666,7 +666,7 @@ def build_system_prompt(data: dict) -> str:
         lines.append(f"Kogutagavara: {v.get('tagavara_m3', 0)} m³")
         lines.append(f"Palgi hind: {v.get('log_price', 0)} EUR/m³")
         lines.append(f"Paberipuu hind: {v.get('pulp_price', 0)} EUR/m³")
-        lines.append(f"Hinnallikas: {v.get('price_source', '')} ({v.get('price_updated', '')})")
+        lines.append(f"Hindade allikas: {v.get('price_source', '')} ({v.get('price_updated', '')})")
 
     if s:
         lines.append("")

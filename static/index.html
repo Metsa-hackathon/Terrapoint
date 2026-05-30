@@ -301,7 +301,7 @@
                     <h3>EUDR</h3>
                     <span class="info-toggle">?</span>
                 </div>
-                <p class="section-desc">EL deforestativastase määruse vastavuskontroll</p>
+                <p class="section-desc">EL deforestatsioonivastase määruse vastavuskontroll</p>
                 <div id="info-eudr" class="info-box">
                     <strong>Mis näitab:</strong> Krundi geomeetria GeoJSON-formaadis EL deforestatsioonivastase määruse (EUDR) jaoks.<br>
                     <strong>Kasutus:</strong> EUDR nõuab tõestust, et toode ei pärine deforestatsioonitud alalt. GeoJSON sisaldab krundi piire ja katastri numbrit.<br>
@@ -363,7 +363,7 @@
                 <div id="kitsendused-info">
                     <div class="initial-info">
                         <div class="icon">&#128269;</div>
-                        <p>Otsi krundi, et näha kitsendusi</p>
+                        <p>Otsi krunti, et näha kitsendusi</p>
                         <p class="hint">Kaitsealad, piiranguvööndid, muinsuskaitse</p>
                     </div>
                 </div>
@@ -393,7 +393,7 @@
                 <div id="toetused-info">
                     <div class="initial-info">
                         <div class="icon">&#128176;</div>
-                        <p>Otsi krundi, et näha toetusi</p>
+                        <p>Otsi krunti, et näha toetusi</p>
                         <p class="hint">Metsauuendus, hooldusraie, Natura 2000, kaitsealade hüvitised</p>
                     </div>
                 </div>
@@ -975,7 +975,7 @@
         if (!data) { el.innerHTML = '<p class="muted">Süsiniku andmeid pole</p>'; return; }
         var html = '';
         html += '<div class="big-number"><span id="anim-co2">0</span><span class="unit"> tCO₂</span></div>';
-        html += '<div class="info-row"><span class="label">CO₂ / ha <span class="q-tip" title="Süsinikdioksiidi kogus hektari kohta, mida mets on sidunud. 1 ton CO₂ = ühe auto aastane heide.">?</span></span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
+        html += '<div class="info-row"><span class="label">CO₂ / ha <span class="q-tip" title="Süsinikdioksiidi kogus hektari kohta, mida mets on sidunud. 1 tonn CO₂ = ühe auto aastane heide.">?</span></span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
         html += '<div class="info-row"><span class="label">Biomass / ha <span class="q-tip" title="Metsa elusmass hektari kohta, puud, juured, oksad. Biomassist 47% on süsinik.">?</span></span><span class="value">' + formatNum(data.total_biomass_tons_ha, 1) + ' t</span></div>';
 
         // CO2 equivalency illustration
