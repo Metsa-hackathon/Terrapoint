@@ -782,11 +782,24 @@
             },
             onEachFeature: function(feature, layer) {
                 var p = feature.properties || {};
-                var label = (p.puuliik || '?') + ', ' + (p.vanus || '?') + 'a, ' + (p.tagavara_y_ha || '?') + ' m³/ha';
-                var val = p.vaartus_eur ? Math.round(p.vaartus_eur).toLocaleString('et-EE').replace(/,/g, ' ') + ' €' : '';
-                var tip = 'Eraldis ' + (p.eraldis_nr || '?') + ': ' + label;
-                if (val) tip += ' — ' + val;
-                layer.bindTooltip(tip, {sticky: true});
+                var val = p.vaartus_eur ? Math.round(p.vaartus_eur).toLocaleString('et-EE').replace(/,/g, ' ') + ' €' : '—';
+                var valHa = p.vaartus_per_ha ? Math.round(p.vaartus_per_ha).toLocaleString('et-EE').replace(/,/g, ' ') + ' €/ha' : '';
+                layer.bindTooltip('Klikka hinnangu nägemiseks', {sticky: true});
+                var html = '<div style="font-size:13px;min-width:180px">';
+                html += '<div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#2e7d32">Eraldis ' + (p.eraldis_nr || '?') + '</div>';
+                html += '<div style="display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:12px">';
+                html += '<span style="color:#666">Puuliik:</span><strong>' + (p.puuliik || '?') + '</strong>';
+                html += '<span style="color:#666">Vanus:</span><span>' + (p.vanus || '?') + ' a</span>';
+                html += '<span style="color:#666">Tagavara:</span><span>' + (p.tagavara_y_ha || '?') + ' m³/ha</span>';
+                html += '<span style="color:#666">Pindala:</span><span>' + (p.pindala_ha || '?') + ' ha</span>';
+                html += '</div>';
+                html += '<div style="margin-top:8px;padding-top:6px;border-top:1px solid #e0e0e0">';
+                html += '<div style="font-size:18px;font-weight:800;color:#2e7d32">' + val + '</div>';
+                if (valHa) html += '<div style="font-size:11px;color:#666">' + valHa + '</div>';
+                html += '</div>';
+                html += '<div style="font-size:10px;color:#999;margin-top:4px">Klikka mujal sulgemiseks</div>';
+                html += '</div>';
+                layer.bindPopup(html);
             },
         }).addTo(map);
         overlayLayers['eraldised'] = layer;
