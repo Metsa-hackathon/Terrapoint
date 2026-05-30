@@ -367,7 +367,7 @@
     <script>
     // ═══ api.js ═══
     const API_BASE = '/api';
-    const AI_API_BASE = '/api';
+    const AI_API_BASE = 'http://46.62.230.110:8099/api';
 
     async function searchParcel(katasterNr) {
         const res = await fetch(`${API_BASE}/search/${encodeURIComponent(katasterNr)}`);
