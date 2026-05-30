@@ -158,22 +158,24 @@ async def _search(kataster_nr: str):
 
     eraldised_features = []
     species_colors = {"MA": "#2d6a4f", "KU": "#1a8fd4", "KS": "#f4a261", "HB": "#adb5bd", "LH": "#6a994e", "LM": "#8d6e63", "LV": "#a1887f"}
-    # Timber pricing — Metzfund 2026 (seisuhind = raiumata puidu hind metsas)
+    # Timber pricing — Eesti Erametsaliit aprill 2026
+    # seisuhind = ~55% palgihinnast (raiekulud, transport, risk)
+    # Allikas: erametsaliit.ee/puidu-hinnainfo
     SPECIES_PRICES = {
-        "MA": {"seisuhind": 48, "log": 105, "pulp": 53},
-        "KU": {"seisuhind": 52, "log": 110, "pulp": 53},
-        "KS": {"seisuhind": 58, "log": 135, "pulp": 65},
-        "HB": {"seisuhind": 30, "log": 65, "pulp": 45},
-        "LH": {"seisuhind": 42, "log": 88, "pulp": 50},
-        "LM": {"seisuhind": 30, "log": 68, "pulp": 44},
-        "LV": {"seisuhind": 30, "log": 68, "pulp": 44},
-        "TA": {"seisuhind": 55, "log": 115, "pulp": 55},
-        "SA": {"seisuhind": 48, "log": 105, "pulp": 50},
-        "VA": {"seisuhind": 35, "log": 75, "pulp": 45},
-        "PK": {"seisuhind": 48, "log": 105, "pulp": 50},
-        "JA": {"seisuhind": 40, "log": 88, "pulp": 48},
-        "RE": {"seisuhind": 30, "log": 68, "pulp": 44},
-        "SP": {"seisuhind": 42, "log": 92, "pulp": 50},
+        "MA": {"seisuhind": 57, "log": 104, "pulp": 53},
+        "KU": {"seisuhind": 60, "log": 110, "pulp": 53},
+        "KS": {"seisuhind": 54, "log": 99, "pulp": 54},
+        "HB": {"seisuhind": 35, "log": 63, "pulp": 45},
+        "LH": {"seisuhind": 60, "log": 110, "pulp": 53},
+        "LM": {"seisuhind": 36, "log": 65, "pulp": 44},
+        "LV": {"seisuhind": 36, "log": 65, "pulp": 44},
+        "TA": {"seisuhind": 55, "log": 100, "pulp": 50},
+        "SA": {"seisuhind": 48, "log": 88, "pulp": 48},
+        "VA": {"seisuhind": 35, "log": 65, "pulp": 42},
+        "PK": {"seisuhind": 48, "log": 88, "pulp": 48},
+        "JA": {"seisuhind": 40, "log": 75, "pulp": 45},
+        "RE": {"seisuhind": 30, "log": 55, "pulp": 40},
+        "SP": {"seisuhind": 42, "log": 78, "pulp": 45},
     }
 
     if eraldised:
@@ -391,16 +393,11 @@ async def _search(kataster_nr: str):
 
         turuhind_ha = max(maksuhind_ha * turuhinna_tegur, MIN_TURUHIND_HA)
 
-        # Metsamaa: lisa puidu turuväärtus (seisuhind × tagavara) maa hinnale
-        # Oksjonihind = maa + puit, aga puit arvestatakse seisuhinnaga (mitte palgihinnaga)
-        if eraldised and timber_value > 0:
-            # Seisuhind on ~40-60% palgi hinnast (raiekulud, transport, risk)
-            timber_market_factor = 0.5
-            maa_turuhind = round(turuhind_ha * kogupindala + timber_value * timber_market_factor)
-        else:
-            maa_turuhind = round(turuhind_ha * kogupindala)
+        # Maa turuhind (ilma puiduta)
+        maa_turuhind = round(turuhind_ha * kogupindala)
 
-        kinnistu_turuväärtus = maa_turuhind
+        # Kinnistu turuväärtus = maa + puit
+        kinnistu_turuväärtus = maa_turuhind + timber_value
 
         vaartus_result = {
             "total_value_eur": timber_value,
@@ -409,8 +406,8 @@ async def _search(kataster_nr: str):
             "tagavara_m3": round(total_m3),
             "log_price": prices["log"],
             "pulp_price": prices["pulp"],
-            "price_source": "Metzfund 2026",
-            "price_updated": "2026-05",
+            "price_source": "Eesti Erametsaliit",
+            "price_updated": "2026-04",
             # Kinnistu turuväärtus
             "kinnistu_turuväärtus": kinnistu_turuväärtus,
             "maa_turuhind": maa_turuhind,
