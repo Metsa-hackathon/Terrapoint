@@ -207,12 +207,12 @@ async def _search(kataster_nr: str):
             avg_tagavara = eraldised[0].get("tagavara_y_ha") or 0
             avg_vanus = eraldised[0].get("vanus") or 0
 
-        # Peapuuliik = species with highest total tagavara across all eraldised
-        species_tagavara = {}
+        # Peapuuliik = species with largest total area across all eraldised
+        species_area = {}
         for e in eraldised:
             kood = e.get("puuliik_kood") or "MA"
-            species_tagavara[kood] = species_tagavara.get(kood, 0) + ((e.get("tagavara_y_ha") or 0) * (e.get("pindala_ha") or 0))
-        puuliik = max(species_tagavara, key=species_tagavara.get) if species_tagavara else "MA"
+            species_area[kood] = species_area.get(kood, 0) + (e.get("pindala_ha") or 0)
+        puuliik = max(species_area, key=species_area.get) if species_area else "MA"
         primary = max(eraldised, key=lambda e: (e.get("pindala_ha") or 0))
         boniteet = primary.get("boniteedi_kood") or 3
 
@@ -255,12 +255,6 @@ async def _search(kataster_nr: str):
                         "vanus": round(s["vanus_sum"] / s["count"]) if s["count"] else 0,
                         "osakaal": equal_pct,
                     })
-
-            # Update peapuuliik to match dominant species from composition percentages
-            if koosseis_with_osakaal:
-                dominant = max(koosseis_with_osakaal, key=lambda x: x.get("osakaal", 0))
-                if dominant.get("puuliik_kood"):
-                    puuliik = dominant["puuliik_kood"]
 
         # Carbon and cutting age use the final peapuuliik
         carbon = carbon_potential(avg_tagavara, total_pindala, puuliik)
@@ -822,7 +816,7 @@ async def chat(request: Request):
         api_url = "https://openrouter.ai/api/v1/chat/completions"
         model = "openrouter/owl-alpha"
 
-        async with httpx.AsyncClient(timeout=5) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(7, connect=3)) as client:
             resp = await client.post(
                 api_url,
                 headers={
