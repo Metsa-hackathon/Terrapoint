@@ -8,7 +8,7 @@ SPECIES_NAMES = {
     "PK": "Pöök", "JA": "Jalakas", "RE": "Remmelgas", "SP": "Seedrip",
 }
 
-BONITEET_MAP = {0: "I", 1: "II", 2: "III", 3: "IV", 4: "V", 5: "VI", 6: "VII"}
+BONITEET_MAP = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
 
 
 async def query_eraldis(kataster_nr: str) -> list[dict]:

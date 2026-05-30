@@ -644,7 +644,7 @@ def build_system_prompt(data: dict) -> str:
     lines.append("HINDAMISE JUHIS:")
     lines.append("Vanus: ideaalne 40-80a (küps mets). Alla 20a = noor, investeering. 60-80a = parim müügiaeg. Üle 100a = ülekasvanud, kaaluda raiet.")
     lines.append("Tagavara: hea >150 m³/ha, keskmine 80-150, madal <80. Kõrge tagavara = kõrge väärtus.")
-    lines.append("Boniteet: I-III = hea kasvukoht, IV-V = keskmine, VI-VII = kehv. Hea boniteet tõstab väärtust.")
+    lines.append("Boniteet: I-II = hea kasvukoht, III = keskmine, IV-V = kehv. Hea boniteet tõstab väärtust.")
     lines.append("Liik: mänd = kõige väärtuslikum palgipuu, kuusk = hea aga üraskioht, kask = paberipuu, madalam väärtus.")
     lines.append("Üraski risk: 0-1 = normaalne, 2 = tegutse kohe (hooldusraie), 3 = kriitiline (ränne tsoonis).")
     lines.append("Terviseindeks: 80-100 = hea, 60-80 = rahuldav, alla 60 = probleemid, alla 40 = halb seisukord.")

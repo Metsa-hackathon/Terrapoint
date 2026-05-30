@@ -820,7 +820,7 @@
         var code = s.puuliik_kood || s.puuliik;
         return code && NON_SPECIES_CODES.indexOf(code) === -1 && SPECIES_NAMES[code];
     }
-    const BONITEET_LABELS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+    const BONITEET_LABELS = [null, 'I', 'II', 'III', 'IV', 'V'];
 
     // Value explanation lookups
     const SIHTOTSTARVE_EXPLAIN = {
