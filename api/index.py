@@ -286,6 +286,22 @@ async def _search(kataster_nr: str):
             eraldis_value = round(e_seisuhind * tagavara * e_pindala * drainage_factor)
             value_per_ha = round(eraldis_value / e_pindala) if e_pindala > 0 else 0
 
+            # Per-eraldis cutting age analysis
+            e_raie = cutting_age_indicator(vanus, kood, boniteet_kood)
+            raie_ratio = e_raie.get("ratio", 0)
+            if raie_ratio >= 1.0:
+                raie_liik = "Lageraie"
+                raie_color = "#e63946"  # red
+            elif raie_ratio >= 0.85:
+                raie_liik = "Harvendusraie"
+                raie_color = "#ffc107"  # yellow
+            elif raie_ratio >= 0.5:
+                raie_liik = "Hooldusraie"
+                raie_color = "#28a745"  # green
+            else:
+                raie_liik = "Noor mets"
+                raie_color = "#17a2b8"  # teal — too young for any cutting
+
             eraldised_summary.append({
                 "eraldis_nr": e.get("eraldis_nr"),
                 "puuliik": e.get("puuliik"),
@@ -295,7 +311,10 @@ async def _search(kataster_nr: str):
                 "pindala_ha": e_pindala,
                 "boniteet": e.get("boniteet"),
                 "boniteet_kood": boniteet_kood,
-                "raievanus": raievanus,
+                "raievanus": e_raie.get("raievanus"),
+                "raie_ratio": raie_ratio,
+                "raie_status": e_raie.get("status"),
+                "raie_liik": raie_liik,
                 "kuivendatud": kuivendatud,
                 # Per-eraldis valuation
                 "vaartus_eur": eraldis_value,
@@ -314,7 +333,12 @@ async def _search(kataster_nr: str):
                         "vanus": e.get("vanus") or 0,
                         "tagavara_y_ha": e.get("tagavara_y_ha") or 0,
                         "pindala_ha": e_pindala,
-                        "color": species_colors.get(kood, "#666"),
+                        "boniteet": e.get("boniteet"),
+                        "korgus": e.get("korgus"),
+                        "color": raie_color,
+                        "raie_liik": raie_liik,
+                        "raie_ratio": raie_ratio,
+                        "raievanus": e_raie.get("raievanus"),
                         "vaartus_eur": eraldis_value,
                         "vaartus_per_ha": value_per_ha,
                     }
@@ -375,8 +399,8 @@ async def _search(kataster_nr: str):
             "pulp_price": prices["pulp"],
             "price_source": "Metzfund 2026",
             "price_updated": "2026-05",
-            # Kinnistu turuväärtus (maa + puit, oksjonihinna lähedane)
-            "kinnistu_turuväärtus": maa_turuhind + round(timber_value * 0.3),
+            # Kinnistu turuväärtus (maa + puit)
+            "kinnistu_turuväärtus": maa_turuhind + timber_value,
             "maa_turuhind": maa_turuhind,
             "maa_maksuhind": kataster_data.get("maks_hind") or 0,
         }
@@ -548,6 +572,7 @@ async def _search(kataster_nr: str):
         "kaitsealad": {"label": "Kaitsealad", "color": "#2d6a4f"},
         "piirang": {"label": "Piiranguvööndid", "color": "#52796f"},
         "yrask_eelis": {"label": "Üraski vaatlused", "color": "#e76f51"},
+        "yrask_mke": {"label": "Surnud puud (MKE)", "color": "#c1121f"},
         "sood": {"label": "Sood", "color": "#457b9d"},
         "natura_elupaik": {"label": "Natura elupaigad", "color": "#6a994e"},
         "karuputk": {"label": "Karuputk", "color": "#d63384"},

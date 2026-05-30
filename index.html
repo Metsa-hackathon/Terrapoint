@@ -132,6 +132,10 @@
                             <span class="toggle-label" style="border-left:3px solid #e76f51;padding-left:4px">Ürask</span>
                         </label>
                         <label class="toggle-item">
+                            <input type="checkbox" id="layer-surnud" data-layer="yrask_mke">
+                            <span class="toggle-label" style="border-left:3px solid #c1121f;padding-left:4px">Surnud puud</span>
+                        </label>
+                        <label class="toggle-item">
                             <input type="checkbox" id="layer-lageraie" data-layer="lageraiealad">
                             <span class="toggle-label" style="border-left:3px solid #adb5bd;padding-left:4px">Lageraie</span>
                         </label>
@@ -674,14 +678,12 @@
                 var div = L.DomUtil.create('div', 'leaflet-control legend-control');
                 div.style.cssText = 'background:white;padding:8px 10px;border-radius:6px;box-shadow:0 1px 5px rgba(0,0,0,0.2);font-size:11px;line-height:1.6;display:none';
                 div.id = 'map-legend';
-                div.innerHTML = '<div style="font-weight:700;margin-bottom:4px;font-size:11px">Eraldised</div>' +
-                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#2d6a4f;margin-right:4px"></span>Mänd</div>' +
-                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#1a8fd4;margin-right:4px"></span>Kuusk</div>' +
-                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f4a261;margin-right:4px"></span>Kask</div>' +
-                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#adb5bd;margin-right:4px"></span>Haab</div>' +
-                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#6a994e;margin-right:4px"></span>Lehis</div>' +
-                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#8d6e63;margin-right:4px"></span>Sanglepp</div>' +
-                    '<div style="margin-top:4px;font-size:10px;color:#666">Lohista hiirega eraldise kohale</div>';
+                div.innerHTML = '<div style="font-weight:700;margin-bottom:4px;font-size:11px">Raieliik</div>' +
+                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#e63946;margin-right:4px"></span>Lageraie</div>' +
+                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#ffc107;margin-right:4px"></span>Harvendusraie</div>' +
+                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#28a745;margin-right:4px"></span>Hooldusraie</div>' +
+                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#17a2b8;margin-right:4px"></span>Noor mets</div>' +
+                    '<div style="margin-top:4px;font-size:10px;color:#666">Värv näitab raieliiki</div>';
                 L.DomEvent.disableClickPropagation(div);
                 return div;
             }
@@ -762,6 +764,7 @@
         kaitsealad: {label: 'Kaitsealad', color: '#2d6a4f', checked: true},
         piirang: {label: 'Piiranguv.', color: '#52796f', checked: false},
         yrask_eelis: {label: 'Üraski vaatl.', color: '#e76f51', checked: false},
+        yrask_mke: {label: 'Surnud puud', color: '#c1121f', checked: false},
         sood: {label: 'Sood', color: '#457b9d', checked: false},
         natura_elupaik: {label: 'Elupaigad', color: '#6a994e', checked: false},
         lageraiealad: {label: 'Lageraie', color: '#adb5bd', checked: false},
@@ -812,13 +815,20 @@
                 var val = p.vaartus_eur ? Math.round(p.vaartus_eur).toLocaleString('et-EE').replace(/,/g, ' ') + ' €' : '—';
                 var valHa = p.vaartus_per_ha ? Math.round(p.vaartus_per_ha).toLocaleString('et-EE').replace(/,/g, ' ') + ' €/ha' : '';
                 layer.bindTooltip('Klikka hinnangu nägemiseks', {sticky: true});
-                var html = '<div style="font-size:13px;min-width:180px">';
+                var raieColor = p.color || '#666';
+                var raieLabel = p.raie_liik || '';
+                var html = '<div style="font-size:13px;min-width:200px">';
                 html += '<div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#2e7d32">Eraldis ' + (p.eraldis_nr || '?') + '</div>';
+                if (raieLabel) html += '<div style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;color:white;background:' + raieColor + ';margin-bottom:6px">' + raieLabel + '</div>';
                 html += '<div style="display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:12px">';
                 html += '<span style="color:#666">Puuliik:</span><strong>' + (p.puuliik || '?') + '</strong>';
-                html += '<span style="color:#666">Vanus:</span><span>' + (p.vanus || '?') + ' a</span>';
+                html += '<span style="color:#666">Vanus:</span><span>' + (p.vanus || '?') + ' a';
+                if (p.raievanus) html += ' <span style="color:#999;font-size:10px">(raievanus ' + p.raievanus + 'a)</span>';
+                html += '</span>';
                 html += '<span style="color:#666">Tagavara:</span><span>' + (p.tagavara_y_ha || '?') + ' m³/ha</span>';
                 html += '<span style="color:#666">Pindala:</span><span>' + (p.pindala_ha || '?') + ' ha</span>';
+                if (p.boniteet) html += '<span style="color:#666">Boniteet:</span><span>' + p.boniteet + '</span>';
+                if (p.korgus) html += '<span style="color:#666">Kõrgus:</span><span>' + p.korgus + ' m</span>';
                 html += '</div>';
                 html += '<div style="margin-top:8px;padding-top:6px;border-top:1px solid #e0e0e0">';
                 html += '<div style="font-size:18px;font-weight:800;color:#2e7d32">' + val + '</div>';
@@ -980,11 +990,13 @@
             var totalEraldisValue = 0;
             data.eraldised.forEach(function(e) { totalEraldisValue += (e.vaartus_eur || 0); });
             html += '<details style="margin-top:0.75rem"' + (data.eraldised.length <= 5 ? ' open' : '') + '><summary style="cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--primary)">Eraldised (' + data.eraldised.length + ') — kokku ' + formatEur(totalEraldisValue) + '</summary>';
-            html += '<table style="margin-top:0.5rem;font-size:0.78rem"><thead><tr><th>Nr</th><th>Puuliik</th><th>Vanus</th><th>Tagavara</th><th>Pindala</th><th>Boniteet</th><th>Väärtus</th></tr></thead><tbody>';
+            html += '<table style="margin-top:0.5rem;font-size:0.78rem"><thead><tr><th>Nr</th><th>Puuliik</th><th>Vanus</th><th>Tagavara</th><th>Pindala</th><th>Boniteet</th><th>Raieliik</th><th>Väärtus</th></tr></thead><tbody>';
             data.eraldised.forEach(function(e) {
                 var b = e.boniteet || BONITEET_LABELS[e.boniteedi_kood] || '—';
                 var v = e.vaartus_eur ? formatEur(e.vaartus_eur) : '—';
-                html += '<tr><td>' + (e.eraldis_nr || '—') + '</td><td>' + speciesName(e.puuliik_kood || e.puuliik, e.puuliik) + '</td><td>' + (e.vanus || '—') + ' a</td><td>' + formatNum(e.tagavara_y_ha) + ' m³/ha</td><td>' + formatNum(e.pindala_ha, 2) + ' ha</td><td>' + b + '</td><td style="font-weight:600;color:#2e7d32">' + v + '</td></tr>';
+                var raieColor = e.raie_status === 'red' ? '#e63946' : e.raie_status === 'yellow' ? '#ffc107' : '#28a745';
+                var raieHtml = e.raie_liik ? '<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:0.7rem;font-weight:600;color:white;background:' + raieColor + '">' + e.raie_liik + '</span>' : '—';
+                html += '<tr><td>' + (e.eraldis_nr || '—') + '</td><td>' + speciesName(e.puuliik_kood || e.puuliik, e.puuliik) + '</td><td>' + (e.vanus || '—') + ' a</td><td>' + formatNum(e.tagavara_y_ha) + ' m³/ha</td><td>' + formatNum(e.pindala_ha, 2) + ' ha</td><td>' + b + '</td><td>' + raieHtml + '</td><td style="font-weight:600;color:#2e7d32">' + v + '</td></tr>';
             });
             html += '</tbody></table>';
             html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.4rem">Hinnang: seisuhind × tagavara × pindala, korrigeeritud boniteedi ja vanuse järgi</div>';

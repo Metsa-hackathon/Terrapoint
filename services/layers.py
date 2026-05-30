@@ -6,11 +6,11 @@ import config
 LAYER_CONFIGS = [
     ("kaitsealad", "eelis", "eelis:kr_kaitseala"),
     ("yrask_eelis", "eelis", "eelis:kuusekooreyrask_eelis"),
+    ("yrask_mke", "metsaregister", "metsaregister:kuusekooreyrask_mke"),
     ("piirang", "eelis", "eelis:kr_piirang"),
     ("karuputk", "maaamet", "maaamet:karuputk"),
     ("sood", "eelis", "eelis:sood"),
     ("natura_elupaik", "eelis", "eelis:natura_elupaik"),
-
     ("lageraiealad", "veeveeb", "veeveeb:lageraiealad"),
     ("malestised", "muinsuskaitse", "muinsuskaitse:kpo_malestised"),
     ("veekogud", "eelis", "eelis:avalikud_jarved"),
