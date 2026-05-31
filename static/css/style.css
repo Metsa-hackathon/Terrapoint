@@ -623,55 +623,44 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     color: white;
 }
 
-.eraldis-dropdown { position: relative; display: inline-block; }
-.eraldis-dropdown-toggle {
+.eraldis-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+}
+.eraldis-strip-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-right: 0.15rem;
+    white-space: nowrap;
+}
+.eraldis-pill {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    padding: 0.25rem 0.55rem;
+    background: var(--card);
+    border: 1px solid var(--primary-light);
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-family: var(--font);
+    font-weight: 600;
+    color: var(--primary);
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+}
+.eraldis-pill:hover {
     background: var(--primary);
     color: white;
     border-color: var(--primary);
-    font-weight: 600;
-}
-.eraldis-dropdown-toggle:hover {
-    background: var(--primary-dark);
-    border-color: var(--primary-dark);
-    color: white;
-}
-.eraldis-dropdown-toggle svg {
-    transition: transform 0.2s ease;
-}
-.eraldis-dropdown.open .eraldis-dropdown-toggle svg {
-    transform: rotate(180deg);
-}
-.eraldis-dropdown-list {
-    display: none;
-    position: absolute;
-    bottom: calc(100% + 6px);
-    left: 0;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 0.5rem;
-    box-shadow: var(--shadow-lg);
-    z-index: 100;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    min-width: 200px;
-    max-width: 340px;
-}
-.eraldis-dropdown.open .eraldis-dropdown-list {
-    display: flex;
-}
-.eraldis-dropdown-list .ai-hint {
-    white-space: nowrap;
-    text-align: left;
-    font-size: 0.72rem;
-    padding: 0.3rem 0.6rem;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(10,61,158,0.2);
 }
 
 .ai-hint-custom {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
     border-color: transparent;
     color: white;
     font-weight: 600;
@@ -1152,6 +1141,84 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 
 .table-card:hover { box-shadow: var(--shadow-md); }
 .table-card .card-header { margin-bottom: 1rem; }
+
+/* Toetuste cards */
+.toetus-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 10px;
+    background: var(--card);
+    transition: all var(--transition);
+}
+.toetus-card:hover { box-shadow: var(--shadow-sm); }
+.toetus-eligible {
+    border-color: var(--success);
+    background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+}
+.toetus-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.toetus-info strong { color: var(--text); font-size: 0.9rem; }
+.toetus-cat {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+.toetus-meta {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-shrink: 0;
+}
+.toetus-badge {
+    font-size: 0.68rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.toetus-amount {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: right;
+    white-space: nowrap;
+}
+.toetus-amount.eligible { color: var(--success); font-weight: 700; font-size: 0.85rem; }
+.toetus-desc {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    margin: 4px 0 8px 0;
+    line-height: 1.5;
+}
+.toetus-reason {
+    color: var(--danger);
+    font-size: 0.78rem;
+    margin: 0 0 8px 0;
+    padding: 6px 8px;
+    background: #fef2f2;
+    border-radius: 6px;
+}
+.toetus-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.toetus-voor { color: var(--text-muted); font-size: 0.75rem; }
+.toetus-links { display: flex; gap: 12px; }
+.toetus-links a { color: var(--text-muted); font-size: 0.78rem; text-decoration: none; }
+.toetus-links a:hover { color: var(--primary); }
+.toetus-cta { color: var(--success) !important; font-weight: 600; font-size: 0.82rem !important; }
+.toetus-cta:hover { color: #15803d !important; }
 
 table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 
