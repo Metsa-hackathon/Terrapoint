@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=5">
+    <link rel="stylesheet" href="/static/css/style.css?v=6">
 </head>
 <body>
     <!-- Top Navigation Bar -->
@@ -1058,8 +1058,8 @@
         var html = '';
 
         // Big timber value display
-        html += '<div style="background:linear-gradient(135deg,#fff8e1,#fff3e0);border-radius:var(--radius);padding:1rem;margin-bottom:0.75rem;border:1px solid #ffe0b2">';
-        html += '<div style="font-size:0.78rem;color:#e65100;font-weight:600;margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.05em">Puidu väärtus</div>';
+        html += '<div style="background:linear-gradient(135deg,#eef4ff,#dbeafe);border-radius:var(--radius);padding:1rem;margin-bottom:0.75rem;border:1px solid rgba(10,61,158,0.12)">';
+        html += '<div style="font-size:0.78rem;color:var(--primary);font-weight:600;margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.05em">Puidu väärtus</div>';
         html += '<div class="big-number accent"><span id="anim-vaartus">0</span> €</div>';
         html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.3rem">Seisuhind × kogutagavara — metsaomanik saaks selle summa müües metsa raiumata</div>';
         html += '</div>';
@@ -1297,7 +1297,7 @@
     function showLoading() {
         var loading = document.getElementById('loading');
         var error = document.getElementById('error-msg');
-        loading.style.display = 'block';
+        loading.style.display = 'flex';
         loading.classList.remove('hidden');
         error.style.display = 'none';
         error.classList.add('hidden');
