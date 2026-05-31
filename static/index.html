@@ -540,10 +540,14 @@
             var nr = e.eraldis_nr || '?';
             var liik = e.puuliik || '';
             var vanus = e.vanus || '';
+            var pindala = e.pindala_ha ? e.pindala_ha.toFixed(1) + 'ha' : '';
+            var label = 'Eraldis ' + nr;
+            var details = [liik, vanus ? vanus + 'a' : '', pindala].filter(Boolean).join(', ');
+            if (details) label += ' \u2014 ' + details;
             var btn = document.createElement('button');
             btn.className = 'ai-hint ai-hint-eraldis';
             btn.setAttribute('data-eraldis', nr);
-            btn.textContent = 'Eraldis ' + nr + (liik ? ' (' + liik : '') + (vanus ? ', ' + vanus + 'a)' : liik ? ')' : '');
+            btn.textContent = label;
             btn.addEventListener('click', function() {
                 var q = 'Analüüsi eraldist ' + nr + ': anna hinnang selle eraldise seisukorrale, väärtusele ja soovitus (müüa, hoida, hooldusraie). Too välja kõik numbrid. Ära tee midagi drastilist, anna tasakaalustatud hinnang.';
                 aiSendMessage(q);

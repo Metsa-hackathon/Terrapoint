@@ -623,11 +623,20 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     color: white;
 }
 
-.eraldis-dropdown { display: block; width: 100%; }
+.eraldis-dropdown { position: relative; display: inline-block; }
 .eraldis-dropdown-toggle {
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    font-weight: 600;
+}
+.eraldis-dropdown-toggle:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+    color: white;
 }
 .eraldis-dropdown-toggle svg {
     transition: transform 0.2s ease;
@@ -637,9 +646,19 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 }
 .eraldis-dropdown-list {
     display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.5rem;
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
     flex-wrap: wrap;
-    gap: 0.4rem;
-    margin-top: 0.4rem;
+    gap: 0.35rem;
+    min-width: 200px;
+    max-width: 340px;
 }
 .eraldis-dropdown.open .eraldis-dropdown-list {
     display: flex;
@@ -647,6 +666,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 .eraldis-dropdown-list .ai-hint {
     white-space: nowrap;
     text-align: left;
+    font-size: 0.72rem;
+    padding: 0.3rem 0.6rem;
 }
 
 .ai-hint-custom {
