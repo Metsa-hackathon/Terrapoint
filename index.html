@@ -182,10 +182,6 @@
                             <span class="toggle-label" style="border-left:3px solid #0096c7;padding-left:4px">Vooluveed</span>
                         </label>
                     </div>
-                    <button class="compare-btn" id="compare-btn" onclick="window._toggleSBS()">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
-                        Talv/Suvi võrdlus
-                    </button>
                 </div>
             </div>
         </div>
@@ -652,8 +648,8 @@
             'Hübriidkaart': maaametHybriid,
             'Hallkaart': maaametHallkaart,
             'OpenStreetMap': osm,
-            'Esri satelliit': esriFoto,
-            'Google satelliit': googleSat,
+            'Suvi (Esri satelliit)': esriFoto,
+            'Talv (Google satelliit)': googleSat,
         }, null, { position: 'bottomleft' }).addTo(map);
 
         // Center button
@@ -694,71 +690,6 @@
             }
         });
         new LegendControl().addTo(map);
-
-        // Side-by-side comparison control (Talv/Suvi)
-        window._sbsControl = null;
-        window._sbsActive = false;
-        window._sbsLeftLayer = esriFoto;
-        window._sbsRightLayer = googleSat;
-        window._sbsLabelsDiv = null;
-
-        window._toggleSBS = function() {
-            if (window._sbsActive) {
-                if (window._sbsControl) { window._sbsControl.remove(); window._sbsControl = null; }
-                if (window._sbsLabelsDiv) { window._sbsLabelsDiv.remove(); window._sbsLabelsDiv = null; }
-                map.removeLayer(googleSat);
-                window._sbsActive = false;
-                var btn = document.getElementById('compare-btn');
-                if (btn) {
-                    btn.classList.remove('active');
-                    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg> Talv/Suvi võrdlus';
-                }
-            } else {
-                if (!map.hasLayer(esriFoto)) esriFoto.addTo(map);
-                googleSat.addTo(map);
-                var SBSControl = L.Control.extend({
-                    onAdd: function() {
-                        var container = L.DomUtil.create('div', 'leaflet-sbs');
-                        var divider = L.DomUtil.create('div', 'leaflet-sbs-divider', container);
-                        var range = L.DomUtil.create('input', 'leaflet-sbs-range', container);
-                        range.type = 'range'; range.min = 0; range.max = 1; range.step = 'any'; range.value = 0.5;
-                        this._range = range; this._divider = divider;
-                        L.DomEvent.disableClickPropagation(container);
-                        L.DomEvent.on(range, 'input', function() { this._updateClip(); }, this);
-                        map.on('move moveend zoom', this._updateClip, this);
-                        this._updateClip();
-                        return container;
-                    },
-                    _updateClip: function() {
-                        var val = parseFloat(this._range.value);
-                        var mapSize = map.getSize();
-                        var clipX = mapSize.x * val;
-                        this._divider.style.left = clipX + 'px';
-                        var leftClip = 'rect(0px,' + clipX + 'px,' + mapSize.y + 'px,0px)';
-                        var rightClip = 'rect(0px,' + mapSize.x + 'px,' + mapSize.y + 'px,' + clipX + 'px)';
-                        var leftContainer = esriFoto.getContainer();
-                        var rightContainer = googleSat.getContainer();
-                        if (leftContainer) leftContainer.style.clip = leftClip;
-                        if (rightContainer) rightContainer.style.clip = rightClip;
-                    }
-                });
-                window._sbsControl = new SBSControl({ position: 'topleft' });
-                window._sbsControl.addTo(map);
-                var mapEl = document.getElementById('map');
-                var labelsDiv = document.createElement('div');
-                labelsDiv.className = 'compare-labels';
-                labelsDiv.innerHTML = '<span class="compare-label">Suvi (Esri)</span><span class="compare-label">Talv (Google)</span>';
-                mapEl.appendChild(labelsDiv);
-                window._sbsLabelsDiv = labelsDiv;
-                window._sbsActive = true;
-                var btn = document.getElementById('compare-btn');
-                if (btn) {
-                    btn.classList.add('active');
-                    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Lõpeta võrdlus';
-                }
-                setTimeout(function() { if (window._sbsControl && window._sbsControl._updateClip) window._sbsControl._updateClip(); }, 300);
-            }
-        };
     }
 
     function showParcel(geometry) {
