@@ -361,7 +361,7 @@
     <footer>
         <div class="footer-content">
             <p class="footer-brand">Terrapoint &copy; 2026</p>
-            <p class="footer-sources">Andmed: Keskkonnaagentuur, Maa-amet, Metzfund</p>
+            <p class="footer-sources">Andmed: Keskkonnaagentuur, Maa-amet, Eesti Erametsaliit</p>
         </div>
     </footer>
 
@@ -1044,7 +1044,7 @@
                 html += '<tr><td>' + (e.eraldis_nr || '—') + '</td><td>' + speciesName(e.puuliik_kood || e.puuliik, e.puuliik) + '</td><td>' + (e.vanus || '—') + ' a</td><td>' + formatNum(e.tagavara_y_ha) + ' m³/ha</td><td>' + formatNum(e.pindala_ha, 2) + ' ha</td><td>' + b + '</td><td>' + vrHtml + '</td><td style="font-weight:600;color:#2e7d32">' + v + '</td></tr>';
             });
             html += '</tbody></table>';
-            html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.4rem">Hinnang: seisuhind × tagavara × pindala, korrigeeritud boniteedi ja vanuse järgi</div>';
+            html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.4rem">Hinnang: seisuhind × tagavara (m³/ha) × pindala (ha) · kuivendatud metsal +10%</div>';
             html += '</details>';
         }
         el.innerHTML = html;
@@ -1065,7 +1065,7 @@
         html += '</div>';
 
         html += '<div class="info-row"><span class="label" title="Metsa väärtus ühe hektari kohta. Arvutatakse: koguväärtus / pindala.">Ühikuhind ' + ddInfo('Metsa väärtus ühe hektari kohta') + '</span><span class="value">' + formatEur(data.value_per_ha) + ' / ha</span></div>';
-        html += '<div class="info-row"><span class="label">Seisuhind ' + ddInfo('Raiumata puidu hind metsas €/m³. Põhineb Metzfund 2026 turuhindadel.') + '</span><span class="value">' + formatNum(data.price_per_m3, 2) + ' €/m³</span></div>';
+        html += '<div class="info-row"><span class="label">Seisuhind ' + ddInfo('Raiumata puidu hind metsas €/m³. Põhineb Eesti Erametsaliit 2026 hindadel.') + '</span><span class="value">' + formatNum(data.price_per_m3, 2) + ' €/m³</span></div>';
         html += '<div class="info-row"><span class="label" title="Metsa kogu ümarmaterjali maht kuupmeetrites. Arvutatakse: tagavara (m³/ha) × pindala (ha).">Tagavara ' + ddInfo('Metsa kogu ümarmaterjali maht') + '</span><span class="value">' + formatNum(data.tagavara_m3) + ' m³</span></div>';
         html += '<div class="info-row"><span class="label" title="Saematerjali hind, kõige väärtuslikum osa metsast">Palk ' + ddInfo('Saematerjali hind, kõige väärtuslikum osa metsast') + '</span><span class="value">' + formatNum(data.log_price, 2) + ' €/m³</span></div>';
         html += '<div class="info-row"><span class="label" title="Paberipuu hind, väiksemad puud ja oksad">Paberipuit ' + ddInfo('Paberipuu hind, väiksemad puud ja oksad') + '</span><span class="value">' + formatNum(data.pulp_price, 2) + ' €/m³</span></div>';

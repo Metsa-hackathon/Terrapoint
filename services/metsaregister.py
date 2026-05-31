@@ -91,22 +91,6 @@ async def query_natura_2000(bbox_str: str) -> list[dict]:
             return []
 
 
-async def query_yrask_mke(bbox_str: str) -> list[dict]:
-    url = (
-        f"{config.GEOBASE}/metsaregister/wfs?"
-        f"service=WFS&request=GetFeature&typeName=metsaregister:kuusekooreyrask_mke"
-        f"&srsName=EPSG:4326&outputFormat=application/json"
-        f"&bbox={bbox_str}"
-    )
-    async with httpx.AsyncClient(timeout=3) as client:
-        try:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            return resp.json().get("features", [])
-        except Exception:
-            return []
-
-
 async def query_teatised(kataster_nr: str) -> list[dict]:
     url = (
         f"{config.GEOBASE}/metsaregister/wfs?"

@@ -446,8 +446,27 @@ async def _search(kataster_nr: str) -> Response:
         # Timber value = sum of all eraldiste values (consistent calculation)
         timber_value = sum(e.get("vaartus_eur", 0) for e in eraldised_summary)
         total_m3 = sum((e.get("tagavara_y_ha") or 0) * (e.get("pindala_ha") or 0) for e in eraldised)
+
+        # Kaalutud keskmine seisuhind kõigi eraldiste liikide järgi
         prices = SPECIES_PRICES.get(puuliik, SPECIES_PRICES["MA"])
-        price_m3 = prices["seisuhind"]
+        weighted_price_sum = 0.0
+        weighted_log_sum = 0.0
+        weighted_pulp_sum = 0.0
+        for e in eraldised:
+            e_kood = e.get("puuliik_kood", puuliik)
+            e_p = SPECIES_PRICES.get(e_kood, SPECIES_PRICES["MA"])
+            e_m3 = (e.get("tagavara_y_ha") or 0) * (e.get("pindala_ha") or 0)
+            weighted_price_sum += e_p["seisuhind"] * e_m3
+            weighted_log_sum += e_p["log"] * e_m3
+            weighted_pulp_sum += e_p["pulp"] * e_m3
+        if total_m3 > 0:
+            price_m3 = round(weighted_price_sum / total_m3, 2)
+            log_price = round(weighted_log_sum / total_m3, 2)
+            pulp_price = round(weighted_pulp_sum / total_m3, 2)
+        else:
+            price_m3 = prices["seisuhind"]
+            log_price = prices["log"]
+            pulp_price = prices["pulp"]
 
         # Kinnistu turuväärtus = maa turuhind (metsamaal sisaldab puidu väärtust)
         # Maksuhind on Maa-ameti hinnang, metsamaal sageli ainult 500-1500 EUR/ha
@@ -484,8 +503,8 @@ async def _search(kataster_nr: str) -> Response:
             "value_per_ha": round(timber_value / total_pindala) if total_pindala > 0 else 0,
             "price_per_m3": price_m3,
             "tagavara_m3": round(total_m3),
-            "log_price": prices["log"],
-            "pulp_price": prices["pulp"],
+            "log_price": log_price,
+            "pulp_price": pulp_price,
             "price_source": "Eesti Erametsaliit",
             "price_updated": "2026-04",
             # Kinnistu turuväärtus
@@ -507,8 +526,7 @@ async def _search(kataster_nr: str) -> Response:
 
     natura_2000 = bool(natura_features)
     kaitseala_features = layers_data.get("kaitsealad", [])
-    toetus_features = layers_data.get("toetus_mets", [])
-    vaariselupaik = bool(kaitseala_features or toetus_features)
+    vaariselupaik = bool(kaitseala_features)
 
     # Additional data for subsidy eligibility
     has_kuusk = any(e.get("puuliik_kood") == "KU" for e in eraldised) if eraldised else False
@@ -650,11 +668,6 @@ async def _search(kataster_nr: str) -> Response:
         p = feat.get("properties", {})
         kahjustused.append({"tyyp": p.get("kahjustuse_tyyp", ""), "kirjeldus": p.get("kirjeldus", ""), "kuupaev": p.get("kuupaev", "")})
 
-    mullad_features = layers_data.get("mullad", [])
-    clc_features = layers_data.get("clc", [])
-    mullad = mullad_features[0].get("properties", {}) if mullad_features else None
-    clc = clc_features[0].get("properties", {}) if clc_features else None
-
     # Build map overlay layers with geometry for frontend rendering
     map_layers = {}
     LAYER_MAP = {
@@ -697,8 +710,6 @@ async def _search(kataster_nr: str) -> Response:
         "riskid": riskid,
         "teatised": teatised,
         "kahjustused": kahjustused,
-        "mullad": mullad,
-        "clc": clc,
         "map_layers": map_layers,
         "meta": {"response_time_ms": elapsed},
     })
