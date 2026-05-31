@@ -640,6 +640,12 @@
             attribution: '&copy; Google',
         });
 
+        // NASA GIBS — tasuta päevased satelliifotod, ilma API võtmeta
+        const nasaWinter = L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/2026-01-15/GoogleMapsCompatible_Level{z}/{z}/{y}/{x}.jpeg', {
+            maxZoom: 9,
+            attribution: '&copy; NASA GIBS',
+        });
+
         esriFoto.addTo(map);
 
         L.control.layers({
@@ -649,7 +655,8 @@
             'Hallkaart': maaametHallkaart,
             'OpenStreetMap': osm,
             'Suvi (Esri satelliit)': esriFoto,
-            'Talv (Google satelliit)': googleSat,
+            'Suvi (Google satelliit)': googleSat,
+            'Talv jaanuar 2026 (NASA)': nasaWinter,
         }, null, { position: 'bottomleft' }).addTo(map);
 
         // Center button
