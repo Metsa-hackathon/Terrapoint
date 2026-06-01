@@ -198,7 +198,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
 
     # Check if we're running low on time — skip per-eraldis API calls if so
     elapsed = time.time() - start
-    skip_details = elapsed > 5.0  # leave 3s buffer for response building
+    skip_details = elapsed > 20.0  # leave buffer for response building
     natura_features = layers_data.get("natura_elupaik", [])
     yrask_features = _filter_features_by_geometry(layers_data.get("yrask_eelis", []), kataster_data.get("geometry"))
 
@@ -734,7 +734,7 @@ async def _search(kataster_nr: str) -> Response:
 
     start = time.time()
     try:
-        data = await asyncio.wait_for(_search_core(kataster_nr, start), timeout=8.0)
+        data = await asyncio.wait_for(_search_core(kataster_nr, start), timeout=25.0)
     except asyncio.TimeoutError:
         elapsed = round((time.time() - start) * 1000)
         data = {"error": "Otsing aegus osaliselt", "meta": {"response_time_ms": elapsed, "timeout": True}}
