@@ -132,6 +132,7 @@
                     <button class="ai-hint" data-q="Milliseid toetusi ma saan taotleda?">Toetused</button>
                     <button class="ai-hint" data-q="Millised on riskid ja kuidas neid maandada?">Riskid</button>
                     <button class="ai-hint" data-q="Kas sinu hinnang on õigustatud? Too välja, mis andmeid sa kasutasid ja mis võib puudu olla.">Kas AI õigustatud?</button>
+                    <button class="ai-hint ai-hint-custom" id="ai-quick-ask">Küsi AI-lt</button>
                     <div id="ai-eraldis-hints"></div>
                 </div>
             </div>
@@ -383,6 +384,7 @@
     var aiChatHistory = [];
     var aiCurrentKataster = null;
     var aiStreaming = false;
+    var aiMessageQueue = [];
 
     function aiAppendMessage(role, content) {
         var container = document.getElementById('ai-chat-messages');
@@ -432,22 +434,41 @@
     }
 
     function aiFormatResponse(text) {
-        // Simple markdown-like formatting
+        // Escape HTML
+        text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        // Headers
+        text = text.replace(/^### (.+)$/gm, '<h4>$1</h4>');
+        text = text.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+        text = text.replace(/^# (.+)$/gm, '<h2>$1</h2>');
+        // Bold and italic
         text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        // Code blocks
+        text = text.replace(/```([\s\S]*?)```/g, '<pre style="background:var(--surface);padding:0.5rem;border-radius:4px;font-size:0.82rem;overflow-x:auto">$1</pre>');
+        text = text.replace(/`([^`]+)`/g, '<code style="background:var(--surface);padding:0.1rem 0.3rem;border-radius:3px;font-size:0.85em">$1</code>');
+        // Unordered lists - wrap consecutive <li> in <ul>
+        text = text.replace(/^\- (.+)$/gm, '<li>$1</li>');
+        text = text.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul style="margin:0.3rem 0;padding-left:1.2rem">$1</ul>');
+        // Ordered lists
+        text = text.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+        // Paragraphs
         text = text.replace(/\n\n/g, '</p><p>');
-        text = text.replace(/\n- /g, '</p><ul><li>');
-        text = text.replace(/\n(\d+)\. /g, '</p><ol><li>');
-        // Close any open lists
-        if (text.includes('<li>')) {
-            text = text.replace(/<\/li>(?!<\/ul>|<\/ol>)/g, '</li></ul>');
-        }
+        // Single newlines to <br>
+        text = text.replace(/\n/g, '<br>');
         return '<p>' + text + '</p>';
     }
 
     async function aiSendMessage(message) {
-        if (aiStreaming || !aiCurrentKataster) return;
+        if (!aiCurrentKataster) return;
         if (!message.trim()) return;
+
+        // If AI is busy, queue the message
+        if (aiStreaming) {
+            aiMessageQueue.push(message);
+            aiAppendMessage('user', message);
+            aiAppendMessage('assistant', '<span style="color:var(--text-muted);font-style:italic">AI mõtleb, küsimus lisatud järjekorda...</span>');
+            return;
+        }
 
         var input = document.getElementById('ai-chat-input');
         input.value = '';
@@ -460,7 +481,7 @@
 
         try {
             var controller = new AbortController();
-            var timeoutId = setTimeout(function() { controller.abort(); }, 20000);
+            var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
             var resp = await fetch(`${AI_API_BASE}/chat`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -506,6 +527,12 @@
         aiStreaming = false;
         document.getElementById('ai-chat-send').disabled = false;
         input.focus();
+
+        // Send next queued message if any
+        if (aiMessageQueue.length > 0) {
+            var nextMsg = aiMessageQueue.shift();
+            aiSendMessage(nextMsg);
+        }
     }
 
     function aiAnalyzeKataster(katasterNr, eraldised) {
@@ -548,7 +575,7 @@
                 var q = 'Analüüsi eraldist ' + nr + ': anna hinnang selle eraldise seisukorrale, väärtusele ja soovitus (müüa, hoida, hooldusraie). Too välja kõik numbrid. Ära tee midagi drastilist, anna tasakaalustatud hinnang.';
                 aiSendMessage(q);
             });
-            list.appendChild(btn);
+            wrap.appendChild(btn);
         });
 
         container.appendChild(wrap);
@@ -646,7 +673,6 @@
         };
         if (talvFoto) baseLayers['Talv (Maa-amet metsanduslik 2024)'] = talvFoto;
         L.control.layers(baseLayers, null, { position: 'bottomleft' }).addTo(map);
-        }, null, { position: 'bottomleft' }).addTo(map);
 
         // Center button
         var CenterControl = L.Control.extend({
@@ -795,9 +821,12 @@
                 layer.bindTooltip('Klikka hinnangu nägemiseks', {sticky: true});
                 var rColor = p.color || '#28a745';
                 var rLabel = p.raie_liik || '';
+                var vrColors = {noormets:'#3b82f6',keskmine:'#22c55e',kups:'#f59e0b',vanamets:'#ef4444'};
+                var vrColor = vrColors[p.vanuseruhm] || '#6b7280';
                 var html = '<div style="font-size:13px;min-width:200px">';
                 html += '<div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#2e7d32">Eraldis ' + (p.eraldis_nr || '?') + '</div>';
                 if (rLabel) html += '<div style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;color:white;background:' + rColor + ';margin-bottom:6px">' + rLabel + '</div>';
+                if (p.vanuseruhm_label) html += '<div style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;color:white;background:' + vrColor + ';margin-bottom:6px;margin-left:4px">' + p.vanuseruhm_label + '</div>';
                 html += '<div style="display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:12px">';
                 html += '<span style="color:#666">Puuliik:</span><strong>' + (p.puuliik || '?') + '</strong>';
                 html += '<span style="color:#666">Vanus:</span><span>' + (p.vanus || '?') + ' a';
@@ -808,6 +837,7 @@
                 if (p.boniteet) html += '<span style="color:#666">Boniteet:</span><span>' + p.boniteet + '</span>';
                 if (p.korgus) html += '<span style="color:#666">Kõrgus:</span><span>' + p.korgus + ' m</span>';
                 html += '</div>';
+                if (p.vanuseruhm_desc) html += '<div style="margin-top:6px;font-size:11px;color:#555;font-style:italic">' + p.vanuseruhm_desc + '</div>';
                 html += '<div style="margin-top:8px;padding-top:6px;border-top:1px solid #e0e0e0">';
                 html += '<div style="font-size:18px;font-weight:800;color:#2e7d32">' + val + '</div>';
                 if (valHa) html += '<div style="font-size:11px;color:#666">' + valHa + '</div>';
@@ -1003,13 +1033,16 @@
             var totalEraldisValue = 0;
             data.eraldised.forEach(function(e) { totalEraldisValue += (e.vaartus_eur || 0); });
             html += '<details style="margin-top:0.75rem"' + (data.eraldised.length <= 5 ? ' open' : '') + '><summary style="cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--primary)">Eraldised (' + data.eraldised.length + ') — kokku ' + formatEur(totalEraldisValue) + '</summary>';
-            html += '<table style="margin-top:0.5rem;font-size:0.78rem;width:100%;table-layout:fixed"><thead><tr><th>Nr</th><th>Puuliik</th><th>Vanus</th><th>Tagavara</th><th>Pindala</th><th>Boniteet</th><th>Raieliik</th><th>Väärtus</th></tr></thead><tbody>';
+            html += '<table style="margin-top:0.5rem;font-size:0.78rem;width:100%;table-layout:fixed"><thead><tr><th>Nr</th><th>Puuliik</th><th>Vanus</th><th>Tagavara</th><th>Pindala</th><th>Boniteet</th><th>Vanuserühm</th><th>Väärtus</th></tr></thead><tbody>';
+            var vrColors = {noormets:'#3b82f6',keskmine:'#22c55e',kups:'#f59e0b',vanamets:'#ef4444'};
             data.eraldised.forEach(function(e) {
                 var b = e.boniteet || BONITEET_LABELS[e.boniteedi_kood] || '—';
                 var v = e.vaartus_eur ? formatEur(e.vaartus_eur) : '—';
-                var rColor = e.raie_status === 'red' ? '#e63946' : e.raie_status === 'yellow' ? '#ffc107' : '#28a745';
-                var rHtml = e.raie_liik ? '<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:0.7rem;font-weight:600;color:white;background:' + rColor + '">' + e.raie_liik + '</span>' : '—';
-                html += '<tr><td>' + (e.eraldis_nr || '—') + '</td><td>' + speciesName(e.puuliik_kood || e.puuliik, e.puuliik) + '</td><td>' + (e.vanus || '—') + ' a</td><td>' + formatNum(e.tagavara_y_ha) + ' m³/ha</td><td>' + formatNum(e.pindala_ha, 2) + ' ha</td><td>' + b + '</td><td>' + rHtml + '</td><td style="font-weight:600;color:#2e7d32">' + v + '</td></tr>';
+                var vr = e.vanuseruhm || '';
+                var vrLabel = e.vanuseruhm_label || '';
+                var vrColor = vrColors[vr] || '#6b7280';
+                var vrHtml = vrLabel ? '<span style="background:' + vrColor + ';color:#fff;padding:1px 6px;border-radius:8px;font-size:0.7rem;font-weight:600;white-space:nowrap" title="' + (e.vanuseruhm_desc || '') + '">' + vrLabel + '</span>' : '—';
+                html += '<tr><td>' + (e.eraldis_nr || '—') + '</td><td>' + speciesName(e.puuliik_kood || e.puuliik, e.puuliik) + '</td><td>' + (e.vanus || '—') + ' a</td><td>' + formatNum(e.tagavara_y_ha) + ' m³/ha</td><td>' + formatNum(e.pindala_ha, 2) + ' ha</td><td>' + b + '</td><td>' + vrHtml + '</td><td style="font-weight:600;color:#2e7d32">' + v + '</td></tr>';
             });
             html += '</tbody></table>';
             html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.4rem">Hinnang: seisuhind × tagavara (m³/ha) × pindala (ha) · kuivendatud metsal +10%</div>';
@@ -1494,6 +1527,11 @@
                 var q = btn.getAttribute('data-q');
                 if (q) aiSendMessage(q);
             });
+        });
+        document.getElementById('ai-quick-ask').addEventListener('click', function() {
+            var input = document.getElementById('ai-chat-input');
+            input.focus();
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
         });
 
         // Address search autocomplete
