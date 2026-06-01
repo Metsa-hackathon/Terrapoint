@@ -39,9 +39,10 @@
                     <div id="address-dropdown" class="address-dropdown" style="display:none"></div>
                 </div>
                 <button id="search-btn" aria-label="Otsi">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M5 12h14M12 5l7 7-7 7"/>
-                    </svg>
+                    </svg></span>
+                    <span class="btn-spinner"></span>
                 </button>
             </div>
             <div id="error-msg" class="error-msg hidden" style="display:none"></div>
@@ -290,6 +291,49 @@
                     </button>
                 </div>
             </div>
+
+            <div class="metric-card" id="card-kitsendused">
+                <div class="card-header">
+                    <div class="card-icon risk-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                    </div>
+                    <h3>Kitsendused ja piirangud</h3>
+                </div>
+                <p class="section-desc">Kaitsealad, piiranguvööndid ja muinsuskaitse</p>
+                <div id="kitsendused-info">
+                    <div class="initial-info">
+                        <div class="icon">&#128269;</div>
+                        <p>Otsi krunti, et näha kitsendusi</p>
+                        <p class="hint">Kaitsealad, piiranguvööndid, muinsuskaitse</p>
+                    </div>
+                </div>
+                <div id="kitsendused-link" style="display:none;margin-top:8px">
+                    <a href="https://infoleht.keskkonnainfo.ee/" target="_blank" rel="noopener" style="font-size:13px;color:#457b9d;text-decoration:none">
+                        Rohkem infot Keskkonnainfo lehel →
+                    </a>
+                </div>
+            </div>
+
+            <div class="metric-card" id="card-toetused">
+                <div class="card-header">
+                    <div class="card-icon vaartus-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                    </div>
+                    <h3>Toetused ja hüvitised</h3>
+                </div>
+                <p class="section-desc">Toetused ja hüvitised metsaomanikule</p>
+                <div id="toetused-info">
+                    <div class="initial-info">
+                        <div class="icon">&#128176;</div>
+                        <p>Otsi krunti, et näha toetusi</p>
+                        <p class="hint">Metsauuendus, hooldusraie, Natura 2000, kaitsealade hüvitised</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Charts Section (hidden until search) -->
@@ -313,50 +357,6 @@
             </div>
         </div>
 
-        <!-- Tables Section -->
-        <div id="tables-section" class="tables-section">
-            <div class="table-card">
-                <div class="card-header">
-                    <div class="card-icon risk-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                        </svg>
-                    </div>
-                    <h3>Kitsendused ja piirangud</h3>
-                    </div>
-                    <p class="section-desc">Kaitsealad, piiranguvööndid ja muinsuskaitse</p>
-                <div id="kitsendused-info">
-                    <div class="initial-info">
-                        <div class="icon">&#128269;</div>
-                        <p>Otsi krunti, et näha kitsendusi</p>
-                        <p class="hint">Kaitsealad, piiranguvööndid, muinsuskaitse</p>
-                    </div>
-                </div>
-                <div id="kitsendused-link" style="display:none;margin-top:8px">
-                    <a href="https://infoleht.keskkonnainfo.ee/" target="_blank" rel="noopener" style="font-size:13px;color:#457b9d;text-decoration:none">
-                        Rohkem infot Keskkonnainfo lehel →
-                    </a>
-                </div>
-            </div>
-            <div class="table-card">
-                <div class="card-header">
-                    <div class="card-icon vaartus-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
-                        </svg>
-                    </div>
-                    <h3>Toetused ja hüvitised</h3>
-                    </div>
-                    <p class="section-desc">Toetused ja hüvitised metsaomanikule</p>
-                <div id="toetused-info">
-                    <div class="initial-info">
-                        <div class="icon">&#128176;</div>
-                        <p>Otsi krunti, et näha toetusi</p>
-                        <p class="hint">Metsauuendus, hooldusraie, Natura 2000, kaitsealade hüvitised</p>
-                    </div>
-                </div>
-            </div>
-        </div>
     </section>
 
     <footer>
@@ -668,24 +668,6 @@
         });
         new CenterControl().addTo(map);
 
-        // Legend for eraldised species colors
-        var LegendControl = L.Control.extend({
-            options: { position: 'bottomleft' },
-            onAdd: function() {
-                var div = L.DomUtil.create('div', 'leaflet-control legend-control');
-                div.style.cssText = 'background:white;padding:8px 10px;border-radius:6px;box-shadow:0 1px 5px rgba(0,0,0,0.2);font-size:11px;line-height:1.6;display:none';
-                div.id = 'map-legend';
-                div.innerHTML = '<div style="font-weight:700;margin-bottom:4px;font-size:11px">Raieliik</div>' +
-                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#e63946;margin-right:4px"></span>Lageraie</div>' +
-                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#ffc107;margin-right:4px"></span>Harvendusraie</div>' +
-                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#28a745;margin-right:4px"></span>Hooldusraie</div>' +
-                    '<div><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#17a2b8;margin-right:4px"></span>Noor mets</div>' +
-                    '<div style="margin-top:4px;font-size:10px;color:#666">Värv näitab raieliiki</div>';
-                L.DomEvent.disableClickPropagation(div);
-                return div;
-            }
-        });
-        new LegendControl().addTo(map);
     }
 
     function showParcel(geometry) {
@@ -836,9 +818,6 @@
             },
         }).addTo(map);
         overlayLayers['eraldised'] = layer;
-        // Show legend
-        var legend = document.getElementById('map-legend');
-        if (legend) legend.style.display = '';
     }
 
     // ═══ dashboard.js ═══
@@ -1305,7 +1284,6 @@
 
     function showDashboard() {
         document.getElementById('charts-section').style.display = '';
-        document.getElementById('tables-section').style.display = '';
         setTimeout(function() {
             document.getElementById('card-vaartus').scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100);
@@ -1584,7 +1562,10 @@
         if (!nr) { showError('Sisesta katastri number.'); return; }
 
         var btn = document.getElementById('search-btn');
+        var searchBox = btn.closest('.search-box');
         btn.disabled = true;
+        btn.classList.add('is-loading');
+        searchBox.classList.add('is-searching');
 
         showLoading();
 
@@ -1629,6 +1610,8 @@
             showError(err.message);
         } finally {
             btn.disabled = false;
+            btn.classList.remove('is-loading');
+            searchBox.classList.remove('is-searching');
         }
 
     }

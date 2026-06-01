@@ -231,6 +231,31 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 .search-box button:active { transform: translateY(0); }
 .search-box button:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
 
+/* Search button loading state */
+.search-box button .btn-icon { transition: opacity 0.2s; }
+.search-box button .btn-spinner {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(0,48,135,0.2);
+    border-top-color: #003087;
+    border-radius: 50%;
+    animation: btnSpin 0.6s linear infinite;
+}
+.search-box button.is-loading .btn-icon { display: none; }
+.search-box button.is-loading .btn-spinner { display: block; }
+
+@keyframes btnSpin { to { transform: rotate(360deg); } }
+
+/* Search box glow during loading */
+.search-box.is-searching {
+    animation: searchGlow 1.5s ease-in-out infinite;
+}
+@keyframes searchGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+    50% { box-shadow: 0 0 12px 2px rgba(59,130,246,0.35); }
+}
+
 /* ═══ Error ═══ */
 .error-msg {
     position: fixed;
@@ -1134,21 +1159,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 .chart-wrapper { position: relative; max-height: 280px; }
 .chart-wrapper canvas { max-height: 280px; }
 
-/* ═══ Tables ═══ */
-.tables-section { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 2rem; animation: sectionIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.1s forwards; }
-
-.table-card {
-    background: var(--card);
-    border-radius: var(--radius-xl);
-    padding: 1.5rem;
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border);
-    overflow-x: auto;
-    transition: all var(--transition);
-}
-
-.table-card:hover { box-shadow: var(--shadow-md); }
-.table-card .card-header { margin-bottom: 1rem; }
+/* ═══ Kitsendused/Toetused now in metrics-grid ═══ */
 
 /* Toetuste cards */
 .toetus-card {
@@ -1272,7 +1283,6 @@ footer {
 @media (max-width: 900px) {
     #map { height: 400px; }
     .charts-grid { grid-template-columns: 1fr; }
-    .tables-section { grid-template-columns: 1fr; }
     .dashboard { padding: 1rem 1rem 2rem; }
 }
 
