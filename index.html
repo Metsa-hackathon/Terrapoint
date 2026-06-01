@@ -850,7 +850,7 @@
                 var html = '<div style="font-size:13px;min-width:200px">';
                 html += '<div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#2e7d32">Eraldis ' + (p.eraldis_nr || '?') + '</div>';
                 if (rLabel) html += '<div style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;color:white;background:' + rColor + ';margin-bottom:6px">' + rLabel + '</div>';
-                if (p.vanuseruhm_label) html += '<div style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;color:white;background:' + vrColor + ';margin-bottom:6px;margin-left:4px">' + p.vanuseruhm_label + '</div>';
+                if (p.vanuseruhm_label) html += '<div style="display:inline-flex;align-items:center;gap:4px;margin-bottom:6px;margin-left:4px"><span style="width:8px;height:8px;border-radius:50%;background:' + vrColor + '"></span><strong style="font-size:12px">' + p.vanuseruhm_label + '</strong></div>';
                 html += '<div style="display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:12px">';
                 html += '<span style="color:#666">Puuliik:</span><strong>' + (p.puuliik || '?') + '</strong>';
                 html += '<span style="color:#666">Vanus:</span><span>' + (p.vanus || '?') + ' a';
