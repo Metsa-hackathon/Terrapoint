@@ -6,6 +6,8 @@
     <title>Terrapoint, Eesti metsaandmed</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+    <script src="https://unpkg.com/proj4leaflet@1.0.2/src/proj4leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -613,23 +615,27 @@
             attribution: '&copy; Google',
         });
 
-        // Yandex satelliit — hea Põhja-Euroopa kate, sageli talvised pildid
-        const yandexSat = L.tileLayer('https://sat0{s}.maps.yandex.net/tiles?l=sat&v=3.379.0&x={x}&y={y}&z={z}', {
-            maxZoom: 19,
-            subdomains: '1234',
-            attribution: '&copy; Yandex',
+        // Maa-amet talvised metsanduslikud aerofotod (EPSG:3301)
+        proj4.defs('EPSG:3301', '+proj=lcc +lat_0=57.51755393055556 +lon_0=24 +lat_1=59.33333333333334 +lat_2=58 +x_0=500000 +y_0=6375000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
+        const estonianCrs = new L.Proj.CRS('EPSG:3301', '+proj=lcc +lat_0=57.51755393055556 +lon_0=24 +lat_1=59.33333333333334 +lat_2=58 +x_0=500000 +y_0=6375000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs', {
+            resolutions: [4000, 2000, 1000, 500, 250, 125, 62.5, 31.25, 15.625, 7.8125, 3.90625, 1.953125, 0.9765625, 0.48828125, 0.244140625],
+            origin: [40500, 5993000],
         });
-
-        // NASA GIBS — madala resolutsiooniga, aga päris talvine pilt
-        const nasaWinter = L.tileLayer('https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2025-02-15/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpeg', {
-            maxZoom: 9,
-            opacity: 0.7,
-            attribution: '&copy; NASA GIBS',
-        });
+        var talvFoto = null;
+        if (L.WMS) {
+            talvFoto = L.WMS.overlay('https://kaart.maaamet.ee/wms/ajalooline?', {
+                layers: 'of2024mets',
+                format: 'image/jpeg',
+                transparent: false,
+                version: '1.3.0',
+                crs: estonianCrs,
+                attribution: '&copy; Maa-amet (talv 2024)',
+            });
+        }
 
         esriFoto.addTo(map);
 
-        L.control.layers({
+        var baseLayers = {
             'Ortofoto (Maa-amet)': maaametFoto,
             'Kaart (Maa-amet)': maaametKaart,
             'Hübriidkaart': maaametHybriid,
@@ -637,8 +643,9 @@
             'OpenStreetMap': osm,
             'Suvi (Esri satelliit)': esriFoto,
             'Suvi (Google satelliit)': googleSat,
-            'Yandex satelliit': yandexSat,
-            'Talv (NASA, veebruar 2025)': nasaWinter,
+        };
+        if (talvFoto) baseLayers['Talv (Maa-amet metsanduslik 2024)'] = talvFoto;
+        L.control.layers(baseLayers, null, { position: 'bottomleft' }).addTo(map);
         }, null, { position: 'bottomleft' }).addTo(map);
 
         // Center button
