@@ -1644,14 +1644,15 @@
 
             window._timberValue = (data.vaartus && data.vaartus.total_value_eur) || 0;
             window._vaartusData = data.vaartus || {};
-            if (data.kataster) renderKataster(data.kataster);
-            renderMets(data.mets);
-            renderVaartus(data.vaartus);
-            renderSinik(data.sinik);
-            renderRiskid(data.riskid);
-            renderTeatised(data.teatised);
-            renderKitsendused(data.kitsendused);
-            renderToetused(data.toetused);
+            function safe(fn, arg, name) { try { fn(arg); } catch(e) { console.error('Render error:', name, e); } }
+            if (data.kataster) safe(renderKataster, data.kataster, 'kataster');
+            safe(renderMets, data.mets, 'mets');
+            safe(renderVaartus, data.vaartus, 'vaartus');
+            safe(renderSinik, data.sinik, 'sinik');
+            safe(renderRiskid, data.riskid, 'riskid');
+            safe(renderTeatised, data.teatised, 'teatised');
+            safe(renderKitsendused, data.kitsendused, 'kitsendused');
+            safe(renderToetused, data.toetused, 'toetused');
 
             if (data.mets && data.mets.liikide_koosseis) renderCompositionChart(data.mets.liikide_koosseis);
             if (data.vaartus) renderValueChart(data.vaartus);
