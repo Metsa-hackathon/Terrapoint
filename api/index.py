@@ -130,8 +130,18 @@ async def address_search(q: str = ""):
         return json_response({"error": str(exc)}, 500)
 
 
+VPS_API = "https://terrapoint.46-62-230-110.sslip.io/api"
+
 @app.get("/api/search/{kataster_nr:path}")
 async def search(kataster_nr: str, request: Request):
+    # On Vercel, proxy to VPS to avoid 10s timeout
+    if os.environ.get("VERCEL"):
+        try:
+            async with httpx.AsyncClient(timeout=25.0) as client:
+                resp = await client.get(f"{VPS_API}/search/{kataster_nr}")
+                return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
+        except Exception as exc:
+            return json_response({"error": f"VPS proxy error: {exc}"}, 502)
     try:
         return await _search(kataster_nr)
     except Exception as exc:
