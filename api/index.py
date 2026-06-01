@@ -198,7 +198,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
 
     # Skip per-eraldis API calls if too many eraldised or running low on time
     elapsed = time.time() - start
-    skip_details = len(eraldised) > 50 or elapsed > 20.0
+    skip_details = len(eraldised) > 30 or elapsed > 3.0
     natura_features = layers_data.get("natura_elupaik", [])
     yrask_features = _filter_features_by_geometry(layers_data.get("yrask_eelis", []), kataster_data.get("geometry"))
 
