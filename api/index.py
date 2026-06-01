@@ -285,7 +285,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         koosseis_with_osakaal = []
         if liikide_koosseis:
             # Filter out non-species codes (TM, PI, PS, PA, LV2, MU are forest type codes, not species)
-            NON_SPECIES = {"TM", "PI", "PS", "PA", "LV2", "MU"}
+            NON_SPECIES = {"TM", "PI", "PS", "PA", "LV2", "MU", "TP", "KD"}
             species_only = [e for e in liikide_koosseis if e.get("puuliik_kood") not in NON_SPECIES]
             if not species_only:
                 species_only = liikide_koosseis  # fallback to all if no valid species
@@ -306,11 +306,14 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             total_tagavara = sum(s["tagavara_y_ha"] for s in species_list)
             if total_tagavara > 0:
                 for s in species_list:
+                    pct = round(s["tagavara_y_ha"] / total_tagavara * 100)
+                    if pct < 1:
+                        continue  # Skip species with negligible share
                     koosseis_with_osakaal.append({
                         "puuliik": s["puuliik"], "puuliik_kood": s["puuliik_kood"],
                         "tagavara_y_ha": round(s["tagavara_y_ha"], 1),
                         "vanus": round(s["vanus_sum"] / s["count"]) if s["count"] else 0,
-                        "osakaal": round(s["tagavara_y_ha"] / total_tagavara * 100),
+                        "osakaal": pct,
                     })
             else:
                 # Fall back to area-based proportions from eraldised
