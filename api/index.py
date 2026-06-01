@@ -165,27 +165,11 @@ def _filter_features_by_geometry(features, parcel_geom):
 _search_cache_hits = 0
 _search_cache_misses = 0
 
-async def _search(kataster_nr: str) -> Response:
-    """Täielik kinnistu päring: kataster + eraldised + kihid + teatised.
-
-    Kogub kõik andmed paralleelselt ja tagastab JSON-vastuse.
-    Kasutab 5-minutilist vahemälu, et vältida topeltpäringuid.
-    """
-    global _search_cache_hits, _search_cache_misses
-
-    # Check cache
-    cached_response = search_cache.get(kataster_nr)
-    if cached_response is not None:
-        _search_cache_hits += 1
-        return cached_response
-    _search_cache_misses += 1
-
-    start = time.time()
-    MAX_TIME = 8.5  # Vercel Hobby has 10s timeout, leave buffer
-
+async def _search_core(kataster_nr: str, start: float) -> dict:
+    """Sisemine otsinguloogika — eraldatud, et saaks timeout-i panna."""
     kataster_data = await query_kataster(kataster_nr)
     if not kataster_data:
-        return json_response({"error": "Krunti ei leitud"}, 404)
+        return {"error": "Krunti ei leitud", "_status": 404}
 
     bbox = calculate_bbox(kataster_data["geometry"])
     bbox_str = bbox_to_wfs_string(bbox)
@@ -201,6 +185,10 @@ async def _search(kataster_nr: str) -> Response:
     eraldised = results[0] if not isinstance(results[0], Exception) else []
     layers_data = results[1] if not isinstance(results[1], Exception) else {}
     teatised_features = results[2] if not isinstance(results[2], Exception) else []
+
+    # Check if we're running low on time — skip per-eraldis API calls if so
+    elapsed = time.time() - start
+    skip_details = elapsed > 5.0  # leave 3s buffer for response building
     natura_features = layers_data.get("natura_elupaik", [])
     yrask_features = _filter_features_by_geometry(layers_data.get("yrask_eelis", []), kataster_data.get("geometry"))
 
@@ -243,15 +231,19 @@ async def _search(kataster_nr: str) -> Response:
     }
 
     if eraldised:
-        # Fetch element data for all eraldised in parallel
-        element_tasks = [query_eraldis_element(e.get("id")) for e in eraldised]
-        kahjustused_tasks = [query_kahjustused(e.get("id")) for e in eraldised]
-        inner_results = await asyncio.gather(
-            asyncio.gather(*element_tasks, return_exceptions=True),
-            asyncio.gather(*kahjustused_tasks, return_exceptions=True),
-        )
-        all_elements = [r if not isinstance(r, Exception) else [] for r in inner_results[0]]
-        all_kahjustused = [r if not isinstance(r, Exception) else [] for r in inner_results[1]]
+        # Fetch element data for all eraldised in parallel (skip if low on time)
+        if not skip_details:
+            element_tasks = [query_eraldis_element(e.get("id")) for e in eraldised]
+            kahjustused_tasks = [query_kahjustused(e.get("id")) for e in eraldised]
+            inner_results = await asyncio.gather(
+                asyncio.gather(*element_tasks, return_exceptions=True),
+                asyncio.gather(*kahjustused_tasks, return_exceptions=True),
+            )
+            all_elements = [r if not isinstance(r, Exception) else [] for r in inner_results[0]]
+            all_kahjustused = [r if not isinstance(r, Exception) else [] for r in inner_results[1]]
+        else:
+            all_elements = []
+            all_kahjustused = []
 
         # Merge all liikide_koosseis from all eraldised
         for elements in all_elements:
@@ -699,7 +691,7 @@ async def _search(kataster_nr: str) -> Response:
 
     elapsed = round((time.time() - start) * 1000)
 
-    response = json_response({
+    return {
         "kataster": kataster_data,
         "mets": mets_result,
         "vaartus": vaartus_result,
@@ -711,10 +703,37 @@ async def _search(kataster_nr: str) -> Response:
         "teatised": teatised,
         "kahjustused": kahjustused,
         "map_layers": map_layers,
-        "meta": {"response_time_ms": elapsed},
-    })
+        "meta": {"response_time_ms": elapsed, "partial": skip_details},
+    }
 
-    # Store in cache for chat endpoint reuse
+
+async def _search(kataster_nr: str) -> Response:
+    """Täielik kinnistu päring: kataster + eraldised + kihid + teatised.
+
+    Kogub kõik andmed paralleelselt ja tagastab JSON-vastuse.
+    Kasutab 8-sekundilist timeout-i, et Vercel 10s piirist mitte üle minna.
+    """
+    global _search_cache_hits, _search_cache_misses
+
+    # Check cache
+    cached_response = search_cache.get(kataster_nr)
+    if cached_response is not None:
+        _search_cache_hits += 1
+        return cached_response
+    _search_cache_misses += 1
+
+    start = time.time()
+    try:
+        data = await asyncio.wait_for(_search_core(kataster_nr, start), timeout=8.0)
+    except asyncio.TimeoutError:
+        elapsed = round((time.time() - start) * 1000)
+        data = {"error": "Otsing aegus osaliselt", "meta": {"response_time_ms": elapsed, "timeout": True}}
+
+    if data.get("error"):
+        status = data.pop("_status", 404)
+        return json_response(data, status)
+
+    response = json_response(data)
     search_cache.set(kataster_nr, response, ttl=300)
     return response
 
