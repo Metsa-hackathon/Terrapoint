@@ -108,7 +108,7 @@ async def query_eraldis_element(eraldis_id: int) -> list[dict]:
             "puuliik": SPECIES_NAMES.get(kood, kood),
             "puuliik_kood": kood,
             "vanus": p.get("vanus", 0),
-            "tagavara_y_ha": p.get("tagavara") or p.get("tagavara_y_ha") or 0,  # element data usually has tagavara
+            "tagavara_y_ha": p.get("tagavara") or p.get("tagavara_y_ha") or estimate_tagavara(3, 0, p.get("vanus", 0)),
             "taius": p.get("taius", 0),
         })
     return result

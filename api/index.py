@@ -313,13 +313,20 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
                         "osakaal": round(s["tagavara_y_ha"] / total_tagavara * 100),
                     })
             else:
-                equal_pct = round(100 / len(species_list)) if species_list else 0
+                # Fall back to area-based proportions from eraldised
+                eraldis_species_area = {}
+                for e in eraldised:
+                    k = e.get("puuliik_kood", "MA")
+                    eraldis_species_area[k] = eraldis_species_area.get(k, 0) + (e.get("pindala_ha") or 0)
+                total_area = sum(eraldis_species_area.values()) or 1
                 for s in species_list:
+                    kood = s["puuliik_kood"]
+                    area_pct = round((eraldis_species_area.get(kood, 0) / total_area) * 100)
                     koosseis_with_osakaal.append({
-                        "puuliik": s["puuliik"], "puuliik_kood": s["puuliik_kood"],
-                        "tagavara_y_ha": 0,
+                        "puuliik": s["puuliik"], "puuliik_kood": kood,
+                        "tagavara_y_ha": round(s["tagavara_y_ha"], 1) if s["tagavara_y_ha"] else 0,
                         "vanus": round(s["vanus_sum"] / s["count"]) if s["count"] else 0,
-                        "osakaal": equal_pct,
+                        "osakaal": area_pct if area_pct > 0 else round(100 / len(species_list)),
                     })
 
         # Carbon and cutting age use the final peapuuliik
