@@ -386,11 +386,20 @@
     const AI_API_BASE = API_BASE;
 
     async function searchParcel(katasterNr) {
-        const res = await fetch(`${API_BASE}/search/${encodeURIComponent(katasterNr)}`);
-        if (!res.ok) {
-            throw new Error(res.status === 404 ? 'Katastri numbrit ei leitud.' : `Serveri viga: ${res.status}`);
+        var controller = new AbortController();
+        var timer = setTimeout(function() { controller.abort(); }, 25000);
+        try {
+            var res = await fetch(API_BASE + '/search/' + encodeURIComponent(katasterNr), {signal: controller.signal});
+            clearTimeout(timer);
+            if (!res.ok) {
+                throw new Error(res.status === 404 ? 'Katastri numbrit ei leitud.' : 'Serveri viga: ' + res.status);
+            }
+            return await res.json();
+        } catch(e) {
+            clearTimeout(timer);
+            if (e.name === 'AbortError') throw new Error('Otsing aegus (25s). Proovi uuesti.');
+            throw e;
         }
-        return res.json();
     }
 
     // ═══ AI Chat ═══
