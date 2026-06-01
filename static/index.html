@@ -199,8 +199,8 @@
                         </svg>
                     </div>
                     <h3>Katastriüksuse andmed</h3>
-                    </div>
                     <p class="section-desc">Katastritunnus, pindala, sihtotstarve, omand ja asukoht</p>
+                </div>
                 <div id="kataster-info"></div>
             </div>
 
@@ -280,8 +280,8 @@
                         </svg>
                     </div>
                     <h3>EL deforestatsioonikontroll</h3>
-                    </div>
                     <p class="section-desc">EL määruse 2023/1115 nõuetele vastavuse kontrollimine</p>
+                </div>
                 <div id="eudr-info">
                     <p class="eudr-desc">GeoJSON Euroopa Liidu deforestatsiooniregulatsiooni jaoks.</p>
                     <button id="eudr-btn" class="btn-eudr">
@@ -1212,11 +1212,6 @@
         var eligible = data.filter(function(t) { return t.sobib; });
         var ineligible = data.filter(function(t) { return !t.sobib; });
 
-        var categoryIcons = {
-            'looduskaitse': '', 'metsahooldus': '', 'metsastamine': '',
-            'kahjuritõrje': '', 'inventeerimine': '', 'maaparandus': '',
-            'kultuur': '', 'ühistu': ''
-        };
         var categoryNames = {
             'looduskaitse': 'Looduskaitse', 'metsahooldus': 'Metsahooldus', 'metsastamine': 'Metsastamine',
             'kahjuritõrje': 'Kahjuritõrje', 'inventeerimine': 'Inventeerimine', 'maaparandus': 'Maaparandus',
