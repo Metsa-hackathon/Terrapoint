@@ -10,6 +10,45 @@ SPECIES_NAMES = {
 
 BONITEET_MAP = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
 
+# Tagavara hinnang (m³/ha) kõrguse ja boniteedi järgi — Eesti boniteeditabelid
+# Võti: (boniteet_kood, kõrgus_m) → m³/ha
+# Allikas: RMK boniteeditabelid, keskmised väärtused
+_TAGAVARA_BY_HEIGHT = {
+    # boniteet_kood: [(kõrgus, m³/ha), ...] — interpolatsiooniks
+    1: [(5, 30), (10, 80), (15, 150), (20, 230), (25, 310), (30, 380)],
+    2: [(5, 20), (10, 60), (15, 120), (20, 190), (25, 260), (30, 320)],
+    3: [(5, 15), (10, 45), (15, 90), (20, 150), (25, 210), (30, 260)],
+    4: [(5, 10), (10, 30), (15, 65), (20, 110), (25, 160), (30, 200)],
+    5: [(5, 5), (10, 20), (15, 40), (20, 70), (25, 100), (30, 130)],
+}
+
+
+def estimate_tagavara(boniteet_kood: int, korgus: float, vanus: int) -> float:
+    """Tagavara hinnang (m³/ha) kõrguse ja boniteedi järgi, kui metsaregister andmed puuduvad."""
+    bk = boniteet_kood if boniteet_kood in _TAGAVARA_BY_HEIGHT else 3
+    table = _TAGAVARA_BY_HEIGHT[bk]
+
+    # Kõrguse järgi interpolatsioon
+    if korgus and korgus > 0:
+        if korgus <= table[0][0]:
+            return float(table[0][1])
+        if korgus >= table[-1][0]:
+            return float(table[-1][1])
+        for i in range(len(table) - 1):
+            h1, v1 = table[i]
+            h2, v2 = table[i + 1]
+            if h1 <= korgus <= h2:
+                ratio = (korgus - h1) / (h2 - h1)
+                return round(v1 + ratio * (v2 - v1), 1)
+
+    # Kui kõrgust pole, kasuta vanust
+    if vanus and vanus > 0:
+        # Kesmine kõrguse kasv: ~0.3 m/a (II boniteet)
+        est_height = vanus * 0.3
+        return estimate_tagavara(bk, est_height, 0)
+
+    return 0.0
+
 
 async def query_eraldis(kataster_nr: str) -> list[dict]:
     """Return ALL eraldised for a kataster parcel (not just the first)."""
@@ -34,7 +73,7 @@ async def query_eraldis(kataster_nr: str) -> list[dict]:
             "puuliik": SPECIES_NAMES.get(kood, kood),
             "puuliik_kood": kood,
             "vanus": props.get("keskm_vanus", 0),
-            "tagavara_y_ha": props.get("tagavara_1_ha") or props.get("tagavara_l_ha") or props.get("tagavara_y_ha") or 0,
+            "tagavara_y_ha": props.get("tagavara_1_ha") or props.get("tagavara_l_ha") or props.get("tagavara_y_ha") or estimate_tagavara(int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3, props.get("korgus", 0), props.get("keskm_vanus", 0)),
             "boniteet": BONITEET_MAP.get(int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3, "III"),
             "boniteedi_kood": int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3,
             "raievanus": props.get("keskm_raievanus"),
@@ -69,7 +108,7 @@ async def query_eraldis_element(eraldis_id: int) -> list[dict]:
             "puuliik": SPECIES_NAMES.get(kood, kood),
             "puuliik_kood": kood,
             "vanus": p.get("vanus", 0),
-            "tagavara_y_ha": p.get("tagavara") or p.get("tagavara_y_ha") or 0,
+            "tagavara_y_ha": p.get("tagavara") or p.get("tagavara_y_ha") or 0,  # element data usually has tagavara
             "taius": p.get("taius", 0),
         })
     return result
