@@ -1040,24 +1040,38 @@
         if (data.eraldisi_kokku > 1) html += '<div class="info-row"><span class="label">Eraldisi ' + ddInfo('Eraldised on eraldi majandatavad metsatükid, millel on oma puuliik, vanus ja tagavara') + '</span><span class="value">' + data.eraldisi_kokku + ' tk</span></div>';
         html += compHtml;
 
-        // Show individual eraldised with per-eraldis value
+        // Show individual eraldised as cards
         if (data.eraldised && data.eraldised.length > 0) {
             var totalEraldisValue = 0;
             data.eraldised.forEach(function(e) { totalEraldisValue += (e.vaartus_eur || 0); });
-            html += '<details style="margin-top:0.75rem"' + (data.eraldised.length <= 5 ? ' open' : '') + '><summary style="cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--primary)">Eraldised (' + data.eraldised.length + ') — kokku ' + formatEur(totalEraldisValue) + '</summary>';
-            html += '<table style="margin-top:0.5rem;font-size:0.78rem;width:100%;table-layout:fixed"><thead><tr><th>Nr</th><th>Puuliik</th><th>Vanus</th><th>Tagavara</th><th>Pindala</th><th>Boniteet</th><th>Vanuserühm</th><th>Väärtus</th></tr></thead><tbody>';
+            html += '<details style="margin-top:0.75rem"' + (data.eraldised.length <= 5 ? ' open' : '') + '>';
+            html += '<summary style="cursor:pointer;font-size:0.85rem;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:0.5rem">';
+            html += '<span style="background:var(--primary);color:#fff;padding:2px 8px;border-radius:var(--radius-full);font-size:0.75rem">' + data.eraldised.length + '</span>';
+            html += 'Eraldised — kokku <span style="color:#2e7d32">' + formatEur(totalEraldisValue) + '</span></summary>';
             var vrColors = {noormets:'#3b82f6',keskmine:'#22c55e',kups:'#f59e0b',vanamets:'#ef4444'};
             data.eraldised.forEach(function(e) {
                 var b = e.boniteet || BONITEET_LABELS[e.boniteedi_kood] || '—';
                 var v = e.vaartus_eur ? formatEur(e.vaartus_eur) : '—';
+                var sp = speciesName(e.puuliik_kood || e.puuliik, e.puuliik);
                 var vr = e.vanuseruhm || '';
                 var vrLabel = e.vanuseruhm_label || '';
                 var vrColor = vrColors[vr] || '#6b7280';
-                var vrHtml = vrLabel ? '<span style="background:' + vrColor + ';color:#fff;padding:1px 6px;border-radius:8px;font-size:0.7rem;font-weight:600;white-space:nowrap" title="' + (e.vanuseruhm_desc || '') + '">' + vrLabel + '</span>' : '—';
-                html += '<tr><td>' + (e.eraldis_nr || '—') + '</td><td>' + speciesName(e.puuliik_kood || e.puuliik, e.puuliik) + '</td><td>' + (e.vanus || '—') + ' a</td><td>' + formatNum(e.tagavara_y_ha) + ' m³/ha</td><td>' + formatNum(e.pindala_ha, 2) + ' ha</td><td>' + b + '</td><td>' + vrHtml + '</td><td style="font-weight:600;color:#2e7d32">' + v + '</td></tr>';
+                var vrHtml = vrLabel ? '<span style="background:' + vrColor + ';color:#fff;padding:2px 8px;border-radius:var(--radius-full);font-size:0.7rem;font-weight:600" title="' + (e.vanuseruhm_desc || '') + '">' + vrLabel + '</span>' : '';
+                html += '<div style="background:var(--surface);border:1px solid var(--border-light);border-radius:var(--radius);padding:0.75rem;margin-top:0.5rem">';
+                html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">';
+                html += '<div style="font-weight:700;font-size:0.9rem;color:var(--text)">Eraldis ' + (e.eraldis_nr || '—') + '</div>';
+                html += '<div style="font-weight:700;font-size:0.95rem;color:#2e7d32">' + v + '</div>';
+                html += '</div>';
+                html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.4rem;font-size:0.82rem">';
+                html += '<div><span style="color:var(--text-muted);font-size:0.72rem;display:block">Puuliik</span><strong>' + sp + '</strong></div>';
+                html += '<div><span style="color:var(--text-muted);font-size:0.72rem;display:block">Vanus</span><strong>' + (e.vanus || '—') + ' aastat</strong></div>';
+                html += '<div><span style="color:var(--text-muted);font-size:0.72rem;display:block">Pindala</span><strong>' + formatNum(e.pindala_ha, 2) + ' ha</strong></div>';
+                html += '<div><span style="color:var(--text-muted);font-size:0.72rem;display:block">Tagavara</span><strong>' + formatNum(e.tagavara_y_ha) + ' m³/ha</strong></div>';
+                html += '<div><span style="color:var(--text-muted);font-size:0.72rem;display:block">Boniteet</span><strong>' + b + '</strong></div>';
+                html += '<div><span style="color:var(--text-muted);font-size:0.72rem;display:block">Vanuserühm</span>' + (vrHtml || '<strong>—</strong>') + '</div>';
+                html += '</div></div>';
             });
-            html += '</tbody></table>';
-            html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.4rem">Hinnang: seisuhind × tagavara (m³/ha) × pindala (ha) · kuivendatud metsal +10%</div>';
+            html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.5rem;font-style:italic">Hinnang: seisuhind × tagavara (m³/ha) × pindala (ha) · kuivendatud metsal +10%</div>';
             html += '</details>';
         }
         el.innerHTML = html;
