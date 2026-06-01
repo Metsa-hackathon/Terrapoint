@@ -873,7 +873,7 @@ async def chat(request: Request):
             return json_response({"error": "OpenRouter API key not configured"}, 500)
 
         api_url = "https://openrouter.ai/api/v1/chat/completions"
-        model = os.environ.get("OPENROUTER_MODEL", "moonshotai/kimi-k2.6:free")
+        model = os.environ.get("OPENROUTER_MODEL", "poolside/laguna-xs.2:free")
 
         async with httpx.AsyncClient(timeout=httpx.Timeout(25, connect=5)) as client:
             resp = await client.post(
@@ -1045,13 +1045,4 @@ async def serve_css(filename: str):
     file_path = PROJECT_ROOT / "static" / "css" / filename
     if file_path.exists():
         return FileResponse(str(file_path), media_type="text/css")
-    return Response(status_code=404)
-
-
-@app.get("/static/js/{filename:path}")
-async def serve_js(filename: str):
-    """Teeninda JavaScript faile (/static/js/ kataloogist)."""
-    file_path = PROJECT_ROOT / "static" / "js" / filename
-    if file_path.exists():
-        return FileResponse(str(file_path), media_type="application/javascript")
     return Response(status_code=404)

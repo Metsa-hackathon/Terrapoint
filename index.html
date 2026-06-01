@@ -371,7 +371,7 @@
     <script>
     // ═══ api.js ═══
     const API_BASE = '/api';
-    const AI_API_BASE = 'https://terrapoint.46.62.230.110.sslip.io/api';
+    const AI_API_BASE = location.hostname + ':8099/api';
 
     async function searchParcel(katasterNr) {
         const res = await fetch(`${API_BASE}/search/${encodeURIComponent(katasterNr)}`);
@@ -447,16 +447,27 @@
         // Code blocks
         text = text.replace(/```([\s\S]*?)```/g, '<pre style="background:var(--surface);padding:0.5rem;border-radius:4px;font-size:0.82rem;overflow-x:auto">$1</pre>');
         text = text.replace(/`([^`]+)`/g, '<code style="background:var(--surface);padding:0.1rem 0.3rem;border-radius:3px;font-size:0.85em">$1</code>');
-        // Unordered lists - wrap consecutive <li> in <ul>
+        // Ordered lists - convert and wrap first
+        text = text.replace(/^\d+\. (.+)$/gm, '<oli>$1</oli>');
+        text = text.replace(/((?:<oli>.*<\/oli>\n?)+)/g, function(m) {
+            return '<ol style="margin:0.3rem 0;padding-left:1.2rem">' + m.replace(/oli>/g, 'li>') + '</ol>';
+        });
+        // Unordered lists - convert and wrap
         text = text.replace(/^\- (.+)$/gm, '<li>$1</li>');
         text = text.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul style="margin:0.3rem 0;padding-left:1.2rem">$1</ul>');
-        // Ordered lists
-        text = text.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
         // Paragraphs
         text = text.replace(/\n\n/g, '</p><p>');
         // Single newlines to <br>
         text = text.replace(/\n/g, '<br>');
         return '<p>' + text + '</p>';
+    }
+
+    function aiTrimData(data) {
+        if (!data) return data;
+        var trimmed = JSON.parse(JSON.stringify(data));
+        if (trimmed.kataster) delete trimmed.kataster.geometry;
+        delete trimmed.map_layers;
+        return trimmed;
     }
 
     async function aiSendMessage(message) {
@@ -490,7 +501,7 @@
                     kataster_nr: aiCurrentKataster,
                     message: message,
                     history: aiChatHistory.slice(0, -1),
-                    data: currentData,
+                    data: aiTrimData(currentData),
                 }),
                 signal: controller.signal,
             });
@@ -1556,9 +1567,7 @@
     async function searchAddresses(query) {
         var dropdown = document.getElementById('address-dropdown');
         try {
-            console.log('Searching addresses for:', query);
             var resp = await fetch('/api/address/' + encodeURIComponent(query));
-            console.log('Response status:', resp.status);
             var data = await resp.json();
             if (!data.results || data.results.length === 0) {
                 dropdown.style.display = 'none';
