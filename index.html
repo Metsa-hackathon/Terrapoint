@@ -1797,29 +1797,40 @@
         }
 
         // Landing search button -> run doSearch using nav input
+        // Smart submit: katastritunnus → direct search; anything else → show address dropdown
+        var KATASTER_RE = /^\d{5}:\d{3}:\d{4}$/;
+        function smartSubmit(value) {
+            if (navInput) navInput.value = value;
+            if (landInput) landInput.value = value;
+            if (KATASTER_RE.test(value)) {
+                doSearch();
+            } else {
+                var dropdown = landDropdown || document.getElementById('address-dropdown');
+                var target = landInput || navInput;
+                searchAddresses(value, dropdown, target);
+            }
+        }
+
         if (landBtn) {
             landBtn.addEventListener('click', function() {
-                if (navInput && landInput.value) navInput.value = landInput.value;
-                doSearch();
+                var v = (landInput && landInput.value || '').trim();
+                if (v) smartSubmit(v);
             });
         }
         if (landInput) {
             landInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
-                    if (navInput) navInput.value = landInput.value;
-                    doSearch();
+                    var v = landInput.value.trim();
+                    if (v) smartSubmit(v);
                 }
             });
         }
 
-        // Landing hints -> fill + search
+        // Landing hints -> fill + (search OR show address dropdown)
         document.querySelectorAll('.landing-hint').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 var q = btn.getAttribute('data-q');
-                if (!q) return;
-                if (navInput) navInput.value = q;
-                if (landInput) landInput.value = q;
-                doSearch();
+                if (q) smartSubmit(q);
             });
         });
 
@@ -1870,9 +1881,37 @@
             if (e.key === 'Escape' && sidebar.classList.contains('open')) toggleSidebar();
         });
 
-        document.getElementById('search-btn').addEventListener('click', doSearch);
+        // Nav smart submit: katastritunnus → direct; address → pick first match
+        function navSmartSubmit(value) {
+            if (KATASTER_RE.test(value)) {
+                doSearch();
+                return;
+            }
+            // Non-kataster query: fetch addresses and use the first match
+            fetch('/api/address/' + encodeURIComponent(value))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.results && data.results.length > 0) {
+                        var first = data.results[0];
+                        document.getElementById('kataster-input').value = first.katastri_nr;
+                        if (landInput) landInput.value = first.katastri_nr;
+                        doSearch();
+                    } else {
+                        showError('Aadressi "' + value + '" ei leitud. Proovi katastritunnust või teist aadressi.');
+                    }
+                })
+                .catch(function() { showError('Aadressi otsing ebaõnnestus. Proovi katastritunnust.'); });
+        }
+
+        document.getElementById('search-btn').addEventListener('click', function() {
+            var v = (document.getElementById('kataster-input').value || '').trim();
+            if (v) navSmartSubmit(v);
+        });
         document.getElementById('kataster-input').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') doSearch();
+            if (e.key === 'Enter') {
+                var v = (document.getElementById('kataster-input').value || '').trim();
+                if (v) navSmartSubmit(v);
+            }
         });
 
         document.getElementById('eudr-btn').addEventListener('click', function() {
