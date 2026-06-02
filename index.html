@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=8">
+    <link rel="stylesheet" href="/static/css/style.css?v=9">
 </head>
 <body>
     <!-- Top Navigation Bar -->
@@ -530,7 +530,9 @@
         document.getElementById('ai-chat-send').disabled = true;
 
         // Live message element we update as chunks arrive
-        var liveBubble = aiAppendMessage('assistant', '<span class="ai-typing-dots"><span></span><span></span><span></span></span>');
+        var liveBubble = aiAppendMessage('assistant', '<div class="ai-thinking-block"><span class="ai-thinking-text">Mõtleb...</span></div><div class="ai-answer-block"></div>');
+        var thinkBlock = liveBubble.querySelector('.ai-thinking-block');
+        var answerBlock = liveBubble.querySelector('.ai-answer-block');
 
         try {
             var controller = new AbortController();
@@ -564,10 +566,11 @@
             var decoder = new TextDecoder('utf-8');
             var buffer = '';
             var fullText = '';
-            var firstChunk = true;
+            var fullReasoning = '';
+            var firstAnswerChunk = true;
 
-            // 90s safety timeout — if nothing arrives for 90s, abort
-            var stallTimer = setTimeout(function() { controller.abort(); }, 90000);
+            // 120s safety timeout — if nothing arrives for 120s, abort
+            var stallTimer = setTimeout(function() { controller.abort(); }, 120000);
 
             while (true) {
                 var result = await reader.read();
@@ -594,15 +597,24 @@
                         reader.cancel();
                         throw new Error(obj.error);
                     }
+                    if (obj.reasoning) {
+                        fullReasoning += obj.reasoning;
+                        if (thinkBlock) {
+                            thinkBlock.innerHTML = '<span class="ai-thinking-text">Mõtleb</span><span class="ai-thinking-snippet">' + escHtml(fullReasoning.slice(-200)) + '</span>';
+                            aiScrollToBottom();
+                        }
+                    }
                     if (obj.content) {
                         fullText += obj.content;
-                        if (firstChunk) {
-                            firstChunk = false;
-                        }
                         // Strip leaked thinking/assistant tags live
                         var cleaned = fullText.replace(/<𝑎𝑛𝑡𝑚𝑙:thinking_mode>[^<]*<\/𝑎𝑛𝑡𝑚𝑙:thinking_mode>/g, '').replace(/<\/?assistant>/g, '').trim();
-                        if (liveBubble) {
-                            liveBubble.innerHTML = aiFormatResponse(cleaned);
+                        if (answerBlock) {
+                            if (firstAnswerChunk) {
+                                firstAnswerChunk = false;
+                                // Hide thinking block when answer starts
+                                if (thinkBlock) thinkBlock.style.display = 'none';
+                            }
+                            answerBlock.innerHTML = aiFormatResponse(cleaned);
                             aiScrollToBottom();
                         }
                     }

@@ -909,6 +909,62 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     border: 1px solid rgba(0, 0, 0, 0.12);
     display: inline-block;
 }
+
+.ai-thinking-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.45rem 0.7rem;
+    background: var(--bg-alt, #f0f4fa);
+    border-radius: 12px;
+    color: var(--text-muted, #8896a6);
+    font-size: 0.78rem;
+    font-style: italic;
+    max-height: 80px;
+    overflow: hidden;
+    position: relative;
+}
+.ai-thinking-block::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    background: linear-gradient(to bottom, transparent, var(--bg-alt, #f0f4fa));
+    pointer-events: none;
+}
+.ai-thinking-text {
+    font-weight: 600;
+    color: var(--primary);
+    font-style: normal;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.ai-thinking-text::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--primary);
+    animation: thinkPulse 1.4s ease-in-out infinite;
+}
+@keyframes thinkPulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+}
+.ai-thinking-snippet {
+    font-size: 0.72rem;
+    color: var(--text-muted, #8896a6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-style: italic;
+}
+.ai-answer-block {
+    margin-top: 0.3rem;
+}
 .legend-dot {
     width: 10px;
     height: 10px;

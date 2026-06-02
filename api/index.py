@@ -1017,6 +1017,9 @@ async def chat(request: Request):
                             if not choices:
                                 continue
                             delta = choices[0].get("delta", {})
+                            reasoning_piece = delta.get("reasoning_content", "")
+                            if reasoning_piece:
+                                yield "data: " + orjson.dumps({"reasoning": reasoning_piece}).decode() + "\n\n"
                             content_piece = delta.get("content", "")
                             if content_piece:
                                 yield "data: " + orjson.dumps({"content": content_piece}).decode() + "\n\n"
