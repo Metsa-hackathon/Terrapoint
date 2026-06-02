@@ -307,10 +307,20 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             # Use tagavara for proportions; fall back to equal if all zero
             total_tagavara = sum(s["tagavara_y_ha"] for s in species_list)
             if total_tagavara > 0:
+                # First pass: raw percentages, filter <1%
+                raw_pcts = []
                 for s in species_list:
                     pct = round(s["tagavara_y_ha"] / total_tagavara * 100)
                     if pct < 1:
-                        continue  # Skip species with negligible share
+                        continue
+                    raw_pcts.append((s, pct))
+                # Normalize so sum is exactly 100
+                pct_sum = sum(p for _, p in raw_pcts)
+                if pct_sum != 100 and raw_pcts:
+                    # Adjust the largest species to fix rounding drift
+                    raw_pcts.sort(key=lambda x: x[1], reverse=True)
+                    raw_pcts[0] = (raw_pcts[0][0], raw_pcts[0][1] + (100 - pct_sum))
+                for s, pct in raw_pcts:
                     koosseis_with_osakaal.append({
                         "puuliik": s["puuliik"], "puuliik_kood": s["puuliik_kood"],
                         "tagavara_y_ha": round(s["tagavara_y_ha"], 1),
