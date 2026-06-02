@@ -951,7 +951,7 @@ async def chat(request: Request):
             return json_response({"error": "OpenRouter API key not configured"}, 500)
 
         api_url = "https://openrouter.ai/api/v1/chat/completions"
-        model = os.environ.get("OPENROUTER_MODEL", "poolside/laguna-xs.2:free")
+        model = os.environ.get("OPENROUTER_MODEL", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free")
 
         async with httpx.AsyncClient(timeout=httpx.Timeout(25, connect=5)) as client:
             resp = await client.post(
