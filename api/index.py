@@ -1020,7 +1020,9 @@ async def chat(request: Request):
                 yield "data: [DONE]\n\n"
             except (httpx.ReadTimeout, httpx.ConnectError) as exc:
                 yield "data: " + orjson.dumps({"error": "AI vastus võttis liiga kaua. Proovi lühemat küsimust." if isinstance(exc, httpx.ReadTimeout) else "AI teenusele ei õnnestu ühendust saada. Proovi mõne hetke pärast."}).decode() + "\n\n"
-            except Exception:
+            except Exception as exc:
+                import traceback
+                print(f"[CHAT STREAM ERR] {exc}\n{traceback.format_exc()}", flush=True)
                 yield "data: " + orjson.dumps({"error": "Midagi läks valesti. Proovi uuesti."}).decode() + "\n\n"
 
         from fastapi.responses import StreamingResponse
