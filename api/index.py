@@ -249,14 +249,33 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     if eraldised:
         # Fetch element data for all eraldised in parallel (skip if low on time)
         if not skip_details:
-            element_tasks = [query_eraldis_element(e.get("id")) for e in eraldised]
-            kahjustused_tasks = [query_kahjustused(e.get("id")) for e in eraldised]
-            inner_results = await asyncio.gather(
-                asyncio.gather(*element_tasks, return_exceptions=True),
-                asyncio.gather(*kahjustused_tasks, return_exceptions=True),
-            )
-            all_elements = [r if not isinstance(r, Exception) else [] for r in inner_results[0]]
-            all_kahjustused = [r if not isinstance(r, Exception) else [] for r in inner_results[1]]
+            try:
+                element_tasks = [query_eraldis_element(e.get("id")) for e in eraldised]
+                kahjustused_tasks = [query_kahjustused(e.get("id")) for e in eraldised]
+                inner_results = await asyncio.wait_for(
+                    asyncio.gather(
+                        asyncio.gather(*element_tasks, return_exceptions=True),
+                        asyncio.gather(*kahjustused_tasks, return_exceptions=True),
+                    ),
+                    timeout=8.0,
+                )
+                all_elements = [r if not isinstance(r, Exception) else [] for r in inner_results[0]]
+                all_kahjustused = [r if not isinstance(r, Exception) else [] for r in inner_results[1]]
+            except asyncio.TimeoutError:
+                # Element details slow — fall back to eraldis-level approximate data
+                all_elements = []
+                all_kahjustused = []
+                for e in eraldised:
+                    kood = e.get("puuliik_kood")
+                    if kood:
+                        all_elements.append([{
+                            "puuliik": e.get("puuliik", kood),
+                            "puuliik_kood": kood,
+                            "tagavara_y_ha": e.get("tagavara_y_ha") or 0,
+                            "vanus": e.get("vanus") or 0,
+                        }])
+                    else:
+                        all_elements.append([])
         else:
             all_elements = []
             all_kahjustused = []
@@ -784,7 +803,7 @@ async def _search(kataster_nr: str) -> Response:
 
     start = time.time()
     try:
-        data = await asyncio.wait_for(_search_core(kataster_nr, start), timeout=45.0)
+        data = await asyncio.wait_for(_search_core(kataster_nr, start), timeout=20.0)
     except asyncio.TimeoutError:
         elapsed = round((time.time() - start) * 1000)
         data = {"error": "Otsing aegus osaliselt", "meta": {"response_time_ms": elapsed, "timeout": True}}
@@ -951,9 +970,9 @@ async def chat(request: Request):
             return json_response({"error": "NVIDIA API key not configured"}, 500)
 
         api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
-        model = os.environ.get("NVIDIA_MODEL", "stepfun-ai/step-3.7-flash")
+        model = os.environ.get("NVIDIA_MODEL", "meta/llama-3.1-8b-instruct")
 
-        async with httpx.AsyncClient(timeout=httpx.Timeout(90, connect=5)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(60, connect=5)) as client:
             resp = await client.post(
                 api_url,
                 headers={
@@ -964,8 +983,9 @@ async def chat(request: Request):
                     "model": model,
                     "messages": messages,
                     "stream": False,
-                    "temperature": 0.7,
-                    "max_tokens": 8000,
+                    "temperature": 0.5,
+                    "max_tokens": 2000,
+                    "top_p": 0.9,
                 },
             )
             if resp.status_code != 200:
