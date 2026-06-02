@@ -2,7 +2,7 @@
 <html lang="et">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Terrapoint — Eesti metsaandmete analüüs</title>
     <meta name="description" content="Terrapoint on Eesti metsaandmete analüüsi tööriist. Otsi katastri numbri järgi ja saa metsa väärtus, eraldised, süsinikuvaru, riskid ja toetused.">
     <meta name="theme-color" content="#0a3d9e">
@@ -24,38 +24,41 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=9">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=10">
 </head>
 <body>
     <!-- Top Navigation Bar -->
     <header class="hero">
         <div class="nav-left">
-            <button class="hamburger" id="hamburger-btn" aria-label="Menu">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <button class="hamburger" id="hamburger-btn" aria-label="Menüü">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
                 </svg>
             </button>
-            <a href="/" class="logo-text" style="text-decoration:none;color:inherit">
-                <h1>Terrapoint</h1>
+            <a href="/" class="brand" aria-label="Terrapoint">
+                <span class="brand-mark" aria-hidden="true"></span>
+                <span class="brand-name">Terra<em>point</em></span>
+                <span class="brand-tag">beta</span>
             </a>
         </div>
         <div class="nav-right">
-            <div class="search-box">
+            <div class="search-box" id="nav-search">
                 <div class="search-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="7.5"/><path d="m20 20-4.2-4.2"/>
                     </svg>
                 </div>
                 <div class="search-input-wrap">
-                    <input type="text" id="kataster-input" placeholder="Katastri number (nt 78404:409:0113) või aadress" autocomplete="off">
+                    <input type="text" id="kataster-input" placeholder="Katastri number või aadress" autocomplete="off" inputmode="text" enterkeyhint="search">
                     <div id="address-dropdown" class="address-dropdown" style="display:none"></div>
                 </div>
+                <span class="search-kbd" aria-hidden="true">/</span>
                 <button id="search-btn" aria-label="Otsi">
-                    <span class="btn-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M5 12h14M12 5l7 7-7 7"/>
                     </svg></span>
-                    <span class="btn-spinner"></span>
+                    <span class="btn-spinner" aria-hidden="true"></span>
                 </button>
             </div>
             <div id="error-msg" class="error-msg hidden" style="display:none"></div>
@@ -98,8 +101,55 @@
         </div>
     </div>
 
+    <!-- Landing / Intro (visible until first search) -->
+    <section class="landing" id="landing" aria-label="Terrapoint sissejuhatus">
+        <div class="landing-eyebrow">
+            <span class="dot" aria-hidden="true"></span>
+            Metsaandmed · AI analüüs · Eesti
+        </div>
+        <h1 class="landing-title">Sinu mets <em>numbrite</em><br>ja <em>kaardi</em> peal.</h1>
+        <p class="landing-sub">Sisesta katastri number — saad kinnistu turuväärtuse, eraldiste seisukorra, süsinikuvaru, ohutegurid ja sobivad toetused. Kõik ühe otsingu kaugusel.</p>
+        <div class="landing-search">
+            <div class="search-box">
+                <div class="search-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="7.5"/><path d="m20 20-4.2-4.2"/>
+                    </svg>
+                </div>
+                <div class="search-input-wrap">
+                    <input type="text" id="kataster-input-landing" placeholder="nt 78404:409:0113 või Pärnu mnt 14" autocomplete="off" inputmode="text" enterkeyhint="search">
+                    <div id="address-dropdown-landing" class="address-dropdown" style="display:none"></div>
+                </div>
+                <button id="search-btn-landing" aria-label="Otsi">
+                    <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg></span>
+                </button>
+            </div>
+            <div class="landing-hints" aria-label="Näidispäringud">
+                <button class="landing-hint" data-q="78404:409:0113"><span class="kbd">kataster</span>78404:409:0113</button>
+                <button class="landing-hint" data-q="Pärnu mnt 14"><span class="kbd">aadress</span>Pärnu mnt 14</button>
+                <button class="landing-hint" data-q="Saaremaa"><span class="kbd">piirkond</span>Saaremaa</button>
+            </div>
+        </div>
+        <div class="landing-meta">
+            <div class="landing-meta-item">
+                <div class="landing-meta-num">9+</div>
+                <div class="landing-meta-label">Andmeallikat</div>
+            </div>
+            <div class="landing-meta-item">
+                <div class="landing-meta-num">500k+</div>
+                <div class="landing-meta-label">Eraldist Eestis</div>
+            </div>
+            <div class="landing-meta-item">
+                <div class="landing-meta-num">~3s</div>
+                <div class="landing-meta-label">Päringu aeg</div>
+            </div>
+        </div>
+    </section>
+
     <!-- Dashboard -->
-    <section id="dashboard" class="dashboard">
+    <section id="dashboard" class="dashboard" hidden>
 
         <!-- Terrapoint AI Chat -->
         <div class="ai-chat-section" id="ai-chat-section">
@@ -1522,8 +1572,26 @@
 
     function showDashboard() {
         document.getElementById('charts-section').style.display = '';
+        // Hide landing, reveal dashboard
+        var landing = document.getElementById('landing');
+        var dashboard = document.getElementById('dashboard');
+        if (landing && !landing.hidden) {
+            landing.style.transition = 'opacity 0.32s var(--ease), transform 0.32s var(--ease)';
+            landing.style.opacity = '0';
+            landing.style.transform = 'translateY(-12px)';
+            setTimeout(function() {
+                landing.hidden = true;
+                landing.style.opacity = '';
+                landing.style.transform = '';
+            }, 320);
+        }
+        if (dashboard && dashboard.hidden) {
+            dashboard.hidden = false;
+            dashboard.style.animation = 'sectionIn 0.5s var(--ease-out)';
+        }
         setTimeout(function() {
-            document.getElementById('card-vaartus').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            var vaartus = document.getElementById('card-vaartus');
+            if (vaartus) vaartus.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100);
     }
 
@@ -1686,7 +1754,74 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         initMap();
-        document.getElementById('kataster-input').focus();
+
+        // ── Landing wiring ──
+        var landing = document.getElementById('landing');
+        var dashboard = document.getElementById('dashboard');
+        var navInput = document.getElementById('kataster-input');
+        var navBox = document.getElementById('nav-search');
+        var landInput = document.getElementById('kataster-input-landing');
+        var landBtn = document.getElementById('search-btn-landing');
+        var landDropdown = document.getElementById('address-dropdown-landing');
+
+        // Sync nav <-> landing inputs
+        function syncFrom(src, dst) {
+            if (!dst || dst === document.activeElement) return;
+            dst.value = src.value;
+        }
+        if (navInput && landInput) {
+            navInput.addEventListener('input', function() { syncFrom(navInput, landInput); });
+            landInput.addEventListener('input', function() { syncFrom(landInput, navInput); });
+        }
+
+        // Landing search button -> run doSearch using nav input
+        if (landBtn) {
+            landBtn.addEventListener('click', function() {
+                if (navInput && landInput.value) navInput.value = landInput.value;
+                doSearch();
+            });
+        }
+        if (landInput) {
+            landInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    if (navInput) navInput.value = landInput.value;
+                    doSearch();
+                }
+            });
+        }
+
+        // Landing hints -> fill + search
+        document.querySelectorAll('.landing-hint').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var q = btn.getAttribute('data-q');
+                if (!q) return;
+                if (navInput) navInput.value = q;
+                if (landInput) landInput.value = q;
+                doSearch();
+            });
+        });
+
+        // Landing address autocomplete (mirrors nav behaviour)
+        var landAddrTimer = null;
+        if (landInput && landDropdown) {
+            landInput.addEventListener('input', function() {
+                var val = landInput.value.trim();
+                clearTimeout(landAddrTimer);
+                if (val.length < 3) { landDropdown.style.display = 'none'; return; }
+                if (/^\d{5}:\d{3}:\d{4}$/.test(val)) { landDropdown.style.display = 'none'; return; }
+                landAddrTimer = setTimeout(function() { searchAddresses(val, landDropdown, landInput); }, 350);
+            });
+            landInput.addEventListener('blur', function() {
+                setTimeout(function() { landDropdown.style.display = 'none'; }, 200);
+            });
+            landInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') landDropdown.style.display = 'none';
+            });
+        }
+
+        // Focus the landing search initially (it's more prominent)
+        if (landInput) landInput.focus();
+        else if (navInput) navInput.focus();
 
         // Map legend collapse toggle
         var legend = document.getElementById('map-legend');
@@ -1778,8 +1913,9 @@
 
     function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-    async function searchAddresses(query) {
-        var dropdown = document.getElementById('address-dropdown');
+    async function searchAddresses(query, dropdownEl, targetInput) {
+        var dropdown = dropdownEl || document.getElementById('address-dropdown');
+        var target = targetInput || document.getElementById('kataster-input');
         try {
             var resp = await fetch('/api/address/' + encodeURIComponent(query));
             var data = await resp.json();
@@ -1804,7 +1940,10 @@
                 item.addEventListener('mousedown', function(e) {
                     e.preventDefault();
                     var kataster = item.dataset.kataster;
-                    document.getElementById('kataster-input').value = kataster;
+                    target.value = kataster;
+                    // sync to nav input
+                    var navInput = document.getElementById('kataster-input');
+                    if (target !== navInput) navInput.value = kataster;
                     dropdown.style.display = 'none';
                     doSearch();
                 });
