@@ -112,10 +112,25 @@ async def address_search(q: str = ""):
             f"&srsName=EPSG:4326&outputFormat=application/json"
             f"&count=10&CQL_FILTER={cql}"
         )
-        async with httpx.AsyncClient(timeout=5) as client:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            features = resp.json().get("features", [])
+        # Eesti WFS on aeglane ja annab ~1/3 päringutest 5x timeouti või 500
+        # → kuni 3 katset, kõrvaldame transientseid vigu
+        features = []
+        last_err = None
+        for attempt in range(3):
+            try:
+                async with httpx.AsyncClient(timeout=8) as client:
+                    resp = await client.get(url)
+                    if resp.status_code >= 500:
+                        raise httpx.HTTPStatusError("WFS 5xx", request=resp.request, response=resp)
+                    resp.raise_for_status()
+                    features = resp.json().get("features", [])
+                break
+            except (httpx.TimeoutException, httpx.HTTPStatusError, httpx.ConnectError, httpx.RemoteProtocolError) as exc:
+                last_err = exc
+                if attempt < 2:
+                    await asyncio.sleep(0.4 * (attempt + 1))
+                    continue
+                raise
 
         results = []
         for f in features:
