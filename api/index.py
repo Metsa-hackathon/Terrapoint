@@ -296,6 +296,23 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         for kahjust in all_kahjustused:
             kahjustused_features.extend(kahjust)
 
+        # Backfill missing eraldis.vanus from element data.
+        # Metsaregister occasionally has eraldised with keskm_vanus=None
+        # (e.g. id 10065603 in 78404:409:0113). Without this, API returns 0
+        # and UI shows "0 aastat". Compute a tagavara-weighted average from
+        # the element-level vanus we just fetched.
+        if not skip_details:
+            for eraldis, elements in zip(eraldised, all_elements):
+                if eraldis.get("vanus"):
+                    continue
+                weighted = [(el.get("tagavara_y_ha") or 0, el.get("vanus") or 0) for el in elements if el.get("vanus")]
+                if not weighted:
+                    continue
+                total_t = sum(t for t, _ in weighted)
+                if total_t <= 0:
+                    continue
+                eraldis["vanus"] = round(sum(t * v for t, v in weighted) / total_t)
+
         # Aggregate across all eraldised (weighted by pindala)
         total_pindala = sum((e.get("pindala_ha") or 0) for e in eraldised)
         pindala = total_pindala
