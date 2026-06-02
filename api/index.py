@@ -970,80 +970,64 @@ async def chat(request: Request):
             return json_response({"error": "NVIDIA API key not configured"}, 500)
 
         api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
-        model = os.environ.get("NVIDIA_MODEL", "meta/llama-3.1-8b-instruct")
+        model = os.environ.get("NVIDIA_MODEL", "stepfun-ai/step-3.7-flash")
 
-        async with httpx.AsyncClient(timeout=httpx.Timeout(60, connect=5)) as client:
-            resp = await client.post(
-                api_url,
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": model,
-                    "messages": messages,
-                    "stream": False,
-                    "temperature": 0.5,
-                    "max_tokens": 2000,
-                    "top_p": 0.9,
-                },
-            )
-            if resp.status_code != 200:
-                if resp.status_code == 400:
-                    return json_response({"error": "Vale sisend AI-le. Proovi küsimust ümber sõnastada või lühemaks teha."}, 400)
-                if resp.status_code == 401 or resp.status_code == 403:
-                    return json_response({"error": "AI teenuse autoriseerimine ebaõnnestus. Võta ühendust administraatoriga."}, 502)
-                if resp.status_code == 429:
-                    return json_response({"error": "AI teenus on hõivatud. Oota hetk ja proovi uuesti."}, 429)
-                return json_response({"error": f"AI teenusel esines viga. Proovi mõne hetke pärast uuesti."}, 502)
-
-            # Handle both JSON and SSE streaming responses
-            content_type = resp.headers.get("content-type", "")
-            if "text/event-stream" in content_type:
-                # Parse SSE stream and collect full response
-                full_text = ""
-                for line in resp.text.split("\n"):
-                    line = line.strip()
-                    if line.startswith("data: "):
-                        data_str = line[6:]
-                        if data_str == "[DONE]":
-                            break
-                        try:
-                            chunk = orjson.loads(data_str)
+        async def stream_response():
+            try:
+                async with httpx.AsyncClient(timeout=httpx.Timeout(120, connect=5)) as client:
+                    async with client.stream(
+                        "POST",
+                        api_url,
+                        headers={
+                            "Authorization": f"Bearer {api_key}",
+                            "Content-Type": "application/json",
+                            "Accept": "text/event-stream",
+                        },
+                        json={
+                            "model": model,
+                            "messages": messages,
+                            "stream": True,
+                            "temperature": 0.5,
+                            "max_tokens": 4000,
+                            "top_p": 0.9,
+                        },
+                    ) as resp:
+                        if resp.status_code != 200:
+                            if resp.status_code == 400:
+                                yield "data: " + orjson.dumps({"error": "Vale sisend AI-le. Proovi küsimust ümber sõnastada või lühemaks teha."}).decode() + "\n\n"
+                            elif resp.status_code in (401, 403):
+                                yield "data: " + orjson.dumps({"error": "AI teenuse autoriseerimine ebaõnnestus. Võta ühendust administraatoriga."}).decode() + "\n\n"
+                            elif resp.status_code == 429:
+                                yield "data: " + orjson.dumps({"error": "AI teenus on hõivatud. Oota hetk ja proovi uuesti."}).decode() + "\n\n"
+                            else:
+                                yield "data: " + orjson.dumps({"error": "AI teenusel esines viga. Proovi mõne hetke pärast uuesti."}).decode() + "\n\n"
+                            return
+                        async for line in resp.aiter_lines():
+                            line = line.strip()
+                            if not line.startswith("data: "):
+                                continue
+                            data_str = line[6:]
+                            if data_str == "[DONE]":
+                                break
+                            try:
+                                chunk = orjson.loads(data_str)
+                            except Exception:
+                                continue
                             delta = chunk.get("choices", [{}])[0].get("delta", {})
-                            full_text += delta.get("content", "")
-                        except Exception:
-                            continue
-                if not full_text:
-                    return json_response({"error": "AI ei andnud vastust. Proovi küsimust lihtsamalt sõnastada."}, 502)
-                import re
-                full_text = re.sub(r'<𝑎𝑛𝑡𝑚𝑙:thinking_mode>[^<]*</𝑎𝑛𝑡𝑚𝑙:thinking_mode>', '', full_text)
-                full_text = re.sub(r'</?assistant>', '', full_text).strip()
-                return json_response({"content": full_text})
-            else:
-                # Standard JSON response
-                try:
-                    result = resp.json()
-                except Exception:
-                    return json_response({"error": "AI vastus ei olnud loetav. Proovi uuesti."}, 502)
-                choices = result.get("choices", [])
-                if not choices:
-                    err = result.get("error", {})
-                    msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
-                    msg_l = msg.lower() if isinstance(msg, str) else ""
-                    if "context" in msg_l and ("length" in msg_l or "too long" in msg_l or "exceed" in msg_l):
-                        return json_response({"error": "Küsimus on liiga pikk. Proovi lühemat küsimust."}, 400)
-                    if "invalid" in msg_l or "bad request" in msg_l:
-                        return json_response({"error": "Vale sisend AI-le. Proovi küsimust ümber sõnastada."}, 400)
-                    return json_response({"error": "AI ei andnud vastust. Proovi uuesti."}, 502)
-                content = choices[0].get("message", {}).get("content", "")
-                if not content:
-                    return json_response({"error": "AI ei andnud vastust. Proovi küsimust lihtsamalt sõnastada."}, 502)
-                # Strip thinking/assistant tags that leak from reasoning models
-                import re
-                content = re.sub(r'<𝑎𝑛𝑡𝑚𝑙:thinking_mode>[^<]*</𝑎𝑛𝑡𝑚𝑙:thinking_mode>', '', content)
-                content = re.sub(r'</?assistant>', '', content).strip()
-                return json_response({"content": content})
+                            content_piece = delta.get("content", "")
+                            if content_piece:
+                                yield "data: " + orjson.dumps({"content": content_piece}).decode() + "\n\n"
+                yield "data: [DONE]\n\n"
+            except (httpx.ReadTimeout, httpx.ConnectError) as exc:
+                yield "data: " + orjson.dumps({"error": "AI vastus võttis liiga kaua. Proovi lühemat küsimust." if isinstance(exc, httpx.ReadTimeout) else "AI teenusele ei õnnestu ühendust saada. Proovi mõne hetke pärast."}).decode() + "\n\n"
+            except Exception:
+                yield "data: " + orjson.dumps({"error": "Midagi läks valesti. Proovi uuesti."}).decode() + "\n\n"
+
+        from fastapi.responses import StreamingResponse
+        return StreamingResponse(stream_response(), media_type="text/event-stream", headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        })
 
     except httpx.ReadTimeout:
         return json_response({"error": "AI vastus võttis liiga kaua. Proovi lühemat küsimust."}, 504)

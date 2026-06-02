@@ -466,6 +466,11 @@
         if (el) el.remove();
     }
 
+    function aiScrollToBottom() {
+        var container = document.getElementById('ai-chat-messages');
+        if (container) container.scrollTop = container.scrollHeight;
+    }
+
     function aiFormatResponse(text) {
         // Escape HTML
         text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -523,14 +528,15 @@
 
         aiStreaming = true;
         document.getElementById('ai-chat-send').disabled = true;
-        aiShowTyping();
+
+        // Live message element we update as chunks arrive
+        var liveBubble = aiAppendMessage('assistant', '<span class="ai-typing-dots"><span></span><span></span><span></span></span>');
 
         try {
             var controller = new AbortController();
-            var timeoutId = setTimeout(function() { controller.abort(); }, 30000);
             var resp = await fetch(`${AI_API_BASE}/chat`, {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: {'Content-Type': 'application/json', 'Accept': 'text/event-stream'},
                 body: JSON.stringify({
                     kataster_nr: aiCurrentKataster,
                     message: message,
@@ -539,35 +545,83 @@
                 }),
                 signal: controller.signal,
             });
-            clearTimeout(timeoutId);
 
-            var data;
-            try {
-                data = await resp.json();
-            } catch(e) {
-                // Vercel returns HTML on timeout/error — not JSON
-                var text = await resp.text().catch(function() { return ''; });
-                if (text.indexOf('FUNCTION_INVOCATION_TIMEOUT') > -1 || resp.status === 504) {
+            if (!resp.ok && !resp.body) {
+                var t = await resp.text().catch(function() { return ''; });
+                if (t.indexOf('FUNCTION_INVOCATION_TIMEOUT') > -1 || resp.status === 504) {
                     throw new Error('AI vastus aegus. Proovi lühemat küsimust.');
                 }
-                throw new Error('Serveri viga (HTTP ' + resp.status + ')');
+                try {
+                    var j = JSON.parse(t);
+                    throw new Error(j.error || ('Serveri viga (HTTP ' + resp.status + ')'));
+                } catch(je) {
+                    if (je.message) throw je;
+                    throw new Error('Serveri viga (HTTP ' + resp.status + ')');
+                }
             }
 
-            if (!resp.ok || data.error) {
-                throw new Error(data.error || 'Serveri viga');
-            }
+            var reader = resp.body.getReader();
+            var decoder = new TextDecoder('utf-8');
+            var buffer = '';
+            var fullText = '';
+            var firstChunk = true;
 
-            aiRemoveTyping();
-            var fullText = data.content || '';
-            aiAppendMessage('assistant', aiFormatResponse(fullText));
+            // 90s safety timeout — if nothing arrives for 90s, abort
+            var stallTimer = setTimeout(function() { controller.abort(); }, 90000);
+
+            while (true) {
+                var result = await reader.read();
+                if (result.done) break;
+                buffer += decoder.decode(result.value, { stream: true });
+
+                var parts = buffer.split('\n\n');
+                buffer = parts.pop();
+
+                for (var i = 0; i < parts.length; i++) {
+                    var block = parts[i].trim();
+                    if (!block.startsWith('data:')) continue;
+                    var payload = block.slice(5).trim();
+                    if (payload === '[DONE]') {
+                        clearTimeout(stallTimer);
+                        reader.cancel();
+                        break;
+                    }
+                    try {
+                        var obj = JSON.parse(payload);
+                    } catch(e) { continue; }
+                    if (obj.error) {
+                        clearTimeout(stallTimer);
+                        reader.cancel();
+                        throw new Error(obj.error);
+                    }
+                    if (obj.content) {
+                        fullText += obj.content;
+                        if (firstChunk) {
+                            firstChunk = false;
+                        }
+                        // Strip leaked thinking/assistant tags live
+                        var cleaned = fullText.replace(/<𝑎𝑛𝑡𝑚𝑙:thinking_mode>[^<]*<\/𝑎𝑛𝑡𝑚𝑙:thinking_mode>/g, '').replace(/<\/?assistant>/g, '').trim();
+                        if (liveBubble) {
+                            liveBubble.innerHTML = aiFormatResponse(cleaned);
+                            aiScrollToBottom();
+                        }
+                    }
+                }
+            }
+            clearTimeout(stallTimer);
+
+            if (!fullText.trim()) {
+                throw new Error('AI ei andnud vastust. Proovi uuesti.');
+            }
 
             aiChatHistory.push({role: 'assistant', content: fullText});
             document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + '. Küsi lisa küsimusi';
 
         } catch(err) {
-            aiRemoveTyping();
-            var msg = err.name === 'AbortError' ? 'AI vastus aegus. Proovi lühemat küsimust.' : 'Viga: ' + err.message;
-            aiAppendMessage('assistant', '<span style="color:var(--danger)">' + escHtml(msg) + '</span>');
+            if (liveBubble) {
+                var msg = err.name === 'AbortError' ? 'AI vastus aegus. Proovi lühemat küsimust.' : err.message;
+                liveBubble.innerHTML = '<span style="color:var(--danger)">' + escHtml(msg) + '</span>';
+            }
         }
 
         aiStreaming = false;
