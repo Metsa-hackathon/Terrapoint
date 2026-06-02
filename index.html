@@ -859,20 +859,20 @@
                 var vrColors = {noormets:'#3b82f6',keskmine:'#22c55e',kups:'#f59e0b',vanamets:'#ef4444'};
                 var vrColor = vrColors[p.vanuseruhm] || '#6b7280';
                 var html = '<div style="font-size:13px;min-width:200px">';
-                html += '<div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#2e7d32">Eraldis ' + (p.eraldis_nr || '?') + '</div>';
-                if (rLabel) html += '<div style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;color:white;background:' + rColor + ';margin-bottom:6px">' + rLabel + '</div>';
-                if (p.vanuseruhm_label) html += '<div style="display:inline-flex;align-items:center;gap:4px;margin-bottom:6px;margin-left:4px"><span style="width:8px;height:8px;border-radius:50%;background:' + vrColor + '"></span><strong style="font-size:12px">' + p.vanuseruhm_label + '</strong></div>';
+                html += '<div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#2e7d32">Eraldis ' + escHtml(p.eraldis_nr || '?') + '</div>';
+                if (rLabel) html += '<div style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;color:white;background:' + rColor + ';margin-bottom:6px">' + escHtml(rLabel) + '</div>';
+                if (p.vanuseruhm_label) html += '<div style="display:inline-flex;align-items:center;gap:4px;margin-bottom:6px;margin-left:4px"><span style="width:8px;height:8px;border-radius:50%;background:' + vrColor + '"></span><strong style="font-size:12px">' + escHtml(p.vanuseruhm_label) + '</strong></div>';
                 html += '<div style="display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:12px">';
-                html += '<span style="color:#666">Puuliik:</span><strong>' + (p.puuliik || '?') + '</strong>';
+                html += '<span style="color:#666">Puuliik:</span><strong>' + escHtml(p.puuliik || '?') + '</strong>';
                 html += '<span style="color:#666">Vanus:</span><span>' + (p.vanus || '?') + ' a';
                 if (p.raievanus) html += ' <span style="color:#999;font-size:10px">(raievanus ' + p.raievanus + 'a)</span>';
                 html += '</span>';
                 html += '<span style="color:#666">Tagavara:</span><span>' + (p.tagavara_y_ha || '?') + ' m³/ha</span>';
                 html += '<span style="color:#666">Pindala:</span><span>' + (p.pindala_ha || '?') + ' ha</span>';
-                if (p.boniteet) html += '<span style="color:#666">Boniteet:</span><span>' + p.boniteet + '</span>';
-                if (p.korgus) html += '<span style="color:#666">Kõrgus:</span><span>' + p.korgus + ' m</span>';
+                if (p.boniteet) html += '<span style="color:#666">Boniteet:</span><span>' + escHtml(p.boniteet) + '</span>';
+                if (p.korgus) html += '<span style="color:#666">Kõrgus:</span><span>' + escHtml(p.korgus) + ' m</span>';
                 html += '</div>';
-                if (p.vanuseruhm_desc) html += '<div style="margin-top:6px;font-size:11px;color:#555;font-style:italic">' + p.vanuseruhm_desc + '</div>';
+                if (p.vanuseruhm_desc) html += '<div style="margin-top:6px;font-size:11px;color:#555;font-style:italic">' + escHtml(p.vanuseruhm_desc) + '</div>';
                 html += '<div style="margin-top:8px;padding-top:6px;border-top:1px solid #e0e0e0">';
                 html += '<div style="font-size:18px;font-weight:800;color:#2e7d32">' + val + '</div>';
                 if (valHa) html += '<div style="font-size:11px;color:#666">' + valHa + '</div>';
@@ -1128,7 +1128,7 @@
         html += '<div class="info-row"><span class="label" title="Saematerjali hind, kõige väärtuslikum osa metsast">Palk ' + ddInfo('Saematerjali hind, kõige väärtuslikum osa metsast') + '</span><span class="value">' + formatNum(data.log_price, 2) + ' €/m³</span></div>';
         html += '<div class="info-row"><span class="label" title="Paberipuu hind, väiksemad puud ja oksad">Paberipuit ' + ddInfo('Paberipuu hind, väiksemad puud ja oksad') + '</span><span class="value">' + formatNum(data.pulp_price, 2) + ' €/m³</span></div>';
         if (data.price_source) {
-            html += '<div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-muted);font-style:italic">Hinnad: ' + data.price_source + '</div>';
+            html += '<div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-muted);font-style:italic">Hinnad: ' + escHtml(data.price_source) + '</div>';
         }
         el.innerHTML = html;
         setTimeout(function() {
@@ -1174,7 +1174,7 @@
             var colors = ['#28a745', '#ffc107', '#fd7e14', '#e63946'];
             html += '<div class="info-row"><span class="label">Üraski risk ' + ddInfo('Kuuse-kooreürask (Ips typographus) on kuuse suurim kahjur Eestis – ta kaevab koore alla käike, mis katkestavad puu toitainete transpordi ja tapavad selle. Risk sõltub kuuse vanusest ja asukohast: vanemad puud (>30a) on vastuvõtlikumad, sest nende koor on paksem ja sobib üraskile paremini. MKE tsoonid on Keskkonnaameti määratud massiüraski kolded, kus populatsioon on plahvatuslikult kasvanud. Kuivad suved ja tormikahjustused suurendavad riski, sest nõrgestatud puud meelitavad üraskit.') + '</span>';
             html += '<span style="color:' + (colors[y.score] || '#6c757d') + ';font-weight:600">' + (y.label || '—') + '</span></div>';
-            if (y.detail) html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem">' + y.detail + '</div>';
+            if (y.detail) html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem">' + escHtml(y.detail) + '</div>';
         }
         // Terviseindeks
         if (data.terviseindeks != null) {
@@ -1206,7 +1206,7 @@
             html += '<div style="margin-bottom:0.5rem"><span style="display:inline-block;padding:0.2rem 0.6rem;background:#e8f5e9;color:#2e7d32;border-radius:var(--radius-full);font-size:0.75rem;font-weight:600">' + active.length + ' aktiivset</span></div>';
             html += '<table style="font-size:0.8rem"><thead><tr><th>Tüüp</th><th>Staatus</th><th>Kehtib kuni</th><th>Pindala</th></tr></thead><tbody>';
             active.forEach(function(t) {
-                html += '<tr><td><strong>' + (t.tyyp || '—') + '</strong></td><td><span style="color:var(--success);font-weight:600">' + t.staatus + '</span></td><td>' + (t.kehtiv_kuni || '—') + '</td><td>' + (t.pindala_ha ? t.pindala_ha + ' ha' : '—') + '</td></tr>';
+                html += '<tr><td><strong>' + escHtml(t.tyyp || '—') + '</strong></td><td><span style="color:var(--success);font-weight:600">' + escHtml(t.staatus) + '</span></td><td>' + escHtml(t.kehtiv_kuni || '—') + '</td><td>' + (t.pindala_ha ? t.pindala_ha + ' ha' : '—') + '</td></tr>';
             });
             html += '</tbody></table>';
         }
@@ -1214,7 +1214,7 @@
             html += '<details style="margin-top:0.5rem"><summary style="cursor:pointer;font-size:0.78rem;color:var(--text-muted)">Aegunud/lõpetatud (' + inactive.length + ')</summary>';
             html += '<table style="margin-top:0.3rem;font-size:0.78rem"><thead><tr><th>Tüüp</th><th>Staatus</th><th>Pindala</th></tr></thead><tbody>';
             inactive.forEach(function(t) {
-                html += '<tr><td>' + (t.tyyp || '—') + '</td><td class="muted">' + t.staatus + '</td><td>' + (t.pindala_ha ? t.pindala_ha + ' ha' : '—') + '</td></tr>';
+                html += '<tr><td>' + escHtml(t.tyyp || '—') + '</td><td class="muted">' + escHtml(t.staatus) + '</td><td>' + (t.pindala_ha ? t.pindala_ha + ' ha' : '—') + '</td></tr>';
             });
             html += '</tbody></table></details>';
         }
@@ -1296,10 +1296,10 @@
             var cls = isEligible ? 'toetus-card toetus-eligible' : 'toetus-card';
             var html = '<div class="' + cls + '">';
             html += '<div class="toetus-header">';
-            html += '<div class="toetus-info"><strong>' + t.nimi + '</strong>';
-            html += '<span class="toetus-cat">' + catName + ' · ' + t.asutus + '</span></div>';
+            html += '<div class="toetus-info"><strong>' + escHtml(t.nimi) + '</strong>';
+            html += '<span class="toetus-cat">' + escHtml(catName) + ' · ' + escHtml(t.asutus) + '</span></div>';
             html += '<div class="toetus-meta">';
-            if (badge) html += '<span class="toetus-badge" style="' + badgeStyle + '">' + badge + '</span>';
+            if (badge) html += '<span class="toetus-badge" style="' + badgeStyle + '">' + escHtml(badge) + '</span>';
             if (t.summa) {
                 if (t.summa.indexOf(',') > -1) {
                     html += '<div class="toetus-amount' + (isEligible ? ' eligible' : '') + '">';
@@ -1310,8 +1310,8 @@
                 }
             }
             html += '</div></div>';
-            if (t.kirjeldus) html += '<p class="toetus-desc">' + t.kirjeldus + '</p>';
-            if (!isEligible && t.pohjus) html += '<p class="toetus-reason">\u2717 ' + t.pohjus + '</p>';
+            if (t.kirjeldus) html += '<p class="toetus-desc">' + escHtml(t.kirjeldus) + '</p>';
+            if (!isEligible && t.pohjus) html += '<p class="toetus-reason">\u2717 ' + escHtml(t.pohjus) + '</p>';
             html += '<div class="toetus-footer">';
             html += '<span class="toetus-voor">Taotlusvoor: ' + (t.taotlusvoor || '\u2014') + '</span>';
             html += '<div class="toetus-links">';
