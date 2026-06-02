@@ -1586,16 +1586,27 @@ footer {
     .skeleton-card { height: 80px; }
     .dashboard { padding: 0.75rem 0.75rem 2rem; }
     #map { height: 300px; }
-    .map-controls { top: 8px; right: 8px; }
-    .layer-toggle { font-size: 0.7rem; padding: 0.5rem 0.7rem; }
+    .map-controls { top: 8px; right: 8px; left: 8px; }
+    .layer-toggle {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.6rem;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.3rem 0.6rem;
+        max-width: 100%;
+        overflow-x: auto;
+    }
+    .toggle-item { gap: 0.3rem; }
+    .toggle-item .toggle-label { font-size: 0.7rem; }
     .big-number { font-size: 1.6rem; }
     .error-msg { right: 0.5rem; left: 0.5rem; max-width: none; }
     .metric-card { padding: 1rem; }
     .ai-chat-messages { max-height: 350px; padding: 0.75rem; }
     .ai-chat-input-wrap input { font-size: 0.85rem; padding: 0.5rem 0.75rem; }
     .ai-hint { font-size: 0.7rem; padding: 0.3rem 0.6rem; }
-    .info-row { font-size: 0.82rem; padding: 0.4rem 0; }
-    .info-row .label { font-size: 0.78rem; }
+    .info-row { font-size: 0.82rem; padding: 0.4rem 0; gap: 0.5rem; }
+    .info-row .label { font-size: 0.78rem; min-width: 0; }
+    .info-row .value { font-size: 0.82rem; min-width: 0; word-break: break-word; text-align: right; }
     .card-header h3 { font-size: 0.72rem; }
     .section-desc { font-size: 0.7rem; }
     footer { padding: 1rem 0.75rem; }
