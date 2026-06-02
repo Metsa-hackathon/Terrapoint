@@ -1,8 +1,20 @@
+import re
 import httpx
+from fastapi import HTTPException
 import config
+
+_KATASTER_RE = re.compile(r'^\d{1,5}:\d{1,4}:\d{1,5}(:\d{1,4})?$')
+
+
+def _validate_kataster_nr(kataster_nr: str) -> str:
+    """Sanitize kataster_nr to prevent CQL injection."""
+    if not _KATASTER_RE.match(kataster_nr):
+        raise HTTPException(status_code=400, detail=f"Vigane katastritunnus: {kataster_nr}")
+    return kataster_nr
 
 
 async def query_kataster(kataster_nr: str) -> dict | None:
+    kataster_nr = _validate_kataster_nr(kataster_nr)
     url = (
         f"{config.GEOBASE}/kataster/wfs?"
         f"service=WFS&request=GetFeature&typeName=kataster:ky_kehtiv"

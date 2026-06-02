@@ -1032,9 +1032,17 @@
             });
             var total = Object.values(merged).reduce(function(a, b) { return a + b; }, 0);
             if (total > 100) {
-                Object.keys(merged).forEach(function(code) {
+                var codes = Object.keys(merged);
+                // First pass: round all
+                codes.forEach(function(code) {
                     merged[code] = Math.round(merged[code] / total * 100);
                 });
+                // Fix rounding drift: adjust the largest species
+                var sum = Object.values(merged).reduce(function(a, b) { return a + b; }, 0);
+                if (sum !== 100) {
+                    var biggest = codes.reduce(function(a, b) { return merged[a] >= merged[b] ? a : b; });
+                    merged[biggest] += (100 - sum);
+                }
             }
             // Build name lookup from original species data
             var nameMap = {};
@@ -1599,6 +1607,8 @@
         });
     });
 
+    function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
     async function searchAddresses(query) {
         var dropdown = document.getElementById('address-dropdown');
         try {
@@ -1612,10 +1622,10 @@
             data.results.forEach(function(r) {
                 var label = r.aadress || r.asula || '';
                 var sub = [r.asula, r.vald, r.maakond].filter(Boolean).join(', ');
-                html += '<div class="address-item" data-kataster="' + r.katastri_nr + '">';
-                html += '<div class="addr-main">' + label + '</div>';
-                if (sub) html += '<div class="addr-sub">' + sub + '</div>';
-                html += '<div class="addr-kataster">Kataster: ' + r.katastri_nr + '</div>';
+                html += '<div class="address-item" data-kataster="' + escHtml(r.katastri_nr) + '">';
+                html += '<div class="addr-main">' + escHtml(label) + '</div>';
+                if (sub) html += '<div class="addr-sub">' + escHtml(sub) + '</div>';
+                html += '<div class="addr-kataster">Kataster: ' + escHtml(r.katastri_nr) + '</div>';
                 html += '</div>';
             });
             dropdown.innerHTML = html;

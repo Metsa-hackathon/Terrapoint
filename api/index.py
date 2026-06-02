@@ -735,11 +735,11 @@ async def _search(kataster_nr: str) -> Response:
     """
     global _search_cache_hits, _search_cache_misses
 
-    # Check cache
-    cached_response = search_cache.get(kataster_nr)
-    if cached_response is not None:
+    # Check cache — store data dict, not Response (Response body is consumed once)
+    cached_data = search_cache.get(kataster_nr)
+    if cached_data is not None:
         _search_cache_hits += 1
-        return cached_response
+        return json_response(cached_data)
     _search_cache_misses += 1
 
     start = time.time()
@@ -753,9 +753,8 @@ async def _search(kataster_nr: str) -> Response:
         status = data.pop("_status", 404)
         return json_response(data, status)
 
-    response = json_response(data)
-    search_cache.set(kataster_nr, response, ttl=300)
-    return response
+    search_cache.set(kataster_nr, data, ttl=300)
+    return json_response(data)
 
 
 def build_system_prompt(data: dict) -> str:

@@ -1,5 +1,16 @@
+import re
 import httpx
+from fastapi import HTTPException
 import config
+
+_KATASTER_RE = re.compile(r'^\d{1,5}:\d{1,4}:\d{1,5}(:\d{1,4})?$')
+
+
+def _validate_kataster_nr(kataster_nr: str) -> str:
+    """Sanitize kataster_nr to prevent CQL injection."""
+    if not _KATASTER_RE.match(kataster_nr):
+        raise HTTPException(status_code=400, detail=f"Vigane katastritunnus: {kataster_nr}")
+    return kataster_nr
 
 SPECIES_NAMES = {
     "MA": "Mänd", "KU": "Kuusk", "KS": "Kask", "HB": "Haab",
@@ -52,6 +63,7 @@ def estimate_tagavara(boniteet_kood: int, korgus: float, vanus: int) -> float:
 
 async def query_eraldis(kataster_nr: str) -> list[dict]:
     """Return ALL eraldised for a kataster parcel (not just the first)."""
+    kataster_nr = _validate_kataster_nr(kataster_nr)
     url = (
         f"{config.GEOBASE}/metsaregister/wfs?"
         f"service=WFS&request=GetFeature&typeName=metsaregister:eraldis"
@@ -131,6 +143,7 @@ async def query_natura_2000(bbox_str: str) -> list[dict]:
 
 
 async def query_teatised(kataster_nr: str) -> list[dict]:
+    kataster_nr = _validate_kataster_nr(kataster_nr)
     url = (
         f"{config.GEOBASE}/metsaregister/wfs?"
         f"service=WFS&request=GetFeature&typeName=metsaregister:teatis"
