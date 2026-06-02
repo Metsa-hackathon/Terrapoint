@@ -155,6 +155,28 @@
         <div class="map-section">
             <div class="map-wrapper">
                 <div id="map"></div>
+                <div class="map-legend" id="map-legend" style="display:none">
+                    <div class="map-legend-title">Eraldiste legend</div>
+                    <div class="map-legend-section">
+                        <div class="map-legend-subtitle">Raie staatus</div>
+                        <div class="map-legend-row"><span class="legend-swatch" style="background:#e63946"></span><span><strong>Lageraie</strong> — üle raiumisvanuse</span></div>
+                        <div class="map-legend-row"><span class="legend-swatch" style="background:#ffc107"></span><span><strong>Harvendusraie</strong> — läheneb raievanusele</span></div>
+                        <div class="map-legend-row"><span class="legend-swatch" style="background:#28a745"></span><span><strong>Hooldusraie</strong> — keskealine, heas seisus</span></div>
+                        <div class="map-legend-row"><span class="legend-swatch" style="background:#17a2b8"></span><span><strong>Noor mets</strong> — liiga noor raiumiseks</span></div>
+                    </div>
+                    <div class="map-legend-section" id="map-legend-vanuseruhm">
+                        <div class="map-legend-subtitle">Vanuserühm</div>
+                        <div class="map-legend-row"><span class="legend-dot" style="background:#3b82f6"></span><span>Noormets (kuni 20a)</span></div>
+                        <div class="map-legend-row"><span class="legend-dot" style="background:#22c55e"></span><span>Keskmine (21-60a)</span></div>
+                        <div class="map-legend-row"><span class="legend-dot" style="background:#f59e0b"></span><span>Küps (61-100a)</span></div>
+                        <div class="map-legend-row"><span class="legend-dot" style="background:#ef4444"></span><span>Vana (100a+)</span></div>
+                    </div>
+                    <div class="map-legend-section" id="map-legend-species">
+                        <div class="map-legend-subtitle">Peapuuliik katastris</div>
+                        <div id="map-legend-species-list"></div>
+                    </div>
+                    <button class="map-legend-toggle" id="map-legend-toggle" aria-label="Sulge legend">−</button>
+                </div>
                 <div class="map-controls" id="map-controls" style="display:none">
                     <div class="layer-toggle">
                         <label class="toggle-item">
@@ -597,22 +619,44 @@
         label.textContent = 'Eraldised:';
         wrap.appendChild(label);
 
+        var select = document.createElement('select');
+        select.className = 'eraldis-select';
+        select.setAttribute('aria-label', 'Vali eraldis AI küsimuseks');
+
+        var placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        placeholder.textContent = '— Vali eraldis (' + eraldised.length + ' tk) —';
+        select.appendChild(placeholder);
+
+        var fmtNum = function(n) {
+            if (n == null) return '?';
+            return Math.round(n).toLocaleString('et-EE').replace(/,/g, ' ');
+        };
+
         eraldised.forEach(function(e) {
             var nr = e.eraldis_nr || '?';
             var liik = e.puuliik || '';
-            var vanus = e.vanus || '';
-            var shortLabel = nr + (liik ? ' ' + liik.substring(0, 3) : '') + (vanus ? ' ' + vanus + 'a' : '');
-            var btn = document.createElement('button');
-            btn.className = 'eraldis-pill';
-            btn.title = 'Eraldis ' + nr + (liik ? ' — ' + liik : '') + (vanus ? ', ' + vanus + 'a' : '');
-            btn.textContent = shortLabel;
-            btn.addEventListener('click', function() {
-                var q = 'Analüüsi eraldist ' + nr + ': anna hinnang selle eraldise seisukorrale, väärtusele ja soovitus (müüa, hoida, hooldusraie). Too välja kõik numbrid. Ära tee midagi drastilist, anna tasakaalustatud hinnang.';
-                aiSendMessage(q);
-            });
-            wrap.appendChild(btn);
+            var vanus = e.vanus != null ? e.vanus + 'a' : '';
+            var pind = e.pindala_ha != null ? e.pindala_ha.toFixed(2).replace('.', ',') + ' ha' : '';
+            var ruhi = e.vanuseruhm_label || e.raie_liik || '';
+            var vaartus = e.vaartus_eur ? fmtNum(e.vaartus_eur) + ' €' : '';
+            var opt = document.createElement('option');
+            opt.value = nr;
+            opt.textContent = '#' + nr + ' · ' + liik + (vanus ? ', ' + vanus : '') + (pind ? ', ' + pind : '') + (ruhi ? ' · ' + ruhi : '') + (vaartus ? ' · ' + vaartus : '');
+            select.appendChild(opt);
         });
 
+        select.addEventListener('change', function() {
+            var nr = select.value;
+            if (!nr) return;
+            var q = 'Analüüsi eraldist ' + nr + ': anna hinnang selle eraldise seisukorrale, väärtusele ja soovitus (müüa, hoida, hooldusraie). Too välja kõik numbrid. Ära tee midagi drastilist, anna tasakaalustatud hinnang.';
+            aiSendMessage(q);
+            select.value = '';
+        });
+
+        wrap.appendChild(select);
         container.appendChild(wrap);
     }
 
@@ -782,6 +826,10 @@
             map.removeLayer(overlayLayers[name]);
             delete overlayLayers[name];
         }
+        if (name === 'eraldised') {
+            var legend = document.getElementById('map-legend');
+            if (legend) legend.style.display = 'none';
+        }
     }
 
     function toggleOverlayLayer(name, visible) {
@@ -871,6 +919,55 @@
             },
         }).addTo(map);
         overlayLayers['eraldised'] = layer;
+        updateMapLegend(features);
+    }
+
+    function updateMapLegend(features) {
+        var legend = document.getElementById('map-legend');
+        var list = document.getElementById('map-legend-species-list');
+        var speciesSection = document.getElementById('map-legend-species');
+        if (!legend || !list) return;
+        if (!features || features.length === 0) {
+            legend.style.display = 'none';
+            return;
+        }
+        legend.style.display = '';
+
+        var codeColors = {
+            'MA': '#2d6a4f', 'KU': '#1a8fd4', 'KS': '#f4a261', 'HB': '#adb5bd',
+            'LH': '#6a994e', 'LM': '#8d6e63', 'LV': '#a1887f', 'TA': '#8b4513',
+            'SA': '#a0522d', 'VA': '#cd853f', 'PK': '#deb887', 'JA': '#d2691e',
+            'RE': '#b8860b', 'SP': '#2f4f4f'
+        };
+        var totals = {};
+        var totalArea = 0;
+        features.forEach(function(f) {
+            var p = f.properties || {};
+            var kood = p.puuliik_kood || '';
+            var liik = p.puuliik || kood || 'Muu';
+            var area = parseFloat(p.pindala_ha) || 0;
+            if (!kood || NON_SPECIES_CODES.indexOf(kood) === -1) {
+                totals[liik] = totals[liik] || { kood: kood, count: 0, area: 0 };
+                totals[liik].count += 1;
+                totals[liik].area += area;
+                totalArea += area;
+            }
+        });
+
+        var entries = Object.keys(totals).map(function(liik) {
+            var d = totals[liik];
+            return { liik: liik, kood: d.kood, count: d.count, area: d.area, color: codeColors[d.kood] || '#6c757d' };
+        }).sort(function(a, b) { return b.area - a.area; });
+
+        if (entries.length === 0) {
+            speciesSection.style.display = 'none';
+        } else {
+            speciesSection.style.display = '';
+            list.innerHTML = entries.map(function(e) {
+                var pct = totalArea > 0 ? Math.round(e.area / totalArea * 100) : 0;
+                return '<div class="map-legend-row"><span class="legend-swatch" style="background:' + e.color + '"></span><span><strong>' + escHtml(e.liik) + '</strong> — ' + e.count + ' tk, ' + e.area.toFixed(2).replace('.', ',') + ' ha (' + pct + '%)</span></div>';
+            }).join('');
+        }
     }
 
     // ═══ dashboard.js ═══
@@ -1522,6 +1619,17 @@
     document.addEventListener('DOMContentLoaded', function() {
         initMap();
         document.getElementById('kataster-input').focus();
+
+        // Map legend collapse toggle
+        var legend = document.getElementById('map-legend');
+        var legendBtn = document.getElementById('map-legend-toggle');
+        if (legend && legendBtn) {
+            legendBtn.addEventListener('click', function() {
+                var collapsed = legend.classList.toggle('collapsed');
+                legendBtn.textContent = collapsed ? '+' : '−';
+                legendBtn.setAttribute('aria-label', collapsed ? 'Ava legend' : 'Sulge legend');
+            });
+        }
 
         // Sidebar toggle
         var sidebar = document.getElementById('sidebar');
