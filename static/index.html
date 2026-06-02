@@ -387,7 +387,7 @@
 
     async function searchParcel(katasterNr) {
         var controller = new AbortController();
-        var timer = setTimeout(function() { controller.abort(); }, 25000);
+        var timer = setTimeout(function() { controller.abort(); }, 40000);
         try {
             var res = await fetch(API_BASE + '/search/' + encodeURIComponent(katasterNr), {signal: controller.signal});
             clearTimeout(timer);
@@ -397,7 +397,7 @@
             return await res.json();
         } catch(e) {
             clearTimeout(timer);
-            if (e.name === 'AbortError') throw new Error('Otsing aegus (25s). Proovi uuesti.');
+            if (e.name === 'AbortError') throw new Error('Otsing aegus (40s). Proovi uuesti.');
             throw e;
         }
     }

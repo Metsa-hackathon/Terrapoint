@@ -784,7 +784,7 @@ async def _search(kataster_nr: str) -> Response:
 
     start = time.time()
     try:
-        data = await asyncio.wait_for(_search_core(kataster_nr, start), timeout=25.0)
+        data = await asyncio.wait_for(_search_core(kataster_nr, start), timeout=45.0)
     except asyncio.TimeoutError:
         elapsed = round((time.time() - start) * 1000)
         data = {"error": "Otsing aegus osaliselt", "meta": {"response_time_ms": elapsed, "timeout": True}}

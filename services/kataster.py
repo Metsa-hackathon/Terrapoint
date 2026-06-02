@@ -13,6 +13,25 @@ def _validate_kataster_nr(kataster_nr: str) -> str:
     return kataster_nr
 
 
+async def _wfs_get(url: str, timeout: float = 10.0, retries: int = 1) -> list[dict]:
+    """Resilient WFS GET with retry on timeout."""
+    import asyncio
+    for attempt in range(retries + 1):
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                return resp.json().get("features", [])
+        except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError):
+            if attempt < retries:
+                await asyncio.sleep(0.5 * (attempt + 1))
+                continue
+            return []
+        except Exception:
+            return []
+    return []
+
+
 async def query_kataster(kataster_nr: str) -> dict | None:
     kataster_nr = _validate_kataster_nr(kataster_nr)
     url = (
@@ -21,13 +40,7 @@ async def query_kataster(kataster_nr: str) -> dict | None:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&CQL_FILTER=tunnus%3D%27{kataster_nr}%27"
     )
-    async with httpx.AsyncClient(timeout=15) as client:
-        try:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            features = resp.json().get("features", [])
-        except Exception:
-            return None
+    features = await _wfs_get(url, timeout=10.0, retries=2)
     if not features:
         return None
     props = features[0].get("properties", {})

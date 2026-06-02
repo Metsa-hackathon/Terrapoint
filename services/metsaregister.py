@@ -1,7 +1,27 @@
+import asyncio
 import re
 import httpx
 from fastapi import HTTPException
 import config
+
+
+async def _wfs_get(url: str, timeout: float = 20.0, retries: int = 2) -> list[dict]:
+    """Resilient WFS GET — retries on timeout (Eesti WFS on katkendlik, 1/5 kõnedest >30s)."""
+    last_err = None
+    for attempt in range(retries + 1):
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                resp = await client.get(url)
+                resp.raise_for_status()
+                return resp.json().get("features", [])
+        except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as e:
+            last_err = e
+            if attempt < retries:
+                await asyncio.sleep(0.5 * (attempt + 1))
+                continue
+        except Exception:
+            return []
+    return []
 
 _KATASTER_RE = re.compile(r'^\d{1,5}:\d{1,4}:\d{1,5}(:\d{1,4})?$')
 
@@ -70,13 +90,7 @@ async def query_eraldis(kataster_nr: str) -> list[dict]:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&CQL_FILTER=katastri_nr%3D%27{kataster_nr}%27"
     )
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            features = resp.json().get("features", [])
-    except Exception:
-        return []
+    features = await _wfs_get(url, timeout=20.0, retries=2)
     if not features:
         return []
     result = []
@@ -111,13 +125,7 @@ async def query_eraldis_element(eraldis_id: int) -> list[dict]:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&CQL_FILTER=eraldis_id%3D{eraldis_id}"
     )
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            features = resp.json().get("features", [])
-    except Exception:
-        return []
+    features = await _wfs_get(url, timeout=10.0, retries=1)
     result = []
     for feat in features:
         p = feat.get("properties", {})
@@ -139,13 +147,7 @@ async def query_natura_2000(bbox_str: str) -> list[dict]:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&bbox={bbox_str}"
     )
-    async with httpx.AsyncClient(timeout=15) as client:
-        try:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            return resp.json().get("features", [])
-        except Exception:
-            return []
+    return await _wfs_get(url, timeout=10.0, retries=1)
 
 
 async def query_teatised(kataster_nr: str) -> list[dict]:
@@ -156,13 +158,7 @@ async def query_teatised(kataster_nr: str) -> list[dict]:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&CQL_FILTER=katastri_nr%3D%27{kataster_nr}%27"
     )
-    async with httpx.AsyncClient(timeout=15) as client:
-        try:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            return resp.json().get("features", [])
-        except Exception:
-            return []
+    return await _wfs_get(url, timeout=10.0, retries=1)
 
 
 async def query_kahjustused(eraldis_id: int) -> list[dict]:
@@ -172,10 +168,4 @@ async def query_kahjustused(eraldis_id: int) -> list[dict]:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&CQL_FILTER=eraldis_id%3D{eraldis_id}"
     )
-    async with httpx.AsyncClient(timeout=15) as client:
-        try:
-            resp = await client.get(url)
-            resp.raise_for_status()
-            return resp.json().get("features", [])
-        except Exception:
-            return []
+    return await _wfs_get(url, timeout=10.0, retries=1)
