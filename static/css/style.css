@@ -1158,7 +1158,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     margin-bottom: 1rem;
 }
 
-.chart-wrapper { position: relative; max-height: 280px; }
+.chart-wrapper { position: relative; height: 280px; }
 .chart-wrapper canvas { max-height: 280px; }
 
 /* ═══ Kitsendused/Toetused now in metrics-grid ═══ */
