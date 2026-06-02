@@ -1013,7 +1013,10 @@ async def chat(request: Request):
                                 chunk = orjson.loads(data_str)
                             except Exception:
                                 continue
-                            delta = chunk.get("choices", [{}])[0].get("delta", {})
+                            choices = chunk.get("choices") or []
+                            if not choices:
+                                continue
+                            delta = choices[0].get("delta", {})
                             content_piece = delta.get("content", "")
                             if content_piece:
                                 yield "data: " + orjson.dumps({"content": content_piece}).decode() + "\n\n"
