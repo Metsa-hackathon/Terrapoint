@@ -157,22 +157,8 @@
                 <div id="map"></div>
                 <div class="map-legend" id="map-legend" style="display:none">
                     <div class="map-legend-title">Eraldiste legend</div>
-                    <div class="map-legend-section">
-                        <div class="map-legend-subtitle">Raie staatus</div>
-                        <div class="map-legend-row"><span class="legend-swatch" style="background:#e63946"></span><span><strong>Lageraie</strong> — üle raiumisvanuse</span></div>
-                        <div class="map-legend-row"><span class="legend-swatch" style="background:#ffc107"></span><span><strong>Harvendusraie</strong> — läheneb raievanusele</span></div>
-                        <div class="map-legend-row"><span class="legend-swatch" style="background:#28a745"></span><span><strong>Hooldusraie</strong> — keskealine, heas seisus</span></div>
-                        <div class="map-legend-row"><span class="legend-swatch" style="background:#17a2b8"></span><span><strong>Noor mets</strong> — liiga noor raiumiseks</span></div>
-                    </div>
-                    <div class="map-legend-section" id="map-legend-vanuseruhm">
-                        <div class="map-legend-subtitle">Vanuserühm</div>
-                        <div class="map-legend-row"><span class="legend-dot" style="background:#3b82f6"></span><span>Noormets (kuni 20a)</span></div>
-                        <div class="map-legend-row"><span class="legend-dot" style="background:#22c55e"></span><span>Keskmine (21-60a)</span></div>
-                        <div class="map-legend-row"><span class="legend-dot" style="background:#f59e0b"></span><span>Küps (61-100a)</span></div>
-                        <div class="map-legend-row"><span class="legend-dot" style="background:#ef4444"></span><span>Vana (100a+)</span></div>
-                    </div>
                     <div class="map-legend-section" id="map-legend-species">
-                        <div class="map-legend-subtitle">Peapuuliik katastris</div>
+                        <div class="map-legend-subtitle">Peapuuliik eraldises</div>
                         <div id="map-legend-species-list"></div>
                     </div>
                     <button class="map-legend-toggle" id="map-legend-toggle" aria-label="Sulge legend">−</button>
@@ -619,22 +605,43 @@
         label.textContent = 'Eraldised:';
         wrap.appendChild(label);
 
-        var select = document.createElement('select');
-        select.className = 'eraldis-select';
-        select.setAttribute('aria-label', 'Vali eraldis AI küsimuseks');
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'eraldis-pick-btn';
+        btn.setAttribute('aria-label', 'Vali eraldis AI küsimuseks');
+        btn.innerHTML = '<span class="eraldis-pick-icon">🌲</span> Vali eraldis (' + eraldised.length + ' tk) ▾';
+        wrap.appendChild(btn);
 
-        var placeholder = document.createElement('option');
-        placeholder.value = '';
-        placeholder.disabled = true;
-        placeholder.selected = true;
-        placeholder.textContent = '— Vali eraldis (' + eraldised.length + ' tk) —';
-        select.appendChild(placeholder);
+        container.appendChild(wrap);
+        openEraldisSheet(eraldised, btn);
+    }
+
+    function openEraldisSheet(eraldised, triggerBtn) {
+        var existing = document.getElementById('eraldis-sheet');
+        if (existing) existing.remove();
 
         var fmtNum = function(n) {
             if (n == null) return '?';
             return Math.round(n).toLocaleString('et-EE').replace(/,/g, ' ');
         };
 
+        var overlay = document.createElement('div');
+        overlay.className = 'eraldis-sheet-overlay';
+        overlay.id = 'eraldis-sheet';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-label', 'Vali eraldis AI küsimuseks');
+
+        var sheet = document.createElement('div');
+        sheet.className = 'eraldis-sheet';
+
+        var header = document.createElement('div');
+        header.className = 'eraldis-sheet-header';
+        header.innerHTML = '<h3>🌲 Vali eraldis (' + eraldised.length + ' tk)</h3><button type="button" class="eraldis-sheet-close" aria-label="Sulge">×</button>';
+        sheet.appendChild(header);
+
+        var list = document.createElement('div');
+        list.className = 'eraldis-sheet-list';
         eraldised.forEach(function(e) {
             var nr = e.eraldis_nr || '?';
             var liik = e.puuliik || '';
@@ -642,22 +649,52 @@
             var pind = e.pindala_ha != null ? e.pindala_ha.toFixed(2).replace('.', ',') + ' ha' : '';
             var ruhi = e.vanuseruhm_label || e.raie_liik || '';
             var vaartus = e.vaartus_eur ? fmtNum(e.vaartus_eur) + ' €' : '';
-            var opt = document.createElement('option');
-            opt.value = nr;
-            opt.textContent = '#' + nr + ' · ' + liik + (vanus ? ', ' + vanus : '') + (pind ? ', ' + pind : '') + (ruhi ? ' · ' + ruhi : '') + (vaartus ? ' · ' + vaartus : '');
-            select.appendChild(opt);
+            var dot = (e.raie_liik === 'Lageraie') ? '#e63946'
+                : (e.raie_liik === 'Harvendusraie') ? '#ffc107'
+                : (e.raie_liik === 'Hooldusraie') ? '#28a745' : '#17a2b8';
+            var card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'eraldis-sheet-item';
+            card.innerHTML =
+                '<span class="eraldis-sheet-dot" style="background:' + dot + '"></span>' +
+                '<span class="eraldis-sheet-body">' +
+                  '<span class="eraldis-sheet-nr">#' + escHtml(nr) + '</span>' +
+                  '<span class="eraldis-sheet-meta">' + escHtml(liik) + (vanus ? ' · ' + escHtml(vanus) : '') + (pind ? ' · ' + escHtml(pind) : '') + '</span>' +
+                  '<span class="eraldis-sheet-sub">' + escHtml(ruhi) + (vaartus ? ' · ' + escHtml(vaartus) : '') + '</span>' +
+                '</span>' +
+                '<span class="eraldis-sheet-arrow">›</span>';
+            card.addEventListener('click', function() {
+                var q = 'Analüüsi eraldist ' + nr + ': anna hinnang selle eraldise seisukorrale, väärtusele ja soovitus (müüa, hoida, hooldusraie). Too välja kõik numbrid. Ära tee midagi drastilist, anna tasakaalustatud hinnang.';
+                aiSendMessage(q);
+                closeEraldisSheet();
+            });
+            list.appendChild(card);
         });
+        sheet.appendChild(list);
 
-        select.addEventListener('change', function() {
-            var nr = select.value;
-            if (!nr) return;
-            var q = 'Analüüsi eraldist ' + nr + ': anna hinnang selle eraldise seisukorrale, väärtusele ja soovitus (müüa, hoida, hooldusraie). Too välja kõik numbrid. Ära tee midagi drastilist, anna tasakaalustatud hinnang.';
-            aiSendMessage(q);
-            select.value = '';
+        overlay.appendChild(sheet);
+        document.body.appendChild(overlay);
+
+        requestAnimationFrame(function() { overlay.classList.add('open'); });
+
+        var close = function() { closeEraldisSheet(); };
+        overlay.addEventListener('click', function(ev) {
+            if (ev.target === overlay) close();
         });
+        sheet.querySelector('.eraldis-sheet-close').addEventListener('click', close);
+        document.addEventListener('keydown', function escHandler(ev) {
+            if (ev.key === 'Escape') {
+                close();
+                document.removeEventListener('keydown', escHandler);
+            }
+        });
+    }
 
-        wrap.appendChild(select);
-        container.appendChild(wrap);
+    function closeEraldisSheet() {
+        var overlay = document.getElementById('eraldis-sheet');
+        if (!overlay) return;
+        overlay.classList.remove('open');
+        setTimeout(function() { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 200);
     }
 
     async function exportEUDR(katasterNr) {

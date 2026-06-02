@@ -679,28 +679,161 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     box-shadow: 0 2px 6px rgba(10,61,158,0.2);
 }
 .eraldis-select {
-    flex: 1;
-    min-width: 0;
-    max-width: 100%;
-    padding: 0.3rem 0.5rem;
+    display: none;
+}
+.eraldis-pick-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.8rem;
     background: var(--card);
     border: 1px solid var(--primary-light);
-    border-radius: var(--radius);
+    border-radius: var(--radius-full);
     font-size: 0.78rem;
     font-family: var(--font);
-    color: var(--text);
+    font-weight: 600;
+    color: var(--primary);
     cursor: pointer;
-    transition: border-color var(--transition), box-shadow var(--transition);
+    transition: all var(--transition);
+    white-space: nowrap;
 }
-.eraldis-select:hover { border-color: var(--primary); }
-.eraldis-select:focus {
-    outline: none;
+.eraldis-pick-btn:hover {
+    background: var(--primary);
+    color: white;
     border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(10,61,158,0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(10,61,158,0.25);
 }
-.eraldis-select option {
-    padding: 0.25rem;
-    font-size: 0.8rem;
+.eraldis-pick-icon { font-size: 0.85rem; }
+
+.eraldis-sheet-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 3000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    padding: 0;
+}
+.eraldis-sheet-overlay.open { opacity: 1; }
+.eraldis-sheet {
+    width: 100%;
+    max-width: 480px;
+    max-height: 80vh;
+    background: var(--card, #fff);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+.eraldis-sheet-overlay.open .eraldis-sheet { transform: translateY(0); }
+.eraldis-sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1rem 0.6rem;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    flex-shrink: 0;
+}
+.eraldis-sheet-header h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text, #1a1d23);
+    margin: 0;
+}
+.eraldis-sheet-close {
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: var(--text-muted, #8896a6);
+    cursor: pointer;
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition), color var(--transition);
+}
+.eraldis-sheet-close:hover {
+    background: var(--bg-alt, #f0f4fa);
+    color: var(--text, #1a1d23);
+}
+.eraldis-sheet-list {
+    overflow-y: auto;
+    padding: 0.4rem 0.4rem 1rem;
+    flex: 1;
+}
+.eraldis-sheet-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    padding: 0.65rem 0.75rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    text-align: left;
+    cursor: pointer;
+    font-family: var(--font);
+    color: var(--text, #1a1d23);
+    transition: background var(--transition), border-color var(--transition);
+}
+.eraldis-sheet-item:hover,
+.eraldis-sheet-item:focus {
+    background: var(--bg-alt, #f0f4fa);
+    border-color: var(--primary-light);
+    outline: none;
+}
+.eraldis-sheet-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+}
+.eraldis-sheet-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+    flex: 1;
+}
+.eraldis-sheet-nr {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+.eraldis-sheet-meta {
+    font-size: 0.78rem;
+    color: var(--text, #1a1d23);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.eraldis-sheet-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted, #8896a6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.eraldis-sheet-arrow {
+    font-size: 1.4rem;
+    color: var(--text-muted, #8896a6);
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+@media (min-width: 641px) {
+    .eraldis-sheet-overlay { align-items: center; padding: 1rem; }
+    .eraldis-sheet {
+        border-radius: 16px;
+        max-height: 70vh;
+    }
 }
 
 /* ═══ Map Legend ═══ */
@@ -814,11 +947,16 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 @media (max-width: 640px) {
     .map-legend {
         left: 8px;
-        right: 8px;
+        right: auto;
         bottom: 8px;
-        max-width: none;
+        max-width: 220px;
         font-size: 0.72rem;
+        padding: 0.5rem 0.6rem 0.4rem;
     }
+    .map-legend-title { font-size: 0.75rem; }
+    .map-legend-subtitle { font-size: 0.65rem; }
+    .legend-swatch { width: 12px; height: 12px; }
+    .map-legend-row { font-size: 0.7rem; }
 }
 
 .ai-hint-custom {
@@ -1432,6 +1570,7 @@ footer {
 
 @media (max-width: 640px) {
     html, body { overflow-x: hidden; width: 100%; max-width: 100vw; }
+    body { box-sizing: border-box; }
     .hero { padding: 0 0.5rem; height: 50px; gap: 0.3rem; }
     .loading, .sidebar { top: 50px; }
     .nav-left .logo-text h1 { font-size: 0.95rem; }
