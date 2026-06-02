@@ -46,6 +46,44 @@
     --info:       #1d4ed8;
     --info-bg:    #eff6ff;
 
+    /* Data category palette — blue scale, used for chart segments, donut slices */
+    --data-cat-1: #dbeafe;   /* blue-100 — smallest share */
+    --data-cat-2: #93c5fd;   /* blue-300 */
+    --data-cat-3: #3b82f6;   /* blue-500 */
+    --data-cat-4: #1d4ed8;   /* blue-600 */
+    --data-cat-5: #0a3d9e;   /* blue-900 — largest share */
+    --data-cat-6: #07153d;   /* ink — fallback */
+
+    /* Semantic data state — used only when a value is truly a state, not a category */
+    --data-state-danger: #b91c1c;
+    --data-state-warn:   #b45309;
+    --data-state-ok:     #047857;
+    --data-state-info:   #1d4ed8;
+
+    /* Map — eraldiste staatus (raie liik) — muted RYG, less saturated than the old rainbow */
+    --map-eraldis-lageraie:   #c2410c;  /* burnt orange — over cutting age */
+    --map-eraldis-harvendus:  #ca8a04;  /* amber — approaching cutting age */
+    --map-eraldis-hooldus:    #047857;  /* deep green — mature, healthy */
+    --map-eraldis-noor:       #1d4ed8;  /* blue — too young for cutting */
+
+    /* Map — kihi piirda joon (10 layer toggle swatches) */
+    --map-layer-kaitseala:  #047857;    /* green — protected */
+    --map-layer-piirang:    #0f766e;    /* teal — restriction */
+    --map-layer-yrask:      #c2410c;    /* burnt orange — pest */
+    --map-layer-lageraie:   #94a3b8;    /* slate — cleared */
+    --map-layer-sood:       #0369a1;    /* sky — wetland */
+    --map-layer-elupaik:    #15803d;    /* green — habitat */
+    --map-layer-karuputk:   #be185d;    /* rose — invasive */
+    --map-layer-malestised: #6d28d9;    /* violet — heritage */
+    --map-layer-veekogu:    #0284c7;    /* cyan — lake */
+    --map-layer-vooluvesi:  #0e7490;    /* teal-deep — river */
+
+    /* Promotional callout surface — used for kinnistu turuväärtus box */
+    --surface-callout:        #f0f6ff;  /* very light blue, distinct from paper-2 */
+    --surface-callout-border: #c7dcfb;
+    --surface-callout-label:  #1d4ed8;
+    --surface-callout-text:   #07153d;
+
     /* Spacing — 4pt scale */
     --s-1:  4px;
     --s-2:  8px;
@@ -485,6 +523,139 @@ a { color: var(--blue-700); text-decoration: none; }
     font-size: 11px;
     font-weight: 700;
     flex-shrink: 0;
+}
+
+/* In-card error state — replaces data area contents on failed search */
+.error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--s-3);
+    padding: var(--s-5) 0;
+}
+.error-state-icon {
+    width: 36px; height: 36px;
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-radius: var(--r);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.error-state-text {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--ink-2);
+    line-height: 1.4;
+}
+.error-state-hint {
+    font-size: 12.5px;
+    color: var(--ink-4);
+    line-height: 1.5;
+}
+
+/* Promotional callout — used for kinnistu turuväärtus panel */
+.callout-surface {
+    background: var(--surface-callout);
+    border: 1px solid var(--surface-callout-border);
+    border-radius: var(--r);
+    padding: var(--s-4) var(--s-5);
+    margin: var(--s-3) 0;
+    position: relative;
+    overflow: hidden;
+}
+.callout-surface::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--blue-600);
+}
+.callout-label {
+    font-family: var(--ff-sans);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--surface-callout-label);
+    margin-bottom: var(--s-2);
+}
+.callout-value {
+    font-family: var(--ff-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--surface-callout-text);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+}
+.callout-breakdown {
+    display: flex;
+    gap: var(--s-6);
+    margin-top: var(--s-3);
+    font-size: 0.82rem;
+    color: var(--ink-3);
+    flex-wrap: wrap;
+}
+.callout-key {
+    color: var(--ink-4);
+    margin-right: 4px;
+}
+
+/* Subtle inline links — secondary action with a hairline arrow */
+.muted-link {
+    font-size: 13px;
+    color: var(--blue-700);
+    text-decoration: none;
+    border-bottom: 1px solid var(--blue-200);
+    transition: border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.muted-link:hover { color: var(--blue-900); border-bottom-color: var(--blue-700); }
+
+/* Status pill — green for "active"/"present" state */
+.pill-success {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    background: var(--success-bg);
+    color: var(--success);
+    border: 1px solid #a7f3d0;
+    border-radius: var(--r-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+/* Collapsible summary line — quiet, but legible on hover */
+.muted-summary {
+    cursor: pointer;
+    font-size: 0.78rem;
+    color: var(--ink-4);
+    list-style: none;
+    padding: 4px 0;
+    transition: color var(--t-fast) var(--ease);
+}
+.muted-summary:hover { color: var(--ink-2); }
+.muted-summary::-webkit-details-marker { display: none; }
+.muted-summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 6px;
+    font-size: 0.7rem;
+    color: var(--ink-5);
+    transition: transform var(--t-base) var(--ease);
+}
+details[open] > .muted-summary::before { transform: rotate(90deg); }
+
+/* Subsidy eligible banner — matches .callout-surface family */
+.eligible-banner {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    background: var(--success-bg);
+    border: 1px solid #a7f3d0;
+    border-left: 3px solid var(--success);
+    border-radius: var(--r);
+    color: var(--success);
+    font-size: 0.85rem;
 }
 
 /* ═══ SIDEBAR ═══════════════════════════════════════════════════════════════ */
@@ -1173,6 +1344,7 @@ a { color: var(--blue-700); text-decoration: none; }
 .sinik-icon    { background: #ecfeff; color: #0e7490; border-color: #a5f3fc; }
 .risk-icon     { background: var(--danger-bg); color: var(--danger); border-color: #fecaca; }
 .eudr-icon     { background: var(--blue-50); color: var(--blue-700); border-color: var(--blue-200); }
+.teatised-icon { background: var(--info-bg); color: var(--info); border-color: var(--blue-200); }
 
 .card-head-text { flex: 1; min-width: 0; }
 .card-header h3 {
