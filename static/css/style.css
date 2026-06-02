@@ -895,6 +895,20 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     flex-shrink: 0;
     border: 1px solid rgba(0, 0, 0, 0.08);
 }
+.legend-dots-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    min-width: 36px;
+}
+.legend-dot-mini {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    display: inline-block;
+}
 .legend-dot {
     width: 10px;
     height: 10px;

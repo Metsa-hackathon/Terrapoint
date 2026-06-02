@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=7">
+    <link rel="stylesheet" href="/static/css/style.css?v=8">
 </head>
 <body>
     <!-- Top Navigation Bar -->
@@ -157,6 +157,13 @@
                 <div id="map"></div>
                 <div class="map-legend" id="map-legend" style="display:none">
                     <div class="map-legend-title">Eraldiste legend</div>
+                    <div class="map-legend-section" id="map-legend-colors">
+                        <div class="map-legend-subtitle">Kaardi värvid (raie staatus)</div>
+                        <div class="map-legend-row"><span class="legend-swatch" style="background:#e63946"></span><span><strong>Lageraie</strong> — üle raiumisvanuse</span></div>
+                        <div class="map-legend-row"><span class="legend-swatch" style="background:#ffc107"></span><span><strong>Harvendusraie</strong> — läheneb raievanusele</span></div>
+                        <div class="map-legend-row"><span class="legend-swatch" style="background:#28a745"></span><span><strong>Hooldusraie</strong> — keskealine, heas seisus</span></div>
+                        <div class="map-legend-row"><span class="legend-swatch" style="background:#17a2b8"></span><span><strong>Noor mets</strong> — liiga noor raiumiseks</span></div>
+                    </div>
                     <div class="map-legend-section" id="map-legend-species">
                         <div class="map-legend-subtitle">Peapuuliik eraldises</div>
                         <div id="map-legend-species-list"></div>
@@ -970,12 +977,6 @@
         }
         legend.style.display = '';
 
-        var codeColors = {
-            'MA': '#2d6a4f', 'KU': '#1a8fd4', 'KS': '#f4a261', 'HB': '#adb5bd',
-            'LH': '#6a994e', 'LM': '#8d6e63', 'LV': '#a1887f', 'TA': '#8b4513',
-            'SA': '#a0522d', 'VA': '#cd853f', 'PK': '#deb887', 'JA': '#d2691e',
-            'RE': '#b8860b', 'SP': '#2f4f4f'
-        };
         var totals = {};
         var totalArea = 0;
         features.forEach(function(f) {
@@ -983,17 +984,24 @@
             var kood = p.puuliik_kood || '';
             var liik = p.puuliik || kood || 'Muu';
             var area = parseFloat(p.pindala_ha) || 0;
+            var color = p.color || '';
             if (!kood || NON_SPECIES_CODES.indexOf(kood) === -1) {
-                totals[liik] = totals[liik] || { kood: kood, count: 0, area: 0 };
+                totals[liik] = totals[liik] || { count: 0, area: 0, colors: {} };
                 totals[liik].count += 1;
                 totals[liik].area += area;
+                if (color) {
+                    totals[liik].colors[color] = (totals[liik].colors[color] || 0) + 1;
+                }
                 totalArea += area;
             }
         });
 
         var entries = Object.keys(totals).map(function(liik) {
             var d = totals[liik];
-            return { liik: liik, kood: d.kood, count: d.count, area: d.area, color: codeColors[d.kood] || '#6c757d' };
+            var colorDots = Object.keys(d.colors).map(function(c) {
+                return { color: c, n: d.colors[c] };
+            }).sort(function(a, b) { return b.n - a.n; });
+            return { liik: liik, count: d.count, area: d.area, colorDots: colorDots };
         }).sort(function(a, b) { return b.area - a.area; });
 
         if (entries.length === 0) {
@@ -1002,7 +1010,13 @@
             speciesSection.style.display = '';
             list.innerHTML = entries.map(function(e) {
                 var pct = totalArea > 0 ? Math.round(e.area / totalArea * 100) : 0;
-                return '<div class="map-legend-row"><span class="legend-swatch" style="background:' + e.color + '"></span><span><strong>' + escHtml(e.liik) + '</strong> — ' + e.count + ' tk, ' + e.area.toFixed(2).replace('.', ',') + ' ha (' + pct + '%)</span></div>';
+                var dotsHtml = e.colorDots.map(function(c) {
+                    return '<span class="legend-dot-mini" style="background:' + c.color + '"></span>';
+                }).join('');
+                return '<div class="map-legend-row">' +
+                    '<span class="legend-dots-group">' + dotsHtml + '</span>' +
+                    '<span><strong>' + escHtml(e.liik) + '</strong> — ' + e.count + ' tk, ' + e.area.toFixed(2).replace('.', ',') + ' ha (' + pct + '%)</span>' +
+                    '</div>';
             }).join('');
         }
     }

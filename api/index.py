@@ -920,7 +920,7 @@ def build_system_prompt(data: dict) -> str:
 async def chat(request: Request):
     """AI metsanduse nõustaja.
 
-    Kasutab OpenRouter AI-d, et vastata küsimustele
+    Kasutab NVIDIA integrate.api.nvidia.com AI-d, et vastata küsimustele
     kinnistu andmete põhjal. Edastab eelnevalt laaditud
     andmed (data) koos süsteemi promptiga AI-le.
     """
@@ -953,7 +953,7 @@ async def chat(request: Request):
         api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
         model = os.environ.get("NVIDIA_MODEL", "stepfun-ai/step-3.7-flash")
 
-        async with httpx.AsyncClient(timeout=httpx.Timeout(25, connect=5)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(90, connect=5)) as client:
             resp = await client.post(
                 api_url,
                 headers={
@@ -969,7 +969,13 @@ async def chat(request: Request):
                 },
             )
             if resp.status_code != 200:
-                return json_response({"error": f"API viga: {resp.status_code}"}, 500)
+                if resp.status_code == 400:
+                    return json_response({"error": "Vale sisend AI-le. Proovi küsimust ümber sõnastada või lühemaks teha."}, 400)
+                if resp.status_code == 401 or resp.status_code == 403:
+                    return json_response({"error": "AI teenuse autoriseerimine ebaõnnestus. Võta ühendust administraatoriga."}, 502)
+                if resp.status_code == 429:
+                    return json_response({"error": "AI teenus on hõivatud. Oota hetk ja proovi uuesti."}, 429)
+                return json_response({"error": f"AI teenusel esines viga. Proovi mõne hetke pärast uuesti."}, 502)
 
             # Handle both JSON and SSE streaming responses
             content_type = resp.headers.get("content-type", "")
@@ -989,7 +995,7 @@ async def chat(request: Request):
                         except Exception:
                             continue
                 if not full_text:
-                    return json_response({"error": "AI ei vastanud"}, 500)
+                    return json_response({"error": "AI ei andnud vastust. Proovi küsimust lihtsamalt sõnastada."}, 502)
                 import re
                 full_text = re.sub(r'<𝑎𝑛𝑡𝑚𝑙:thinking_mode>[^<]*</𝑎𝑛𝑡𝑚𝑙:thinking_mode>', '', full_text)
                 full_text = re.sub(r'</?assistant>', '', full_text).strip()
@@ -999,15 +1005,20 @@ async def chat(request: Request):
                 try:
                     result = resp.json()
                 except Exception:
-                    return json_response({"error": "API vastus ei ole JSON"}, 500)
+                    return json_response({"error": "AI vastus ei olnud loetav. Proovi uuesti."}, 502)
                 choices = result.get("choices", [])
                 if not choices:
-                    err = result.get("error", "Tühi vastus")
-                    error = err.get("message", str(err)) if isinstance(err, dict) else str(err)
-                    return json_response({"error": error}, 500)
+                    err = result.get("error", {})
+                    msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
+                    msg_l = msg.lower() if isinstance(msg, str) else ""
+                    if "context" in msg_l and ("length" in msg_l or "too long" in msg_l or "exceed" in msg_l):
+                        return json_response({"error": "Küsimus on liiga pikk. Proovi lühemat küsimust."}, 400)
+                    if "invalid" in msg_l or "bad request" in msg_l:
+                        return json_response({"error": "Vale sisend AI-le. Proovi küsimust ümber sõnastada."}, 400)
+                    return json_response({"error": "AI ei andnud vastust. Proovi uuesti."}, 502)
                 content = choices[0].get("message", {}).get("content", "")
                 if not content:
-                    return json_response({"error": "AI ei vastanud"}, 500)
+                    return json_response({"error": "AI ei andnud vastust. Proovi küsimust lihtsamalt sõnastada."}, 502)
                 # Strip thinking/assistant tags that leak from reasoning models
                 import re
                 content = re.sub(r'<𝑎𝑛𝑡𝑚𝑙:thinking_mode>[^<]*</𝑎𝑛𝑡𝑚𝑙:thinking_mode>', '', content)
@@ -1016,8 +1027,10 @@ async def chat(request: Request):
 
     except httpx.ReadTimeout:
         return json_response({"error": "AI vastus võttis liiga kaua. Proovi lühemat küsimust."}, 504)
+    except httpx.ConnectError:
+        return json_response({"error": "AI teenusele ei õnnestu hetkel ühendust saada. Proovi mõne hetke pärast."}, 503)
     except Exception as exc:
-        return json_response({"error": f"Serveri viga: {str(exc)}"}, 500)
+        return json_response({"error": "Midagi läks valesti. Proovi uuesti."}, 500)
 
 
 @app.get("/api/export/eudr/{kataster_nr:path}")
