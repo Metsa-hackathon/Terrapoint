@@ -144,6 +144,8 @@ async def search(kataster_nr: str, request: Request):
             return json_response({"error": f"VPS proxy error: {exc}"}, 502)
     try:
         return await _search(kataster_nr)
+    except HTTPException:
+        raise
     except Exception as exc:
         import traceback
         return json_response({"error": str(exc), "trace": traceback.format_exc()}, 500)
