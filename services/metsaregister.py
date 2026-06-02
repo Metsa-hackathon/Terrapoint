@@ -5,20 +5,29 @@ from fastapi import HTTPException
 import config
 
 
-async def _wfs_get(url: str, timeout: float = 20.0, retries: int = 2) -> list[dict]:
-    """Resilient WFS GET — retries on timeout (Eesti WFS on katkendlik, 1/5 kõnedest >30s)."""
-    last_err = None
+async def _wfs_get(url: str, timeout: float = 20.0, retries: int = 3) -> list[dict]:
+    """Resilient WFS GET — retries on transient errors.
+
+    Returns [] only on successful response with 0 features OR after exhausting retries.
+    Caller cannot distinguish genuine empty from total failure (acceptable for
+    subordinate queries like eraldised/teatised; for kataster use services/kataster.py).
+    """
     for attempt in range(retries + 1):
         try:
             async with httpx.AsyncClient(timeout=timeout) as client:
                 resp = await client.get(url)
+                if resp.status_code >= 500 or resp.status_code in (408, 429):
+                    if attempt < retries:
+                        await asyncio.sleep(0.5 * (2 ** attempt))
+                        continue
+                    return []
                 resp.raise_for_status()
                 return resp.json().get("features", [])
-        except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as e:
-            last_err = e
+        except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError):
             if attempt < retries:
-                await asyncio.sleep(0.5 * (attempt + 1))
+                await asyncio.sleep(0.5 * (2 ** attempt))
                 continue
+            return []
         except Exception:
             return []
     return []
@@ -90,7 +99,7 @@ async def query_eraldis(kataster_nr: str) -> list[dict]:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&CQL_FILTER=katastri_nr%3D%27{kataster_nr}%27"
     )
-    features = await _wfs_get(url, timeout=20.0, retries=2)
+    features = await _wfs_get(url, timeout=20.0, retries=3)
     if not features:
         return []
     result = []

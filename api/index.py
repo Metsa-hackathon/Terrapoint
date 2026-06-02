@@ -219,10 +219,22 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     pindala = 0
 
     # Process kitsendused from layers
-    for key in ["kaitsealad", "piirang", "karuputk", "malestised"]:
+    kitsendused_keys = [
+        "kaitsealad", "piirang", "piirangukeelualad", "kaitsevoondid",
+        "karuputk", "malestised", "uleujutus", "veekaitse",
+        "ranna_piirang", "vaetiste_keeld", "kma_kitsendused", "katsealad",
+    ]
+    for key in kitsendused_keys:
         for feat in layers_data.get(key, []):
             props = feat.get("properties", {})
-            kitsendused.append({"tyyp": key, "kirjeldus": props.get("nimi", props.get("nimetus", key))})
+            kirjeldus = (
+                props.get("nimi")
+                or props.get("nimetus")
+                or props.get("KITSENDUSE_LIIK")
+                or props.get("kirjeldus")
+                or key
+            )
+            kitsendused.append({"tyyp": key, "kirjeldus": kirjeldus})
 
     eraldised_features = []
     species_colors = {"MA": "#2d6a4f", "KU": "#1a8fd4", "KS": "#f4a261", "HB": "#adb5bd", "LH": "#6a994e", "LM": "#8d6e63", "LV": "#a1887f"}
