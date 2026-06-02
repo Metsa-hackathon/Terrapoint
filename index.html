@@ -1663,15 +1663,16 @@
             safe(renderKitsendused, data.kitsendused, 'kitsendused');
             safe(renderToetused, data.toetused, 'toetused');
 
-            if (data.mets && data.mets.liikide_koosseis) renderCompositionChart(data.mets.liikide_koosseis);
-            if (data.vaartus) renderValueChart(data.vaartus);
-
             // Load map overlay layers
             if (data.map_layers) loadMapLayers(data.map_layers);
             document.getElementById('map-controls').style.display = '';
 
             hideLoading();
             showDashboard();
+
+            // Render charts AFTER showDashboard makes the canvas visible
+            if (data.mets && data.mets.liikide_koosseis) renderCompositionChart(data.mets.liikide_koosseis);
+            if (data.vaartus) renderValueChart(data.vaartus);
 
             // Trigger AI analysis
             aiAnalyzeKataster(data.kataster.number, data.mets ? data.mets.eraldised : null);
