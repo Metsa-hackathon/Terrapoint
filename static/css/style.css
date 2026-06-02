@@ -965,6 +965,11 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     opacity: 0.5;
 }
 
+.toggle-label { font-size: inherit; font-weight: inherit; }
+.ai-welcome { opacity: 0.85; }
+.eudr-card { border-left: 3px solid var(--info, #3b82f6); }
+.custom-marker { cursor: pointer; }
+
 .initial-info {
     padding: 1.2rem 1rem;
     text-align: center;
@@ -1013,7 +1018,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 
 .info-row:last-child { border-bottom: none; }
 
-.info-row .label { color: var(--text-muted); font-weight: 400; font-size: 0.85rem; }
+.info-row .label { color: var(--text-muted); font-weight: 400; font-size: 0.85rem; position: relative; }
 .info-row .value { font-weight: 600; color: var(--text); text-align: right; }
 
 /* ═══ Big Numbers ═══ */
