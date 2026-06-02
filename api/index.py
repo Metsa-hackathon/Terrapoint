@@ -946,12 +946,12 @@ async def chat(request: Request):
             messages.append({"role": h.get("role", "user"), "content": h.get("content", "")})
         messages.append({"role": "user", "content": user_message})
 
-        api_key = os.environ.get("OPENROUTER_API_KEY", "")
+        api_key = os.environ.get("NVIDIA_API_KEY", "")
         if not api_key:
-            return json_response({"error": "OpenRouter API key not configured"}, 500)
+            return json_response({"error": "NVIDIA API key not configured"}, 500)
 
-        api_url = "https://openrouter.ai/api/v1/chat/completions"
-        model = os.environ.get("OPENROUTER_MODEL", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free")
+        api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
+        model = os.environ.get("NVIDIA_MODEL", "stepfun-ai/step-3.7-flash")
 
         async with httpx.AsyncClient(timeout=httpx.Timeout(25, connect=5)) as client:
             resp = await client.post(
@@ -965,7 +965,7 @@ async def chat(request: Request):
                     "messages": messages,
                     "stream": False,
                     "temperature": 0.7,
-                    "max_tokens": 10000,
+                    "max_tokens": 8000,
                 },
             )
             if resp.status_code != 200:
