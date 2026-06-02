@@ -101,8 +101,11 @@ async def address_search(q: str = ""):
         if not q or len(q) < 2:
             return json_response({"results": []})
 
-        import urllib.parse
-        cql = urllib.parse.quote(f"l_aadress LIKE '%{q}%'")
+        import urllib.parse, re as _re
+        safe_q = _re.sub(r"[^a-zA-Z0-9äöüšžõÄÖÜŠŽÕ\s\-]", "", q).strip()
+        if len(safe_q) < 2:
+            return json_response({"results": []})
+        cql = urllib.parse.quote(f"l_aadress LIKE '%{safe_q}%'")
         url = (
             f"{config.GEOBASE}/kataster/wfs?"
             f"service=WFS&request=GetFeature&typeName=kataster:ky_aadress"
@@ -148,7 +151,8 @@ async def search(kataster_nr: str, request: Request):
         raise
     except Exception as exc:
         import traceback
-        return json_response({"error": str(exc), "trace": traceback.format_exc()}, 500)
+        print(f"[ERROR] {exc}\n{traceback.format_exc()}")
+        return json_response({"error": str(exc)}, 500)
 
 
 def _filter_features_by_geometry(features, parcel_geom):
@@ -256,6 +260,16 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         else:
             all_elements = []
             all_kahjustused = []
+            # Build approximate liikide_koosseis from eraldised-level data
+            for e in eraldised:
+                kood = e.get("puuliik_kood")
+                if kood:
+                    liikide_koosseis.append({
+                        "puuliik_kood": kood,
+                        "puuliik": e.get("puuliik", kood),
+                        "tagavara_y_ha": e.get("tagavara_y_ha") or 0,
+                        "vanus": e.get("vanus") or 0,
+                    })
 
         # Merge all liikide_koosseis from all eraldised
         for elements in all_elements:
@@ -281,7 +295,9 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             kood = e.get("puuliik_kood") or "MA"
             species_area[kood] = species_area.get(kood, 0) + (e.get("pindala_ha") or 0)
         puuliik = max(species_area, key=species_area.get) if species_area else "MA"
-        primary = max(eraldised, key=lambda e: (e.get("pindala_ha") or 0))
+        # Pick primary eraldis from peapuuliik species (largest area within that species)
+        peapuuliik_eraldised = [e for e in eraldised if (e.get("puuliik_kood") or "MA") == puuliik]
+        primary = max(peapuuliik_eraldised, key=lambda e: (e.get("pindala_ha") or 0)) if peapuuliik_eraldised else max(eraldised, key=lambda e: (e.get("pindala_ha") or 0))
         boniteet = primary.get("boniteedi_kood") or 3
 
         koosseis_with_osakaal = []
@@ -334,14 +350,24 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
                     k = e.get("puuliik_kood", "MA")
                     eraldis_species_area[k] = eraldis_species_area.get(k, 0) + (e.get("pindala_ha") or 0)
                 total_area = sum(eraldis_species_area.values()) or 1
+                raw_area_pcts = []
                 for s in species_list:
                     kood = s["puuliik_kood"]
                     area_pct = round((eraldis_species_area.get(kood, 0) / total_area) * 100)
+                    if area_pct < 1:
+                        area_pct = round(100 / len(species_list))
+                    raw_area_pcts.append((s, area_pct))
+                # Normalize so sum is exactly 100
+                area_sum = sum(p for _, p in raw_area_pcts)
+                if area_sum != 100 and raw_area_pcts:
+                    raw_area_pcts.sort(key=lambda x: x[1], reverse=True)
+                    raw_area_pcts[0] = (raw_area_pcts[0][0], raw_area_pcts[0][1] + (100 - area_sum))
+                for s, pct in raw_area_pcts:
                     koosseis_with_osakaal.append({
-                        "puuliik": s["puuliik"], "puuliik_kood": kood,
+                        "puuliik": s["puuliik"], "puuliik_kood": s["puuliik_kood"],
                         "tagavara_y_ha": round(s["tagavara_y_ha"], 1) if s["tagavara_y_ha"] else 0,
                         "vanus": round(s["vanus_sum"] / s["count"]) if s["count"] else 0,
-                        "osakaal": area_pct if area_pct > 0 else round(100 / len(species_list)),
+                        "osakaal": pct,
                     })
 
         # Carbon and cutting age use the final peapuuliik
@@ -555,13 +581,15 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     # Additional data for subsidy eligibility
     has_kuusk = any(e.get("puuliik_kood") == "KU" for e in eraldised) if eraldised else False
     max_kuusk_vanus = max((e.get("vanus") or 0) for e in eraldised if e.get("puuliik_kood") == "KU") if has_kuusk else 0
+    _raievanus_area = sum((e.get("pindala_ha") or 0) for e in eraldised)
+    keskm_raievanus = int(round(sum((e.get("raievanus") or 0) * (e.get("pindala_ha") or 0) for e in eraldised) / _raievanus_area)) if _raievanus_area else None
 
     subsidy_data = {
         "natura_2000": natura_2000,
         "vaariselupaik": vaariselupaik,
         "keskm_vanus": int(avg_vanus) if eraldised else 0,
         "peapuuliik_kood": puuliik if eraldised else None,
-        "keskm_raievanus": eraldised[0].get("raievanus") if eraldised else None,
+        "keskm_raievanus": keskm_raievanus,
         "mets_pindala": pindala if eraldised else 0,
         "siht1": kataster_data.get("sihtotstarve", ""),
         "kaitseala": bool(kaitseala_features),
@@ -974,7 +1002,8 @@ async def chat(request: Request):
                     return json_response({"error": "API vastus ei ole JSON"}, 500)
                 choices = result.get("choices", [])
                 if not choices:
-                    error = result.get("error", {}).get("message", "Tühi vastus")
+                    err = result.get("error", "Tühi vastus")
+                    error = err.get("message", str(err)) if isinstance(err, dict) else str(err)
                     return json_response({"error": error}, 500)
                 content = choices[0].get("message", {}).get("content", "")
                 if not content:

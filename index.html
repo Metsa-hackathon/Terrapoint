@@ -474,8 +474,10 @@
             return '<ol style="margin:0.3rem 0;padding-left:1.2rem">' + m.replace(/oli>/g, 'li>') + '</ol>';
         });
         // Unordered lists - convert and wrap
-        text = text.replace(/^\- (.+)$/gm, '<li>$1</li>');
-        text = text.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul style="margin:0.3rem 0;padding-left:1.2rem">$1</ul>');
+        text = text.replace(/^\- (.+)$/gm, '<uli>$1</uli>');
+        text = text.replace(/((?:<uli>.*<\/uli>\n?)+)/g, function(m) {
+            return '<ul style="margin:0.3rem 0;padding-left:1.2rem">' + m.replace(/uli>/g, 'li>') + '</ul>';
+        });
         // Paragraphs
         text = text.replace(/\n\n/g, '</p><p>');
         // Single newlines to <br>
@@ -554,7 +556,7 @@
         } catch(err) {
             aiRemoveTyping();
             var msg = err.name === 'AbortError' ? 'AI vastus aegus. Proovi lühemat küsimust.' : 'Viga: ' + err.message;
-            aiAppendMessage('assistant', '<span style="color:var(--danger)">' + msg + '</span>');
+            aiAppendMessage('assistant', '<span style="color:var(--danger)">' + escHtml(msg) + '</span>');
         }
 
         aiStreaming = false;
@@ -987,14 +989,14 @@
     function renderKataster(data) {
         var el = document.getElementById('kataster-info');
         var html = '';
-        html += '<div class="info-row"><span class="label">Number</span><span class="value">' + (data.number || '—') + '</span></div>';
+        html += '<div class="info-row"><span class="label">Number</span><span class="value">' + escHtml(data.number || '—') + '</span></div>';
         html += '<div class="info-row"><span class="label">Pindala ' + ddInfo('Krundi kogupindala hektarites, arvutatud geomeetriast') + '</span><span class="value">' + formatNum(data.pindala_ha, 2) + ' ha</span></div>';
         if (data.mets_pindala_ha) html += '<div class="info-row"><span class="label">Metsamaa ' + ddInfo('Metsamaa pindala, eraldiste kogupindala') + '</span><span class="value">' + formatNum(data.mets_pindala_ha, 2) + ' ha</span></div>';
-        html += '<div class="info-row"><span class="label">Sihtotstarve ' + ddInfo('Maa sihtotstarve: metsamaa, põllumaa, elamumaa vms', valueExplain('sihtotstarve', data.sihtotstarve)) + '</span><span class="value">' + (data.sihtotstarve || '—') + '</span></div>';
-        html += '<div class="info-row"><span class="label">Omandivorm ' + ddInfo('Kinnistu omandivorm: era, riigi või ühisomand', valueExplain('omandivorm', data.omvorm)) + '</span><span class="value">' + (data.omvorm || '—') + '</span></div>';
-        if (data.mk_nimi) html += '<div class="info-row"><span class="label">Maakond</span><span class="value">' + data.mk_nimi + '</span></div>';
-        if (data.ov_nimi) html += '<div class="info-row"><span class="label">Omavalitsus</span><span class="value">' + data.ov_nimi + '</span></div>';
-        if (data.l_aadress) html += '<div class="info-row"><span class="label">Aadress</span><span class="value">' + data.l_aadress + '</span></div>';
+        html += '<div class="info-row"><span class="label">Sihtotstarve ' + ddInfo('Maa sihtotstarve: metsamaa, põllumaa, elamumaa vms', valueExplain('sihtotstarve', data.sihtotstarve)) + '</span><span class="value">' + escHtml(data.sihtotstarve || '—') + '</span></div>';
+        html += '<div class="info-row"><span class="label">Omandivorm ' + ddInfo('Kinnistu omandivorm: era, riigi või ühisomand', valueExplain('omandivorm', data.omvorm)) + '</span><span class="value">' + escHtml(data.omvorm || '—') + '</span></div>';
+        if (data.mk_nimi) html += '<div class="info-row"><span class="label">Maakond</span><span class="value">' + escHtml(data.mk_nimi) + '</span></div>';
+        if (data.ov_nimi) html += '<div class="info-row"><span class="label">Omavalitsus</span><span class="value">' + escHtml(data.ov_nimi) + '</span></div>';
+        if (data.l_aadress) html += '<div class="info-row"><span class="label">Aadress</span><span class="value">' + escHtml(data.l_aadress) + '</span></div>';
         // Total value = land market value + timber value — big prominent display
         var vaartus = window._vaartusData || {};
         var maaMaksuhind = data.maks_hind || 0;
@@ -1171,7 +1173,7 @@
             var y = data.yrask;
             var colors = ['#28a745', '#ffc107', '#fd7e14', '#e63946'];
             html += '<div class="info-row"><span class="label">Üraski risk ' + ddInfo('Kuuse-kooreürask (Ips typographus) on kuuse suurim kahjur Eestis – ta kaevab koore alla käike, mis katkestavad puu toitainete transpordi ja tapavad selle. Risk sõltub kuuse vanusest ja asukohast: vanemad puud (>30a) on vastuvõtlikumad, sest nende koor on paksem ja sobib üraskile paremini. MKE tsoonid on Keskkonnaameti määratud massiüraski kolded, kus populatsioon on plahvatuslikult kasvanud. Kuivad suved ja tormikahjustused suurendavad riski, sest nõrgestatud puud meelitavad üraskit.') + '</span>';
-            html += '<span style="color:' + colors[y.score] + ';font-weight:600">' + y.label + '</span></div>';
+            html += '<span style="color:' + (colors[y.score] || '#6c757d') + ';font-weight:600">' + (y.label || '—') + '</span></div>';
             if (y.detail) html += '<div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.25rem">' + y.detail + '</div>';
         }
         // Terviseindeks
@@ -1252,8 +1254,8 @@
             } else if (tyyp.indexOf('yrask') >= 0) {
                 link = eelisLink; linkText = 'EELIS';
             }
-            html += '<tr><td><strong>' + k.tyyp + '</strong></td><td>' + k.kirjeldus + '</td>';
-            html += '<td><a href="' + link + '" target="_blank" rel="noopener" style="color:var(--primary);font-size:0.82rem">' + linkText + ' →</a></td></tr>';
+            html += '<tr><td><strong>' + escHtml(k.tyyp) + '</strong></td><td>' + escHtml(k.kirjeldus) + '</td>';
+            html += '<td><a href="' + escHtml(link) + '" target="_blank" rel="noopener" style="color:var(--primary);font-size:0.82rem">' + escHtml(linkText) + ' →</a></td></tr>';
         });
         html += '</tbody></table>';
         el.innerHTML = html;
@@ -1464,10 +1466,13 @@
         if (!ctx || !data) return;
         if (valueChart) valueChart.destroy();
 
-        var harvestCost = data.tagavara_m3 * 18;
-        var transportCost = data.tagavara_m3 * 9;
-        var logValue = data.tagavara_m3 * 0.6 * data.log_price;
-        var pulpValue = data.tagavara_m3 * 0.4 * data.pulp_price;
+        var m3 = data.tagavara_m3 || 0;
+        var lp = data.log_price || 0;
+        var pp = data.pulp_price || 0;
+        var harvestCost = m3 * 18;
+        var transportCost = m3 * 9;
+        var logValue = m3 * 0.6 * lp;
+        var pulpValue = m3 * 0.4 * pp;
 
         valueChart = new Chart(ctx, {
             type: 'bar',
@@ -1685,7 +1690,7 @@
             if (data.vaartus) renderValueChart(data.vaartus);
 
             // Trigger AI analysis
-            aiAnalyzeKataster(data.kataster.number, data.mets ? data.mets.eraldised : null);
+            if (data.kataster) aiAnalyzeKataster(data.kataster.number, data.mets ? data.mets.eraldised : null);
 
             // Show parcel on the already-visible map
             setTimeout(function() {

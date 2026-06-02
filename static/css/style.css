@@ -369,7 +369,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent 0%, rgba(10,61,158,0.04) 50%, transparent 100%);
+    background: linear-gradient(90deg, transparent 0%, rgba(10,61,158,0.12) 50%, transparent 100%);
     animation: shimmer 1.8s ease-in-out infinite;
 }
 
@@ -692,7 +692,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); line
 }
 
 .ai-hint-custom:hover {
-    background: linear-gradient(135deg, #5a6fd6, #6a4294);
+    background: linear-gradient(135deg, var(--primary-dark, #082d7a), var(--primary));
     border-color: transparent;
     color: white;
 }
@@ -1277,6 +1277,7 @@ footer {
 @media (max-width: 1024px) {
     .metrics-grid { grid-template-columns: repeat(2, 1fr); }
     .search-box { min-width: 280px; }
+    .search-box input { width: 100%; max-width: 320px; }
     .skeleton-cards { grid-template-columns: repeat(2, 1fr); }
 }
 
@@ -1289,6 +1290,7 @@ footer {
 @media (max-width: 640px) {
     html, body { overflow-x: hidden; width: 100%; max-width: 100vw; }
     .hero { padding: 0 0.5rem; height: 50px; gap: 0.3rem; }
+    .loading, .sidebar { top: 50px; }
     .nav-left .logo-text h1 { font-size: 0.95rem; }
     .nav-left { gap: 0.4rem; }
     .search-box { min-width: 0; max-width: none; flex: 1; }
