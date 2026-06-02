@@ -610,10 +610,10 @@
         btn.className = 'eraldis-pick-btn';
         btn.setAttribute('aria-label', 'Vali eraldis AI küsimuseks');
         btn.innerHTML = '<span class="eraldis-pick-icon">🌲</span> Vali eraldis (' + eraldised.length + ' tk) ▾';
+        btn.addEventListener('click', function() { openEraldisSheet(eraldised); });
         wrap.appendChild(btn);
 
         container.appendChild(wrap);
-        openEraldisSheet(eraldised, btn);
     }
 
     function openEraldisSheet(eraldised, triggerBtn) {
