@@ -511,6 +511,7 @@
         div.appendChild(bubble);
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
+        _aiUserScrolledUp = false;
         return bubble;
     }
 
@@ -531,7 +532,35 @@
 
     function aiScrollToBottom() {
         var container = document.getElementById('ai-chat-messages');
-        if (container) container.scrollTop = container.scrollHeight;
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+            _aiUserScrolledUp = false;
+        }
+    }
+
+    // Auto-scroll only when user is already near bottom — lets them scroll
+    // up freely while the AI is still streaming reasoning/answer.
+    var _aiUserScrolledUp = false;
+    function aiAutoScroll() {
+        var container = document.getElementById('ai-chat-messages');
+        if (!container) return;
+        if (_aiUserScrolledUp) return; // user wants to read history, don't yank
+        var distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+        if (distFromBottom < 80) {
+            container.scrollTop = container.scrollHeight;
+        }
+    }
+
+    // Track manual scroll: if user scrolls up, stop auto-scrolling. Once they
+    // come back to the bottom, re-enable.
+    function aiInitScrollTracking() {
+        var container = document.getElementById('ai-chat-messages');
+        if (!container || container._scrollTracked) return;
+        container._scrollTracked = true;
+        container.addEventListener('scroll', function() {
+            var dist = container.scrollHeight - container.scrollTop - container.clientHeight;
+            _aiUserScrolledUp = dist > 80;
+        }, { passive: true });
     }
 
     function aiFormatResponse(text) {
@@ -664,7 +693,7 @@
                         fullReasoning += obj.reasoning;
                         if (thinkBlock) {
                             thinkBlock.innerHTML = '<span class="ai-thinking-text">Mõtleb</span><span class="ai-thinking-snippet">' + escHtml(fullReasoning.slice(-200)) + '</span>';
-                            aiScrollToBottom();
+                            aiAutoScroll();
                         }
                     }
                     if (obj.content) {
@@ -678,7 +707,7 @@
                                 if (thinkBlock) thinkBlock.style.display = 'none';
                             }
                             answerBlock.innerHTML = aiFormatResponse(cleaned);
-                            aiScrollToBottom();
+                            aiAutoScroll();
                         }
                     }
                 }
@@ -1863,6 +1892,7 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         initMap();
+        aiInitScrollTracking();
 
         // ── Landing wiring ──
         var landing = document.getElementById('landing');
