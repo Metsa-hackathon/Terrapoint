@@ -216,7 +216,11 @@
                     <button class="map-legend-toggle" id="map-legend-toggle" aria-label="Sulge legend">−</button>
                 </div>
                 <div class="map-controls" id="map-controls" style="display:none">
-                    <div class="layer-toggle">
+                    <button class="map-controls-toggle" id="map-controls-toggle" type="button" aria-label="Sulge kihtide menüü" aria-expanded="true">
+                        <span class="map-controls-toggle-label">Kihid</span>
+                        <span class="map-controls-toggle-icon" aria-hidden="true">−</span>
+                    </button>
+                    <div class="layer-toggle" id="layer-toggle">
                         <label class="toggle-item">
                             <input type="checkbox" id="layer-kaitsealad" data-layer="kaitsealad" checked>
                             <span class="toggle-label" style="border-left:3px solid var(--map-layer-kaitseala);padding-left:4px">Kaitsealad</span>
@@ -836,9 +840,10 @@
 
     function initMap() {
         map = L.map('map', {
-            zoomControl: true,
+            zoomControl: false,
             attributionControl: true,
         }).setView([58.5, 25.0], 7);
+        L.control.zoom({ position: 'topright' }).addTo(map);
 
         const maaametFoto = L.tileLayer('https://tiles.maaamet.ee/tm/tms/1.0.0/foto@GMC/{z}/{x}/{y}.jpg?ASUTUS=MAAAMET&KESKKOND=LIVE&IS=TERRAPOINT', {
             tms: true, maxZoom: 18, minZoom: 6,
@@ -1680,12 +1685,14 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 cutout: '62%',
+                layout: { padding: { top: 4, bottom: 4, left: 4, right: 4 } },
                 plugins: {
                     legend: {
                         position: 'bottom',
-                        labels: { padding: 16, usePointStyle: true, pointStyleWidth: 10, font: { size: 12, weight: '500' } },
+                        align: 'center',
+                        labels: { padding: 12, usePointStyle: true, pointStyleWidth: 10, boxWidth: 10, font: { size: 12, weight: '500' } },
                     },
                     tooltip: {
                         backgroundColor: 'rgba(26, 29, 35, 0.9)',
@@ -1731,7 +1738,7 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -1927,6 +1934,26 @@
                 var collapsed = legend.classList.toggle('collapsed');
                 legendBtn.textContent = collapsed ? '+' : '−';
                 legendBtn.setAttribute('aria-label', collapsed ? 'Ava legend' : 'Sulge legend');
+            });
+        }
+
+        // Map controls (layers) collapse toggle
+        var mapCtrls = document.getElementById('map-controls');
+        var mapCtrlsBtn = document.getElementById('map-controls-toggle');
+        if (mapCtrls && mapCtrlsBtn) {
+            var mapCtrlsIcon = mapCtrlsBtn.querySelector('.map-controls-toggle-icon');
+            // Default collapsed on phones for less visual clutter
+            if (window.matchMedia('(max-width: 640px)').matches) {
+                mapCtrls.classList.add('collapsed');
+                if (mapCtrlsIcon) mapCtrlsIcon.textContent = '+';
+                mapCtrlsBtn.setAttribute('aria-expanded', 'false');
+                mapCtrlsBtn.setAttribute('aria-label', 'Ava kihtide menüü');
+            }
+            mapCtrlsBtn.addEventListener('click', function() {
+                var collapsed = mapCtrls.classList.toggle('collapsed');
+                if (mapCtrlsIcon) mapCtrlsIcon.textContent = collapsed ? '+' : '−';
+                mapCtrlsBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+                mapCtrlsBtn.setAttribute('aria-label', collapsed ? 'Ava kihtide menüü' : 'Sulge kihtide menüü');
             });
         }
 
