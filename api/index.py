@@ -31,7 +31,7 @@ from calculators.carbon import carbon_potential
 from calculators.cutting_age import cutting_age_indicator
 from spatial.bbox import calculate_bbox, bbox_to_wfs_string
 import config
-from api.cache import search_cache
+from api.cache import search_cache, wfs_cache
 
 
 # ── Pydantic schemas ──────────────────────────────────────────────
@@ -81,15 +81,27 @@ async def health():
     Tagastab API oleku, versiooni, tööaja ja vahemälu statistika.
     Kasuta monitorimiseks ja load balanceri tervisekontrolliks.
     """
+    global _search_cache_hits, _search_cache_misses
     uptime_seconds = int(time.time() - _uptime_start)
+    total = _search_cache_hits + _search_cache_misses
+    hit_ratio = (_search_cache_hits / total) if total > 0 else 0.0
     return {
         "status": "ok",
         "version": "2.1.0",
         "uptime_seconds": uptime_seconds,
         "uptime_formatted": f"{uptime_seconds // 86400}d {(uptime_seconds % 86400) // 3600}h {(uptime_seconds % 3600) // 60}m",
         "cache": {
-            "hits": 0,  # tracked below
-            "size": search_cache.size if hasattr(search_cache, 'size') else "—",
+            "search": {
+                "hits": _search_cache_hits,
+                "misses": _search_cache_misses,
+                "hit_ratio": round(hit_ratio, 3),
+                "size": search_cache.size,
+                "ttl_seconds": 300,
+            },
+            "wfs": {
+                "size": wfs_cache.size,
+                "ttl_seconds": 7200,
+            },
         },
         "timestamp": time.time(),
     }
@@ -112,7 +124,7 @@ async def address_search(q: str = ""):
             f"&srsName=EPSG:4326&outputFormat=application/json"
             f"&count=10&CQL_FILTER={cql}"
         )
-        # Eesti WFS on aeglane ja annab ~1/3 päringutest 5x timeouti või 500
+        # Eesti WFS on aeglane ja annab ~1/3 päringutest 5x timeouti, 500 või 400
         # → kuni 3 katset, kõrvaldame transientseid vigu
         features = []
         last_err = None
@@ -120,8 +132,8 @@ async def address_search(q: str = ""):
             try:
                 async with httpx.AsyncClient(timeout=8) as client:
                     resp = await client.get(url)
-                    if resp.status_code >= 500:
-                        raise httpx.HTTPStatusError("WFS 5xx", request=resp.request, response=resp)
+                    if resp.status_code in (400,) or resp.status_code >= 500:
+                        raise httpx.HTTPStatusError("WFS transient", request=resp.request, response=resp)
                     resp.raise_for_status()
                     features = resp.json().get("features", [])
                 break

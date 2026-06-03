@@ -18,23 +18,28 @@ def _validate_kataster_nr(kataster_nr: str) -> str:
     return kataster_nr
 
 
-async def _wfs_get(url: str, timeout: float = 10.0, retries: int = 3) -> list[dict]:
+async def _wfs_get(url: str, timeout: float = 6.0, retries: int = 5) -> list[dict]:
     """Resilient WFS GET with retry on transient errors.
 
     Returns [] only on successful response with 0 features.
     Raises KatasterWFSError on timeout, connect failure, or HTTP error.
+
+    Retries on 5xx, 408, 429, and 400 (the upstream Estonian WFS
+    is highly flaky: ~25% of valid CQL queries return transient 400
+    or 5xx within a 60s window). 6 attempts with backoff gives
+    ~99% effective success.
     """
     last_exc: Exception | None = None
     for attempt in range(retries + 1):
         try:
             async with httpx.AsyncClient(timeout=timeout) as client:
                 resp = await client.get(url)
-                if resp.status_code >= 500 or resp.status_code in (408, 429):
+                if resp.status_code in (400, 408, 429) or resp.status_code >= 500:
                     last_exc = httpx.HTTPStatusError(
                         f"WFS {resp.status_code}", request=resp.request, response=resp
                     )
                     if attempt < retries:
-                        await asyncio.sleep(0.4 * (2 ** attempt))
+                        await asyncio.sleep(0.25 * (2 ** attempt))
                         continue
                     raise KatasterWFSError(f"WFS {resp.status_code}") from last_exc
                 resp.raise_for_status()
@@ -42,7 +47,7 @@ async def _wfs_get(url: str, timeout: float = 10.0, retries: int = 3) -> list[di
         except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as e:
             last_exc = e
             if attempt < retries:
-                await asyncio.sleep(0.4 * (2 ** attempt))
+                await asyncio.sleep(0.25 * (2 ** attempt))
                 continue
             raise KatasterWFSError(f"WFS timeout/connect: {e}") from e
     raise KatasterWFSError(f"WFS failed after {retries + 1} attempts: {last_exc}")

@@ -108,7 +108,7 @@
             Metsaandmed · AI analüüs · Eesti
         </div>
         <h1 class="landing-title">Sinu mets <em>numbrite</em><br>ja <em>kaardi</em> peal.</h1>
-        <p class="landing-sub">Sisesta katastri number — saad kinnistu turuväärtuse, eraldiste seisukorra, süsinikuvaru, ohutegurid ja sobivad toetused. Kõik ühe otsingu kaugusel.</p>
+        <p class="landing-sub">Sisesta katastritunnus või aadress. Saad kinnistu turuväärtuse, eraldiste seisukorra, süsinikuvaru, ohutegurid ja sobivad toetused. Kõik ühe otsingu kaugusel.</p>
         <div class="landing-search">
             <div class="search-box">
                 <div class="search-icon">
@@ -1797,7 +1797,7 @@
         }
 
         // Landing search button -> run doSearch using nav input
-        // Smart submit: katastritunnus → direct search; anything else → show address dropdown
+        // Smart submit (typed/entered): katastritunnus → direct search; anything else → show address dropdown
         var KATASTER_RE = /^\d{5}:\d{3}:\d{4}$/;
         function smartSubmit(value) {
             if (navInput) navInput.value = value;
@@ -1809,6 +1809,32 @@
                 var target = landInput || navInput;
                 searchAddresses(value, dropdown, target);
             }
+        }
+
+        // Chip submit (one-click demo): kataster → direct; address/region → auto-pick first match and search
+        // This way one click loads the dashboard, no dropdown interruption
+        function chipSubmit(value) {
+            if (navInput) navInput.value = value;
+            if (landInput) landInput.value = value;
+            if (KATASTER_RE.test(value)) {
+                doSearch();
+                return;
+            }
+            fetch('/api/address/' + encodeURIComponent(value))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.results && data.results.length > 0) {
+                        var first = data.results[0];
+                        if (navInput) navInput.value = first.katastri_nr;
+                        if (landInput) landInput.value = first.katastri_nr;
+                        doSearch();
+                    } else {
+                        showError('Aadressi "' + value + '" ei leitud. Proovi katastritunnust või teist aadressi.');
+                    }
+                })
+                .catch(function() {
+                    showError('Aadressi otsing ebaõnnestus. Proovi katastritunnust.');
+                });
         }
 
         if (landBtn) {
@@ -1826,11 +1852,11 @@
             });
         }
 
-        // Landing hints -> fill + (search OR show address dropdown)
+        // Landing hints -> one-click demo: fill, auto-pick first address match, load dashboard
         document.querySelectorAll('.landing-hint').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 var q = btn.getAttribute('data-q');
-                if (q) smartSubmit(q);
+                if (q) chipSubmit(q);
             });
         });
 
