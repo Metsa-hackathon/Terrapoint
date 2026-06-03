@@ -1796,18 +1796,32 @@
         }
 
         // Landing search button -> run doSearch using nav input
-        // Smart submit (typed/entered): katastritunnus → direct search; anything else → show address dropdown
+        // Smart submit (typed/entered): katastritunnus → direct search; address → auto-pick first match
+        // Same as chip submit so Enter behaves consistently across landing and nav
         var KATASTER_RE = /^\d{5}:\d{3}:\d{4}$/;
         function smartSubmit(value) {
             if (navInput) navInput.value = value;
             if (landInput) landInput.value = value;
             if (KATASTER_RE.test(value)) {
                 doSearch();
-            } else {
+                return;
+            }
+            fetchAddresses(value).then(function(results) {
+                if (results.length > 0) {
+                    var first = results[0];
+                    if (navInput) navInput.value = first.katastri_nr;
+                    if (landInput) landInput.value = first.katastri_nr;
+                    doSearch();
+                } else {
+                    showError('Aadressi "' + value + '" ei leitud. Proovi katastritunnust või teist aadressi.');
+                }
+            }).catch(function() {
+                // Fall back to dropdown
                 var dropdown = landDropdown || document.getElementById('address-dropdown');
                 var target = landInput || navInput;
                 searchAddresses(value, dropdown, target);
-            }
+                showError('Aadressi otsing aegus. Proovi uuesti või vali rippmenüüst.');
+            });
         }
 
         // Resilient address fetch: 3 attempts, response.ok check, fallback to dropdown
