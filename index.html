@@ -1810,6 +1810,29 @@
             }
         }
 
+        // Resilient address fetch: 3 attempts, response.ok check, fallback to dropdown
+        // Returns a Promise<results> that resolves to the results array, or empty
+        // On final failure, populates the dropdown so user can still see results
+        function fetchAddresses(value) {
+            var url = '/api/address/' + encodeURIComponent(value);
+            function attempt(n) {
+                return fetch(url).then(function(r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                }).then(function(data) {
+                    return (data && data.results) || [];
+                }).catch(function(err) {
+                    if (n > 0) {
+                        return new Promise(function(res) {
+                            setTimeout(function() { res(attempt(n - 1)); }, 350);
+                        });
+                    }
+                    throw err;
+                });
+            }
+            return attempt(2);
+        }
+
         // Chip submit (one-click demo): kataster → direct; address/region → auto-pick first match and search
         // This way one click loads the dashboard, no dropdown interruption
         function chipSubmit(value) {
@@ -1819,21 +1842,22 @@
                 doSearch();
                 return;
             }
-            fetch('/api/address/' + encodeURIComponent(value))
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    if (data.results && data.results.length > 0) {
-                        var first = data.results[0];
-                        if (navInput) navInput.value = first.katastri_nr;
-                        if (landInput) landInput.value = first.katastri_nr;
-                        doSearch();
-                    } else {
-                        showError('Aadressi "' + value + '" ei leitud. Proovi katastritunnust või teist aadressi.');
-                    }
-                })
-                .catch(function() {
-                    showError('Aadressi otsing ebaõnnestus. Proovi katastritunnust.');
-                });
+            fetchAddresses(value).then(function(results) {
+                if (results.length > 0) {
+                    var first = results[0];
+                    if (navInput) navInput.value = first.katastri_nr;
+                    if (landInput) landInput.value = first.katastri_nr;
+                    doSearch();
+                } else {
+                    showError('Aadressi "' + value + '" ei leitud. Proovi katastritunnust või teist aadressi.');
+                }
+            }).catch(function() {
+                // Last resort — show the dropdown so user can pick even if backend is flaky
+                var dropdown = landDropdown || document.getElementById('address-dropdown');
+                var target = landInput || navInput;
+                searchAddresses(value, dropdown, target);
+                showError('Aadressi otsing aegus. Proovi uuesti või vali rippmenüüst.');
+            });
         }
 
         if (landBtn) {
@@ -1913,19 +1937,21 @@
                 return;
             }
             // Non-kataster query: fetch addresses and use the first match
-            fetch('/api/address/' + encodeURIComponent(value))
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    if (data.results && data.results.length > 0) {
-                        var first = data.results[0];
-                        document.getElementById('kataster-input').value = first.katastri_nr;
-                        if (landInput) landInput.value = first.katastri_nr;
-                        doSearch();
-                    } else {
-                        showError('Aadressi "' + value + '" ei leitud. Proovi katastritunnust või teist aadressi.');
-                    }
-                })
-                .catch(function() { showError('Aadressi otsing ebaõnnestus. Proovi katastritunnust.'); });
+            fetchAddresses(value).then(function(results) {
+                if (results.length > 0) {
+                    var first = results[0];
+                    document.getElementById('kataster-input').value = first.katastri_nr;
+                    if (landInput) landInput.value = first.katastri_nr;
+                    doSearch();
+                } else {
+                    showError('Aadressi "' + value + '" ei leitud. Proovi katastritunnust või teist aadressi.');
+                }
+            }).catch(function() {
+                // Fall back to dropdown so user can still pick
+                var dropdown = document.getElementById('address-dropdown');
+                searchAddresses(value, dropdown, document.getElementById('kataster-input'));
+                showError('Aadressi otsing aegus. Proovi uuesti või vali rippmenüüst.');
+            });
         }
 
         document.getElementById('search-btn').addEventListener('click', function() {
