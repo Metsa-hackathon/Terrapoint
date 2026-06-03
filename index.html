@@ -204,6 +204,13 @@
         <div class="map-section">
             <div class="map-wrapper">
                 <div id="map"></div>
+                <div class="map-hint" id="map-hint" role="status">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/>
+                    </svg>
+                    <span>Vajuta kaardil katastriüksuse leidmiseks</span>
+                    <button type="button" class="map-hint-close" id="map-hint-close" aria-label="Sulge vihje">×</button>
+                </div>
                 <div class="map-legend" id="map-legend" style="display:none">
                     <div class="map-legend-title">Eraldiste legend</div>
                     <div class="map-legend-section" id="map-legend-colors">
@@ -215,13 +222,16 @@
                     </div>
                     <button class="map-legend-toggle" id="map-legend-toggle" aria-label="Sulge legend">−</button>
                 </div>
-                <div class="map-controls" id="map-controls" style="display:none">
+                <div class="map-controls" id="map-controls">
                     <button class="map-controls-toggle" id="map-controls-toggle" type="button" aria-label="Sulge kihtide menüü" aria-expanded="true">
                         <span class="map-controls-toggle-label">Kihid</span>
                         <span class="map-controls-toggle-icon" aria-hidden="true">−</span>
                     </button>
                     <div class="layer-toggle" id="layer-toggle">
-                        <label class="toggle-item">
+                        <label class="toggle-item toggle-item-kataster" title="Näita katastriüksuste piire ja vajuta kaardil otsimiseks">
+                            <input type="checkbox" id="layer-kataster" data-layer="kataster_wms" checked>
+                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-kataster);padding-left:4px">Katastriüksused</span>
+                        </label>                        <label class="toggle-item">
                             <input type="checkbox" id="layer-kaitsealad" data-layer="kaitsealad" checked>
                             <span class="toggle-label" style="border-left:3px solid var(--map-layer-kaitseala);padding-left:4px">Kaitsealad</span>
                         </label>
@@ -836,7 +846,64 @@
     // ═══ map.js ═══
     let map;
     let parcelLayer = null;
+    let katasterWmsLayer = null;
+    let mapClickBusy = false;
     const overlayLayers = {};
+
+    // Reverse-lookup a cadastre parcel at (lng, lat) using WMS GetFeatureInfo.
+    // (WFS INTERSECTS on this geoserver returns empty; GetFeatureInfo is reliable.)
+    async function findKatasterAtPoint(lng, lat) {
+        var d = 0.0005; // ~55m half-width buffer around the point
+        var bbox = (lng - d) + ',' + (lat - d) + ',' + (lng + d) + ',' + (lat + d);
+        var url = 'https://gsavalik.envir.ee/geoserver/kataster/wms' +
+            '?service=WMS&version=1.1.1&request=GetFeatureInfo' +
+            '&layers=ky_kehtiv&query_layers=ky_kehtiv&styles=' +
+            '&bbox=' + bbox + '&srs=EPSG:4326' +
+            '&width=101&height=101&x=50&y=50' +
+            '&info_format=application/json&feature_count=1';
+        var ctrl = new AbortController();
+        var timer = setTimeout(function() { ctrl.abort(); }, 9000);
+        try {
+            var resp = await fetch(url, { signal: ctrl.signal });
+            if (!resp.ok) throw new Error('WMS ' + resp.status);
+            var data = await resp.json();
+            if (!data.features || data.features.length === 0) return null;
+            return data.features[0].properties && data.features[0].properties.tunnus || null;
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
+    // Map click handler — finds parcel under cursor, fills input, runs full search.
+    async function handleMapClick(e) {
+        if (mapClickBusy) return;
+        if (!katasterWmsLayer || !map.hasLayer(katasterWmsLayer)) return; // disabled when layer off
+        mapClickBusy = true;
+        var container = map.getContainer();
+        container.style.cursor = 'progress';
+        // Visible click marker
+        var clickMarker = L.circleMarker(e.latlng, {
+            radius: 9, color: '#b45309', weight: 2.5, fillColor: '#fbbf24', fillOpacity: 0.9, interactive: false,
+        }).addTo(map);
+        try {
+            var tunnus = await findKatasterAtPoint(e.latlng.lng, e.latlng.lat);
+            if (!tunnus) {
+                showError('Sellelt kohalt ei leitud katastriüksust');
+                return;
+            }
+            var navInput = document.getElementById('kataster-input');
+            var landInput = document.getElementById('kataster-input-landing');
+            if (navInput) navInput.value = tunnus;
+            if (landInput) landInput.value = tunnus;
+            await doSearch();
+        } catch (err) {
+            showError('Kaardilt otsing ebaõnnestus: ' + (err.message || err));
+        } finally {
+            container.style.cursor = '';
+            setTimeout(function() { try { map.removeLayer(clickMarker); } catch (_) {} }, 1200);
+            mapClickBusy = false;
+        }
+    }
 
     function initMap() {
         map = L.map('map', {
@@ -900,6 +967,20 @@
         }
 
         esriFoto.addTo(map);
+
+        // Cadastre WMS overlay (Maa-amet / gsavalik) — boundaries always toggleable
+        katasterWmsLayer = L.tileLayer.wms('https://gsavalik.envir.ee/geoserver/kataster/wms', {
+            layers: 'ky_kehtiv',
+            format: 'image/png',
+            transparent: true,
+            version: '1.1.0',
+            opacity: 0.85,
+            attribution: '&copy; Maa-amet kataster',
+            zIndex: 350,
+        }).addTo(map);
+
+        // Click anywhere on map → reverse-lookup the cadastre at that point → run search
+        map.on('click', handleMapClick);
 
         var baseLayers = {
             'Ortofoto (Maa-amet)': maaametFoto,
@@ -1957,6 +2038,13 @@
             });
         }
 
+        // Map hint dismiss (×) and auto-hide once user has clicked the map
+        var mapHint = document.getElementById('map-hint');
+        var mapHintClose = document.getElementById('map-hint-close');
+        function dismissMapHint() { if (mapHint) mapHint.classList.add('hidden'); }
+        if (mapHintClose) mapHintClose.addEventListener('click', dismissMapHint);
+        if (map) map.on('click', dismissMapHint);
+
         // Sidebar toggle
         var sidebar = document.getElementById('sidebar');
         var sidebarOverlay = document.getElementById('sidebar-overlay');
@@ -2014,6 +2102,15 @@
         document.querySelectorAll('.layer-toggle input[type=checkbox]').forEach(function(cb) {
             cb.addEventListener('change', function(e) {
                 var key = e.target.dataset.layer;
+                if (key === 'kataster_wms') {
+                    if (!katasterWmsLayer) return;
+                    if (e.target.checked) {
+                        if (!map.hasLayer(katasterWmsLayer)) map.addLayer(katasterWmsLayer);
+                    } else {
+                        if (map.hasLayer(katasterWmsLayer)) map.removeLayer(katasterWmsLayer);
+                    }
+                    return;
+                }
                 if (key) toggleOverlayLayer(key, e.target.checked);
             });
         });
