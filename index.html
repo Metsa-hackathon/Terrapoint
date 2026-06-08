@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="et">
 <head>
     <meta charset="UTF-8">
@@ -26,21 +26,82 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css?v=10">
+    <style>
+      .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
+      .eraldised-panel summary::marker { display: none; content: ''; }
+      .filter-dropdowns-row { display: flex; flex-wrap: wrap; gap: 8px; }
+      .filter-dropdown { position: relative; }
+      .filter-dropdown-trigger {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 5px 10px; border: 1px solid var(--border, #d1d5db);
+        border-radius: 6px; background: var(--paper, #fff); font-size: 12px;
+        font-weight: 600; color: var(--ink-2, #374151); cursor: pointer;
+        white-space: nowrap;
+      }
+      .filter-dropdown-trigger:hover { border-color: var(--blue-500, #3b82f6); }
+      .filter-arrow { font-size: 9px; opacity: 0.5; }
+      .filter-dropdown-selected {
+        font-weight: 400; font-size: 11px; color: var(--ink-4, #9ca3af);
+        margin-left: 2px;
+      }
+      .filter-dropdown-menu {
+        display: none; position: absolute; top: 100%; left: 0; z-index: 100;
+        min-width: 180px; max-height: 220px; overflow-y: auto;
+        background: var(--paper, #fff); border: 1px solid var(--border, #d1d5db);
+        border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        padding: 6px 0; margin-top: 2px;
+      }
+      .filter-dropdown.open .filter-dropdown-menu { display: block; }
+      .filter-dropdown-menu label {
+        display: flex; align-items: center; gap: 6px; padding: 4px 10px;
+        font-size: 12px; cursor: pointer; white-space: nowrap;
+      }
+      .filter-dropdown-menu label:hover { background: var(--paper-2, #f3f4f6); }
+      .filter-dropdown-menu input[type="checkbox"] { margin: 0; accent-color: var(--blue-700, #1d4ed8); }
+      .filter-count { margin-left: auto; font-size: 10px; color: var(--ink-4, #9ca3af); }
+      .filter-ranges-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+      .filter-group { display: flex; align-items: center; gap: 6px; }
+      .filter-label { font-size: 11px; font-weight: 600; color: var(--ink-4, #9ca3af); text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+      .filter-range { display: flex; align-items: center; gap: 3px; }
+      .filter-range input {
+        width: 60px; padding: 4px 6px; border: 1px solid var(--border, #d1d5db);
+        border-radius: 4px; font-size: 12px; background: var(--paper, #fff);
+      }
+      .filter-range input:focus { border-color: var(--blue-500, #3b82f6); outline: none; }
+      .filter-range-sep { color: var(--ink-4, #9ca3af); font-size: 11px; }
+      .teatised-table-header {
+          display: grid; grid-template-columns: 1fr 120px 120px 80px 100px;
+          padding: 6px 16px; font-size: 10px; text-transform: uppercase; color: var(--ink-4);
+          letter-spacing: 0.06em; font-weight: 600; border-bottom: 1px solid var(--hair);
+          background: var(--paper-2);
+      }
+      .teatised-row {
+          display: grid; grid-template-columns: 1fr 120px 120px 80px 100px;
+          padding: 8px 16px; border-bottom: 1px solid var(--hair); font-size: 13px;
+          align-items: center; transition: background 0.1s;
+      }
+      .teatised-row:hover { background: var(--paper-2); }
+    </style>
 </head>
 <body>
     <!-- Top Navigation Bar -->
     <header class="hero">
         <div class="nav-left">
-            <button class="hamburger" id="hamburger-btn" aria-label="Menüü">
+            <button class="hamburger" id="hamburger-btn" aria-label="Menüü" style="display:none">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
                 </svg>
             </button>
             <a href="/" class="brand" aria-label="Terrapoint">
-                <span class="brand-mark" aria-hidden="true"></span>
-                <span class="brand-name">Terra<em>point</em></span>
-                <span class="brand-tag">beta</span>
+                
+                <span class="brand-name">Terra<strong>Point</strong></span>
+                
             </a>
+            <nav class="nav-center">
+                <a href="#meist">Meist</a>
+                <a href="#allikad">Allikad</a>
+                <a href="#info">Info</a>
+            </nav>
         </div>
         <div class="nav-right">
             <div class="search-box" id="nav-search">
@@ -53,7 +114,7 @@
                     <input type="text" id="kataster-input" placeholder="Katastri number või aadress" autocomplete="off" inputmode="text" enterkeyhint="search">
                     <div id="address-dropdown" class="address-dropdown" style="display:none"></div>
                 </div>
-                <span class="search-kbd" aria-hidden="true">/</span>
+                
                 <button id="search-btn" aria-label="Otsi">
                     <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -108,7 +169,7 @@
             Metsaandmed · AI analüüs · Eesti
         </div>
         <h1 class="landing-title">Sinu mets <em>numbrite</em><br>ja <em>kaardi</em> peal.</h1>
-        <p class="landing-sub">Sisesta katastritunnus või aadress, või vali kinnistu otse kaardilt. Saad kinnistu turuväärtuse, eraldiste seisukorra, süsinikuvaru, ohutegurid ja sobivad toetused. Kõik ühe otsingu kaugusel.</p>
+        <p class="landing-sub">Sisesta katastritunnus, aadress või vali kinnistu otse kaardilt. Vaata kinnistu turuväärtust, eraldiste seisukorda, süsinikuvaru, ohutegureid ja võimalike toetusi. Kõik vaid ühe otsingu kaugusel.</p>
         <div class="landing-search">
             <div class="search-box">
                 <div class="search-icon">
@@ -333,19 +394,6 @@
                 <div id="sinik-info"></div>
             </div>
 
-            <div class="metric-card" id="card-riskid">
-                <div class="card-header">
-                    <div class="card-icon risk-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                        </svg>
-                    </div>
-                    <h3>Ohutegurid</h3>
-                </div>
-                <p class="section-desc">Ürask, kuivendamatus, raiesurve ja muud ohud</p>
-                <div id="riskid-info"></div>
-            </div>
-
             <div class="metric-card" id="card-teatised">
                 <div class="card-header">
                     <div class="card-icon teatised-icon">
@@ -357,6 +405,19 @@
                 </div>
                 <p class="section-desc">Kehtivad raie ja metsauuenduse teatised</p>
                 <div id="teatised-info"></div>
+            </div>
+
+            <div class="metric-card" id="card-riskid">
+                <div class="card-header">
+                    <div class="card-icon risk-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </div>
+                    <h3>Ohutegurid</h3>
+                </div>
+                <p class="section-desc">Ürask, kuivendamatus, raiesurve ja muud ohud</p>
+                <div id="riskid-info"></div>
             </div>
 
             <div class="metric-card eudr-card" id="card-eudr">
@@ -377,6 +438,25 @@
                         </svg>
                         Laadi alla EUDR GeoJSON
                     </button>
+                </div>
+            </div>
+
+            <div class="metric-card" id="card-toetused">
+                <div class="card-header">
+                    <div class="card-icon vaartus-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                    </div>
+                    <h3>Toetused ja hüvitised</h3>
+                </div>
+                <p class="section-desc">Toetused ja hüvitised metsaomanikule</p>
+                <div id="toetused-info">
+                    <div class="initial-info">
+                        <div class="icon">&#128176;</div>
+                        <p>Otsi krunti, et näha toetusi</p>
+                        <p class="hint">Metsauuendus, hooldusraie, Natura 2000, kaitsealade hüvitised</p>
+                    </div>
                 </div>
             </div>
 
@@ -401,25 +481,6 @@
                     <a href="https://infoleht.keskkonnainfo.ee/" target="_blank" rel="noopener" class="muted-link">
                         Rohkem infot Keskkonnainfo lehel →
                     </a>
-                </div>
-            </div>
-
-            <div class="metric-card" id="card-toetused">
-                <div class="card-header">
-                    <div class="card-icon vaartus-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
-                        </svg>
-                    </div>
-                    <h3>Toetused ja hüvitised</h3>
-                </div>
-                <p class="section-desc">Toetused ja hüvitised metsaomanikule</p>
-                <div id="toetused-info">
-                    <div class="initial-info">
-                        <div class="icon">&#128176;</div>
-                        <p>Otsi krunti, et näha toetusi</p>
-                        <p class="hint">Metsauuendus, hooldusraie, Natura 2000, kaitsealade hüvitised</p>
-                    </div>
                 </div>
             </div>
         </div>
@@ -722,7 +783,7 @@
             }
 
             aiChatHistory.push({role: 'assistant', content: fullText});
-            document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + '. Küsi lisa küsimusi';
+            document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + '. Küsi lisaküsimusi';
 
         } catch(err) {
             if (liveBubble) {
@@ -1353,6 +1414,151 @@
         el.innerHTML = html;
     }
 
+    // === Shared filtering & pagination utilities ===
+
+    function buildFilterChips(options, availableSet, containerId, onSelect) {
+        var container = document.getElementById(containerId);
+        if (!container) return;
+        var selected = new Set();
+        container.innerHTML = '';
+        options.forEach(function(opt) {
+            var chip = document.createElement('span');
+            chip.className = 'filter-chip';
+            chip.textContent = opt.label || opt.value;
+            chip.setAttribute('data-value', opt.value);
+            var inData = availableSet ? availableSet.has(opt.value) : true;
+            if (!inData) {
+                chip.classList.add('filter-chip-disabled');
+                chip.style.opacity = '0.3';
+                chip.style.cursor = 'not-allowed';
+            }
+            chip.addEventListener('click', function() {
+                if (!inData) return;
+                if (selected.has(opt.value)) {
+                    selected.delete(opt.value);
+                    chip.classList.remove('filter-chip-active');
+                    chip.style.backgroundColor = '';
+                    chip.style.color = '';
+                } else {
+                    selected.add(opt.value);
+                    chip.classList.add('filter-chip-active');
+                    chip.style.backgroundColor = '#2563eb';
+                    chip.style.color = '#fff';
+                }
+                if (onSelect) onSelect(Array.from(selected));
+            });
+            container.appendChild(chip);
+        });
+    }
+
+    function buildMinMaxInputs(label, containerId, onChange) {
+        var container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+        var wrap = document.createElement('div');
+        wrap.style.display = 'flex';
+        wrap.style.alignItems = 'center';
+        wrap.style.gap = '6px';
+        wrap.style.flexWrap = 'wrap';
+        if (label) {
+            var lbl = document.createElement('span');
+            lbl.textContent = label + ': ';
+            lbl.style.fontSize = '0.85em';
+            lbl.style.fontWeight = '600';
+            wrap.appendChild(lbl);
+        }
+        var minInput = document.createElement('input');
+        minInput.type = 'number';
+        minInput.placeholder = 'min';
+        minInput.style.width = '70px';
+        minInput.style.padding = '4px 6px';
+        minInput.style.border = '1px solid #ccc';
+        minInput.style.borderRadius = '4px';
+        minInput.style.fontSize = '0.85em';
+        var dash = document.createElement('span');
+        dash.textContent = '–';
+        var maxInput = document.createElement('input');
+        maxInput.type = 'number';
+        maxInput.placeholder = 'max';
+        maxInput.style.width = '70px';
+        maxInput.style.padding = '4px 6px';
+        maxInput.style.border = '1px solid #ccc';
+        maxInput.style.borderRadius = '4px';
+        maxInput.style.fontSize = '0.85em';
+        function emitChange() {
+            if (onChange) {
+                onChange({
+                    min: minInput.value === '' ? null : Number(minInput.value),
+                    max: maxInput.value === '' ? null : Number(maxInput.value)
+                });
+            }
+        }
+        minInput.addEventListener('input', emitChange);
+        maxInput.addEventListener('input', emitChange);
+        wrap.appendChild(minInput);
+        wrap.appendChild(dash);
+        wrap.appendChild(maxInput);
+        container.appendChild(wrap);
+    }
+
+    function paginate(items, page, perPage) {
+        var total = items.length;
+        var totalPages = perPage >= total ? 1 : Math.ceil(total / perPage);
+        var currentPage = Math.max(1, Math.min(page, totalPages));
+        var start = (currentPage - 1) * perPage;
+        var end = perPage >= total ? total : start + perPage;
+        return {
+            items: items.slice(start, end),
+            totalPages: totalPages,
+            currentPage: currentPage
+        };
+    }
+
+    function renderPaginationControls(containerId, total, current, perPage, onChange) {
+        var container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '';
+        var sizes = [12, 24, 36];
+        sizes.push(total);
+        var unique = [];
+        var seen = {};
+        sizes.forEach(function(s) {
+            if (!seen[s]) { unique.push(s); seen[s] = true; }
+        });
+        var wrap = document.createElement('div');
+        wrap.style.display = 'flex';
+        wrap.style.alignItems = 'center';
+        wrap.style.gap = '6px';
+        wrap.style.flexWrap = 'wrap';
+        wrap.style.fontSize = '0.85em';
+        var lbl = document.createElement('span');
+        lbl.textContent = 'Näita: ';
+        lbl.style.fontWeight = '600';
+        wrap.appendChild(lbl);
+        unique.forEach(function(size) {
+            var btn = document.createElement('button');
+            btn.className = 'pagination-btn';
+            btn.textContent = size === total ? 'Kõik' : size;
+            btn.style.padding = '4px 10px';
+            btn.style.border = '1px solid #ccc';
+            btn.style.borderRadius = '4px';
+            btn.style.cursor = 'pointer';
+            btn.style.background = '#fff';
+            if (size === perPage) {
+                btn.style.backgroundColor = '#2563eb';
+                btn.style.color = '#fff';
+                btn.style.borderColor = '#2563eb';
+            }
+            btn.addEventListener('click', function() {
+                if (onChange) onChange(size);
+            });
+            wrap.appendChild(btn);
+        });
+        container.appendChild(wrap);
+    }
+
+    // === End shared filtering & pagination utilities ===
+
     function renderMets(data) {
         var el = document.getElementById('mets-info');
         if (!data) { el.innerHTML = '<p class="muted">Metsaandmeid pole</p>'; return; }
@@ -1408,39 +1614,40 @@
         if (data.eraldisi_kokku > 1) html += '<div class="info-row"><span class="label">Eraldisi ' + ddInfo('Eraldised on eraldi majandatavad metsatükid, millel on oma puuliik, vanus ja tagavara') + '</span><span class="value">' + data.eraldisi_kokku + ' tk</span></div>';
         html += compHtml;
 
-        // Show individual eraldised as cards
+        // Eraldised table (simple)
         if (data.eraldised && data.eraldised.length > 0) {
             var totalEraldisValue = 0;
             data.eraldised.forEach(function(e) { totalEraldisValue += (e.vaartus_eur || 0); });
-            html += '<details style="margin-top:0.75rem"' + (data.eraldised.length <= 5 ? ' open' : '') + '>';
-            html += '<summary style="cursor:pointer;font-size:0.85rem;font-weight:700;color:var(--blue-700);display:flex;align-items:center;gap:0.5rem">';
+
+            html += '<details class="eraldised-panel" style="margin-top:0.75rem">';
+
+            // Header as summary
+            html += '<summary style="display:flex;align-items:center;gap:0.5rem;padding:10px 16px;font-weight:700;font-size:0.85rem;color:var(--ink-2);cursor:pointer;list-style:none;border-bottom:1px solid var(--hair)">';
             html += '<span style="background:var(--blue-700);color:#fff;padding:2px 8px;border-radius:var(--r-full);font-size:0.75rem">' + data.eraldised.length + '</span>';
-            html += 'Eraldised — kokku <span style="color:var(--ink)">' + formatEur(totalEraldisValue) + '</span></summary>';
-            var vrColors = {noormets:'var(--blue-500)',keskmine:'var(--blue-700)',kups:'var(--blue-900)',vanamets:'var(--danger)'};
-            data.eraldised.forEach(function(e) {
+            html += 'Eraldised — kokku <span style="color:var(--ink)">' + formatEur(totalEraldisValue) + '</span>';
+            html += '</summary>';
+
+            // Table
+            html += '<div class="eraldised-table-header">';
+            html += '<div>#</div><div>Puuliik</div><div>Vanus</div><div>Tagavara</div><div>Boniteet</div><div>Pindala</div><div style="text-align:right">Väärtus</div>';
+            html += '</div>';
+
+            data.eraldised.forEach(function(e, i) {
+                var sp = speciesName(e.puuliik_kood || e.puuliik, e.puuliik);
                 var b = e.boniteet || BONITEET_LABELS[e.boniteedi_kood] || '—';
                 var v = e.vaartus_eur ? formatEur(e.vaartus_eur) : '—';
-                var sp = speciesName(e.puuliik_kood || e.puuliik, e.puuliik);
-                var vr = e.vanuseruhm || '';
-                var vrLabel = e.vanuseruhm_label || '';
-                var vrColor = vrColors[vr] || 'var(--ink-5)';
-                var vrHtml = vrLabel ? '<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:' + vrColor + ';flex-shrink:0"></span><strong style="font-size:0.82rem">' + escHtml(vrLabel) + '</strong></span>' : '';
-                html += '<div style="background:var(--paper-2);border:1px solid var(--hair);border-radius:var(--r);padding:0.75rem;margin-top:0.5rem">';
-                html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem">';
-                html += '<div style="font-weight:700;font-size:0.9rem;color:var(--ink-2)">Eraldis ' + escHtml(e.eraldis_nr || '—') + '</div>';
-                html += '<div style="font-weight:700;font-size:0.95rem;color:var(--ink)">' + v + '</div>';
+                html += '<div class="eraldised-row">';
+                html += '<div class="er-nr">' + (i + 1) + '</div>';
+                html += '<div class="er-species">' + escHtml(sp) + '</div>';
+                html += '<div>' + (e.vanus || '—') + '</div>';
+                html += '<div>' + formatNum(e.tagavara_y_ha) + '</div>';
+                html += '<div>' + escHtml(b) + '</div>';
+                html += '<div>' + formatNum(e.pindala_ha, 2) + '</div>';
+                html += '<div class="er-value">' + v + '</div>';
                 html += '</div>';
-                html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.4rem;font-size:0.82rem">';
-                html += '<div><span style="color:var(--ink-4);font-size:0.72rem;display:block">Puuliik</span><strong>' + escHtml(sp) + '</strong></div>';
-                html += '<div><span style="color:var(--ink-4);font-size:0.72rem;display:block">Vanus</span><strong>' + (e.vanus || '—') + ' aastat</strong></div>';
-                html += '<div><span style="color:var(--ink-4);font-size:0.72rem;display:block">Pindala</span><strong>' + formatNum(e.pindala_ha, 2) + ' ha</strong></div>';
-                html += '<div><span style="color:var(--ink-4);font-size:0.72rem;display:block">Tagavara</span><strong>' + formatNum(e.tagavara_y_ha) + ' m³/ha</strong></div>';
-                html += '<div><span style="color:var(--ink-4);font-size:0.72rem;display:block">Boniteet</span><strong>' + escHtml(b) + '</strong></div>';
-                html += '<div><span style="color:var(--ink-4);font-size:0.72rem;display:block">Vanuserühm</span>' + (vrHtml || '<strong>—</strong>') + '</div>';
-                html += '</div></div>';
             });
-            html += '<div style="font-size:0.72rem;color:var(--ink-4);margin-top:0.5rem;font-style:italic">Hinnang: seisuhind × tagavara (m³/ha) × pindala (ha) · kuivendatud metsal +10%</div>';
-            html += '</details>';
+
+            html += '</details>'; // end panel
         }
         el.innerHTML = html;
     }
@@ -1535,27 +1742,47 @@
         var el = document.getElementById('teatised-info');
         if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Metsateatisi pole registreeritud</p>'; return; }
 
-        var active = data.filter(function(t) { return t.active; });
-        var inactive = data.filter(function(t) { return !t.active; });
+        window._teatisedData = data;
+        window._teatisedPerPage = 5;
 
-        var html = '';
-        if (active.length > 0) {
-            html += '<div style="margin-bottom:0.5rem"><span class="pill-success">' + active.length + ' aktiivset</span></div>';
-            html += '<table style="font-size:0.8rem"><thead><tr><th>Tüüp</th><th>Staatus</th><th>Kehtib kuni</th><th>Pindala</th></tr></thead><tbody>';
-            active.forEach(function(t) {
-                html += '<tr><td><strong>' + escHtml(t.tyyp || '—') + '</strong></td><td><span style="color:var(--success);font-weight:600">' + escHtml(t.staatus) + '</span></td><td>' + escHtml(t.kehtiv_kuni || '—') + '</td><td>' + (t.pindala_ha ? t.pindala_ha + ' ha' : '—') + '</td></tr>';
+        function renderTable() {
+            var pp = window._teatisedPerPage;
+            var all = window._teatisedData;
+            var visible = pp === 'all' ? all : all.slice(0, pp);
+
+            var html = '<div class="eraldised-controls"><span>Näita:</span>';
+            [5, 10].forEach(function(n) {
+                html += '<button data-perpage="' + n + '"' + (pp === n ? ' class="active"' : '') + '>' + n + '</button>';
             });
-            html += '</tbody></table>';
-        }
-        if (inactive.length > 0) {
-            html += '<details style="margin-top:0.5rem"><summary class="muted-summary">Aegunud/lõpetatud (' + inactive.length + ')</summary>';
-            html += '<table style="margin-top:0.3rem;font-size:0.78rem"><thead><tr><th>Tüüp</th><th>Staatus</th><th>Pindala</th></tr></thead><tbody>';
-            inactive.forEach(function(t) {
-                html += '<tr><td>' + escHtml(t.tyyp || '—') + '</td><td class="muted">' + escHtml(t.staatus) + '</td><td>' + (t.pindala_ha ? t.pindala_ha + ' ha' : '—') + '</td></tr>';
+            html += '<button data-perpage="all"' + (pp === 'all' ? ' class="active"' : '') + '>Kõik</button>';
+            html += '</div>';
+
+            html += '<div class="teatised-table-header">';
+            html += '<div>Tüüp</div><div>Staatus</div><div>Kehtiv kuni</div><div>Pindala</div>';
+            html += '</div>';
+
+            visible.forEach(function(t) {
+                html += '<div class="teatised-row">';
+                html += '<div>' + escHtml(t.tyyp || '—') + '</div>';
+                html += '<div>' + escHtml(t.staatus || '—') + '</div>';
+                html += '<div>' + escHtml(t.kehtiv_kuni || '—') + '</div>';
+                html += '<div>' + (t.pindala_ha ? formatNum(t.pindala_ha, 2) + ' ha' : '—') + '</div>';
+                html += '</div>';
             });
-            html += '</tbody></table></details>';
+
+            html += '<div style="padding:8px 0;font-size:0.75rem;color:var(--ink-4)">Näitan ' + visible.length + ' / ' + all.length + '</div>';
+
+            el.innerHTML = html;
+            el.querySelectorAll('.eraldised-controls button').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var val = btn.getAttribute('data-perpage');
+                    window._teatisedPerPage = val === 'all' ? 'all' : parseInt(val);
+                    renderTable();
+                });
+            });
         }
-        el.innerHTML = html;
+
+        renderTable();
     }
 
     function renderKitsendused(data) {
@@ -1567,7 +1794,6 @@
             return;
         }
 
-        // Get kataster number for EELIS deep link
         var katasterNr = '';
         if (window.currentData && window.currentData.kataster) {
             katasterNr = window.currentData.kataster.katastri_nr || window.currentData.kataster.number || '';
@@ -1575,28 +1801,57 @@
         var eelisLink = katasterNr ? 'https://infoleht.keskkonnainfo.ee/?q=' + encodeURIComponent(katasterNr) : 'https://infoleht.keskkonnainfo.ee/';
         var maaametLink = 'https://xgis.maaamet.ee/xgis2/page/app/maainfo?search=' + encodeURIComponent(katasterNr);
 
-        var html = '<table><thead><tr><th>Tüüp</th><th>Kirjeldus</th><th>Lisainfo</th></tr></thead><tbody>';
-        data.forEach(function(k) {
-            var tyyp = k.tyyp || '';
-            var link = eelisLink;
-            var linkText = 'EELIS';
-            if (tyyp.indexOf('kaitsealad') >= 0 || tyyp.indexOf('loodusala') >= 0 || tyyp.indexOf('piirang') >= 0 || tyyp.indexOf('sood') >= 0) {
-                link = eelisLink; linkText = 'EELIS';
-            } else if (tyyp.indexOf('malestised') >= 0 || tyyp.indexOf('muinsus') >= 0) {
-                link = 'https://register.muinas.ee/'; linkText = 'Muinsuskaitse';
-            } else if (tyyp.indexOf('karuputk') >= 0) {
-                link = maaametLink; linkText = 'Maa-amet';
-            } else if (tyyp.indexOf('lageraie') >= 0) {
-                link = maaametLink; linkText = 'Maa-amet';
-            } else if (tyyp.indexOf('yrask') >= 0) {
-                link = eelisLink; linkText = 'EELIS';
-            }
-            html += '<tr><td><strong>' + escHtml(k.tyyp) + '</strong></td><td>' + escHtml(k.kirjeldus) + '</td>';
-            html += '<td><a href="' + escHtml(link) + '" target="_blank" rel="noopener" class="muted-link" style="font-size:0.82rem">' + escHtml(linkText) + ' →</a></td></tr>';
-        });
-        html += '</tbody></table>';
-        el.innerHTML = html;
-        if (linkEl) linkEl.style.display = '';
+        window._kitsendusedData = data;
+        window._kitsendusedPerPage = 5;
+
+        function kitsRows(items) {
+            var rows = '';
+            items.forEach(function(k) {
+                var tyyp = k.tyyp || '';
+                var link = eelisLink;
+                var linkText = 'EELIS';
+                if (tyyp.indexOf('kaitsealad') >= 0 || tyyp.indexOf('loodusala') >= 0 || tyyp.indexOf('piirang') >= 0 || tyyp.indexOf('sood') >= 0) {
+                    link = eelisLink; linkText = 'EELIS';
+                } else if (tyyp.indexOf('malestised') >= 0 || tyyp.indexOf('muinsus') >= 0) {
+                    link = 'https://register.muinas.ee/'; linkText = 'Muinsuskaitse';
+                } else if (tyyp.indexOf('karuputk') >= 0) {
+                    link = maaametLink; linkText = 'Maa-amet';
+                } else if (tyyp.indexOf('lageraie') >= 0) {
+                    link = maaametLink; linkText = 'Maa-amet';
+                } else if (tyyp.indexOf('yrask') >= 0) {
+                    link = eelisLink; linkText = 'EELIS';
+                }
+                rows += '<tr><td><strong>' + escHtml(k.tyyp) + '</strong></td><td>' + escHtml(k.kirjeldus) + '</td>';
+                rows += '<td><a href="' + escHtml(link) + '" target="_blank" rel="noopener" class="muted-link" style="font-size:0.82rem">' + escHtml(linkText) + ' →</a></td></tr>';
+            });
+            return rows;
+        }
+
+        function renderKitsTable() {
+            var pp = window._kitsendusedPerPage;
+            var all = window._kitsendusedData;
+            var visible = pp === 'all' ? all : all.slice(0, pp);
+            var html = '<div class="eraldised-controls"><span>Näita:</span>';
+            [5, 10].forEach(function(n) {
+                html += '<button data-perpage="' + n + '"' + (pp === n ? ' class="active"' : '') + '>' + n + '</button>';
+            });
+            html += '<button data-perpage="all"' + (pp === 'all' ? ' class="active"' : '') + '>Kõik</button>';
+            html += '</div>';
+            html += '<div style="overflow-x:auto;min-width:500px"><table style="width:100%;table-layout:fixed"><colgroup><col style="width:120px"><col style="width:auto"><col style="width:80px"></colgroup><thead><tr><th>Tüüp</th><th>Kirjeldus</th><th>Lisainfo</th></tr></thead><tbody>';
+            html += kitsRows(visible);
+            html += '</tbody></table></div>';
+            el.innerHTML = html;
+            if (linkEl) linkEl.style.display = '';
+            el.querySelectorAll('.eraldised-controls button').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var val = btn.getAttribute('data-perpage');
+                    window._kitsendusedPerPage = val === 'all' ? 'all' : parseInt(val);
+                    renderKitsTable();
+                });
+            });
+        }
+
+        renderKitsTable();
     }
 
     function renderToetused(data) {
@@ -1658,26 +1913,49 @@
             return html;
         }
 
-        var html = '';
+        window._toetusedData = eligible;
+        window._toetusedPerPage = 5;
 
-        // Eligible programs
-        if (eligible.length > 0) {
-            html += '<div class="eligible-banner"><strong>Sobivad toetused (' + eligible.length + ')</strong></div>';
-            eligible.forEach(function(t) { html += renderCard(t, true); });
+        function renderEligibleCards() {
+            var pp = window._toetusedPerPage;
+            var all = window._toetusedData;
+            var visible = pp === 'all' ? all : all.slice(0, pp);
+
+            var html = '';
+            if (all.length > 0) {
+                html += '<div style="min-width:400px">';
+                html += '<div class="eligible-banner"><strong>Sobivad toetused (' + all.length + ')</strong></div>';
+                html += '<div class="eraldised-controls"><span>Näita:</span>';
+                [5, 10].forEach(function(n) {
+                    html += '<button data-perpage="' + n + '"' + (pp === n ? ' class="active"' : '') + '>' + n + '</button>';
+                });
+                html += '<button data-perpage="all"' + (pp === 'all' ? ' class="active"' : '') + '>Kõik</button>';
+                html += '</div>';
+                visible.forEach(function(t) { html += renderCard(t, true); });
+                html += '<div style="padding:8px 0;font-size:0.75rem;color:var(--ink-4)">Näitan ' + visible.length + ' / ' + all.length + '</div>';
+                html += '</div>';
+            }
+
+            if (ineligible.length > 0) {
+                html += '<details style="margin-top:1rem"' + (all.length === 0 ? ' open' : '') + '><summary class="muted-summary" style="font-size:0.85rem;font-weight:600">Muud toetused (' + ineligible.length + '), ei vasta tingimustele</summary>';
+                html += '<div style="margin-top:8px">';
+                ineligible.forEach(function(t) { html += renderCard(t, false); });
+                html += '</div></details>';
+            }
+
+            html += '<div style="margin-top:12px;font-size:0.72rem;color:var(--ink-4);text-align:right">Allikas: <a href="https://www.eramets.ee/toetused/" target="_blank" rel="noopener" style="color:var(--ink-4)">eramets.ee</a></div>';
+
+            el.innerHTML = html;
+            el.querySelectorAll('.eraldised-controls button').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var val = btn.getAttribute('data-perpage');
+                    window._toetusedPerPage = val === 'all' ? 'all' : parseInt(val);
+                    renderEligibleCards();
+                });
+            });
         }
 
-        // Ineligible programs
-        if (ineligible.length > 0) {
-            html += '<details style="margin-top:1rem"' + (eligible.length === 0 ? ' open' : '') + '><summary class="muted-summary" style="font-size:0.85rem;font-weight:600">Muud toetused (' + ineligible.length + '), ei vasta tingimustele</summary>';
-            html += '<div style="margin-top:8px">';
-            ineligible.forEach(function(t) { html += renderCard(t, false); });
-            html += '</div></details>';
-        }
-
-        // Source
-        html += '<div style="margin-top:12px;font-size:0.72rem;color:var(--ink-4);text-align:right">Allikas: <a href="https://www.eramets.ee/toetused/" target="_blank" rel="noopener" style="color:var(--ink-4)">eramets.ee</a></div>';
-
-        el.innerHTML = html;
+        renderEligibleCards();
     }
 
     function showLoading() {
