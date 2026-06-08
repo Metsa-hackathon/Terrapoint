@@ -2506,33 +2506,38 @@ footer {
 .leaflet-bar,
 .leaflet-bar a,
 .leaflet-bar a:hover { background: transparent !important; border: none !important; box-shadow: none !important; }
-.leaflet-bar { box-shadow: var(--sh-2) !important; border-radius: var(--r) !important; overflow: hidden; border: 1px solid var(--hair) !important; }
+.leaflet-bar { box-shadow: var(--sh-2) !important; border-radius: var(--r) !important; overflow: hidden; }
 .leaflet-control-zoom a {
     background: var(--white) !important;
     color: var(--ink-2) !important;
-    border-bottom: 1px solid var(--hair) !important;
+    border: 1px solid var(--hair) !important;
     width: 32px !important;
     height: 32px !important;
     line-height: 32px !important;
     font-size: 18px !important;
     font-weight: 400 !important;
-    border-radius: 0 !important;
+    margin: 0 !important;
     transition: all var(--t-fast) var(--ease);
 }
-.leaflet-control-zoom a:last-child { border-bottom: none !important; }
+.leaflet-control-zoom a:first-child { border-radius: var(--r) var(--r) 0 0 !important; border-bottom: 1px solid var(--hair) !important; }
+.leaflet-control-zoom a:last-child { border-radius: 0 0 var(--r) var(--r) !important; }
 .leaflet-control-zoom a:hover { background: var(--blue-50) !important; color: var(--blue-700) !important; }
-.center-control { margin-top: 6px !important; border-radius: var(--r) !important; }
+.center-control { margin-top: 6px !important; border-radius: var(--r) !important; box-shadow: var(--sh-2) !important; }
 .center-control a {
-    background: var(--ink) !important;
-    color: var(--white) !important;
-    border: none !important;
+    background: var(--white) !important;
+    color: var(--ink-2) !important;
+    border: 1px solid var(--hair) !important;
     border-radius: var(--r) !important;
+    width: 32px !important;
+    height: 32px !important;
+    line-height: 32px !important;
+    font-size: 18px !important;
     display: flex !important;
     align-items: center;
     justify-content: center;
     transition: all var(--t-fast) var(--ease);
 }
-.center-control a:hover { background: var(--blue-700) !important; transform: scale(1.05); }
+.center-control a:hover { background: var(--blue-50) !important; color: var(--blue-700) !important; }
 .leaflet-control-layers {
     border-radius: var(--r) !important;
     box-shadow: var(--sh-2) !important;

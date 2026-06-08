@@ -14,6 +14,7 @@ from shapely.geometry import shape
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
 from contextlib import asynccontextmanager
@@ -68,6 +69,18 @@ app = FastAPI(
     redoc_url="/api/redoc",
 )
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+# Serve static files and frontend
+STATIC_DIR = PROJECT_ROOT / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+@app.get("/", response_class=HTMLResponse)
+async def serve_index():
+    index_path = PROJECT_ROOT / "index.html"
+    if index_path.exists():
+        return HTMLResponse(content=index_path.read_text(encoding="utf-8"))
+    return HTMLResponse(content="<h1>index.html not found</h1>", status_code=404)
 
 
 def json_response(data: dict, status: int = 200) -> Response:
