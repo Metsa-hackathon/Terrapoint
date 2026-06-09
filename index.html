@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=16">
+    <link rel="stylesheet" href="/static/css/style.css?v=17">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -519,21 +519,10 @@
             <p class="about-lead">Terrapoint koondab Eesti avalikud metsa- ja kinnistuandmed ühte otsingusse: sisesta katastritunnus või aadress, vaata oma metsa väärtust, eraldiste seisukorda ja toetusi. Kõik arvutused reaalajas registritest.</p>
 
             <div class="about-photo">
-                <img src="/static/img/team-hackathon-2026.jpg" alt="Terrapoint tiim Metsikult andmetes 2026 häkatonil" loading="lazy" decoding="async">
-            </div>
-
-            <div class="about-stats" aria-label="Projekti võtmenäitajad">
-                <div class="about-stat">
-                    <div class="about-stat-num">9+</div>
-                    <div class="about-stat-label">andmeallikat</div>
-                </div>
-                <div class="about-stat">
-                    <div class="about-stat-num">~3s</div>
-                    <div class="about-stat-label">päring</div>
-                </div>
-                <div class="about-stat">
-                    <div class="about-stat-num">500k+</div>
-                    <div class="about-stat-label">eraldist</div>
+                <img src="/static/img/team-hackathon-2026.jpg" alt="Terrapoint tiim Metsikult andmetes 2026 häkatoni võitjad: Arle Aron Reidma, Krister Koger, Kaspar Mälgand" loading="lazy" decoding="async">
+                <div class="about-photo-caption">
+                    <span class="about-photo-caption-title">„Metsikult andmetes 2026" võitjad</span>
+                    <span class="about-photo-caption-names">Arle Aron Reidma · Krister Koger · Kaspar Mälgand</span>
                 </div>
             </div>
 
@@ -543,63 +532,15 @@
                     <span>Võit: „Metsikult andmetes 2026" · Keskkonnaagentuur</span>
                 </div>
             </div>
-
-            <h3 class="about-team-heading">Meeskond</h3>
-            <div class="about-team">
-                <div class="about-member">
-                    <div class="about-member-avatar" aria-hidden="true">AR</div>
-                    <div class="about-member-name">Arle Aron Reidma</div>
-                    <div class="about-member-role">Täisstack arendus · projektijuht</div>
-                </div>
-                <div class="about-member">
-                    <div class="about-member-avatar" aria-hidden="true">KK</div>
-                    <div class="about-member-name">Krister Koger</div>
-                    <div class="about-member-role">Backend · andmestruktuurid</div>
-                </div>
-                <div class="about-member">
-                    <div class="about-member-avatar" aria-hidden="true">KM</div>
-                    <div class="about-member-name">Kaspar Mälgand</div>
-                    <div class="about-member-role">Metsandus · AI koolitus</div>
-                </div>
-            </div>
-
-            <div class="about-contact-row">
-                <a class="about-contact-email" href="mailto:arle.reidma@gmail.com">arle.reidma@gmail.com</a>
-            </div>
         </div>
     </section>
 
-    <!-- Kontakt / Äriküsimused -->
+    <!-- Kontakt -->
     <section class="contact" id="kontakt" aria-label="Kontakt">
         <div class="contact-inner">
             <h2 class="contact-title">Küsimused või <em>koostöö</em>?</h2>
-            <p class="contact-lead">Kirjuta, vastame kiiresti. Äriküsimused, koostöö, andmeteaduse projektid, meedia.</p>
-
-            <div class="contact-grid">
-                <a class="contact-card contact-card-primary" href="mailto:arle.reidma@gmail.com?subject=Äriküsimus" aria-label="Äriküsimused ja koostöö">
-                    <div class="contact-card-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                    </div>
-                    <div class="contact-card-label">Äri ja koostöö</div>
-                    <div class="contact-card-title">Koostöö, litsentsid, B2B</div>
-                    <div class="contact-card-cta">
-                        <span>Kirjuta</span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </div>
-                </a>
-
-                <a class="contact-card" href="mailto:arle.reidma@gmail.com?subject=Küsimus%20Terrapointi%20kohta" aria-label="Kasutajaküsimused ja veateated">
-                    <div class="contact-card-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
-                    </div>
-                    <div class="contact-card-label">Küsimused ja vead</div>
-                    <div class="contact-card-title">Kasutajatugi, veateated, ettepanekud</div>
-                    <div class="contact-card-cta">
-                        <span>Kirjuta</span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </div>
-                </a>
-            </div>
+            <p class="contact-lead">Kui on küsimus, soov või mõte — kirjutage julgelt:</p>
+            <a class="contact-email" href="mailto:arle.reidma@gmail.com">arle.reidma@gmail.com</a>
         </div>
     </section>
 
@@ -721,43 +662,11 @@
         </div>
     </section>
 
-    <!-- Info / Privaatsus ja tehniline info -->
-    <section class="info" id="info" aria-label="Info">
-        <div class="info-inner">
-            <div class="info-eyebrow">
-                <span class="dot" aria-hidden="true"></span>
-                Info
-            </div>
-            <h2 class="info-title">Privaatsus, <em>arvutused</em> ja <em>piirangud</em>.</h2>
-
-            <div class="info-grid">
-                <div class="info-card">
-                    <h3 class="info-card-title">Privaatsus</h3>
-                    <p class="info-card-text">Ei salvesta isikuandmeid ega küpsiseid. Iga päring anonüümne.</p>
-                </div>
-
-                <div class="info-card">
-                    <h3 class="info-card-title">Arvutused</h3>
-                    <p class="info-card-text">Väärtus = tagavara × pindala × hind. CO₂ biomassi põhjal.</p>
-                </div>
-
-                <div class="info-card">
-                    <h3 class="info-card-title">AI mudel</h3>
-                    <p class="info-card-text">NVIDIA step-3.7-flash. Soovituslik, mitte õiguslikult siduv.</p>
-                </div>
-
-                <div class="info-card">
-                    <h3 class="info-card-title">Tehniline stack</h3>
-                    <p class="info-card-text">FastAPI + Vercel. Leaflet + OpenStreetMap. WFS läbi registrite.</p>
-                </div>
-
-                <div class="info-card info-card-wide">
-                    <h3 class="info-card-title">Piirangud</h3>
-                    <p class="info-card-text">Otsuse tugitööriist, mitte õiguslik nõustaja. Enne raiet või toetuse taotlust konsulteeri metsaühistu, Erametsakeskuse või Keskkonnaametiga.</p>
-                </div>
-            </div>
-        </div>
-    </section>
+    <!-- Zoom Controls -->
+    <div class="zoom-controls" id="zoom-controls">
+        <button class="zoom-btn active" data-zoom="1">1x</button>
+        <button class="zoom-btn" data-zoom="0.75">0.75x</button>
+    </div>
 
     <!-- Zoom Controls -->
     <div class="zoom-controls" id="zoom-controls">
