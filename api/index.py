@@ -1130,7 +1130,7 @@ async def chat(request: Request):
                             "messages": messages,
                             "stream": True,
                             "temperature": 0.4,
-                            "max_tokens": 1024,
+                            "max_tokens": 2048,
                             "top_p": 0.9,
                         },
                     ) as resp:
