@@ -1497,6 +1497,9 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     color: var(--ink-3);
     line-height: 1.2;
     margin: 0;
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
 }
 .section-desc {
     font-size: 15.5px;

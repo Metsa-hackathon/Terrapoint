@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=18">
+    <link rel="stylesheet" href="/static/css/style.css?v=19">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -1028,6 +1028,14 @@
         var msgs = document.getElementById('ai-chat-messages');
         if (msgs) msgs.innerHTML = '';
         _aiUserScrolledUp = false;
+
+        // Preserve any user-typed text in the input box across a new search
+        // so it isn't silently cleared by the auto-analysis below.
+        var pendingUserMsg = (document.getElementById('ai-chat-input').value || '').trim();
+        if (pendingUserMsg) {
+            aiMessageQueue.push(pendingUserMsg);
+            document.getElementById('ai-chat-input').value = '';
+        }
 
         aiCurrentKataster = katasterNr;
         aiLastAnalyzedKataster = katasterNr;
