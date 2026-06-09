@@ -5,6 +5,23 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 ## [Määramata] - 2026-06-09
 
 ### Changed
+- **Toetuste sektsiooni ümberkujundus** — vana struktuur oli kitsas ja
+  murdus mobiilis (kaardid olid `min-width: 400px` laiused, summa tekst
+  lõigati paremast servast maha, CTA lingid olid tekstiviited ilma
+  piisava puutepunktita). Uus struktuur:
+  - Ülemine rida: pealkiri + staatuse badge (Avatud / Tulemas / Lõppenud)
+  - Kategooria + asutus (väiksemad caps)
+  - Kirjeldus
+  - "Toetuse suurus" silt + summad eraldi pillidena (roheline
+    eligible, hall ineligible) — toimib ka komadega eraldatud
+    loeteluga nagu "püünispuud 500 €/üksus, feromoonpüünised 40
+    €/komplekt"
+  - Ineligible puhul: punane "✗ Ei vasta tingimustele" plokk põhjendusega
+  - Footer: Taotlusvoor (label + väärtus) + ÜKS suur CTA nupp
+    ("Kandideeri eramets.ee lehel" roheline / "Vaata tingimusi" sinine)
+  - Mob CTA nupu kõrgus 44px (WCAG 2.5.5 puutepunkt)
+  - Eemaldatud `min-width: 400px` toetus-kaartidelt ja JS-i
+    `<div style="min-width:400px">` mähkijalt
 - **AI pakkuja vahetatud: NVIDIA → OpenCode Zen** — kasutab mudelit
   `deepseek-v4-flash-free`. OpenAI-ühilduv `/v1/chat/completions` endpoint
   aadressil `https://opencode.ai/zen/v1`. Env var nimed:
