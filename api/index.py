@@ -1099,11 +1099,12 @@ async def chat(request: Request):
             return json_response({"error": "AI teenus ei ole seadistatud. Võta ühendust administraatoriga."}, 500)
 
         api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
-        model = os.environ.get("NVIDIA_MODEL", "stepfun-ai/step-3.7-flash")
+        model = os.environ.get("NVIDIA_MODEL", "meta/llama-3.3-70b-instruct")
 
         async def stream_response():
             saw_content = False
             saw_reasoning = False
+            full_reasoning_buf = []
             try:
                 timeout = httpx.Timeout(connect=5.0, read=120.0, write=10.0, pool=5.0)
                 async with httpx.AsyncClient(timeout=timeout) as client:
@@ -1120,7 +1121,7 @@ async def chat(request: Request):
                             "messages": messages,
                             "stream": True,
                             "temperature": 0.4,
-                            "max_tokens": 20000,
+                            "max_tokens": 4096,
                             "top_p": 0.9,
                         },
                     ) as resp:
@@ -1152,14 +1153,18 @@ async def chat(request: Request):
                             reasoning_piece = delta.get("reasoning_content", "")
                             if reasoning_piece:
                                 saw_reasoning = True
+                                full_reasoning_buf.append(reasoning_piece)
                                 yield "data: " + orjson.dumps({"reasoning": reasoning_piece}).decode() + "\n\n"
                             content_piece = delta.get("content", "")
                             if content_piece:
                                 saw_content = True
                                 yield "data: " + orjson.dumps({"content": content_piece}).decode() + "\n\n"
 
+                # If no final content but reasoning was emitted, replace the long
+                # reasoning block with a short user-facing explanation. The model
+                # burned all its tokens thinking and never produced an answer.
                 if not saw_content and saw_reasoning:
-                    yield "data: " + orjson.dumps({"content": "\n\n[Mudel ei väljastanud lõplikku vastust. Proovi sama küsimust uuesti või sõnasta see lühemalt.]"}).decode() + "\n\n"
+                    yield "data: " + orjson.dumps({"content": "\n\nSelle küsimuse jaoks jäi AI-l aeg lühemaks ning ta jõudis ainult mõtteid läbi töötada. Palun sõnasta küsimus lühemalt või küsi midagi konkreetsemat (näiteks „mis on mu metsa seisukord", „kas lageraiet tohib teha", „milliseid toetusi saan taotleda")."}).decode() + "\n\n"
 
                 yield "data: [DONE]\n\n"
             except httpx.ReadTimeout:
