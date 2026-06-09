@@ -3257,9 +3257,12 @@ footer {
 }
 
 /* Zoom — 0.75x režiimis kogu leht skaleerub 75% peale, et rohkem
-   sisu mahub viewport'i. Toetatud Chrome'is, Safari's ja Firefox 126+. */
+   sisu mahub viewport'i. Kompenseerime layout pikkuse, et alumine osa
+   ei jääks tühjaks (zoom on render-skaala, mitte layout-skaala). */
 html.zoom-75 {
     zoom: 0.75;
+    /* 0.75x = layout 25% pikem kui visuaalne; kompenseerime */
+    height: calc(100% + 25vh);
 }
 @supports not (zoom: 1) {
     /* Firefox < 126 fallback: transform: scale() koos width kompensatsiooniga */
