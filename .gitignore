@@ -3,3 +3,5 @@ __pycache__/
 .env
 .venv/
 .vercel
+server_*.log
+*.log
