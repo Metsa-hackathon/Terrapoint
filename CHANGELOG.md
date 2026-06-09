@@ -4,6 +4,18 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 
 ## [Määramata] - 2026-06-09
 
+### Changed
+- **AI pakkuja vahetatud: NVIDIA → OpenCode Zen** — kasutab mudelit
+  `deepseek-v4-flash-free`. OpenAI-ühilduv `/v1/chat/completions` endpoint
+  aadressil `https://opencode.ai/zen/v1`. Env var nimed:
+  `OPENCODE_ZEN_API_KEY`, `OPENCODE_ZEN_MODEL`. Vana `NVIDIA_API_KEY` ja
+  `NVIDIA_MODEL` eemaldatud Vercel dashboardist. CSP `connect-src`
+  uuendatud: `integrate.api.nvidia.com` → `opencode.ai`. DeepSeek V4 Flash
+  on samuti reasoning-mudel, mistõttu `max_tokens` tõstetud 2048 → 4096,
+  httpx read-timeout 120s → 180s, frontend safety-timer 120s → 180s.
+  Frontend `.ai-thinking-block` kuvab mõttekäiku eraldi, lõplik vastus
+  tuleb alati eraldi `content` delta voona.
+
 ### Fixed
 - **Vercel FastAPI runtime ei käivitunud** — `vercel.json`-is oli
   `framework: null` ja käsitsi `rewrites` `/api/...` -> `/api/index.py`,
@@ -51,7 +63,7 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 - CSS versioon v11 → v12 (cache bust).
 
 ### Deployment
-- **Vercel**: env vars seadistatud (NVIDIA_API_KEY, NVIDIA_MODEL).
+- **Vercel**: env vars seadistatud (OPENCODE_ZEN_API_KEY, OPENCODE_ZEN_MODEL).
 - **GitHub**: master branch on ajakohane, Vercel auto-deploy töötab.
 - **Kohalik API** (systemctl terrapoint-api): .env-st tulnud, töötab.
 
