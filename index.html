@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=19">
+    <link rel="stylesheet" href="/static/css/style.css?v=20">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -2142,11 +2142,11 @@
             'kultuur': 'Pärandkultuur', 'ühistu': 'Ühistu'
         };
 
-        function badgeColor(status) {
-            if (status === 'open') return 'background:var(--success);color:#fff';
-            if (status === 'upcoming') return 'background:var(--warn);color:#fff';
-            if (status === 'closed') return 'background:var(--ink-5);color:#fff';
-            return 'background:var(--ink-5);color:#fff';
+        function badgeClass(status) {
+            if (status === 'open') return 'toetus-badge toetus-badge-open';
+            if (status === 'upcoming') return 'toetus-badge toetus-badge-upcoming';
+            if (status === 'closed') return 'toetus-badge toetus-badge-closed';
+            return 'toetus-badge toetus-badge-closed';
         }
         function badgeLabel(t) {
             if (t.voor_badge) return t.voor_badge;
@@ -2155,36 +2155,51 @@
             if (t.voor_status === 'closed') return 'Lõppenud';
             return '';
         }
+        function amountItems(summa) {
+            if (!summa) return [];
+            if (summa.indexOf(',') > -1) {
+                return summa.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+            }
+            return [summa];
+        }
         function renderCard(t, isEligible) {
             var link = t.url || 'https://www.eramets.ee/toetused/';
             var badge = badgeLabel(t);
-            var badgeStyle = badgeColor(t.voor_status);
             var catName = categoryNames[t.category] || t.category;
-            var cls = isEligible ? 'toetus-card toetus-eligible' : 'toetus-card';
+            var cls = isEligible ? 'toetus-card toetus-eligible' : 'toetus-card toetus-ineligible';
+            var items = amountItems(t.summa);
+
             var html = '<div class="' + cls + '">';
-            html += '<div class="toetus-header">';
-            html += '<div class="toetus-info"><strong>' + escHtml(t.nimi) + '</strong>';
-            html += '<span class="toetus-cat">' + escHtml(catName) + ' · ' + escHtml(t.asutus) + '</span></div>';
-            html += '<div class="toetus-meta">';
-            if (badge) html += '<span class="toetus-badge" style="' + badgeStyle + '">' + escHtml(badge) + '</span>';
-            if (t.summa) {
-                if (t.summa.indexOf(',') > -1) {
-                    html += '<div class="toetus-amount' + (isEligible ? ' eligible' : '') + '">';
-                    t.summa.split(',').forEach(function(s) { html += '<div>' + s.trim() + '</div>'; });
-                    html += '</div>';
-                } else {
-                    html += '<span class="toetus-amount' + (isEligible ? ' eligible' : '') + '">' + t.summa + '</span>';
-                }
-            }
-            html += '</div></div>';
+            // Top row: title (left) + status badge (right)
+            html += '<div class="toetus-top">';
+            html += '<div class="toetus-title">' + escHtml(t.nimi) + '</div>';
+            if (badge) html += '<span class="' + badgeClass(t.voor_status) + '">' + escHtml(badge) + '</span>';
+            html += '</div>';
+            // Category meta
+            html += '<div class="toetus-cat">' + escHtml(catName) + (t.asutus ? ' · ' + escHtml(t.asutus) : '') + '</div>';
+            // Description
             if (t.kirjeldus) html += '<p class="toetus-desc">' + escHtml(t.kirjeldus) + '</p>';
-            if (!isEligible && t.pohjus) html += '<p class="toetus-reason">\u2717 ' + escHtml(t.pohjus) + '</p>';
+            // Amount pill block
+            if (items.length) {
+                html += '<div class="toetus-amount-block">';
+                html += '<div class="toetus-amount-label">Toetuse suurus</div>';
+                html += '<div class="toetus-amount-pills">';
+                items.forEach(function(s) {
+                    html += '<span class="toetus-amount-pill' + (isEligible ? ' eligible' : '') + '">' + escHtml(s) + '</span>';
+                });
+                html += '</div></div>';
+            }
+            // Ineligible reason box
+            if (!isEligible && t.pohjus) {
+                html += '<div class="toetus-reason"><span class="toetus-reason-icon">✗</span><div><strong>Ei vasta tingimustele</strong><br>' + escHtml(t.pohjus) + '</div></div>';
+            }
+            // Footer: taotlusvoor + CTA
             html += '<div class="toetus-footer">';
-            html += '<span class="toetus-voor">Taotlusvoor: ' + (t.taotlusvoor || '\u2014') + '</span>';
-            html += '<div class="toetus-links">';
-            if (t.voor_url) html += '<a href="' + t.voor_url + '" target="_blank" rel="noopener">Tähtajad \u2192</a>';
-            html += '<a href="' + link + '" target="_blank" rel="noopener" class="toetus-cta">' + (isEligible ? 'Kandideeri \u2192' : 'Info \u2192') + '</a>';
-            html += '</div></div></div>';
+            if (t.taotlusvoor) html += '<div class="toetus-voor"><span class="toetus-voor-label">Taotlusvoor</span><span class="toetus-voor-val">' + escHtml(t.taotlusvoor) + '</span></div>';
+            html += '<a href="' + link + '" target="_blank" rel="noopener" class="toetus-cta">'
+                  + (isEligible ? 'Kandideeri eramets.ee lehel' : 'Vaata tingimusi')
+                  + ' <span class="toetus-cta-arrow">→</span></a>';
+            html += '</div></div>';
             return html;
         }
 
@@ -2198,27 +2213,33 @@
 
             var html = '';
             if (all.length > 0) {
-                html += '<div style="min-width:400px">';
-                html += '<div class="eligible-banner"><strong>Sobivad toetused (' + all.length + ')</strong></div>';
+                html += '<div class="eligible-banner"><strong>Sobivad toetused</strong><span class="eligible-banner-count">' + all.length + '</span></div>';
                 html += '<div class="eraldised-controls"><span>Näita:</span>';
                 [5, 10].forEach(function(n) {
                     html += '<button data-perpage="' + n + '"' + (pp === n ? ' class="active"' : '') + '>' + n + '</button>';
                 });
                 html += '<button data-perpage="all"' + (pp === 'all' ? ' class="active"' : '') + '>Kõik</button>';
                 html += '</div>';
+                html += '<div class="toetus-list">';
                 visible.forEach(function(t) { html += renderCard(t, true); });
-                html += '<div style="padding:8px 0;font-size:0.75rem;color:var(--ink-4)">Näitan ' + visible.length + ' / ' + all.length + '</div>';
                 html += '</div>';
+                if (visible.length < all.length) {
+                    html += '<div class="toetus-count">Näitan ' + visible.length + ' / ' + all.length + '</div>';
+                }
             }
 
             if (ineligible.length > 0) {
-                html += '<details style="margin-top:1rem"' + (all.length === 0 ? ' open' : '') + '><summary class="muted-summary" style="font-size:0.85rem;font-weight:600">Muud toetused (' + ineligible.length + '), ei vasta tingimustele</summary>';
-                html += '<div style="margin-top:8px">';
+                html += '<details class="toetus-details"' + (all.length === 0 ? ' open' : '') + '>';
+                html += '<summary class="muted-summary">';
+                html += '<span class="toetus-details-label">Muud toetused, ei vasta tingimustele</span>';
+                html += '<span class="toetus-details-count">' + ineligible.length + '</span>';
+                html += '</summary>';
+                html += '<div class="toetus-list toetus-list-ineligible">';
                 ineligible.forEach(function(t) { html += renderCard(t, false); });
                 html += '</div></details>';
             }
 
-            html += '<div style="margin-top:12px;font-size:0.72rem;color:var(--ink-4);text-align:right">Allikas: <a href="https://www.eramets.ee/toetused/" target="_blank" rel="noopener" style="color:var(--ink-4)">eramets.ee</a></div>';
+            html += '<div class="toetus-source">Allikas: <a href="https://www.eramets.ee/toetused/" target="_blank" rel="noopener">eramets.ee</a></div>';
 
             el.innerHTML = html;
             el.querySelectorAll('.eraldised-controls button').forEach(function(btn) {
