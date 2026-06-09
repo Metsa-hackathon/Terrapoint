@@ -674,7 +674,22 @@
         if (!aiCurrentKataster) return;
         if (!message.trim()) return;
 
-        // If AI is busy, queue the message
+        message = message.trim().slice(0, 600);
+
+        // Client-side rate limit: max 1 request per 2s, max 6 per minute
+        var now = Date.now();
+        if (aiLastSendAt && (now - aiLastSendAt) < 2000) {
+            aiAppendMessage('assistant', '<span style="color:var(--ink-4);font-style:italic">Palun oota hetk enne järgmist küsimust...</span>');
+            return;
+        }
+        aiLastSendAt = now;
+        aiRecentSendTimes = (aiRecentSendTimes || []).filter(function(t) { return now - t < 60000; });
+        if (aiRecentSendTimes.length >= 6) {
+            aiAppendMessage('assistant', '<span style="color:var(--ink-4);font-style:italic">Liiga palju küsimusi lühikese aja jooksul. Oota hetk.</span>');
+            return;
+        }
+        aiRecentSendTimes.push(now);
+
         if (aiStreaming) {
             aiMessageQueue.push(message);
             aiAppendMessage('user', message);
@@ -686,6 +701,7 @@
         input.value = '';
         aiAppendMessage('user', message);
         aiChatHistory.push({role: 'user', content: message});
+        if (aiChatHistory.length > 20) aiChatHistory = aiChatHistory.slice(-20);
 
         aiStreaming = true;
         document.getElementById('ai-chat-send').disabled = true;
@@ -785,10 +801,20 @@
             clearTimeout(stallTimer);
 
             if (!fullText.trim()) {
-                throw new Error('AI ei andnud vastust. Proovi uuesti.');
+                if (fullReasoning.trim()) {
+                    if (thinkBlock) thinkBlock.style.display = 'none';
+                    if (answerBlock) {
+                        answerBlock.innerHTML = '<em style="color:var(--ink-4)">AI töötas läbi andmed, kuid lõplik vastus jäi napiks. Mõttekäik:</em><br><br>' + escHtml(fullReasoning.slice(-2000));
+                        aiAutoScroll();
+                    }
+                    fullText = '[Mudel ei väljastanud lõplikku vastust. Proovi sama küsimust uuesti või sõnasta see lühemalt.]';
+                } else {
+                    throw new Error('AI ei andnud vastust. Proovi uuesti.');
+                }
             }
 
             aiChatHistory.push({role: 'assistant', content: fullText});
+            if (aiChatHistory.length > 20) aiChatHistory = aiChatHistory.slice(-20);
             document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + '. Küsi lisaküsimusi';
 
         } catch(err) {
