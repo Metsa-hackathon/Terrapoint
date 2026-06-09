@@ -928,31 +928,38 @@ def build_system_prompt(data: dict) -> str:
     teatised = data.get("teatised", [])
     kahjustused = data.get("kahjustused", [])
 
+    # Accept both backend names (pindala_ha, tagavara_y_ha) and simpler
+    # frontend names (pindala, tagavara). The frontend sends the latter.
+    pindala = k.get("pindala_ha") or k.get("pindala") or 0
+    mets_pindala = k.get("mets_pindala_ha") or 0
+
     lines = [TERRAPOINT_SYSTEM_PROMPT_HEADER, "", "=== ANDMED (kasuta AINULT neid väärtusi) ==="]
     lines.append(f"Katastriüksus: {k.get('number', 'N/A')}")
-    lines.append(f"Pindala: {k.get('pindala_ha', 0)} ha")
+    lines.append(f"Pindala: {pindala} ha")
     lines.append(f"Asukoht: {k.get('l_aadress', '')}, {k.get('ov_nimi', '')}, {k.get('mk_nimi', '')}")
     lines.append(f"Sihtotstarve: {k.get('sihtotstarve', 'N/A')}")
     lines.append(f"Omandivorm: {k.get('omvorm', 'N/A')}")
     lines.append(f"Maksustamishind: {k.get('maks_hind', 'N/A')} EUR")
-    lines.append(f"Metsamaa pindala: {k.get('mets_pindala_ha', 0)} ha")
+    lines.append(f"Metsamaa pindala: {mets_pindala} ha")
 
     if m:
         lines.append("")
         lines.append("--- METSA ERALDISED ---")
         lines.append(f"Peapuuliik: {m.get('puuliik', 'N/A')}")
         lines.append(f"Keskmine vanus: {m.get('vanus', 0)} a")
-        lines.append(f"Tagavara: {m.get('tagavara_y_ha', 0)} m³/ha")
+        tagavara = m.get('tagavara_y_ha') or m.get('tagavara') or 0
+        lines.append(f"Tagavara: {tagavara} m³/ha")
         lines.append(f"Boniteet: {m.get('boniteet', 'N/A')}")
         lines.append(f"Keskmine kõrgus: {m.get('korgus', 'N/A')} m")
-        lines.append(f"Eraldiste arv: {m.get('eraldisi_kokku', 0)}")
+        lines.append(f"Eraldiste arv: {m.get('eraldiste_arv') or m.get('eraldisi_kokku') or 0}")
         lines.append(f"Kuivendatud: {'jah' if m.get('kuivendatud') else 'ei'}")
 
         koosseis = m.get("liikide_koosseis", [])
         if koosseis:
             lines.append("Liikide koosseis:")
             for l in koosseis:
-                lines.append(f"  {l.get('puuliik', '?')} {l.get('osakaal', 0)}%, {l.get('tagavara_y_ha', 0)} m³/ha, vanus {l.get('vanus', 0)} a")
+                ltag = l.get('tagavara_y_ha') or l.get('tagavara') or 0
+                lines.append(f"  {l.get('puuliik', '?')} {l.get('osakaal', 0)}%, {ltag} m³/ha, vanus {l.get('vanus', 0)} a")
 
         eraldised = m.get("eraldised", [])
         if eraldised:
@@ -960,7 +967,9 @@ def build_system_prompt(data: dict) -> str:
             for e in eraldised[:5]:
                 vaartus = e.get('vaartus_eur', 0)
                 vaartus_str = f", väärtus {vaartus} EUR" if vaartus else ""
-                lines.append(f"  Eraldis {e.get('eraldis_nr','?')}: {e.get('puuliik','?')}, {e.get('vanus',0)} a, {e.get('tagavara_y_ha',0)} m³/ha, {e.get('pindala_ha',0)} ha{vaartus_str}")
+                etag = e.get('tagavara_y_ha') or e.get('tagavara') or 0
+                eha = e.get('pindala_ha') or e.get('pindala') or 0
+                lines.append(f"  Eraldis {e.get('eraldis_nr','?')}: {e.get('puuliik','?')}, {e.get('vanus',0)} a, {etag} m³/ha, {eha} ha{vaartus_str}")
             if len(eraldised) > 5:
                 lines.append(f"  ... ja veel {len(eraldised)-5} eraldist (kokku {len(eraldised)})")
 
@@ -1121,7 +1130,7 @@ async def chat(request: Request):
                             "messages": messages,
                             "stream": True,
                             "temperature": 0.4,
-                            "max_tokens": 4096,
+                            "max_tokens": 1024,
                             "top_p": 0.9,
                         },
                     ) as resp:
