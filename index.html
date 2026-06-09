@@ -550,6 +550,8 @@
     var aiStreaming = false;
     var aiMessageQueue = [];
     var aiAbortController = null;
+    var aiLastSendAt = 0;
+    var aiRecentSendTimes = [];
 
     function aiAppendMessage(role, content) {
         var container = document.getElementById('ai-chat-messages');
