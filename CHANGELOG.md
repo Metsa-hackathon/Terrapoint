@@ -5,11 +5,22 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 ## [Määramata] - 2026-06-09
 
 ### Fixed
+- **Vercel FastAPI runtime ei käivitunud** — `vercel.json`-is oli
+  `framework: null` ja käsitsi `rewrites` `/api/...` -> `/api/index.py`,
+  mis pani Verceli serveerima `api/index.py` raw Python failina (Content-Type
+  `application/octet-stream`, 405 POST korral). Eemaldatud `framework: null`
+  ja rewrites — Verceli fastapi preset avastab nüüd `app.py` juurest
+  ise. Lisatud `app.py` shim: `from api.index import app`.
+- **API endpoint tagastas 500 FUNCTION_INVOCATION_FAILED** —
+  `api/index.py` real 1176 oli sulgemata jutumärk AI fallback tekstis
+  (3 × U+201E `„` ilma vastava U+201C lõputa), mis andis `SyntaxError`.
+  Parandatud — nüüd import töötab.
 - **AI chat endpoint tagastas 500 "AI ei andnud vastust"** — põhjus: Verceli
   deployment'is puudus `NVIDIA_API_KEY` keskkonnamuutuja. Lisatud Verceli
-  dashboardi (production) + `NVIDIA_MODEL=stepfun-ai/step-3.7-flash`.
-  Kohalik `.env` oli olemas, aga Vercel ei loe kohalikku `.env` — seaded
-  tuleb teha dashboardi kaudu.
+  dashboardi (production) + `NVIDIA_MODEL=meta/llama-3.3-70b-instruct`
+  (varem `stepfun-ai/step-3.7-flash` kulus kogu tokeni eelarve sisemisele
+  mõttekäigule ega andnud sisulist vastust). Kohalik `.env` oli olemas,
+  aga Vercel ei loe kohalikku `.env` — seaded tuleb teha dashboardi kaudu.
 - **AI chat input ei ilmunud mobiilis refresh'i järel** —
   `aiAnalyzeKataster` funktsioonis oli `return` short-circuit, mis jättis
   input area `display:none` peale, kui kasutaja navigeeris samale
