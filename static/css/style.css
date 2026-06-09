@@ -814,7 +814,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 
 .landing-title {
     font-family: var(--ff-display);
-    font-size: clamp(52px, 8vw, 80px);
+    font-size: clamp(48px, 7.5vw, 76px);
     line-height: 1.02;
     color: var(--ink);
     letter-spacing: -0.025em;
@@ -833,7 +833,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 }
 
 .landing-sub {
-    font-size: 20px;
+    font-size: 19px;
     line-height: 1.55;
     color: var(--ink-3);
     max-width: 540px;
@@ -917,13 +917,13 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 }
 .landing-meta-num {
     font-family: var(--ff-sans);
-    font-size: 32px;
+    font-size: 30px;
     color: var(--ink);
     font-feature-settings: "tnum" 1;
     letter-spacing: -0.02em;
 }
 .landing-meta-label {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--ink-4);
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -2743,13 +2743,13 @@ footer {
     .landing {
         padding: 40px 18px 32px;
     }
-    .landing-title { font-size: 40px; line-height: 1.04; }
-    .landing-sub { font-size: 16px; }
+    .landing-title { font-size: 38px; line-height: 1.04; }
+    .landing-sub { font-size: 15px; }
     .landing-search .search-icon { display: flex; }
     .landing-search .search-icon svg { width: 18px; height: 18px; }
     .landing-meta { gap: 16px; }
-    .landing-meta-num { font-size: 24px; }
-    .landing-meta-label { font-size: 11px; letter-spacing: 0.06em; }
+    .landing-meta-num { font-size: 22px; }
+    .landing-meta-label { font-size: 10px; letter-spacing: 0.06em; }
     .landing-eyebrow { font-size: 12px; padding: 3px 9px 3px 7px; }
 
     .section-head { flex-direction: column; align-items: flex-start; gap: 4px; }
@@ -2901,7 +2901,7 @@ footer {
 @media (max-width: 380px) {
     .facts-strip { grid-template-columns: 1fr 1fr; }
     .fact-value { font-size: 17px; }
-    .landing-title { font-size: 34px; }
+    .landing-title { font-size: 32px; }
     .big-number { font-size: 28px; }
     .brand-name { font-size: 15px; }
 }
