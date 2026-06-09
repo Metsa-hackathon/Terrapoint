@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=20">
+    <link rel="stylesheet" href="/static/css/style.css?v=21">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -243,7 +243,7 @@
             </div>
             <div class="ai-chat-input-area" id="ai-chat-input-area" style="display:none">
                 <div class="ai-chat-input-wrap">
-                    <input type="text" id="ai-chat-input" placeholder="Küsi oma metsa kohta..." autocomplete="off">
+                    <textarea id="ai-chat-input" placeholder="Küsi oma metsa kohta..." autocomplete="off" rows="1"></textarea>
                     <button id="ai-chat-send" aria-label="Saada">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -293,6 +293,11 @@
                         <div class="map-legend-row"><span class="legend-swatch" style="background:var(--map-eraldis-noor)"></span><span><strong>Noor mets</strong> — liiga noor raiumiseks</span></div>
                     </div>
                     <button class="map-legend-toggle" id="map-legend-toggle" aria-label="Sulge legend">−</button>
+                </div>
+                <div class="zoom-controls" id="zoom-controls">
+                    <button class="zoom-btn active" data-zoom="1" aria-label="Tavaline suurus">1x</button>
+                    <button class="zoom-btn" data-zoom="0.75" aria-label="Vähenda 75 protsendile">0.75x</button>
+                    <button class="zoom-btn" data-zoom="0.5" aria-label="Vähenda 50 protsendile">0.5x</button>
                 </div>
                 <div class="map-controls" id="map-controls">
                     <button class="map-controls-toggle" id="map-controls-toggle" type="button" aria-label="Sulge kihtide menüü" aria-expanded="true">
@@ -673,17 +678,7 @@
         </div>
     </section>
 
-    <!-- Zoom Controls -->
-    <div class="zoom-controls" id="zoom-controls">
-        <button class="zoom-btn active" data-zoom="1">1x</button>
-        <button class="zoom-btn" data-zoom="0.75">0.75x</button>
-    </div>
-
-    <!-- Zoom Controls -->
-    <div class="zoom-controls" id="zoom-controls">
-        <button class="zoom-btn active" data-zoom="1">1x</button>
-        <button class="zoom-btn" data-zoom="0.75">0.75x</button>
-    </div>
+    <!-- Zoom controls live inside .map-wrapper (see line ~296) -->
 
     <footer>
         <div class="footer-content">
@@ -2781,12 +2776,23 @@
             var input = document.getElementById('ai-chat-input');
             aiSendMessage(input.value);
         });
-        document.getElementById('ai-chat-input').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
+        var aiInputEl = document.getElementById('ai-chat-input');
+        aiInputEl.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
                 e.preventDefault();
                 aiSendMessage(this.value);
             }
         });
+        // Auto-grow textarea as user types (1-4 lines)
+        function autoGrowAiInput() {
+            aiInputEl.style.height = 'auto';
+            var h = Math.min(aiInputEl.scrollHeight, 120);
+            aiInputEl.style.height = h + 'px';
+        }
+        aiInputEl.addEventListener('input', autoGrowAiInput);
+        // Reset height after send
+        var origAiSend = aiSendMessage;
+        // (no override needed — input.value='' in aiSendMessage triggers input event)
         document.querySelectorAll('.ai-hint').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 var q = btn.getAttribute('data-q');
@@ -2935,10 +2941,11 @@
         var html = document.documentElement;
 
         function setZoom(level) {
+            html.classList.remove('zoom-75', 'zoom-50');
             if (level === '0.75') {
                 html.classList.add('zoom-75');
-            } else {
-                html.classList.remove('zoom-75');
+            } else if (level === '0.5') {
+                html.classList.add('zoom-50');
             }
             zoomBtns.forEach(function(btn) {
                 btn.classList.toggle('active', btn.getAttribute('data-zoom') === level);
@@ -2955,7 +2962,7 @@
         // Restore saved zoom level
         try {
             var saved = localStorage.getItem('terrapoint-zoom');
-            if (saved === '0.75') setZoom('0.75');
+            if (saved === '0.75' || saved === '0.5') setZoom(saved);
         } catch(e) {}
     })();
     </script>

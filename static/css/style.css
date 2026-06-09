@@ -206,6 +206,13 @@ a { color: var(--blue-700); text-decoration: none; }
     padding: 0 var(--s-5);
     height: var(--nav-h);
     background: linear-gradient(135deg, #22c55e 0%, #06b6d4 50%, #3b82f6 100%);
+    -webkit-backdrop-filter: saturate(180%) blur(8px);
+    backdrop-filter: saturate(180%) blur(8px);
+}
+
+/* Global scroll-margin so anchor jumps and `:target` clear the sticky header */
+.metric-card, .source-card, .ai-chat-card, .fact, .section-head, .landing {
+    scroll-margin-top: 72px;
 }
 
 
@@ -1066,17 +1073,18 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     justify-content: space-between;
     gap: 8px;
     width: 100%;
+    min-height: 44px;
     background: rgba(255, 255, 255, 0.94);
     backdrop-filter: blur(14px) saturate(160%);
     -webkit-backdrop-filter: blur(14px) saturate(160%);
     border: 1px solid var(--hair);
     border-radius: var(--r);
-    padding: 6px 10px;
+    padding: 8px 12px;
     margin-bottom: 4px;
     box-shadow: var(--sh-2);
     cursor: pointer;
     font-family: inherit;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--ink-2);
     letter-spacing: 0.06em;
@@ -1269,13 +1277,15 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     align-items: center;
     gap: 6px;
     cursor: pointer;
-    padding: 5px 8px;
-    font-size: 11.5px;
+    padding: 8px 10px;
+    min-height: 40px;
+    font-size: 12px;
     font-weight: 500;
     color: var(--ink-3);
     border-radius: var(--r-sm);
     transition: all var(--t-fast) var(--ease);
     user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 .toggle-item:hover { background: var(--paper-2); color: var(--ink-2); }
 .toggle-item input { display: none; }
@@ -1366,14 +1376,14 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 }
 .map-legend-toggle {
     position: absolute;
-    top: 4px; right: 4px;
-    width: 20px; height: 20px;
+    top: 6px; right: 6px;
+    width: 36px; height: 36px;
     border-radius: 50%;
     border: 1px solid var(--hair);
     background: var(--white);
     color: var(--ink-4);
     cursor: pointer;
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 700;
     line-height: 1;
     padding: 0;
@@ -1381,6 +1391,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     align-items: center;
     justify-content: center;
     transition: all var(--t-fast) var(--ease);
+    -webkit-tap-highlight-color: transparent;
 }
 .map-legend-toggle:hover { background: var(--ink-2); color: var(--white); border-color: var(--ink-2); }
 .map-legend.collapsed .map-legend-toggle { position: static; margin: 0 auto; }
@@ -2040,7 +2051,8 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     border-color: var(--blue-400);
     box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.10);
 }
-.ai-chat-input-wrap input {
+.ai-chat-input-wrap input,
+.ai-chat-input-wrap textarea {
     flex: 1;
     min-width: 0;
     padding: 8px 0;
@@ -2048,13 +2060,19 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     outline: none;
     background: transparent;
     color: var(--ink-2);
-    font-size: 13.5px;
+    font-size: 14.5px;
     font-family: var(--ff-sans);
     letter-spacing: -0.005em;
+    resize: none;
+    min-height: 24px;
+    max-height: 120px;
+    line-height: 1.45;
 }
-.ai-chat-input-wrap input::placeholder { color: var(--ink-5); }
+.ai-chat-input-wrap textarea { overflow-y: auto; }
+.ai-chat-input-wrap input::placeholder,
+.ai-chat-input-wrap textarea::placeholder { color: var(--ink-5); }
 .ai-chat-input-wrap button {
-    width: 36px; height: 36px;
+    width: 44px; height: 44px;
     background: var(--blue-900);
     color: var(--white);
     border: none;
@@ -2067,6 +2085,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     flex-shrink: 0;
     position: relative;
     overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
 }
 .ai-chat-input-wrap button::before {
     content: "";
@@ -2797,10 +2816,10 @@ footer {
     background: var(--white) !important;
     color: var(--ink-2) !important;
     border: 1px solid var(--hair) !important;
-    width: 32px !important;
-    height: 32px !important;
-    line-height: 32px !important;
-    font-size: 18px !important;
+    width: 44px !important;
+    height: 44px !important;
+    line-height: 42px !important;
+    font-size: 20px !important;
     font-weight: 400 !important;
     margin: 0 !important;
     transition: all var(--t-fast) var(--ease);
@@ -3004,17 +3023,19 @@ footer {
     .brand-name { font-size: 17px; letter-spacing: -0.015em; }
     .brand-tag { display: none; }
     .search-box {
-        height: 34px;
-        padding: 0 3px 0 12px;
+        flex: 1;
+        height: 44px;
+        padding: 0 4px 0 12px;
         border-radius: var(--r-full);
         min-width: 0;
-        width: fit-content;
+        max-width: none;
+        width: auto;
         margin-left: auto;
     }
-    .search-box input { font-size: 13px; padding: 0 8px; min-width: 0; }
+    .search-box input { font-size: 15px; padding: 0 8px; min-width: 0; }
     .search-icon { display: none; }
-    .search-box button { width: 26px; height: 26px; border-radius: 50%; }
-    .search-box button svg { width: 12px; height: 12px; }
+    .search-box button { width: 44px; height: 44px; border-radius: 50%; }
+    .search-box button svg { width: 14px; height: 14px; }
     .search-kbd { display: none !important; }
 
     .dashboard {
@@ -3027,10 +3048,10 @@ footer {
     }
     .landing-title { font-size: 38px; line-height: 1.04; }
     .landing-sub { font-size: 13px; line-height: 1.45; margin-bottom: 20px; }
-    .landing-search .search-box { height: 38px; padding: 0 3px 0 12px; }
-    .landing-search .search-box input { font-size: 14px; padding: 0 10px; }
-    .landing-search .search-box button { width: 30px; height: 30px; }
-    .landing-search .search-box button svg { width: 14px; height: 14px; }
+    .landing-search .search-box { height: 52px; padding: 0 4px 0 14px; }
+    .landing-search .search-box input { font-size: 16px; padding: 0 10px; }
+    .landing-search .search-box button { width: 44px; height: 44px; }
+    .landing-search .search-box button svg { width: 16px; height: 16px; }
     .landing-hints { gap: 6px; margin-top: 10px; }
     .landing-hint { font-size: 11px; padding: 4px 8px; gap: 4px; }
     .landing-hint .kbd { font-size: 9px; padding: 0px 4px; }
@@ -3155,20 +3176,21 @@ footer {
     .toetus-footer { padding-top: 10px; gap: 9px; }
 
     /* ── Touch targets: bump everything that taps to ≥44px on mobile ── */
-    .ai-chat-input-wrap input { min-height: 28px; padding: 10px 0; }
+    .ai-chat-input-wrap input,
+    .ai-chat-input-wrap textarea { min-height: 44px; padding: 10px 0; font-size: 15px; }
     .ai-chat-input-wrap button { width: 44px; height: 44px; }
     .search-box { min-height: 40px; }
-    .search-box button { width: 36px; height: 36px; }
-    .landing-search .search-box { min-height: 44px; }
-    .landing-search .search-box button { width: 36px; height: 36px; }
+    .search-box button { width: 44px; height: 44px; }
+    .landing-search .search-box { min-height: 48px; }
+    .landing-search .search-box button { width: 44px; height: 44px; }
     .zoom-btn { min-width: 44px; min-height: 44px; }
-    .ai-hint { min-height: 32px; padding: 8px 12px; font-size: 12.5px; }
-    .map-controls-toggle { min-height: 40px; padding: 8px 12px; }
-    .toggle-item { min-height: 32px; padding: 6px 8px; }
-    .toggle-item .toggle-label { font-size: 11px; }
-    .landing-hint { min-height: 28px; padding: 6px 10px; }
-    .map-legend-toggle { width: 28px; height: 28px; font-size: 14px; }
-    .map-hint-close { width: 28px; height: 28px; font-size: 18px; }
+    .ai-hint { min-height: 36px; padding: 8px 12px; font-size: 12.5px; }
+    .map-controls-toggle { min-height: 44px; padding: 8px 12px; }
+    .toggle-item { min-height: 40px; padding: 8px 10px; }
+    .toggle-item .toggle-label { font-size: 12px; }
+    .landing-hint { min-height: 32px; padding: 6px 10px; }
+    .map-legend-toggle { width: 36px; height: 36px; font-size: 16px; }
+    .map-hint-close { width: 32px; height: 32px; font-size: 18px; }
 }
 
 /* Very small phones */
@@ -3187,34 +3209,36 @@ footer {
 
 /* ═══ ZOOM CONTROLS ═══════════════════════════════════════════════════════ */
 .zoom-controls {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    z-index: 1500;
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    z-index: 600;
     display: flex;
-    gap: 4px;
+    gap: 2px;
     background: var(--white);
     border: 1px solid var(--hair);
     border-radius: var(--r-full);
-    padding: 4px;
+    padding: 3px;
     box-shadow: var(--sh-3);
 }
 .zoom-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 32px;
+    min-width: 44px;
+    min-height: 36px;
+    padding: 0 10px;
     border: none;
     border-radius: var(--r-full);
     background: transparent;
     color: var(--ink-3);
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 600;
     font-family: var(--ff-mono);
     cursor: pointer;
     transition: all var(--t-fast) var(--ease);
     letter-spacing: -0.02em;
+    -webkit-tap-highlight-color: transparent;
 }
 .zoom-btn:hover {
     background: var(--paper-2);
@@ -3228,6 +3252,9 @@ footer {
 /* Zoom applied to html element */
 html.zoom-75 {
     zoom: 0.75;
+}
+html.zoom-50 {
+    zoom: 0.5;
 }
 
 /* Reduced motion */
