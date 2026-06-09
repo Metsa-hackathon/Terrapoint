@@ -31,6 +31,10 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 - `.gitignore`: `server_*.log` ja `*.log` (kohalikud uvicorn logid).
 - WFS 400 retry — Estonian WFS annab vahel 400 kehtetutele bbox päringutele,
   nüüd retry ka nende puhul (`services/layers.py`).
+- **URL-põhine auto-search** — `?kataster=78404:409:0113` või `?q=Kadaka pst 159`
+  query stringi põhjal käivitub search automaatselt lehe laadimisel.
+  Kasulik jagamislinkide jaoks ja deep-linking'uks.
+  Toetab ka `popstate` (back/forward nupp).
 
 ### Changed
 - CSS versioon v11 → v12 (cache bust).
