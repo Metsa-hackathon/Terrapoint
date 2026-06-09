@@ -1173,7 +1173,7 @@ async def chat(request: Request):
                 # reasoning block with a short user-facing explanation. The model
                 # burned all its tokens thinking and never produced an answer.
                 if not saw_content and saw_reasoning:
-                    yield "data: " + orjson.dumps({"content": "\n\nSelle küsimuse jaoks jäi AI-l aeg lühemaks ning ta jõudis ainult mõtteid läbi töötada. Palun sõnasta küsimus lühemalt või küsi midagi konkreetsemat (näiteks „mis on mu metsa seisukord", „kas lageraiet tohib teha", „milliseid toetusi saan taotleda")."}).decode() + "\n\n"
+                    yield "data: " + orjson.dumps({"content": "\n\nSelle küsimuse jaoks jäi AI-l aeg lühemaks ning ta jõudis ainult mõtteid läbi töötada. Palun sõnasta küsimus lühemalt või küsi midagi konkreetsemat (näiteks „mis on mu metsa seisukord“, „kas lageraiet tohib teha“, „milliseid toetusi saan taotleda“)."}).decode() + "\n\n"
 
                 yield "data: [DONE]\n\n"
             except httpx.ReadTimeout:
