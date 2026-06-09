@@ -1105,7 +1105,8 @@ async def chat(request: Request):
             saw_content = False
             saw_reasoning = False
             try:
-                async with httpx.AsyncClient(timeout=httpx.ReadTimeout(120.0, connect=5.0)) as client:
+                timeout = httpx.Timeout(connect=5.0, read=120.0, write=10.0, pool=5.0)
+                async with httpx.AsyncClient(timeout=timeout) as client:
                     async with client.stream(
                         "POST",
                         api_url,
