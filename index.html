@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=10">
+    <link rel="stylesheet" href="/static/css/style.css?v=12">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -678,6 +678,8 @@
     var aiStreaming = false;
     var aiMessageQueue = [];
     var aiAbortController = null;
+    var aiLastSendAt = 0;
+    var aiRecentSendTimes = [];
 
     function aiAppendMessage(role, content) {
         var container = document.getElementById('ai-chat-messages');
@@ -965,6 +967,10 @@
     }
 
     function aiAnalyzeKataster(katasterNr, eraldised) {
+        // Always make sure the input area is visible when a kataster is loaded
+        // (the `return` short-circuit below was leaving it hidden on re-visits).
+        document.getElementById('ai-chat-input-area').style.display = '';
+
         // Already analyzed this exact parcel — don't re-prompt automatically.
         // (User can still send their own questions, or re-trigger via a hint button.)
         if (katasterNr === aiLastAnalyzedKataster && aiCurrentKataster === katasterNr) {

@@ -30,3 +30,6 @@ Metsa väärtuse ja andmete analüüsi veebirakendus. FastAPI backend + HTML/CSS
 - Vercel hostib frontend: terrapoint.vercel.app
 - Traefik proxyb backendi: 10.0.4.1:8099
 - Docker võrgud: coolify gateway 10.0.1.1, n8n 10.0.1.9
+
+## Olulised reeglid
+- Kõik peab olema Verceliga ühilduv — frontend deployitakse Vercelile

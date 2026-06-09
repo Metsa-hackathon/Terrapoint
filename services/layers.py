@@ -37,7 +37,9 @@ async def _fetch_layer(client, key, workspace, typename, bbox_str, attempts: int
     for attempt in range(attempts):
         try:
             resp = await client.get(url)
-            if resp.status_code >= 500 or resp.status_code in (408, 429):
+            # Retry on transient 5xx, 408, 429, and 400 (Estonian WFS
+            # intermittently returns 400 for valid bbox queries)
+            if resp.status_code in (400, 408, 429) or resp.status_code >= 500:
                 if attempt + 1 < attempts:
                     await asyncio.sleep(0.3 * (2 ** attempt))
                     continue
