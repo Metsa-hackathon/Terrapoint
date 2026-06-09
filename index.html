@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=13">
+    <link rel="stylesheet" href="/static/css/style.css?v=14">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -511,8 +511,12 @@
     <!-- Meist -->
     <section class="about" id="meist" aria-label="Meist">
         <div class="about-hero" aria-hidden="true">
-            <div class="about-hero-img" style="background-image:url('/static/img/forest-hero.jpg')"></div>
+            <div class="about-hero-img" style="background-image:url('/static/img/team-hackathon-2026.jpg')"></div>
             <div class="about-hero-overlay"></div>
+            <div class="about-hero-caption">
+                <span class="about-hero-caption-label">Metsikult andmetes 2026</span>
+                <span class="about-hero-caption-text">Tiim võiduga · Telliskivi Loomelinnak, Tallinn</span>
+            </div>
         </div>
         <div class="about-inner">
             <div class="about-eyebrow">
@@ -541,15 +545,36 @@
                 </div>
             </div>
 
-            <div class="about-hackathon">
-                <div class="about-hackathon-badge">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></svg>
-                    <div>
-                        <div class="about-hackathon-title">Häkatoni võit</div>
-                        <div class="about-hackathon-sub">29.–30. mai 2026 · Telliskivi Loomelinnak, Tallinn</div>
+            <div class="victory-bento">
+                <div class="victory-bento-photo">
+                    <img src="/static/img/team-hackathon-2026.jpg" alt="Terrapoint tiim võiduga Metsikult andmetes 2026 häkatonil, 5000 euro auhind" loading="lazy" decoding="async">
+                    <div class="victory-bento-photo-tag">
+                        <span class="victory-bento-photo-tag-dot" aria-hidden="true"></span>
+                        1. koht · 5000 €
                     </div>
                 </div>
-                <p class="about-hackathon-text">Terrapoint võitis <strong>Keskkonnaagentuuri</strong> korraldatud andmekasutuse häkatoni <strong>„Metsikult andmetes 2026"</strong> esikoha ja <strong>5000 €</strong> auhinna. 70 osaleja seas valis žürii Terrapointi kui praktilise lahenduse, mis paneb Eesti avalikud metsaandmed ja tehisaru metsaomaniku teenistusse. Häkatoni viis läbi Miltton New Nordics, rahastas Euroopa Liit (NextGenerationEU).</p>
+                <div class="victory-bento-prize">
+                    <div class="victory-bento-eyebrow">Häkatoni võit</div>
+                    <div class="victory-bento-amount">5000<span>€</span></div>
+                    <div class="victory-bento-prize-label">auhinnafond · esikoht</div>
+                </div>
+                <div class="victory-bento-meta">
+                    <div class="victory-bento-meta-item">
+                        <div class="victory-bento-meta-num">29.–30.</div>
+                        <div class="victory-bento-meta-label">mai 2026</div>
+                    </div>
+                    <div class="victory-bento-meta-item">
+                        <div class="victory-bento-meta-num">70</div>
+                        <div class="victory-bento-meta-label">osalejat</div>
+                    </div>
+                    <div class="victory-bento-meta-item">
+                        <div class="victory-bento-meta-num">3</div>
+                        <div class="victory-bento-meta-label">meeskonnaliiget</div>
+                    </div>
+                </div>
+                <div class="victory-bento-text">
+                    Terrapoint võitis <strong>Keskkonnaagentuuri</strong> korraldatud andmekasutuse häkatoni <strong>„Metsikult andmetes 2026"</strong> esikoha. 70 osaleja seas valis žürii Terrapointi kui praktilise lahenduse, mis paneb Eesti avalikud metsaandmed ja tehisaru metsaomaniku teenistusse. Häkatoni viis läbi Miltton New Nordics, rahastas Euroopa Liit (NextGenerationEU).
+                </div>
             </div>
 
             <h3 class="about-team-heading">Meeskond</h3>
@@ -864,6 +889,59 @@
 
             <div class="sources-note">
                 <strong>Märkus.</strong> Andmed laaditakse iga päringu korral otse registritest. Hindu ja kitsendusi uuendatakse eelpool märgitud sagedusega. Kui leiad vea või aegunud info, teavita meid aadressil <a href="mailto:arle.reidma@gmail.com">arle.reidma@gmail.com</a>.
+            </div>
+        </div>
+    </section>
+
+    <!-- Info / Privaatsus ja tehniline info -->
+    <section class="info" id="info" aria-label="Info">
+        <div class="info-inner">
+            <div class="info-eyebrow">
+                <span class="dot" aria-hidden="true"></span>
+                Privaatsus · Tehnoloogia · Piirangud
+            </div>
+            <h2 class="info-title">Kuidas Terrapoint <em>andmeid</em> töötleb<br>ja mida see <em>sinu jaoks</em> tähendab.</h2>
+
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+                    </div>
+                    <h3 class="info-card-title">Privaatsus</h3>
+                    <p class="info-card-text">Terrapoint ei salvesta isikuandmeid ega küpsiseid. Iga päring tehakse anonüümselt otse registritesse. AI vestlus kustub sessiooni lõpus, kui sulge vahekaardi.</p>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+                    </div>
+                    <h3 class="info-card-title">Arvutusmeetod</h3>
+                    <p class="info-card-text">Metsa väärtus = eraldise tagavara (m³/ha) × pindala (ha) × sortimendi hind (€/m³). Süsinikuvaru = biomass × 0.5 (süsiniku sisaldus) × 3.67 (CO₂ ekvivalent). Terviseindeks 0–100 kaalub 8 tegurit.</p>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                    </div>
+                    <h3 class="info-card-title">AI mudel</h3>
+                    <p class="info-card-text">Vestlus kasutab NVIDIA integreeritud keelemudelit (step-3.7-flash). Mudel on peenhäälestatud Eesti metsanduse terminite ja andmeformaatidega. AI vastused on soovituslikud, mitte õiguslikult siduvad.</p>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <h3 class="info-card-title">Tehniline stack</h3>
+                    <p class="info-card-text">FastAPI (Python 3.12) backend serverless Vercelil. Frontend staatiline HTML + CSS + JS. Kaardikihtide allikas: Leaflet + OpenStreetMap tiles. WFS/WMS päringud läbi Maa-ameti ja Keskkonnaagentuuri.</p>
+                </div>
+
+                <div class="info-card info-card-wide">
+                    <div class="info-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                    <h3 class="info-card-title">Piirangud</h3>
+                    <p class="info-card-text">Terrapoint on otsuse tugitööriist, mitte õiguslik nõustaja. Enne raiet, toetuse taotlust või maakorraldust konsulteeri kohaliku metsaühistu, Erametsakeskuse või Keskkonnaametiga. AI vastused võivad sisaldada vigu. Kriitiliste otsuste puhul kontrolli alati originaalallikaid (Eesti Metsaregister, Maa-amet, eramets.ee).</p>
+                </div>
             </div>
         </div>
     </section>
