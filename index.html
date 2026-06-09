@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=22">
+    <link rel="stylesheet" href="/static/css/style.css?v=23">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -300,7 +300,6 @@
                 <div class="zoom-controls" id="zoom-controls">
                     <button class="zoom-btn active" data-zoom="1" aria-label="Tavaline suurus">1x</button>
                     <button class="zoom-btn" data-zoom="0.75" aria-label="Vähenda 75 protsendile">0.75x</button>
-                    <button class="zoom-btn" data-zoom="0.5" aria-label="Vähenda 50 protsendile">0.5x</button>
                 </div>
                 <div class="map-controls" id="map-controls">
                     <button class="map-controls-toggle" id="map-controls-toggle" type="button" aria-label="Sulge kihtide menüü" aria-expanded="true">
@@ -2944,11 +2943,9 @@
         var html = document.documentElement;
 
         function setZoom(level) {
-            html.classList.remove('zoom-75', 'zoom-50');
+            html.classList.remove('zoom-75');
             if (level === '0.75') {
                 html.classList.add('zoom-75');
-            } else if (level === '0.5') {
-                html.classList.add('zoom-50');
             }
             zoomBtns.forEach(function(btn) {
                 btn.classList.toggle('active', btn.getAttribute('data-zoom') === level);
@@ -2965,7 +2962,7 @@
         // Restore saved zoom level
         try {
             var saved = localStorage.getItem('terrapoint-zoom');
-            if (saved === '0.75' || saved === '0.5') setZoom(saved);
+            if (saved === '0.75') setZoom('0.75');
         } catch(e) {}
     })();
     </script>

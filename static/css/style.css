@@ -3102,7 +3102,7 @@ footer {
     .value-block { padding: 12px 14px 10px; }
     .value-block .row { gap: 12px; flex-wrap: wrap; }
 
-    #map { height: 300px; }
+    #map { height: clamp(380px, 60vh, 560px); }
     .map-hint {
         top: 50px;
         font-size: 10.5px;
@@ -3256,12 +3256,19 @@ footer {
     color: var(--white);
 }
 
-/* Zoom applied to html element */
+/* Zoom — 0.75x režiimis kogu leht skaleerub 75% peale, et rohkem
+   sisu mahub viewport'i. Toetatud Chrome'is, Safari's ja Firefox 126+. */
 html.zoom-75 {
     zoom: 0.75;
 }
-html.zoom-50 {
-    zoom: 0.5;
+@supports not (zoom: 1) {
+    /* Firefox < 126 fallback: transform: scale() koos width kompensatsiooniga */
+    html.zoom-75 body {
+        transform: scale(0.75);
+        transform-origin: top left;
+        width: 133.333vw;
+        min-height: 133.333vh;
+    }
 }
 
 /* Reduced motion */
