@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=17">
+    <link rel="stylesheet" href="/static/css/style.css?v=18">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -267,10 +267,21 @@
                 <div id="map"></div>
                 <div class="map-hint" id="map-hint" role="status">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/>
+                        <circle cx="12" cy="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/>
                     </svg>
                     <span>Vajuta kaardil katastriüksuse leidmiseks</span>
                     <button type="button" class="map-hint-close" id="map-hint-close" aria-label="Sulge vihje">×</button>
+                </div>
+                <div class="map-confirm" id="map-confirm" role="dialog" aria-labelledby="map-confirm-title" aria-modal="false" hidden>
+                    <div class="map-confirm-card">
+                        <div class="map-confirm-eyebrow">Leitud katastriüksus</div>
+                        <div class="map-confirm-tunnus" id="map-confirm-tunnus">—</div>
+                        <div class="map-confirm-text" id="map-confirm-text">Kas soovid vaadata selle kinnistu andmeid?</div>
+                        <div class="map-confirm-actions">
+                            <button type="button" class="map-confirm-btn map-confirm-btn-secondary" id="map-confirm-cancel">Tühista</button>
+                            <button type="button" class="map-confirm-btn map-confirm-btn-primary" id="map-confirm-confirm">Vaata</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="map-legend" id="map-legend" style="display:none">
                     <div class="map-legend-title">Eraldiste legend</div>
@@ -1182,7 +1193,8 @@
         }
     }
 
-    // Map click handler — finds parcel under cursor, fills input, runs full search.
+    // Map click handler — finds parcel under cursor, asks user to confirm before
+    // running the full search (avoids accidental dashboard loads).
     async function handleMapClick(e) {
         if (mapClickBusy) return;
         if (!katasterWmsLayer || !map.hasLayer(katasterWmsLayer)) return; // disabled when layer off
@@ -1199,6 +1211,9 @@
                 showError('Sellelt kohalt ei leitud katastriüksust');
                 return;
             }
+            // Pause here: ask user to confirm before doing the heavy search + AI chat.
+            var confirmed = await showMapConfirm(tunnus, e.latlng);
+            if (!confirmed) return;
             var navInput = document.getElementById('kataster-input');
             var landInput = document.getElementById('kataster-input-landing');
             if (navInput) navInput.value = tunnus;
@@ -1211,6 +1226,59 @@
             setTimeout(function() { try { map.removeLayer(clickMarker); } catch (_) {} }, 1200);
             mapClickBusy = false;
         }
+    }
+
+    // Show confirm popup near clicked point. Resolves true on "Vaata", false on
+    // "Tühista" or clicking outside. Auto-dismisses if user clicks elsewhere on map.
+    function showMapConfirm(tunnus, latlng) {
+        return new Promise(function(resolve) {
+            var popup = document.getElementById('map-confirm');
+            var tunnusEl = document.getElementById('map-confirm-tunnus');
+            var confirmBtn = document.getElementById('map-confirm-confirm');
+            var cancelBtn = document.getElementById('map-confirm-cancel');
+            if (!popup || !tunnusEl || !confirmBtn || !cancelBtn) { resolve(false); return; }
+
+            tunnusEl.textContent = tunnus;
+            popup.hidden = false;
+
+            // Map latlng -> pixel position relative to the map container
+            try {
+                var pt = map.latLngToContainerPoint(latlng);
+                var wrap = map.getContainer().parentElement;
+                var wrapRect = wrap.getBoundingClientRect();
+                var mapRect = map.getContainer().getBoundingClientRect();
+                var left = (mapRect.left - wrapRect.left) + pt.x;
+                var top = (mapRect.top - wrapRect.top) + pt.y;
+                popup.style.left = left + 'px';
+                popup.style.top = top + 'px';
+            } catch (_) {
+                popup.style.left = '50%';
+                popup.style.top = '50%';
+            }
+
+            function done(value) {
+                popup.hidden = true;
+                confirmBtn.removeEventListener('click', onConfirm);
+                cancelBtn.removeEventListener('click', onCancel);
+                if (map) map.off('click', onMapClickAgain, true);
+                if (typeof escHandler === 'function') document.removeEventListener('keydown', escHandler);
+                resolve(value);
+            }
+            function onConfirm() { done(true); }
+            function onCancel() { done(false); }
+            function onMapClickAgain(ev) {
+                // Click on map again = dismiss (acts as cancel)
+                if (ev.originalEvent && ev.originalEvent.target.closest('.map-confirm')) return;
+                done(false);
+            }
+            function escHandler(ev) { if (ev.key === 'Escape') done(false); }
+
+            confirmBtn.addEventListener('click', onConfirm);
+            cancelBtn.addEventListener('click', onCancel);
+            // Use capture phase + once:false to detect next map click as cancel
+            if (map) map.on('click', onMapClickAgain, true);
+            document.addEventListener('keydown', escHandler);
+        });
     }
 
     function initMap() {

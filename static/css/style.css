@@ -1153,6 +1153,105 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     transform: translate(-50%, -8px);
     pointer-events: none;
 }
+
+/* ── Map click confirm popup ── */
+.map-confirm {
+    position: absolute;
+    z-index: 1100;
+    transform: translate(-50%, calc(-100% - 18px));
+    pointer-events: auto;
+    filter: drop-shadow(0 8px 24px rgba(7, 21, 61, 0.22));
+    animation: map-confirm-in 0.18s ease-out;
+}
+.map-confirm[hidden] { display: none; }
+@keyframes map-confirm-in {
+    from { opacity: 0; transform: translate(-50%, calc(-100% - 8px)); }
+    to   { opacity: 1; transform: translate(-50%, calc(-100% - 18px)); }
+}
+.map-confirm::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -7px;
+    transform: translateX(-50%) rotate(45deg);
+    width: 14px;
+    height: 14px;
+    background: var(--white);
+    border-right: 1px solid var(--hair);
+    border-bottom: 1px solid var(--hair);
+}
+.map-confirm-card {
+    background: var(--white);
+    border: 1px solid var(--hair);
+    border-radius: 12px;
+    padding: 14px 16px 12px;
+    min-width: 240px;
+    max-width: 280px;
+    text-align: center;
+}
+.map-confirm-eyebrow {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--blue-700);
+    margin-bottom: 4px;
+    font-family: var(--ff-mono);
+}
+.map-confirm-tunnus {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    font-family: var(--ff-mono);
+    margin-bottom: 6px;
+    word-break: break-all;
+}
+.map-confirm-text {
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--ink-3);
+    margin-bottom: 12px;
+}
+.map-confirm-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+.map-confirm-btn {
+    flex: 1;
+    padding: 9px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 999px;
+    border: 1px solid var(--hair);
+    background: var(--white);
+    color: var(--ink-3);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: var(--ff-sans);
+}
+.map-confirm-btn-secondary:hover {
+    background: var(--paper-2);
+    color: var(--ink);
+    border-color: var(--ink-4);
+}
+.map-confirm-btn-primary {
+    background: var(--blue-700);
+    color: var(--white);
+    border-color: var(--blue-700);
+}
+.map-confirm-btn-primary:hover {
+    background: var(--blue-800);
+    border-color: var(--blue-800);
+}
+.map-confirm-btn-primary:active {
+    transform: translateY(1px);
+}
+@media (max-width: 520px) {
+    .map-confirm { max-width: calc(100vw - 32px); }
+    .map-confirm-card { min-width: 0; max-width: 100%; }
+}
 .layer-toggle {
     background: rgba(255, 255, 255, 0.94);
     backdrop-filter: blur(14px) saturate(160%);
