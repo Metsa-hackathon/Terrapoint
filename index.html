@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=15">
+    <link rel="stylesheet" href="/static/css/style.css?v=16">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -518,6 +518,10 @@
             <h2 class="about-title">Metsaandmed <em>metsaomaniku</em> heaks.</h2>
             <p class="about-lead">Terrapoint koondab Eesti avalikud metsa- ja kinnistuandmed ühte otsingusse: sisesta katastritunnus või aadress, vaata oma metsa väärtust, eraldiste seisukorda ja toetusi. Kõik arvutused reaalajas registritest.</p>
 
+            <div class="about-photo">
+                <img src="/static/img/team-hackathon-2026.jpg" alt="Terrapoint tiim Metsikult andmetes 2026 häkatonil" loading="lazy" decoding="async">
+            </div>
+
             <div class="about-stats" aria-label="Projekti võtmenäitajad">
                 <div class="about-stat">
                     <div class="about-stat-num">9+</div>
@@ -559,8 +563,42 @@
                 </div>
             </div>
 
-            <div class="about-contact">
+            <div class="about-contact-row">
                 <a class="about-contact-email" href="mailto:arle.reidma@gmail.com">arle.reidma@gmail.com</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Kontakt / Äriküsimused -->
+    <section class="contact" id="kontakt" aria-label="Kontakt">
+        <div class="contact-inner">
+            <h2 class="contact-title">Küsimused või <em>koostöö</em>?</h2>
+            <p class="contact-lead">Kirjuta, vastame kiiresti. Äriküsimused, koostöö, andmeteaduse projektid, meedia.</p>
+
+            <div class="contact-grid">
+                <a class="contact-card contact-card-primary" href="mailto:arle.reidma@gmail.com?subject=Äriküsimus" aria-label="Äriküsimused ja koostöö">
+                    <div class="contact-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                    </div>
+                    <div class="contact-card-label">Äri ja koostöö</div>
+                    <div class="contact-card-title">Koostöö, litsentsid, B2B</div>
+                    <div class="contact-card-cta">
+                        <span>Kirjuta</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </div>
+                </a>
+
+                <a class="contact-card" href="mailto:arle.reidma@gmail.com?subject=Küsimus%20Terrapointi%20kohta" aria-label="Kasutajaküsimused ja veateated">
+                    <div class="contact-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+                    </div>
+                    <div class="contact-card-label">Küsimused ja vead</div>
+                    <div class="contact-card-title">Kasutajatugi, veateated, ettepanekud</div>
+                    <div class="contact-card-cta">
+                        <span>Kirjuta</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </div>
+                </a>
             </div>
         </div>
     </section>
@@ -579,66 +617,99 @@
                     <div class="source-org">Maa- ja Ruumiamet</div>
                     <h3 class="source-name">Kataster ja ortofoto</h3>
                     <p class="source-desc">Katastriüksuse piir, number, pindala, sihtotstarve, omandivorm, aadress.</p>
+                    <span class="source-arrow" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </span>
                 </a>
 
                 <a class="source-card" href="https://register.metsad.ee" target="_blank" rel="noopener" aria-label="Metsaregister">
                     <div class="source-org">Metsaregister</div>
                     <h3 class="source-name">Eraldised ja teatised</h3>
                     <p class="source-desc">Puuliik, vanus, tagavara, pindala, metsateatised, kahjustused, Natura 2000.</p>
+                    <span class="source-arrow" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </span>
                 </a>
 
                 <a class="source-card" href="https://erametsaliit.ee/puidu-hinnainfo" target="_blank" rel="noopener" aria-label="Eesti Erametsaliit">
                     <div class="source-org">Erametsaliit</div>
                     <h3 class="source-name">Puidu hinnad</h3>
                     <p class="source-desc">Männi-, kuuse-, kasepalk, paberipuit, küttepuu. I kvartal 2026.</p>
+                    <span class="source-arrow" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </span>
                 </a>
 
                 <a class="source-card" href="https://www.eramets.ee/toetused" target="_blank" rel="noopener" aria-label="KIK toetused">
                     <div class="source-org">KIK + Erametsakeskus</div>
                     <h3 class="source-name">Metsatoetused 2026</h3>
                     <p class="source-desc">13 aktiivset meedet: Natura 2000, kliimakindel mets, metsastamine, ürask.</p>
+                    <span class="source-arrow" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </span>
                 </a>
 
                 <a class="source-card" href="https://eelis.ee" target="_blank" rel="noopener" aria-label="EELIS">
                     <div class="source-org">EELIS</div>
                     <h3 class="source-name">Kaitstavad alad</h3>
                     <p class="source-desc">Kaitsealad, hoiualad, Natura 2000 elupaigad, kaitstavad liigid.</p>
+                    <span class="source-arrow" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </span>
                 </a>
 
                 <a class="source-card" href="https://kitsendused.kataster.ee" target="_blank" rel="noopener" aria-label="Kitsenduste kaart">
                     <div class="source-org">Kitsenduste kaart</div>
                     <h3 class="source-name">Kitsendused</h3>
                     <p class="source-desc">Veekaitsevööndid, ehituskeeluvööndid, maaparandus, KPO piirangud.</p>
+                    <span class="source-arrow" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </span>
                 </a>
 
                 <a class="source-card" href="https://geoportaal.maaamet.ee/est/ruumiandmed/korgusandmed" target="_blank" rel="noopener" aria-label="LiDAR">
                     <div class="source-org">LiDAR</div>
                     <h3 class="source-name">Kõrgusmudel</h3>
                     <p class="source-desc">DTM, DSM, nDSM, CHM. Metsa kõrguse ja biomassi alus.</p>
+                    <span class="source-arrow" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </span>
                 </a>
 
                 <a class="source-card" href="https://register.muinas.ee" target="_blank" rel="noopener" aria-label="Muinsuskaitseamet">
                     <div class="source-org">Muinsuskaitseamet</div>
                     <h3 class="source-name">Kultuurimälestised</h3>
                     <p class="source-desc">Kinnismälestised, kaitsevööndid, pärandkultuur.</p>
+                    <span class="source-arrow" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </span>
                 </a>
 
                 <a class="source-card" href="https://esthub.maaruum.ee" target="_blank" rel="noopener" aria-label="Sentinel-2">
                     <div class="source-org">Sentinel-2</div>
                     <h3 class="source-name">Satelliitkaugseire</h3>
                     <p class="source-desc">10 m RGB + NIR, 5-päevane tsükkel, NDVI, üraski-seire.</p>
+                    <span class="source-arrow" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </span>
                 </a>
 
                 <a class="source-card" href="https://stat.ee" target="_blank" rel="noopener" aria-label="Statistikaamet">
                     <div class="source-org">Statistikaamet</div>
                     <h3 class="source-name">Metsandusstatistika</h3>
                     <p class="source-desc">Metsamaa pindala, raiemahud, juurdekasv, sortimendid.</p>
+                    <span class="source-arrow" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </span>
                 </a>
 
                 <a class="source-card" href="https://rmk.ee" target="_blank" rel="noopener" aria-label="RMK">
                     <div class="source-org">RMK</div>
                     <h3 class="source-name">Riigimets</h3>
                     <p class="source-desc">Arengukava, süsinikuraport, kaardirakendus, uuringud.</p>
+                    <span class="source-arrow" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </span>
                 </a>
 
                 <div class="source-card source-card-own" aria-label="Terrapoint enda arvutused">
