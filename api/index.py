@@ -1055,7 +1055,7 @@ def build_system_prompt(data: dict) -> str:
 async def chat(request: Request):
     """AI metsanduse nõustaja.
 
-    Kasutab NVIDIA integrate.api.nvidia.com AI-d, et vastata küsimustele
+    Kasutab OpenCode Zen (DeepSeek V4 Flash Free) AI-d, et vastata küsimustele
     kinnistu andmete põhjal. Edastab eelnevalt laaditud
     andmed (data) koos süsteemi promptiga AI-le.
     """
@@ -1103,19 +1103,19 @@ async def chat(request: Request):
         messages.extend(sanitized_history)
         messages.append({"role": "user", "content": user_message})
 
-        api_key = os.environ.get("NVIDIA_API_KEY", "")
+        api_key = os.environ.get("OPENCODE_ZEN_API_KEY", "")
         if not api_key:
             return json_response({"error": "AI teenus ei ole seadistatud. Võta ühendust administraatoriga."}, 500)
 
-        api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
-        model = os.environ.get("NVIDIA_MODEL", "meta/llama-3.3-70b-instruct")
+        api_url = "https://opencode.ai/zen/v1/chat/completions"
+        model = os.environ.get("OPENCODE_ZEN_MODEL", "deepseek-v4-flash-free")
 
         async def stream_response():
             saw_content = False
             saw_reasoning = False
             full_reasoning_buf = []
             try:
-                timeout = httpx.Timeout(connect=5.0, read=120.0, write=10.0, pool=5.0)
+                timeout = httpx.Timeout(connect=5.0, read=180.0, write=10.0, pool=5.0)
                 async with httpx.AsyncClient(timeout=timeout) as client:
                     async with client.stream(
                         "POST",
@@ -1130,7 +1130,7 @@ async def chat(request: Request):
                             "messages": messages,
                             "stream": True,
                             "temperature": 0.4,
-                            "max_tokens": 2048,
+                            "max_tokens": 4096,
                             "top_p": 0.9,
                         },
                     ) as resp:

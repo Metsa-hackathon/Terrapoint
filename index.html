@@ -920,8 +920,8 @@
             var fullReasoning = '';
             var firstAnswerChunk = true;
 
-            // 120s safety timeout — if nothing arrives for 120s, abort
-            var stallTimer = setTimeout(function() { controller.abort(); }, 120000);
+            // 180s safety timeout — if nothing arrives for 180s, abort
+            var stallTimer = setTimeout(function() { controller.abort(); }, 180000);
 
             while (true) {
                 var result = await reader.read();
