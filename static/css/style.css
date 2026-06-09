@@ -250,7 +250,12 @@ a { color: var(--blue-700); text-decoration: none; }
 }
 .brand-mark {
     display: none;
+    width: 22px;
+    height: 22px;
+    color: white;
+    flex-shrink: 0;
 }
+.brand-mark svg { width: 100%; height: 100%; }
 
 
 .brand-name {
@@ -3189,7 +3194,7 @@ footer {
     .toggle-item { min-height: 40px; padding: 8px 10px; }
     .toggle-item .toggle-label { font-size: 12px; }
     .landing-hint { min-height: 32px; padding: 6px 10px; }
-    .map-legend-toggle { width: 36px; height: 36px; font-size: 16px; }
+    .map-legend-toggle { width: 44px; height: 44px; font-size: 18px; }
     .map-hint-close { width: 32px; height: 32px; font-size: 18px; }
 }
 
@@ -3200,8 +3205,10 @@ footer {
     .landing-title { font-size: 30px; line-height: 1.05; }
     .landing-sub { font-size: 12.5px; }
     .big-number { font-size: 28px; }
-    .brand-name { font-size: 15px; }
-    .search-box { max-width: 200px; }
+    .brand-mark { display: inline-flex; align-items: center; }
+    .brand-name { display: none; }
+    .search-box { max-width: none; flex: 1; }
+    .nav-right { flex: 1; min-width: 0; }
     .map-controls { max-width: 130px; }
     .layer-toggle { max-width: 130px; }
     .map-legend { max-width: 160px; }
