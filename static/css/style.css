@@ -2905,15 +2905,36 @@ footer {
         flex-wrap: wrap;
     }
     .toetus-links a, .toetus-cta { font-size: 12.5px !important; }
+
+    /* ── Touch targets: bump everything that taps to ≥44px on mobile ── */
+    .ai-chat-input-wrap input { min-height: 28px; padding: 10px 0; }
+    .ai-chat-input-wrap button { width: 44px; height: 44px; }
+    .search-box { min-height: 40px; }
+    .search-box button { width: 36px; height: 36px; }
+    .landing-search .search-box { min-height: 44px; }
+    .landing-search .search-box button { width: 36px; height: 36px; }
+    .zoom-btn { min-width: 44px; min-height: 44px; }
+    .ai-hint { min-height: 32px; padding: 8px 12px; font-size: 12.5px; }
+    .map-controls-toggle { min-height: 40px; padding: 8px 12px; }
+    .toggle-item { min-height: 32px; padding: 6px 8px; }
+    .toggle-item .toggle-label { font-size: 11px; }
+    .landing-hint { min-height: 28px; padding: 6px 10px; }
+    .map-legend-toggle { width: 28px; height: 28px; font-size: 14px; }
+    .map-hint-close { width: 28px; height: 28px; font-size: 18px; }
 }
 
 /* Very small phones */
 @media (max-width: 380px) {
     .facts-strip { grid-template-columns: 1fr 1fr; }
     .fact-value { font-size: 17px; }
-    .landing-title { font-size: 32px; }
+    .landing-title { font-size: 30px; line-height: 1.05; }
+    .landing-sub { font-size: 12.5px; }
     .big-number { font-size: 28px; }
     .brand-name { font-size: 15px; }
+    .search-box { max-width: 200px; }
+    .map-controls { max-width: 130px; }
+    .layer-toggle { max-width: 130px; }
+    .map-legend { max-width: 160px; }
 }
 
 /* ═══ ZOOM CONTROLS ═══════════════════════════════════════════════════════ */

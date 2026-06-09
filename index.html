@@ -837,6 +837,10 @@
     }
 
     function aiAnalyzeKataster(katasterNr, eraldised) {
+        // Always make sure the input area is visible when a kataster is loaded
+        // (the `return` short-circuit below was leaving it hidden on re-visits).
+        document.getElementById('ai-chat-input-area').style.display = '';
+
         // Already analyzed this exact parcel — don't re-prompt automatically.
         // (User can still send their own questions, or re-trigger via a hint button.)
         if (katasterNr === aiLastAnalyzedKataster && aiCurrentKataster === katasterNr) {
