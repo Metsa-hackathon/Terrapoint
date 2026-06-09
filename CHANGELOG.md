@@ -4,6 +4,38 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 
 ## [Määramata] - 2026-06-09
 
+### Fixed
+- **Mobiili optimeerimine (8 kriitilist viga)** — pärast põhjalikku auditeid
+  Playwright + vision abil kõikidel kolmel vaatel (320×568 iPhone SE,
+  360×800 Android, 390×844 iPhone 14):
+  - **Sticky header blur**: `.hero` sai `backdrop-filter: saturate(180%) blur(8px)`
+    ja `scroll-margin-top: 72px` kõikidele sektsioonidele (`.metric-card`,
+    `.source-card`, `.fact`, `.section-head`, `.landing`) — sisu
+    jääb nähtavaks ka scrollimise ajal.
+  - **Zoom pill ankurdatud kaardile**: vana `position: fixed` põhjustas
+    kattumist iga mitte-kaardi sektsiooniga. Nüüd `position: absolute`
+    `.map-wrapper` sees — kaob koos kaardiga vaatest.
+  - **Zoom 0.5x nupp lisatud** + `html.zoom-50 { zoom: 0.5 }` stiil. Nupp
+    duplicate eemaldatud (oli kaks `.zoom-controls` plokki).
+  - **AI chat input → textarea**: pikad küsimused kasvavad vertikaalselt
+    (max 120px / 4 rida) selle asemel, et horisontaalselt üle voolata.
+    Auto-grow input handler. Enter saadab, Shift+Enter lisab rea.
+  - **Touch targets ≥ 44px (WCAG 2.5.5)**:
+    - Leaflet +/− zoom: 32×32 → 44×44
+    - Map legend `−` close: 28×28 → 44×44
+    - Map controls "Kihid" toggle: 40px → 44px
+    - Search submit nupp: 26×26 → 44×44
+    - AI chat send nupp: 36×36 → 44×44
+  - **Search input laiem**: `flex: 1`, kõrgus 34px → 44px, font 13px → 15px,
+    placeholder enam ei lõika teksti maha.
+  - **Landing search box**: 38px → 52px, font 14px → 16px, submit 30px → 44px.
+  - **Brand ikoon kitsastel ekraanidel** (<380px): "TerraPoint" tekst
+    peidetud, näidatakse ainult 22×22 svg kujundust — vabastab ruumi
+    otsingu sisendile.
+  - **`-webkit-tap-highlight-color: transparent`** kõikidele interaktiivsetele
+    elementidele (zoom, layer, legend, AI button) — eemaldab sinise
+    välke iOS Safari'l.
+
 ### Changed
 - **Toetuste sektsiooni ümberkujundus** — vana struktuur oli kitsas ja
   murdus mobiilis (kaardid olid `min-width: 400px` laiused, summa tekst
