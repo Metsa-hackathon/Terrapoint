@@ -2738,7 +2738,7 @@ footer {
     .search-kbd { display: none !important; }
 
     .dashboard {
-        padding: 12px 12px 100px;
+        padding: 12px 6px 100px;
         gap: 16px;
     }
 
@@ -2746,12 +2746,19 @@ footer {
         padding: 40px 18px 32px;
     }
     .landing-title { font-size: 38px; line-height: 1.04; }
-    .landing-sub { font-size: 15px; }
+    .landing-sub { font-size: 13px; line-height: 1.45; margin-bottom: 20px; }
+    .landing-search .search-box { height: 38px; padding: 0 3px 0 12px; }
+    .landing-search .search-box input { font-size: 14px; padding: 0 10px; }
+    .landing-search .search-box button { width: 30px; height: 30px; }
+    .landing-search .search-box button svg { width: 14px; height: 14px; }
+    .landing-hints { gap: 6px; margin-top: 10px; }
+    .landing-hint { font-size: 11px; padding: 4px 8px; gap: 4px; }
+    .landing-hint .kbd { font-size: 9px; padding: 0px 4px; }
     .landing-search .search-icon { display: flex; }
     .landing-search .search-icon svg { width: 18px; height: 18px; }
-    .landing-meta { gap: 16px; }
-    .landing-meta-num { font-size: 22px; }
-    .landing-meta-label { font-size: 10px; letter-spacing: 0.06em; }
+    .landing-meta { gap: 12px; margin-top: 24px; }
+    .landing-meta-num { font-size: 18px; }
+    .landing-meta-label { font-size: 9px; letter-spacing: 0.04em; }
     .landing-eyebrow { font-size: 10px; padding: 2px 7px 2px 6px; gap: 4px; margin-bottom: 12px; letter-spacing: 0.01em; }
     .landing-eyebrow .dot { width: 4px; height: 4px; box-shadow: 0 0 0 2px rgba(4, 120, 87, 0.18); }
 
