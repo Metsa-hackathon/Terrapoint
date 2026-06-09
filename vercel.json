@@ -1,11 +1,5 @@
 {
   "framework": null,
-  "functions": {
-    "api/index.py": {
-      "memory": 512,
-      "maxDuration": 10
-    }
-  },
   "rewrites": [
     { "source": "/", "destination": "/api/index.py" },
     { "source": "/api/(.*)", "destination": "/api/index.py" }
