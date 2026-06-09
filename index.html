@@ -2600,6 +2600,43 @@
         var landBtn = document.getElementById('search-btn-landing');
         var landDropdown = document.getElementById('address-dropdown-landing');
 
+        // ── URL-põhine auto-search ──
+        // Loeb ?kataster=XXXX:XXX:XXXX või ?q=adress query-st ja
+        // käivitab doSearchi kui leht on valmis.
+        // Samuti reageerib popstate'ile (back/forward).
+        (function setupUrlSearch() {
+            function readQuery() {
+                try {
+                    var sp = new URLSearchParams(window.location.search);
+                    return {
+                        kataster: (sp.get('kataster') || '').trim(),
+                        q: (sp.get('q') || '').trim(),
+                    };
+                } catch (e) {
+                    return { kataster: '', q: '' };
+                }
+            }
+            function runFromUrl() {
+                var q = readQuery();
+                if (q.kataster) {
+                    if (navInput) navInput.value = q.kataster;
+                    if (landInput) landInput.value = q.kataster;
+                    doSearch();
+                } else if (q.q) {
+                    if (landInput) landInput.value = q.q;
+                    if (navInput) navInput.value = q.q;
+                    smartSubmit(q.q);
+                }
+            }
+            // Käivita peale seda, kui UI on valmis (dashboard on olemas)
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                setTimeout(runFromUrl, 50);
+            } else {
+                window.addEventListener('load', function() { setTimeout(runFromUrl, 50); });
+            }
+            window.addEventListener('popstate', runFromUrl);
+        })();
+
         // Sync nav <-> landing inputs
         function syncFrom(src, dst) {
             if (!dst || dst === document.activeElement) return;
