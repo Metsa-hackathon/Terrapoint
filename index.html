@@ -347,8 +347,8 @@
                         </svg>
                     </div>
                     <h3>Katastriüksuse andmed</h3>
-                    <p class="section-desc">Katastritunnus, pindala, sihtotstarve, omand ja asukoht</p>
                 </div>
+                <p class="section-desc">Katastritunnus, pindala, sihtotstarve, omand ja asukoht</p>
                 <div id="kataster-info"></div>
             </div>
 
@@ -428,8 +428,8 @@
                         </svg>
                     </div>
                     <h3>EL deforestatsioonikontroll</h3>
-                    <p class="section-desc">EL määruse 2023/1115 nõuetele vastavuse kontrollimine</p>
                 </div>
+                <p class="section-desc">EL määruse 2023/1115 nõuetele vastavuse kontrollimine</p>
                 <div id="eudr-info">
                     <p class="eudr-desc">GeoJSON Euroopa Liidu deforestatsiooniregulatsiooni jaoks.</p>
                     <button id="eudr-btn" class="btn-eudr">
@@ -507,6 +507,12 @@
         </div>
 
     </section>
+
+    <!-- Zoom Controls -->
+    <div class="zoom-controls" id="zoom-controls">
+        <button class="zoom-btn active" data-zoom="1">1x</button>
+        <button class="zoom-btn" data-zoom="0.75">0.75x</button>
+    </div>
 
     <footer>
         <div class="footer-content">
@@ -851,7 +857,7 @@
         btn.type = 'button';
         btn.className = 'eraldis-pick-btn';
         btn.setAttribute('aria-label', 'Vali eraldis AI küsimuseks');
-        btn.innerHTML = '<span class="eraldis-pick-icon">🌲</span> Vali eraldis (' + eraldised.length + ' tk) ▾';
+        btn.innerHTML = '<span class="eraldis-pick-icon">🌲</span> Eraldised (' + eraldised.length + ') <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5L5 6.5L8 3.5"/></svg>';
         btn.addEventListener('click', function() { openEraldisSheet(eraldised); });
         wrap.appendChild(btn);
 
@@ -1840,6 +1846,7 @@
             html += '<div style="overflow-x:auto;min-width:500px"><table style="width:100%;table-layout:fixed"><colgroup><col style="width:120px"><col style="width:auto"><col style="width:80px"></colgroup><thead><tr><th>Tüüp</th><th>Kirjeldus</th><th>Lisainfo</th></tr></thead><tbody>';
             html += kitsRows(visible);
             html += '</tbody></table></div>';
+            html += '<div style="padding:8px 0;font-size:0.75rem;color:var(--ink-4)">Näitan ' + visible.length + ' / ' + all.length + '</div>';
             el.innerHTML = html;
             if (linkEl) linkEl.style.display = '';
             el.querySelectorAll('.eraldised-controls button').forEach(function(btn) {
@@ -2595,6 +2602,36 @@
         }
 
     }
+
+    // ═══ Zoom Controls ═══
+    (function() {
+        var zoomBtns = document.querySelectorAll('.zoom-btn');
+        var html = document.documentElement;
+
+        function setZoom(level) {
+            if (level === '0.75') {
+                html.classList.add('zoom-75');
+            } else {
+                html.classList.remove('zoom-75');
+            }
+            zoomBtns.forEach(function(btn) {
+                btn.classList.toggle('active', btn.getAttribute('data-zoom') === level);
+            });
+            try { localStorage.setItem('terrapoint-zoom', level); } catch(e) {}
+        }
+
+        zoomBtns.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                setZoom(this.getAttribute('data-zoom'));
+            });
+        });
+
+        // Restore saved zoom level
+        try {
+            var saved = localStorage.getItem('terrapoint-zoom');
+            if (saved === '0.75') setZoom('0.75');
+        } catch(e) {}
+    })();
     </script>
 </body>
 </html>
