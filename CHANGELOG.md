@@ -52,3 +52,35 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 ### Teadaolevad puudused
 - **2 `@app.get("/")` route** FastAPI's — teine varjutab esimest,
   kuid töötab (testitud).
+
+## [Meist/Allikad/Info] - 2026-06-09 (UI uuendus)
+
+### Added
+- **Tiimi pilt** (`static/img/team-hackathon-2026.jpg`, allikas aripaev.ee):
+  Metsikult andmetes 2026 võit, 5000€ auhind, 3 meeskonnaliiget.
+  Kasutatud Meist sektsiooni hero pildina + uues bento layout'is.
+- **Victory bento** (Meist sektsioonis) — 2-veeruline grid:
+  - Vasakul: tiimi pilt (4:3, object-position center 30%) + "1. koht · 5000 €"
+    badge üleval vasakul
+  - Paremal üleval: dark "5000€" prize card
+  - Paremal keskel: 3-veeruline meta grid (kuupäev, osalejad, tiim)
+  - Paremal all: pikk selgitav tekst
+  - Mobiilis: stackub üheks veeruks
+- **Info sektsioon** (täiesti uus) — 5-kaardine bento grid:
+  - Privaatsus, Arvutusmeetod, AI mudel, Tehniline stack
+  - Lai dark "Piirangud" kaart full-width all
+  - Sama design system: --ink, --blue-900, --paper-2 taust, 16-18px radius,
+    11px mono eyebrow, 17px pealkiri
+- **about-hero-caption** — label + tekst tiimi pildi allosas
+- **about-hero-tag** (victory bento sees) — backdrop-blur badge "1. koht · 5000 €"
+
+### Changed
+- `static/img/forest-hero.jpg` asendatud `static/img/team-hackathon-2026.jpg`-ga
+  Meist hero pildina.
+- Olemasolev `.about-hackathon` plokk asendatud uue `.victory-bento`-ga.
+- CSS versioon v13 → v14 (cache bust).
+
+### Mobile UX
+- Bento collapse: 880px → 1-veeruline, 520px → meta stack.
+- Info grid: 768px → 1-veeruline.
+- Tiimi pilt objekt-positsioon 30% (tiimi näod jäävad nähtavaks).
