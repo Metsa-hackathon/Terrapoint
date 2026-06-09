@@ -46,8 +46,5 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 - Landing page'i pealkiri mahub 320px ekraanile.
 
 ### Teadaolevad puudused
-- **URL-põhine auto-search** (`?kataster=...`) ei tööta — sõbra merge
-  `fa72c23` ei sisalda URL query parameetrite parsijat. Kasutaja peab
-  vajutama Enter otsinguribal.
 - **2 `@app.get("/")` route** FastAPI's — teine varjutab esimest,
   kuid töötab (testitud).
