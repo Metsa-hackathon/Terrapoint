@@ -2724,14 +2724,16 @@ footer {
     .brand-name { font-size: 17px; letter-spacing: -0.015em; }
     .brand-tag { display: none; }
     .search-box {
-        height: 36px;
-        padding: 0 3px 0 10px;
-        border-radius: 8px;
+        height: 34px;
+        padding: 0 3px 0 12px;
+        border-radius: var(--r-full);
         min-width: 0;
+        width: fit-content;
+        margin-left: auto;
     }
-    .search-box input { font-size: 13px; padding: 0 6px; min-width: 0; }
+    .search-box input { font-size: 13px; padding: 0 8px; min-width: 0; }
     .search-icon { display: none; }
-    .search-box button { width: 28px; height: 28px; border-radius: 6px; }
+    .search-box button { width: 26px; height: 26px; border-radius: 50%; }
     .search-box button svg { width: 12px; height: 12px; }
     .search-kbd { display: none !important; }
 
@@ -2750,7 +2752,8 @@ footer {
     .landing-meta { gap: 16px; }
     .landing-meta-num { font-size: 22px; }
     .landing-meta-label { font-size: 10px; letter-spacing: 0.06em; }
-    .landing-eyebrow { font-size: 12px; padding: 3px 9px 3px 7px; }
+    .landing-eyebrow { font-size: 10px; padding: 2px 7px 2px 6px; gap: 4px; margin-bottom: 12px; letter-spacing: 0.01em; }
+    .landing-eyebrow .dot { width: 4px; height: 4px; box-shadow: 0 0 0 2px rgba(4, 120, 87, 0.18); }
 
     .section-head { flex-direction: column; align-items: flex-start; gap: 4px; }
     .section-head h2 { font-size: 22px; }
