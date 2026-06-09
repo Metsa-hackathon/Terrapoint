@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=9">
+    <link rel="stylesheet" href="/static/css/style.css?v=10">
 </head>
 <body>
     <!-- Top Navigation Bar -->
@@ -382,6 +382,134 @@
             </div>
         </div>
 
+    </section>
+
+    <!-- Allikad -->
+    <section class="sources" id="allikad" aria-label="Andmeallikad">
+        <div class="sources-inner">
+            <div class="sources-eyebrow">
+                <span class="dot" aria-hidden="true"></span>
+                Avatud andmed · Avalikud registrid · Eesti
+            </div>
+            <h2 class="sources-title">Andmeallikad, millelt Terrapoint<br>oma <em>arvutused</em> ja <em>hinnangud</em> tuletab.</h2>
+            <p class="sources-sub">Kõik allikad on Eesti riiklikud või avalikud registrid, mida uuendatakse regulaarselt. Terrapoint ei salvesta isikuandmeid, vaid pärib iga küsimuse korral värskeima seisu.</p>
+
+            <div class="sources-grid">
+                <a class="source-card" href="https://geoportaal.maaamet.ee" target="_blank" rel="noopener" aria-label="Maa-amet">
+                    <div class="source-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                    </div>
+                    <div class="source-org">Maa-amet</div>
+                    <h3 class="source-name">Kataster ja kaardikihid</h3>
+                    <p class="source-desc">Katastriüksuse piir, number, pindala, sihtotstarve, omandivorm, aadress, maakond ja vald. Aluskaart ja ortofoto taust.</p>
+                    <ul class="source-uses">
+                        <li>Katastri päring (WFS)</li>
+                        <li>Aadressiotsing</li>
+                        <li>Aluskaardi tiles (TMS)</li>
+                    </ul>
+                    <div class="source-meta">
+                        <span class="source-fresh">reaalajas</span>
+                        <span class="source-link">geoportaal.maaamet.ee →</span>
+                    </div>
+                </a>
+
+                <a class="source-card" href="https://gsavalik.envir.ee" target="_blank" rel="noopener" aria-label="Keskkonnaagentuur">
+                    <div class="source-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"/><path d="M5 9h14"/><path d="M5 9c0 6 3 11 7 13 4-2 7-7 7-13"/><path d="M9 13c0 2 1 3 3 3s3-1 3-3"/></svg>
+                    </div>
+                    <div class="source-org">Keskkonnaagentuur</div>
+                    <h3 class="source-name">Metsaregister ja EELIS</h3>
+                    <p class="source-desc">Eraldiste andmed (puuliik, vanus, tagavara, boniteet, kõrgus, pindala), metsateatised, kahjustused, Natura 2000 alad.</p>
+                    <ul class="source-uses">
+                        <li>Eraldised (WFS)</li>
+                        <li>Metsateatised</li>
+                        <li>Kahjustused (ürask, torm)</li>
+                        <li>Natura 2000 kihid</li>
+                    </ul>
+                    <div class="source-meta">
+                        <span class="source-fresh">kord päevas</span>
+                        <span class="source-link">gsavalik.envir.ee →</span>
+                    </div>
+                </a>
+
+                <a class="source-card" href="https://www.eramets.ee" target="_blank" rel="noopener" aria-label="Eesti Erametsaliit">
+                    <div class="source-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M6 20V10l6-6 6 6v10"/><path d="M9 20v-6h6v6"/></svg>
+                    </div>
+                    <div class="source-org">Eesti Erametsaliit</div>
+                    <h3 class="source-name">Puidu hinnastatistika</h3>
+                    <p class="source-desc">Palk, paberipuit ja küttepuu hinnad Eestis. Aluseks metsamajandusliku väärtuse arvutusele (€/m³ ja €/ha).</p>
+                    <ul class="source-uses">
+                        <li>Palgi hind €/m³</li>
+                        <li>Paberipuu hind €/m³</li>
+                        <li>Seisuhind €/m³</li>
+                    </ul>
+                    <div class="source-meta">
+                        <span class="source-fresh">kord kuus</span>
+                        <span class="source-link">eramets.ee →</span>
+                    </div>
+                </a>
+
+                <a class="source-card" href="https://www.pria.ee" target="_blank" rel="noopener" aria-label="PRIA">
+                    <div class="source-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+                    </div>
+                    <div class="source-org">PRIA</div>
+                    <h3 class="source-name">Pindala- ja metsatoetused</h3>
+                    <p class="source-desc">Aktiivsed meetmed: metsa hooldamise toetus, erametsaomanike toetus, Natura 2000 toetus, kliimameetmed. Sobivuse kontroll kinnistu andmete põhjal.</p>
+                    <ul class="source-uses">
+                        <li>Sobivuskontroll</li>
+                        <li>Toetuse summa</li>
+                        <li>Kõlblikkuse tingimused</li>
+                    </ul>
+                    <div class="source-meta">
+                        <span class="source-fresh">kord kuus</span>
+                        <span class="source-link">pria.ee →</span>
+                    </div>
+                </a>
+
+                <a class="source-card" href="https://www.envir.ee" target="_blank" rel="noopener" aria-label="Keskkonnaministeerium">
+                    <div class="source-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M5 12h14"/><path d="M7 18h10"/></svg>
+                    </div>
+                    <div class="source-org">Keskkonnaministeerium</div>
+                    <h3 class="source-name">Kitsenduste kihid</h3>
+                    <p class="source-desc">Kaitsealad, hoiualad, karuputk, piiranguvööndid, veekaitsevööndid, muud kitsendused, mis mõjutavad raieõigust ja toetuste sobivust.</p>
+                    <ul class="source-uses">
+                        <li>Kaitse- ja hoiualad</li>
+                        <li>Karuputk (mürgine umbrohi)</li>
+                        <li>Piirangukeelualad</li>
+                    </ul>
+                    <div class="source-meta">
+                        <span class="source-fresh">kord nädalas</span>
+                        <span class="source-link">envir.ee →</span>
+                    </div>
+                </a>
+
+                <div class="source-card source-card-own" aria-label="Terrapoint enda arvutused">
+                    <div class="source-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></svg>
+                    </div>
+                    <div class="source-org">Terrapoint</div>
+                    <h3 class="source-name">Arvutused ja hinnangud</h3>
+                    <p class="source-desc">Väärtuse arvutus (tagavara × hind), süsinikuvaru (CO₂ sidumine, biomassi põhjal), terviseindeks, üraskirisk, AI-analüüs NVIDIA mudelil.</p>
+                    <ul class="source-uses">
+                        <li>Majanduslik väärtus</li>
+                        <li>CO₂ ja biomass</li>
+                        <li>Terviseindeks 0-100</li>
+                        <li>Üraski risk</li>
+                    </ul>
+                    <div class="source-meta">
+                        <span class="source-fresh">reaalajas</span>
+                        <span class="source-link">terrapoint ↻</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sources-note">
+                <strong>Märkus.</strong> Andmed laaditakse iga päringu korral otse registritest. Hindu ja kitsendusi uuendatakse eelpool märgitud sagedusega. Kui leiad vea või aegunud info, teavita meid aadressil <a href="mailto:info@terrapoint.ee">info@terrapoint.ee</a>.
+            </div>
+        </div>
     </section>
 
     <footer>
