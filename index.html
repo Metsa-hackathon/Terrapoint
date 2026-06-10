@@ -150,6 +150,12 @@
         </div>
     </aside>
 
+    <!-- Site-level zoom toggle (fixed, bottom-left of viewport) -->
+    <div class="zoom-controls" id="zoom-controls">
+        <button class="zoom-btn active" data-zoom="1" aria-label="Tavaline suurus">1x</button>
+        <button class="zoom-btn" data-zoom="0.75" aria-label="Vähenda 75 protsendile">0.75x</button>
+    </div>
+
     <!-- Loading State -->
     <div id="loading" class="loading hidden" style="display:none">
         <div class="loading-content">
@@ -296,10 +302,6 @@
                         <div class="map-legend-row"><span class="legend-swatch" style="background:var(--map-eraldis-noor)"></span><span><strong>Noor mets</strong> — liiga noor raiumiseks</span></div>
                     </div>
                     <button class="map-legend-toggle" id="map-legend-toggle" aria-label="Sulge legend">−</button>
-                </div>
-                <div class="zoom-controls" id="zoom-controls">
-                    <button class="zoom-btn active" data-zoom="1" aria-label="Tavaline suurus">1x</button>
-                    <button class="zoom-btn" data-zoom="0.75" aria-label="Vähenda 75 protsendile">0.75x</button>
                 </div>
                 <div class="map-controls" id="map-controls">
                     <button class="map-controls-toggle" id="map-controls-toggle" type="button" aria-label="Sulge kihtide menüü" aria-expanded="true">
@@ -750,7 +752,7 @@
         </div>
     </section>
 
-    <!-- Zoom controls live inside .map-wrapper (see line ~296) -->
+    <!-- Zoom controls live at site level (see top of <body>) — fixed bottom-left -->
 
     <footer>
         <div class="footer-content">

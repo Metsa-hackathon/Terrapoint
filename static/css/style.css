@@ -3254,10 +3254,10 @@ footer {
 
 /* ═══ ZOOM CONTROLS ═══════════════════════════════════════════════════════ */
 .zoom-controls {
-    position: absolute;
+    position: fixed;
     bottom: 12px;
     left: 12px;
-    z-index: 600;
+    z-index: 1500;
     display: flex;
     gap: 2px;
     background: var(--white);
