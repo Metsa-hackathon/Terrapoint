@@ -5,6 +5,23 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 ## [Määramata] - 2026-06-09
 
 ### Fixed
+- **Sektsioonide placeholder'id ühtlaseks** — kõik 9 kaarti (Katastriüksuse
+  andmed, Metsaeraldised, Metsa majanduslik väärtus, Süsinikuvaru,
+  Metsateatised, Ohutegurid, EL deforestatsioonikontroll, Toetused ja
+  hüvitised, Kitsendused ja piirangud) kasutavad nüüd sama
+  `.card-placeholder` plokki: 40px ringikujuline SVG ikoon + pealkiri
+  + vihje. Varasemad probleemid:
+  - Mõnedel kaartidel üldse placeholder puudus (tühi ala)
+  - Toetuste kaardil oli emoji 💰 (rikkus "No emoji as icons" reeglit)
+  - EUDR kaardil oli staatiline "Laadi alla EUDR GeoJSON" nupp
+  - Toetused ja Kitsendused kasutasid legacy `.initial-info` plokki
+  - Toetused ja Kitsendused kasutasid teiste ikoonide värve (vaartus
+    sinine / risk punane)
+  Iga kaart sai nüüd unikaalse ikooni värvi: kataster sinine, mets
+  roheline, vaartus kollane, süsinik teal, teatised indigo, risk
+  punane, EUDR lilla, toetused roheline, kitsendused oranž.
+
+### Changed
 - **Mobiili optimeerimine (8 kriitilist viga)** — pärast põhjalikku auditeid
   Playwright + vision abil kõikidel kolmel vaatel (320×568 iPhone SE,
   360×800 Android, 390×844 iPhone 14):
