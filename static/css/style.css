@@ -1540,10 +1540,10 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 
 .card-head-text { flex: 1; min-width: 0; }
 .card-header h3 {
-    font-size: 10px;
+    font-size: 13px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
     color: var(--ink-3);
     line-height: 1.2;
     margin: 0;
@@ -1552,7 +1552,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     word-break: break-word;
 }
 .section-desc {
-    font-size: 11px;
+    font-size: 14px;
     color: var(--ink-4);
     margin: 4px 0 0;
     line-height: 1.4;
@@ -2843,14 +2843,14 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
     opacity: 0.55;
 }
 .card-placeholder-title {
-    font-size: 9px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--ink-3);
     margin: 0;
     line-height: 1.4;
 }
 .card-placeholder-hint {
-    font-size: 8px;
+    font-size: 12px;
     color: var(--ink-5);
     margin: 0;
     line-height: 1.45;
@@ -3148,15 +3148,15 @@ footer {
     .metrics-grid { grid-template-columns: 1fr; gap: 12px; }
     .metric-card { grid-column: span 1 !important; padding: 16px 16px 14px; border-radius: var(--r-sm); }
     .metric-card.span-6, .metric-card.span-8, .metric-card.span-12 { grid-column: span 1 !important; }
-    .card-header h3 { font-size: 10px; letter-spacing: 0.08em; }
-    .section-desc { font-size: 12px; }
+    .card-header h3 { font-size: 11.5px; letter-spacing: 0.08em; }
+    .section-desc { font-size: 12.5px; }
     .card-icon { width: 30px; height: 30px; border-radius: 7px; }
     .card-icon svg { width: 14px; height: 14px; }
 
     .card-placeholder { padding: 20px 12px 18px; gap: 6px; }
     .card-placeholder-icon { width: 34px; height: 34px; }
     .card-placeholder-icon svg { width: 18px; height: 18px; }
-    .card-placeholder-title { font-size: 12.5px; }
+    .card-placeholder-title { font-size: 12px; }
     .card-placeholder-hint { font-size: 11px; }
 
     .eraldised-table-header,
