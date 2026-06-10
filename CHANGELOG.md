@@ -49,6 +49,17 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   selgitatud et `terrapoint.vercel.app` on sama Vercel projekti alias.
   Lisatud juhised hard refreshi kohta pärast deploy't.
 
+### Changed
+- **Eraldiste "kokku" tabel tihedamaks** — `.eraldised-table-header` ja
+  `.eraldised-row` said kitsamad veerud (`24 / 38 / 48 / 42 / 48 / 64px` +
+  `minmax(70px, 1fr)` puuliigile), padding 8 → 6px, eemaldatud
+  `min-width: 460px` desktopil ja 380px mobiilil. Tabel mahub nüüd
+  ühe vaate sisse ilma kerimiseta (sõltumata sõbra `9403439`/`114b789`
+  fontide suurendamisest — eraldiste tabel jäi 11/10px, sest see on
+  ainus viis saada kõik 7 veergu korraga nähtavaks). Eemaldatud ka
+  `text-transform: uppercase` ja `letter-spacing` päiselt — väiksemal
+  fondil pole suurtähtedest lugemisel kasu.
+
 ## [Määramata] - 2026-06-09
 
 ### Fixed

@@ -2995,23 +2995,21 @@ footer {
 .eraldised-controls button:hover { border-color: var(--blue-400); }
 .eraldised-controls button.active { background: var(--blue-700); color: white; border-color: var(--blue-700); }
 .eraldised-table-header {
-    display: grid; grid-template-columns: 36px 1fr 65px 65px 70px 75px 90px;
-    padding: 6px 10px; font-size: 12px; text-transform: uppercase; color: var(--ink-4);
-    letter-spacing: 0.06em; font-weight: 700; border-bottom: 1px solid var(--hair);
+    display: grid; grid-template-columns: 24px minmax(70px, 1fr) 38px 48px 42px 48px 64px;
+    padding: 6px 8px; font-size: 11px; color: var(--ink-4);
+    font-weight: 500; border-bottom: 1px solid var(--hair);
     background: var(--paper-2);
-    min-width: 460px;
 }
 .eraldised-row {
-    display: grid; grid-template-columns: 36px 1fr 65px 65px 70px 75px 90px;
-    padding: 9px 10px; border-bottom: 1px solid var(--hair); font-size: 14.5px;
+    display: grid; grid-template-columns: 24px minmax(70px, 1fr) 38px 48px 42px 48px 64px;
+    padding: 6px 8px; border-bottom: 1px solid var(--hair); font-size: 11px;
     align-items: center; transition: background 0.1s;
-    min-width: 460px;
 }
 .eraldised-row:hover { background: var(--paper-2); }
 .eraldised-row .er-nr { font-weight: 600; color: var(--ink-2); }
 .eraldised-row .er-species { font-weight: 500; }
 .eraldised-row .er-value { font-weight: 700; color: var(--ink); font-family: var(--ff-mono); text-align: right; }
-.eraldised-empty { padding: 24px 16px; text-align: center; color: var(--ink-4); font-size: 13px; }
+.eraldised-empty { padding: 24px 16px; text-align: center; color: var(--ink-4); font-size: 11px; }
 /* Expanded card when eraldised details is open */
 .metric-card:has(.eraldised-expand[open]) {
     grid-column: span 8 !important;
@@ -3192,12 +3190,11 @@ footer {
 
     .eraldised-table-header,
     .eraldised-row {
-        grid-template-columns: 32px 1fr 55px 55px 60px 65px 80px;
-        font-size: 12px;
-        padding: 8px 8px;
-        min-width: 380px;
+        grid-template-columns: 22px minmax(60px, 1fr) 32px 42px 36px 42px 58px;
+        font-size: 10px;
+        padding: 5px 6px;
     }
-    .eraldised-row { font-size: 14px; }
+    .eraldised-row { font-size: 11px; }
 
     .info-row { padding: 10px 0; }
     .info-row .label { font-size: 15px; }
