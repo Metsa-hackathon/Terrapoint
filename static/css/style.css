@@ -952,6 +952,9 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     flex-direction: column;
     gap: 24px;
 }
+/* `hidden` attribute must beat the `display: flex` above so the
+   empty placeholder cards don't bleed into the landing/intro view. */
+.dashboard[hidden] { display: none; }
 
 /* Section heading */
 .section-head {

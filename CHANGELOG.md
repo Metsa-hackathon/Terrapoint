@@ -8,6 +8,15 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 
 ## [Määramata] - 2026-06-10
 
+### Fixed
+- **Mobiil: dashboard ei leki landing vaatesse** — `.dashboard` klassi
+  `display: flex` kaotas `[hidden]` atribuudi efekti (UA vaikimisi
+  `[hidden] { display: none }` on madalama spetsiifikaga), mistõttu
+  kõik 8 tühja placeholder kaarti ("Otsi krunti, et näha…") koos AI
+  chat'i ja kaardiga olid mobiilis nähtavad juba enne otsingut.
+  Lisatud `.dashboard[hidden] { display: none; }` — landing → meist →
+  kontakt → allikad järjestus taastatud, lehe pikkus ~6000 px → 3719 px.
+
 ### Changed
 - **Zoom 0.75x / 1x nupp viidud kaardist välja** — vana `position: absolute`
   `.map-wrapper` sees asendatud `position: fixed` `bottom: 12px; left: 12px`
