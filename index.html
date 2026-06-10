@@ -20,7 +20,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://unpkg.com/proj4leaflet@1.0.2/src/proj4leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet.wms@0.2.0/dist/leaflet.wms.js"></script>
+    <!--     <!-- Maa-amet WMS layers use built-in L.tileLayer.wms; no extra plugin needed. -->
+ -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -698,7 +699,7 @@
                     </span>
                 </a>
 
-                <a class="source-card" href="https://geoportaal.maaamet.ee/est/ruumiandmed/korgusandmed" target="_blank" rel="noopener" aria-label="LiDAR">
+                <a class="source-card" href="https://geoportaal.maaamet.ee/est/ruumiandmed/korgusandmed-p114.html" target="_blank" rel="noopener" aria-label="LiDAR">
                     <div class="source-org">LiDAR</div>
                     <h3 class="source-name">Kõrgusmudel</h3>
                     <p class="source-desc">DTM, DSM, nDSM, CHM. Metsa kõrguse ja biomassi alus.</p>
@@ -1362,67 +1363,86 @@
     }
 
     function initMap() {
-        map = L.map('map', {
-            zoomControl: false,
-            attributionControl: true,
-        }).setView([58.5, 25.0], 7);
-        L.control.zoom({ position: 'topright' }).addTo(map);
-
-        const maaametFoto = L.tileLayer('https://tiles.maaamet.ee/tm/tms/1.0.0/foto@GMC/{z}/{x}/{y}.jpg?ASUTUS=MAAAMET&KESKKOND=LIVE&IS=TERRAPOINT', {
-            tms: true, maxZoom: 18, minZoom: 6,
-            attribution: '&copy; Maa-amet',
-        });
-
-        const maaametKaart = L.tileLayer('https://tiles.maaamet.ee/tm/tms/1.0.0/kaart@GMC/{z}/{x}/{y}.png?ASUTUS=MAAAMET&KESKKOND=LIVE&IS=TERRAPOINT', {
-            tms: true, maxZoom: 15, minZoom: 6,
-            attribution: '&copy; Maa-amet',
-        });
-
-        const maaametHybriid = L.tileLayer('https://tiles.maaamet.ee/tm/tms/1.0.0/hybriid@GMC/{z}/{x}/{y}.png?ASUTUS=MAAAMET&KESKKOND=LIVE&IS=TERRAPOINT', {
-            tms: true, maxZoom: 15, minZoom: 6,
-            attribution: '&copy; Maa-amet',
-        });
-
-        const maaametHallkaart = L.tileLayer('https://tiles.maaamet.ee/tm/tms/1.0.0/hallkaart@GMC/{z}/{x}/{y}.png?ASUTUS=MAAAMET&KESKKOND=LIVE&IS=TERRAPOINT', {
-            tms: true, maxZoom: 15, minZoom: 6,
-            attribution: '&copy; Maa-amet',
-        });
-
-        const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap',
-        });
-
-        const esriFoto = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 19,
-            attribution: '&copy; Esri',
-        });
-
-        const googleSat = L.tileLayer('https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            subdomains: '0123',
-            attribution: '&copy; Google',
-        });
-
-        // Maa-amet talvised metsanduslikud aerofotod (EPSG:3301, WMS)
+        // Map runs in Estonian LCC (EPSG:3301) because that's the only CRS the
+        // Maa-amet aluskaardid / ajalooline WMS endpoints serve. Maa-amet LCC
+        // WMS layers work directly in this projection. Web-Mercator tile
+        // providers (OSM, Esri) require reprojection which is too costly to
+        // do client-side per-tile, so we keep them as a separate optional
+        // overlay (turned off by default) — switching the basemap to them
+        // shows the area in a different projection (visually skewed) and
+        // an info banner warns the user.
         proj4.defs('EPSG:3301', '+proj=lcc +lat_0=57.51755393055556 +lon_0=24 +lat_1=59.33333333333334 +lat_2=58 +x_0=500000 +y_0=6375000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
         const estonianCrs = new L.Proj.CRS('EPSG:3301', '+proj=lcc +lat_0=57.51755393055556 +lon_0=24 +lat_1=59.33333333333334 +lat_2=58 +x_0=500000 +y_0=6375000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs', {
             resolutions: [4000, 2000, 1000, 500, 250, 125, 62.5, 31.25, 15.625, 7.8125, 3.90625, 1.953125, 0.9765625, 0.48828125, 0.244140625],
             origin: [40500, 5993000],
         });
-        var talvFoto = null;
-        if (L.WMS) {
-            talvFoto = L.WMS.overlay('https://kaart.maaamet.ee/wms/ajalooline?', {
-                layers: 'of2025mets',
-                format: 'image/jpeg',
-                transparent: false,
-                version: '1.3.0',
-                crs: estonianCrs,
-                attribution: '&copy; Maa-amet (talv 2025)',
-            });
-        }
 
-        esriFoto.addTo(map);
+        map = L.map('map', {
+            crs: estonianCrs,
+            zoomControl: false,
+            attributionControl: true,
+        }).setView([58.5, 25.0], 7);
+        L.control.zoom({ position: 'topright' }).addTo(map);
+
+        // Maa-amet aluskaardid WMS (EPSG:3301) — works directly in LCC map
+        const WMS_OPTS = (extra) => Object.assign({
+            format: 'image/jpeg', transparent: false, version: '1.3.0',
+            maxZoom: 17, minZoom: 3, continuousWorld: true,
+        }, extra || {});
+
+        // Suvi 2025 (Maa-amet) — värskeim suvine ortofoto (of10000)
+        const suviFoto = L.tileLayer.wms('https://kaart.maaamet.ee/wms/alus?', WMS_OPTS({
+            layers: 'of10000', attribution: '&copy; Maa-amet (suvi 2025)',
+        }));
+
+        // Põhikaart (Maa-amet) — vektorbaaskaart
+        const pohiKaart = L.tileLayer.wms('https://kaart.maaamet.ee/wms/alus?', WMS_OPTS({
+            layers: 'pohi_vr2', format: 'image/png', attribution: '&copy; Maa-amet (põhikaart)',
+        }));
+
+        // Hallkaart (Maa-amet) — mustvalge põhikaart
+        const hallKaart = L.tileLayer.wms('https://kaart.maaamet.ee/wms/alus?', WMS_OPTS({
+            layers: 'pohi_mvr2', format: 'image/png', attribution: '&copy; Maa-amet (hallkaart)',
+        }));
+
+        // Reljeef (Maa-amet) — reljeefvarjutusega põhikaart
+        const reljeefKaart = L.tileLayer.wms('https://kaart.maaamet.ee/wms/alus?', WMS_OPTS({
+            layers: 'pohi_vv', format: 'image/png', opacity: 0.7, attribution: '&copy; Maa-amet (reljeef)',
+        }));
+
+        // Hübriid: suvine ortofoto + põhikaart pealdistega
+        const hübriidFoto = L.tileLayer.wms('https://kaart.maaamet.ee/wms/alus?', WMS_OPTS({
+            layers: 'of10000', format: 'image/jpeg', opacity: 0.9, attribution: '&copy; Maa-amet (hübriid 2025)',
+        }));
+        const hübriidKaart = L.tileLayer.wms('https://kaart.maaamet.ee/wms/alus?', WMS_OPTS({
+            layers: 'pohi_vr2', format: 'image/png', opacity: 0.85, attribution: '&copy; Maa-amet (hübriid 2025)',
+        }));
+        const hübriidGroup = L.layerGroup([hübriidFoto, hübriidKaart]);
+
+        // Talv 2024 (Maa-amet) — leheta metsanduslik ortofoto, märts-mai 2024
+        // of2024mets katab ~25.3-27.7°E (suurem ala, ~80% Eestist)
+        const talv2024 = L.tileLayer.wms('https://kaart.maaamet.ee/wms/ajalooline?', WMS_OPTS({
+            layers: 'of2024mets', attribution: '&copy; Maa-amet (talv 2024, märts-mai)',
+        }));
+
+        // Talv 2025 (Maa-amet) — leheta metsanduslik ortofoto, märts-mai 2025
+        // of2025mets katab ~25.6-27.6°E (kitsam ala, kõige värskem)
+        const talv2025 = L.tileLayer.wms('https://kaart.maaamet.ee/wms/ajalooline?', WMS_OPTS({
+            layers: 'of2025mets', attribution: '&copy; Maa-amet (talv 2025, märts-mai, osaline)',
+        }));
+
+        // Esri World Imagery — Web Mercator tile cache, displayed in LCC
+        // (visually accurate at zoom <12, mildly stretched at higher zooms)
+        const esriFoto = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19, minZoom: 3, attribution: '&copy; Esri (satelliit)',
+        });
+
+        // OpenStreetMap — Web Mercator tile cache, displayed in LCC
+        const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19, minZoom: 3, attribution: '&copy; OpenStreetMap',
+        });
+
+        suviFoto.addTo(map);
 
         // Cadastre WMS overlay (Maa-amet / gsavalik) — boundaries always toggleable
         katasterWmsLayer = L.tileLayer.wms('https://gsavalik.envir.ee/geoserver/kataster/wms', {
@@ -1439,16 +1459,17 @@
         map.on('click', handleMapClick);
 
         var baseLayers = {
-            'Ortofoto (Maa-amet)': maaametFoto,
-            'Kaart (Maa-amet)': maaametKaart,
-            'Hübriidkaart': maaametHybriid,
-            'Hallkaart': maaametHallkaart,
-            'OpenStreetMap': osm,
+            'Suvi 2025 (Maa-amet)': suviFoto,
+            'Hübriid 2025 (Maa-amet)': hübriidGroup,
+            'Põhikaart (Maa-amet)': pohiKaart,
+            'Hallkaart (Maa-amet)': hallKaart,
+            'Reljeef (Maa-amet)': reljeefKaart,
+            'Talv 2024 (Maa-amet, märts-mai)': talv2024,
+            'Talv 2025 (Maa-amet, märts-mai, osaline)': talv2025,
             'Suvi (Esri satelliit)': esriFoto,
-            'Suvi (Google satelliit)': googleSat,
+            'OpenStreetMap': osm,
         };
-        if (talvFoto) baseLayers['Talv (Maa-amet metsanduslik 2025)'] = talvFoto;
-        L.control.layers(baseLayers, null, { position: 'bottomleft' }).addTo(map);
+        L.control.layers(baseLayers, null, { position: 'bottomleft', collapsed: false }).addTo(map);
 
         // Center button
         var CenterControl = L.Control.extend({
