@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl013">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl014">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -70,14 +70,14 @@
       .filter-range input:focus { border-color: var(--blue-500, #3b82f6); outline: none; }
       .filter-range-sep { color: var(--ink-4, #9ca3af); font-size: 11px; }
       .teatised-table-header {
-          display: grid; grid-template-columns: 1fr 120px 120px 80px 100px;
-          padding: 6px 16px; font-size: 10px; text-transform: uppercase; color: var(--ink-4);
+          display: grid; grid-template-columns: 1.2fr 1fr 1fr 90px;
+          padding: 8px 16px; font-size: 11.5px; text-transform: uppercase; color: var(--ink-4);
           letter-spacing: 0.06em; font-weight: 600; border-bottom: 1px solid var(--hair);
           background: var(--paper-2);
       }
       .teatised-row {
-          display: grid; grid-template-columns: 1fr 120px 120px 80px 100px;
-          padding: 8px 16px; border-bottom: 1px solid var(--hair); font-size: 13px;
+          display: grid; grid-template-columns: 1.2fr 1fr 1fr 90px;
+          padding: 10px 16px; border-bottom: 1px solid var(--hair); font-size: 14px;
           align-items: center; transition: background 0.1s;
       }
       .teatised-row:hover { background: var(--paper-2); }
@@ -103,7 +103,7 @@
             <nav class="nav-center">
                 <a href="#meist">Meist</a>
                 <a href="#allikad">Allikad</a>
-                <a href="#info">Info</a>
+                <a href="#kontakt">Kontakt</a>
             </nav>
         </div>
         <div class="nav-right">
@@ -913,7 +913,10 @@
     }
 
     async function aiSendMessage(message) {
-        if (!aiCurrentKataster) return;
+        if (!aiCurrentKataster) {
+            aiAppendMessage('assistant', '<span style="color:var(--ink-4);font-style:italic">Otsi esmalt ülevalt katastri number või aadress — seejärel saan su metsa kohta küsimustele vastata.</span>');
+            return;
+        }
         if (!message.trim()) return;
 
         message = message.trim().slice(0, 600);
@@ -2104,6 +2107,24 @@
         var el = document.getElementById('teatised-info');
         if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Metsateatisi pole registreeritud</p>'; return; }
 
+        // Kaardista API staatus -> badge klass ja silt
+        function teatisedStatusBadge(staatus, active) {
+            var s = (staatus || '').toUpperCase().trim();
+            if (active || s === 'KEHTIV') {
+                return '<span class="teatised-status status-kehtiv">Kehtiv</span>';
+            }
+            if (s === 'REGISTREERITUD') {
+                return '<span class="teatised-status status-registreeritud">Registreeritud</span>';
+            }
+            if (s === 'KEHTETU' || s === 'TÜHISTATUD' || s === 'CLOSED') {
+                return '<span class="teatised-status status-kehtetu">' + escHtml(staatus) + '</span>';
+            }
+            if (!s) {
+                return '<span class="teatised-status status-muud">—</span>';
+            }
+            return '<span class="teatised-status status-muud">' + escHtml(staatus) + '</span>';
+        }
+
         window._teatisedData = data;
         window._teatisedPerPage = 5;
 
@@ -2126,13 +2147,13 @@
             visible.forEach(function(t) {
                 html += '<div class="teatised-row">';
                 html += '<div>' + escHtml(t.tyyp || '—') + '</div>';
-                html += '<div>' + escHtml(t.staatus || '—') + '</div>';
+                html += '<div>' + teatisedStatusBadge(t.staatus, t.active) + '</div>';
                 html += '<div>' + escHtml(t.kehtiv_kuni || '—') + '</div>';
                 html += '<div>' + (t.pindala_ha ? formatNum(t.pindala_ha, 2) + ' ha' : '—') + '</div>';
                 html += '</div>';
             });
 
-            html += '<div style="padding:8px 0;font-size:0.75rem;color:var(--ink-4)">Näitan ' + visible.length + ' / ' + all.length + '</div>';
+            html += '<div style="padding:10px 0 4px;font-size:0.875rem;color:var(--ink-4)">Näitan ' + visible.length + ' / ' + all.length + '</div>';
 
             el.innerHTML = html;
             el.querySelectorAll('.eraldised-controls button').forEach(function(btn) {
@@ -2184,7 +2205,7 @@
                     link = eelisLink; linkText = 'EELIS';
                 }
                 rows += '<tr><td><strong>' + escHtml(k.tyyp) + '</strong></td><td>' + escHtml(k.kirjeldus) + '</td>';
-                rows += '<td><a href="' + escHtml(link) + '" target="_blank" rel="noopener" class="muted-link" style="font-size:0.82rem">' + escHtml(linkText) + ' →</a></td></tr>';
+                rows += '<td><a href="' + escHtml(link) + '" target="_blank" rel="noopener" class="muted-link">' + escHtml(linkText) + ' →</a></td></tr>';
             });
             return rows;
         }
@@ -2199,10 +2220,10 @@
             });
             html += '<button data-perpage="all"' + (pp === 'all' ? ' class="active"' : '') + '>Kõik</button>';
             html += '</div>';
-            html += '<div style="overflow-x:auto;min-width:500px"><table style="width:100%;table-layout:fixed"><colgroup><col style="width:120px"><col style="width:auto"><col style="width:80px"></colgroup><thead><tr><th>Tüüp</th><th>Kirjeldus</th><th>Lisainfo</th></tr></thead><tbody>';
+            html += '<div class="kitsendused-scroll"><table class="kitsendused-table"><colgroup><col class="col-tyyp"><col class="col-kirjeldus"><col class="col-link"></colgroup><thead><tr><th>Tüüp</th><th>Kirjeldus</th><th>Lisainfo</th></tr></thead><tbody>';
             html += kitsRows(visible);
             html += '</tbody></table></div>';
-            html += '<div style="padding:8px 0;font-size:0.75rem;color:var(--ink-4)">Näitan ' + visible.length + ' / ' + all.length + '</div>';
+            html += '<div style="padding:10px 0 4px;font-size:0.875rem;color:var(--ink-4)">Näitan ' + visible.length + ' / ' + all.length + '</div>';
             el.innerHTML = html;
             if (linkEl) linkEl.style.display = '';
             el.querySelectorAll('.eraldised-controls button').forEach(function(btn) {
@@ -2859,7 +2880,8 @@
             }
         });
 
-        document.getElementById('eudr-btn').addEventListener('click', function() {
+        var eudrBtn = document.getElementById('eudr-btn');
+        if (eudrBtn) eudrBtn.addEventListener('click', function() {
             var nr = (currentData && currentData.kataster && currentData.kataster.number) || document.getElementById('kataster-input').value.trim();
             if (nr) exportEUDR(nr);
         });
@@ -2902,16 +2924,19 @@
         // Reset height after send
         var origAiSend = aiSendMessage;
         // (no override needed — input.value='' in aiSendMessage triggers input event)
-        document.querySelectorAll('.ai-hint').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var q = btn.getAttribute('data-q');
-                if (q) aiSendMessage(q);
-            });
-        });
-        document.getElementById('ai-quick-ask').addEventListener('click', function() {
-            var input = document.getElementById('ai-chat-input');
-            input.focus();
-            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Use event delegation so hints added dynamically (e.g. eraldis picker)
+        // also work without re-binding. The static hints in HTML are caught too.
+        document.getElementById('ai-chat-hints').addEventListener('click', function(e) {
+            var btn = e.target.closest('.ai-hint');
+            if (!btn) return;
+            if (btn.id === 'ai-quick-ask') {
+                var input = document.getElementById('ai-chat-input');
+                input.focus();
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            var q = btn.getAttribute('data-q');
+            if (q) aiSendMessage(q);
         });
 
         // Address search autocomplete

@@ -1130,7 +1130,8 @@ async def chat(request: Request):
                             "messages": messages,
                             "stream": True,
                             "temperature": 0.4,
-                            "max_tokens": 4096,
+                            "max_tokens": 6144,
+                            "reasoning_effort": "low",
                             "top_p": 0.9,
                         },
                     ) as resp:
@@ -1169,11 +1170,12 @@ async def chat(request: Request):
                                 saw_content = True
                                 yield "data: " + orjson.dumps({"content": content_piece}).decode() + "\n\n"
 
-                # If no final content but reasoning was emitted, replace the long
-                # reasoning block with a short user-facing explanation. The model
+                # If no final content but reasoning was emitted, the model
                 # burned all its tokens thinking and never produced an answer.
+                # Tell the user the real reason (token budget exhausted) and
+                # suggest a more focused question.
                 if not saw_content and saw_reasoning:
-                    yield "data: " + orjson.dumps({"content": "\n\nSelle küsimuse jaoks jäi AI-l aeg lühemaks ning ta jõudis ainult mõtteid läbi töötada. Palun sõnasta küsimus lühemalt või küsi midagi konkreetsemat (näiteks „mis on mu metsa seisukord“, „kas lageraiet tohib teha“, „milliseid toetusi saan taotleda“)."}).decode() + "\n\n"
+                    yield "data: " + orjson.dumps({"content": "\n\nAI mudel jäi oma mõttekäiku kinni ega jõudnud lõpliku vastuseni. Palun sõnasta küsimus lühemalt ja konkreetsemalt (näiteks „kas peaksin raiuma“, „milliseid toetusi saan“, „kui suur on mu metsa väärtus“)."}).decode() + "\n\n"
 
                 yield "data: [DONE]\n\n"
             except httpx.ReadTimeout:

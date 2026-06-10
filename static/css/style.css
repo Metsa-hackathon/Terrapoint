@@ -536,7 +536,7 @@ a { color: var(--blue-700); text-decoration: none; }
 }
 .callout-label {
     font-family: var(--ff-sans);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.14em;
@@ -546,7 +546,7 @@ a { color: var(--blue-700); text-decoration: none; }
 .callout-value {
     font-family: var(--ff-mono);
     font-variant-numeric: tabular-nums;
-    font-size: 1.75rem;
+    font-size: 1.95rem;
     font-weight: 700;
     color: var(--surface-callout-text);
     line-height: 1.15;
@@ -556,7 +556,7 @@ a { color: var(--blue-700); text-decoration: none; }
     display: flex;
     gap: var(--s-6);
     margin-top: var(--s-3);
-    font-size: 0.82rem;
+    font-size: 0.95rem;
     color: var(--ink-3);
     flex-wrap: wrap;
 }
@@ -567,7 +567,7 @@ a { color: var(--blue-700); text-decoration: none; }
 
 /* Subtle inline links — secondary action with a hairline arrow */
 .muted-link {
-    font-size: 13px;
+    font-size: 14px;
     color: var(--blue-700);
     text-decoration: none;
     border-bottom: 1px solid var(--blue-200);
@@ -578,12 +578,12 @@ a { color: var(--blue-700); text-decoration: none; }
 /* Status pill — green for "active"/"present" state */
 .pill-success {
     display: inline-block;
-    padding: 0.2rem 0.6rem;
+    padding: 0.25rem 0.7rem;
     background: var(--success-bg);
     color: var(--success);
     border: 1px solid #a7f3d0;
     border-radius: var(--r-full);
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     font-weight: 600;
     letter-spacing: 0.01em;
 }
@@ -1618,7 +1618,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     font-feature-settings: "tnum" 1, "ss01" 1, "cv11" 1;
 }
 .big-number .unit {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 500;
     color: var(--ink-4);
     margin-left: 4px;
@@ -1661,7 +1661,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     border: 1px solid var(--blue-100) !important;
 }
 .value-block-label {
-    font-size: 10.5px;
+    font-size: 12px;
     color: var(--blue-700);
     font-weight: 600;
     margin-bottom: 4px;
@@ -1677,7 +1677,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     background: currentColor;
 }
 .value-block .sub {
-    font-size: 11.5px;
+    font-size: 13px;
     color: var(--ink-4);
     margin-top: 4px;
     letter-spacing: -0.005em;
@@ -1688,7 +1688,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid var(--blue-100);
-    font-size: 12px;
+    font-size: 13.5px;
 }
 .value-block .row > div { color: var(--ink-3); }
 .value-block .row strong {
@@ -1880,7 +1880,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     letter-spacing: -0.01em;
 }
 .ai-chat-subtitle {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--ink-4);
     margin: 1px 0 0;
     letter-spacing: -0.005em;
@@ -2544,10 +2544,10 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 /* Status badges */
 .toetus-badge {
     flex-shrink: 0;
-    font-size: 10.5px;
-    padding: 3px 9px;
+    font-size: 11.5px;
+    padding: 4px 10px;
     border-radius: var(--r-full);
-    font-weight: 600;
+    font-weight: 700;
     white-space: nowrap;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -2568,7 +2568,7 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 
 /* Category meta line */
 .toetus-cat {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--ink-4);
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -2579,7 +2579,7 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 /* Description */
 .toetus-desc {
     color: var(--ink-3);
-    font-size: 13px;
+    font-size: 14px;
     margin: 0;
     line-height: 1.55;
     letter-spacing: -0.005em;
@@ -2588,7 +2588,7 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 /* Amount block — labeled, with pill-shaped amounts */
 .toetus-amount-block { display: flex; flex-direction: column; gap: 6px; }
 .toetus-amount-label {
-    font-size: 10.5px;
+    font-size: 11.5px;
     color: var(--ink-4);
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -2601,11 +2601,11 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 }
 .toetus-amount-pill {
     display: inline-block;
-    padding: 5px 10px;
+    padding: 5px 11px;
     border-radius: var(--r-full);
     background: var(--paper-2);
     color: var(--ink-3);
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     font-family: var(--ff-mono);
     border: 1px solid var(--hair);
@@ -2628,7 +2628,7 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
     border-left: 3px solid var(--danger);
     border-radius: var(--r-sm);
     color: var(--danger);
-    font-size: 12.5px;
+    font-size: 13.5px;
     line-height: 1.5;
 }
 .toetus-reason-icon {
@@ -2652,11 +2652,11 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
     display: flex;
     flex-direction: column;
     gap: 2px;
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.45;
 }
 .toetus-voor-label {
-    font-size: 10.5px;
+    font-size: 11.5px;
     color: var(--ink-4);
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -2672,13 +2672,13 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
     align-items: center;
     justify-content: center;
     gap: 6px;
-    min-height: 40px;
+    min-height: 44px;
     padding: 10px 14px;
     background: var(--blue-700);
     color: #fff;
     border-radius: var(--r-sm);
     text-decoration: none;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     transition: background var(--t-fast) var(--ease);
     line-height: 1.3;
@@ -2764,8 +2764,22 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 }
 
 
-#kitsendused-info table { width: 100%; table-layout: fixed; min-width: 500px; }
-#kitsendused-info td:nth-child(2) { max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#kitsendused-info .kitsendused-scroll { overflow-x: auto; }
+#kitsendused-info .kitsendused-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+#kitsendused-info .kitsendused-table .col-tyyp { width: 28%; }
+#kitsendused-info .kitsendused-table .col-kirjeldus { width: 48%; }
+#kitsendused-info .kitsendused-table .col-link { width: 24%; }
+#kitsendused-info th {
+    font-size: 11.5px; padding: 10px 8px; text-align: left;
+    border-bottom: 1px solid var(--hair); font-weight: 700;
+}
+#kitsendused-info th:last-child { text-align: right; }
+#kitsendused-info td { word-break: break-word; overflow-wrap: anywhere; padding: 10px 8px; vertical-align: top; }
+#kitsendused-info td:nth-child(1) { font-size: 13.5px; font-family: var(--ff-sans); }
+#kitsendused-info td:nth-child(2) { font-size: 13.5px; line-height: 1.5; font-family: var(--ff-sans); color: var(--ink-3); }
+#kitsendused-info td:nth-child(3) { text-align: right; }
+#kitsendused-info td:nth-child(3) a { font-size: 13px; }
+#kitsendused-info tr:hover td { background: var(--paper-2); }
 /* ═══ INFO DROPDOWNS ═══════════════════════════════════════════════════════ */
 .info-dd {
     display: inline-flex;
@@ -2970,12 +2984,12 @@ footer {
 .filter-range-sep { color: var(--ink-4); font-size: 11px; }
 .eraldised-controls {
     display: flex; align-items: center; gap: 8px; padding: 8px 0 10px;
-    font-size: 13px; color: var(--ink-4);
+    font-size: 13.5px; color: var(--ink-4);
     flex-wrap: wrap;
 }
 .eraldised-controls button {
     padding: 5px 12px; border-radius: var(--r-full); border: 1px solid var(--hair);
-    background: white; cursor: pointer; font-size: 12px; font-family: var(--ff-sans);
+    background: white; cursor: pointer; font-size: 13px; font-family: var(--ff-sans);
     transition: all 0.15s; min-height: 32px;
 }
 .eraldised-controls button:hover { border-color: var(--blue-400); }
@@ -3038,19 +3052,36 @@ footer {
     background: var(--paper-2); border-radius: var(--r-full); margin-left: 2px;
 }
 
-/* Metsateatised table — 5 columns */
+/* Metsateatised table — 4 columns (Tüüp, Staatus, Kehtiv kuni, Pindala) */
 .teatised-table-header {
-    display: grid; grid-template-columns: 1fr 120px 120px 80px 100px;
-    padding: 6px 16px; font-size: 10px; text-transform: uppercase; color: var(--ink-4);
+    display: grid; grid-template-columns: 1.2fr 1fr 1fr 90px;
+    padding: 8px 16px; font-size: 11.5px; text-transform: uppercase; color: var(--ink-4);
     letter-spacing: 0.06em; font-weight: 600; border-bottom: 1px solid var(--hair);
     background: var(--paper-2);
 }
 .teatised-row {
-    display: grid; grid-template-columns: 1fr 120px 120px 80px 100px;
-    padding: 8px 16px; border-bottom: 1px solid var(--hair); font-size: 13px;
-    align-items: center; transition: background 0.1s; min-width: 500px;
+    display: grid; grid-template-columns: 1.2fr 1fr 1fr 90px;
+    padding: 10px 16px; border-bottom: 1px solid var(--hair); font-size: 14px;
+    align-items: center; transition: background 0.1s;
 }
 .teatised-row:hover { background: var(--paper-2); }
+
+/* Metsateatised staatus — värviline badge nagu toetuste puhul */
+.teatised-status {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: var(--r-full);
+    font-size: 11.5px; font-weight: 600; line-height: 1.3;
+    letter-spacing: 0.01em;
+}
+.teatised-status::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor;
+}
+.teatised-status.status-kehtiv { color: #047857; background: #ecfdf5; border: 1px solid #a7f3d0; }
+.teatised-status.status-registreeritud { color: #1d4ed8; background: #eff6ff; border: 1px solid #bfdbfe; }
+.teatised-status.status-closed,
+.teatised-status.status-kehtetu { color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; }
+.teatised-status.status-muud { color: #4b5563; background: #f3f4f6; border: 1px solid #e5e7eb; }
 
 /* ═══ RESPONSIVE ════════════════════════════════════════════════════════════ */
 
@@ -3148,8 +3179,8 @@ footer {
     .metrics-grid { grid-template-columns: 1fr; gap: 12px; }
     .metric-card { grid-column: span 1 !important; padding: 16px 16px 14px; border-radius: var(--r-sm); }
     .metric-card.span-6, .metric-card.span-8, .metric-card.span-12 { grid-column: span 1 !important; }
-    .card-header h3 { font-size: 11.5px; letter-spacing: 0.08em; }
-    .section-desc { font-size: 12.5px; }
+    .card-header h3 { font-size: 12px; letter-spacing: 0.08em; }
+    .section-desc { font-size: 13px; }
     .card-icon { width: 30px; height: 30px; border-radius: 7px; }
     .card-icon svg { width: 14px; height: 14px; }
 
@@ -3168,13 +3199,18 @@ footer {
     }
     .eraldised-row { font-size: 12px; }
 
-    .info-row { padding: 7px 0; }
-    .info-row .label { font-size: 12px; }
-    .info-row .value { font-size: 12.5px; }
-    .big-number { font-size: 28px; }
-    .big-number .unit { font-size: 12px; }
+    .info-row { padding: 9px 0; }
+    .info-row .label { font-size: 14px; }
+    .info-row .value { font-size: 14.5px; }
+    .big-number { font-size: 32px; }
+    .big-number .unit { font-size: 13.5px; }
     .value-block { padding: 12px 14px 10px; }
-    .value-block .row { gap: 12px; flex-wrap: wrap; }
+    .value-block-label { font-size: 11.5px; }
+    .value-block .sub { font-size: 12.5px; }
+    .value-block .row { font-size: 13px; gap: 12px; flex-wrap: wrap; }
+    .callout-label { font-size: 11px; }
+    .callout-value { font-size: 1.65rem; }
+    .callout-breakdown { font-size: 0.9rem; }
 
     #map { height: clamp(380px, 60vh, 560px); }
     .map-hint {
@@ -3214,9 +3250,9 @@ footer {
     .ai-chat-messages { max-height: 320px; padding: 12px 14px; }
     .ai-chat-header { padding: 12px 14px; }
     .ai-chat-header h2 { font-size: 13px; }
-    .ai-chat-subtitle { font-size: 11.5px; }
-    .ai-bubble { font-size: 13px; padding: 8px 12px; }
-    .ai-hint { font-size: 11.5px; padding: 4px 10px; }
+    .ai-chat-subtitle { font-size: 12.5px; }
+    .ai-bubble { font-size: 13.5px; padding: 8px 12px; }
+    .ai-hint { font-size: 12.5px; padding: 5px 11px; }
     .ai-chat-input-area { padding: 10px 12px 12px; }
 
     .charts-section { gap: 12px; }
@@ -3245,14 +3281,20 @@ footer {
 
     /* Toetused — mobile sizing tweaks */
     .toetus-card { padding: 14px 14px 12px; gap: 9px; }
-    .toetus-title { font-size: 14px; line-height: 1.3; }
-    .toetus-cat { font-size: 10px; letter-spacing: 0.04em; }
-    .toetus-desc { font-size: 12.5px; line-height: 1.55; }
-    .toetus-amount-pill { font-size: 11.5px; padding: 4px 9px; }
-    .toetus-amount-label { font-size: 10px; }
-    .toetus-reason { font-size: 12px; line-height: 1.5; padding: 9px 10px; }
-    .toetus-cta { min-height: 44px; font-size: 13px; }
+    .toetus-title { font-size: 15px; line-height: 1.3; }
+    .toetus-cat { font-size: 11px; letter-spacing: 0.04em; }
+    .toetus-desc { font-size: 13.5px; line-height: 1.55; }
+    .toetus-amount-pill { font-size: 12.5px; padding: 4px 10px; }
+    .toetus-amount-label { font-size: 11px; }
+    .toetus-reason { font-size: 13px; line-height: 1.5; padding: 9px 10px; }
+    .toetus-cta { min-height: 44px; font-size: 14px; }
     .toetus-footer { padding-top: 10px; gap: 9px; }
+    .toetus-badge { font-size: 10.5px; padding: 3px 9px; }
+
+    /* Metsateatised — mobile */
+    .teatised-table-header { font-size: 10.5px; padding: 8px 12px; }
+    .teatised-row { font-size: 13px; padding: 10px 12px; }
+    .teatised-status { font-size: 10.5px; padding: 2px 8px; }
 
     /* ── Touch targets: bump everything that taps to ≥44px on mobile ── */
     .ai-chat-input-wrap input,
