@@ -66,25 +66,6 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   kontakt → allikad järjestus taastatud, lehe pikkus ~6000 px → 3719 px.
 
 ### Changed
-- **Kaardi aluskaardid: CIR-NGR vaikimisi, X-GIS 1r03lgo** — vana
-  `EESTIFOTO` / `HYBRID` / `nCHM2017` WMS läksid tühjaks (kaart.maaamet.ee
-  ei teeninda enam neid kihte). Asendatud X-GIS teenusega `1r03lgo`
-  (töötab 256×256 juures). Vaikimisi aluskaardiks `cir_ngr` (Metsanduslik
-  ortofoto, CIR-NGR valevärv) — ainuke kiht mis töötab kõigil
-  suumitasemetel. Lisatud `of10000` (Ametlik ortofoto), `pohi_vr2`
-  (Põhikaart), `pohi_vv` (Reljeef), `pohi_mvr2` (Hallkaart) — töötavad
-  ainult z≥15 sest Maa-ameti allika ScaleHint max=8.98 (1:8984). Labelid
-  viimased lõpus "(Maa-amet, z≥15)" et kasutaja teaks miks tühi pilt
-  väljasurnud alal. Eemaldatud `HYBRID` ja `talvFoto` duplikaat.
-- **X-GIS CORS proxy `/api/tiles/xgis`** — Maa-amet ei saada CORS
-  päiseid, mistõttu brauser blokeeris WMS päringud (net::ERR_BLOCKED_BY_ORB).
-  Lisatud backend proxy `api/index.py:1356` mis vahendab GetMap päringuid
-  X-GIS serverile, lisab `Access-Control-Allow-Origin: *` ja cache'dab
-  tulemuse 24h. Kasutab L.GridLayer.extend() patternit (L.tileLayer
-  ignoreerib getTileUrl override'i).
-- **CSS versioon v19 → v20** (cache bust jkl019 → jkl020).
-
-### Changed
 - **Zoom 0.75x / 1x nupp viidud kaardist välja** — vana `position: absolute`
   `.map-wrapper` sees asendatud `position: fixed` `bottom: 12px; left: 12px`
   poolt, nüüd on nupp kogu lehe vasakus alumises nurgas, mitte kaardi
