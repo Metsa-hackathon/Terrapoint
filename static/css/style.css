@@ -1498,7 +1498,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 }
 .kataster-icon     { background: var(--blue-50); color: var(--blue-700); border-color: var(--blue-200); }
 .mets-icon         { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
-.vaartus-icon      { background: var(--blue-50); color: var(--blue-700); border-color: var(--blue-200); }
+.vaartus-icon      { background: #fef3c7; color: #b45309; border-color: #fde68a; }
 .sinik-icon        { background: #ecfeff; color: #0e7490; border-color: #a5f3fc; }
 .risk-icon         { background: var(--danger-bg); color: var(--danger); border-color: #fecaca; }
 .eudr-icon         { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
