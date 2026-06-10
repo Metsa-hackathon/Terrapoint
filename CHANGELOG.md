@@ -8,6 +8,15 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 
 ## [Määramata] - 2026-06-10
 
+### Reverted
+- **Kaart ja sektsioonid tagasi lehe algusesse** — eemaldatud `hidden`
+  atribuut `<section id="dashboard">` pealt, et kaart (Leaflet) ja 8
+  sektsiooni (Kataster, Eraldised, Väärtus, Süsinik, Teatised, Riskid,
+  EUDR, Toetused, Kitsendused) oleksid nähtavad kohe lehe laadimisel,
+  mitte peidetud otsingu taha. Varasem `40034f2` fix (`.dashboard[hidden]`
+  reegel) jääb alles defensiivseks — kui tulevikus lisatakse `hidden`
+  tagasi, ei leki tühi dashboard enam layouti sisse.
+
 ### Fixed
 - **Mobiil: dashboard ei leki landing vaatesse** — `.dashboard` klassi
   `display: flex` kaotas `[hidden]` atribuudi efekti (UA vaikimisi
