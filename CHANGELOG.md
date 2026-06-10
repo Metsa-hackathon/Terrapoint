@@ -6,6 +6,35 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > domain). `terrapoint.vercel.app` on sama projekti alias — push master
 > branchi uuendab mõlemat korraga.
 
+## [Määramata] - 2026-06-11
+
+### Changed
+- **Zoom nuppude asemel slider** — alumise vasakpoolse `1x / 0.75x`
+  kahe-nupu toggle'i asemel nüüd pidev `<input type="range">` slider
+  vahemikus 0.5–1.0 (samm 0.05, 11 astet). Vana `.zoom-btn` stiilid
+  asendatud `.zoom-slider` reeglitega, slideri thumb 18px (desktop)
+  / 22px (mobiil) WCAG 2.5.5 puutepunkti jaoks. Slideri kohal on
+  3 skaala-märget (50 / 75 / 100) koos tikksümbolitega raja peal,
+  et kasutaja näeks kohe millised astmed on valitavad. Märgete
+  x-positsioonid on joondatud thumb'i tsentritega (0% / 50% / 100%
+  väärtusvahemikust, insettitud `thumbWidth/2` võrra) — näitavad
+  täpselt kuhu thumb maandub valitud väärtuse korral. Zoom
+  rakendatakse `--zoom-level` CSS muutujaga, mis on seatud
+  `.page-zoom` elemendile (uus wrapper ümber kogu lehe sisu).
+  **Lehe sisu on nüüd mähitud `<div class="page-zoom">`-i** —
+  kogu leht (header, sidebar, loading, sektsioonid, footer) on
+  selle sees, ja `.zoom-controls` on tema õde-vend (sama taseme
+  `<body>` laps, mitte wrapperi järglane). Tulemus: zoom
+  rakendatakse ainult wrapperile, juhtnupp jääb väljapoole
+  zoom-konteksti ja tema suurus + asukoht on täiesti
+  konstantsed sõltumata valitud suumist (native range input
+  ei vaja enam `transform: scale` counter-pole, sest ta pole
+  üldse zoom'i mõjualas). Firefox < 126 fallback on sama
+  loogikaga, kuid kasutab `transform: scale()` asemel.
+  localStorage võti `terrapoint-zoom` salvestab nüüd arvu
+  (nt `"0.85"`) Stringina, taastamisel valideeritakse vahemik
+  0.5–1.0. CSS versioon v19 → v25 (cache bust).
+
 ## [Määramata] - 2026-06-10
 
 ### Fixed

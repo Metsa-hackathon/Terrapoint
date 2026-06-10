@@ -820,6 +820,8 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     color: var(--ink-3);
     font-weight: 500;
     letter-spacing: -0.005em;
+    transform: scale(0.9);
+    transform-origin: left center;
 }
 .landing-eyebrow .dot {
     width: 6px; height: 6px;
@@ -860,6 +862,8 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     max-width: 540px;
     margin: 0 auto 28px;
     letter-spacing: -0.005em;
+    transform: scale(0.9);
+    transform-origin: center top;
 }
 
 .landing-search {
@@ -892,6 +896,8 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     justify-content: center;
     gap: 8px;
     margin-top: 14px;
+    transform: scale(0.95);
+    transform-origin: center top;
 }
 .landing-hint {
     display: inline-flex;
@@ -929,6 +935,8 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     gap: 28px;
     margin-top: 32px;
     flex-wrap: wrap;
+    transform: scale(0.9);
+    transform-origin: center top;
 }
 .landing-meta-item {
     display: flex;
@@ -1550,6 +1558,8 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     flex: 1;
     min-width: 0;
     word-break: break-word;
+    transform: scale(0.9);
+    transform-origin: left center;
 }
 .section-desc {
     font-size: 14.5px;
@@ -1582,6 +1592,8 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     font-size: 16px;
     border-bottom: 1px solid var(--paper-3);
     position: relative;
+    transform: scale(0.9);
+    transform-origin: left center;
 }
 .info-row:last-child { border-bottom: none; }
 .info-row .label {
@@ -1591,12 +1603,28 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     letter-spacing: -0.005em;
     min-width: 0;
 }
+.metric-card.highlight-card > * {
+    transform: scale(0.9);
+    transform-origin: left top;
+}
+.metric-card.highlight-card .section-desc {
+    transform: none;
+}
+.metric-card.highlight-card .info-row {
+    transform: none;
+}
+
+#kataster-info .callout-surface {
+    transform: scale(0.9);
+    transform-origin: left top;
+}
+
 .info-row .value {
     font-family: var(--ff-mono);
     font-weight: 500;
     color: var(--ink-2);
     text-align: right;
-    font-size: 16px;
+    font-size: 15.5px;
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
     letter-spacing: -0.005em;
@@ -2995,15 +3023,28 @@ footer {
 .eraldised-controls button:hover { border-color: var(--blue-400); }
 .eraldised-controls button.active { background: var(--blue-700); color: white; border-color: var(--blue-700); }
 .eraldised-table-header {
-    display: grid; grid-template-columns: 24px minmax(70px, 1fr) 38px 48px 42px 48px 64px;
+    display: grid; grid-template-columns: 28px minmax(80px, 1fr) 42px 56px 48px 56px 76px;
     padding: 6px 8px; font-size: 11px; color: var(--ink-4);
     font-weight: 500; border-bottom: 1px solid var(--hair);
     background: var(--paper-2);
+    align-items: center;
 }
 .eraldised-row {
-    display: grid; grid-template-columns: 24px minmax(70px, 1fr) 38px 48px 42px 48px 64px;
+    display: grid; grid-template-columns: 28px minmax(80px, 1fr) 42px 56px 48px 56px 76px;
     padding: 6px 8px; border-bottom: 1px solid var(--hair); font-size: 11px;
     align-items: center; transition: background 0.1s;
+    min-height: 30px;
+}
+.eraldised-table-header > *,
+.eraldised-row > * {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.eraldised-table-header > *:nth-child(n+3):nth-child(-n+6),
+.eraldised-row > *:nth-child(n+3):nth-child(-n+6) {
+    text-align: right;
 }
 .eraldised-row:hover { background: var(--paper-2); }
 .eraldised-row .er-nr { font-weight: 600; color: var(--ink-2); }
@@ -3306,7 +3347,14 @@ footer {
     .search-box button { width: 44px; height: 44px; }
     .landing-search .search-box { min-height: 48px; }
     .landing-search .search-box button { width: 44px; height: 44px; }
-    .zoom-btn { min-width: 44px; min-height: 44px; }
+    .zoom-stack { min-width: 96px; }
+    .zoom-slider { width: 96px; }
+    .zoom-slider::-webkit-slider-thumb { width: 22px; height: 22px; margin-top: -10px; }
+    .zoom-slider::-moz-range-thumb { width: 22px; height: 22px; }
+    .zoom-tick-labels span:nth-child(1) { left: 11px; }
+    .zoom-tick-labels span:nth-child(3) { left: calc(100% - 11px); }
+    .zoom-track span:nth-child(1) { left: 11px; }
+    .zoom-track span:nth-child(3) { left: calc(100% - 11px); }
     .ai-hint { min-height: 36px; padding: 8px 12px; font-size: 12.5px; }
     .map-controls-toggle { min-height: 44px; padding: 8px 12px; }
     .toggle-item { min-height: 40px; padding: 8px 10px; }
@@ -3333,62 +3381,159 @@ footer {
 }
 
 /* ═══ ZOOM CONTROLS ═══════════════════════════════════════════════════════ */
+/* The .zoom-controls element sits OUTSIDE the .page-zoom wrapper, so
+   the page zoom never affects it — slider, labels, ticks and the
+   whole pill stay at constant size and at the same viewport corner
+   no matter what the user picks on the slider. */
 .zoom-controls {
     position: fixed;
     bottom: 12px;
     left: 12px;
     z-index: 1500;
     display: flex;
-    gap: 2px;
+    align-items: center;
     background: var(--white);
     border: 1px solid var(--hair);
     border-radius: var(--r-full);
-    padding: 3px;
+    padding: 6px 14px;
     box-shadow: var(--sh-3);
-}
-.zoom-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 44px;
-    min-height: 36px;
-    padding: 0 10px;
-    border: none;
-    border-radius: var(--r-full);
-    background: transparent;
-    color: var(--ink-3);
-    font-size: 13.5px;
-    font-weight: 600;
-    font-family: var(--ff-mono);
-    cursor: pointer;
-    transition: all var(--t-fast) var(--ease);
-    letter-spacing: -0.02em;
+    min-height: 44px;
     -webkit-tap-highlight-color: transparent;
 }
-.zoom-btn:hover {
-    background: var(--paper-2);
-    color: var(--ink-2);
+.zoom-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 110px;
 }
-.zoom-btn.active {
+.zoom-tick-labels {
+    position: relative;
+    height: 12px;
+    font-size: 10.5px;
+    font-family: var(--ff-mono);
+    color: var(--ink-3);
+    line-height: 1;
+    letter-spacing: -0.01em;
+}
+.zoom-tick-labels span {
+    position: absolute;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+.zoom-tick-labels span:nth-child(1) { left: 9px; }
+.zoom-tick-labels span:nth-child(2) { left: 50%; }
+.zoom-tick-labels span:nth-child(3) { left: calc(100% - 9px); }
+.zoom-track-wrap {
+    position: relative;
+    height: 18px;
+    display: flex;
+    align-items: center;
+}
+.zoom-track {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 4px;
+    transform: translateY(-50%);
+    background: var(--paper-2);
+    border: 1px solid var(--hair);
+    border-radius: var(--r-full);
+    pointer-events: none;
+}
+.zoom-track span {
+    position: absolute;
+    top: 50%;
+    width: 1.5px;
+    height: 10px;
+    background: var(--ink-2);
+    opacity: 0.4;
+    border-radius: 1px;
+    transform: translate(-50%, -50%);
+}
+.zoom-track span:nth-child(1) { left: 9px; }
+.zoom-track span:nth-child(2) { left: 50%; }
+.zoom-track span:nth-child(3) { left: calc(100% - 9px); }
+.zoom-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 110px;
+    height: 18px;
+    background: transparent;
+    outline: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    position: relative;
+    z-index: 1;
+    -webkit-tap-highlight-color: transparent;
+}
+.zoom-slider::-webkit-slider-runnable-track {
+    background: transparent;
+    border: none;
+    height: 4px;
+}
+.zoom-slider::-moz-range-track {
+    background: transparent;
+    border: none;
+    height: 4px;
+}
+.zoom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: -8px;
+    border-radius: 50%;
     background: var(--blue-700);
-    color: var(--white);
+    border: 2px solid var(--white);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+    cursor: pointer;
+    transition: box-shadow var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+    position: relative;
+    z-index: 2;
+}
+.zoom-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--blue-700);
+    border: 2px solid var(--white);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+    cursor: pointer;
+    transition: box-shadow var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.zoom-slider:hover::-webkit-slider-thumb {
+    transform: scale(1.1);
+}
+.zoom-slider:hover::-moz-range-thumb {
+    transform: scale(1.1);
+}
+.zoom-slider:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.35);
+}
+.zoom-slider:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.35);
 }
 
-/* Zoom — 0.75x režiimis kogu leht skaleerub 75% peale, et rohkem
-   sisu mahub viewport'i. Kompenseerime layout pikkuse, et alumine osa
-   ei jääks tühjaks (zoom on render-skaala, mitte layout-skaala). */
-html.zoom-75 {
-    zoom: 0.75;
-    /* 0.75x = layout 25% pikem kui visuaalne; kompenseerime */
-    height: calc(100% + 25vh);
+/* Page zoom wrapper — sits inside <body>, wraps every page section
+   (header, sidebar, loading, sections, footer). The .zoom-controls
+   element is a sibling of this wrapper, NOT a descendant, so it
+   stays at constant size regardless of zoom. The .zoom-75 class is
+   toggled by the slider JS; --zoom-level is set on this element. */
+.page-zoom {
+    zoom: var(--zoom-level, 1);
+    /* Kompenseerime layout pikkuse, et alumine osa ei jääks tühjaks
+       (zoom on render-skaala, mitte layout-skaala). */
+    height: calc(100% + (1 / var(--zoom-level, 1) - 1) * 100vh);
 }
 @supports not (zoom: 1) {
     /* Firefox < 126 fallback: transform: scale() koos width kompensatsiooniga */
-    html.zoom-75 body {
-        transform: scale(0.75);
+    .page-zoom {
+        transform: scale(var(--zoom-level, 1));
         transform-origin: top left;
-        width: 133.333vw;
-        min-height: 133.333vh;
+        width: calc(100% / var(--zoom-level, 1));
+        min-height: calc(100vh / var(--zoom-level, 1));
     }
 }
 

@@ -26,7 +26,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl019">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl025">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -85,6 +85,7 @@
     </style>
 </head>
 <body>
+    <div class="page-zoom" id="page-zoom">
     <!-- Top Navigation Bar -->
     <header class="hero">
         <div class="nav-left">
@@ -151,11 +152,8 @@
         </div>
     </aside>
 
-    <!-- Site-level zoom toggle (fixed, bottom-left of viewport) -->
-    <div class="zoom-controls" id="zoom-controls">
-        <button class="zoom-btn active" data-zoom="1" aria-label="Tavaline suurus">1x</button>
-        <button class="zoom-btn" data-zoom="0.75" aria-label="Vähenda 75 protsendile">0.75x</button>
-    </div>
+    <!-- Site-level zoom slider lives at the END of <body>, outside .page-zoom,
+         so the page zoom never affects the slider, labels, or ticks. -->
 
     <!-- Loading State -->
     <div id="loading" class="loading hidden" style="display:none">
@@ -508,7 +506,7 @@
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
                     </div>
-                    <h3>EL deforestatsioonikontroll</h3>
+                    <h3>EL deforestatsiooni-kontroll</h3>
                 </div>
                 <p class="section-desc">EL määruse 2023/1115 nõuetele vastavuse kontrollimine</p>
                 <div id="eudr-info">
@@ -761,6 +759,26 @@
             <p class="footer-sources">Andmed: Keskkonnaagentuur, Maa-amet, Eesti Erametsaliit</p>
         </div>
     </footer>
+    </div><!-- /.page-zoom -->
+
+    <!-- Site-level zoom slider (fixed, bottom-left of viewport) -->
+    <div class="zoom-controls" id="zoom-controls">
+        <div class="zoom-stack">
+            <div class="zoom-tick-labels" aria-hidden="true">
+                <span>50</span>
+                <span>75</span>
+                <span>100</span>
+            </div>
+            <div class="zoom-track-wrap">
+                <div class="zoom-track" aria-hidden="true">
+                    <span></span><span></span><span></span>
+                </div>
+                <input type="range" class="zoom-slider" id="zoom-slider"
+                       min="0.5" max="1" step="0.05" value="1"
+                       aria-label="Lehe suurendus">
+            </div>
+        </div>
+    </div>
 
     <script>
     // ═══ api.js ═══
@@ -3092,30 +3110,33 @@
 
     // ═══ Zoom Controls ═══
     (function() {
-        var zoomBtns = document.querySelectorAll('.zoom-btn');
-        var html = document.documentElement;
+        var slider = document.getElementById('zoom-slider');
+        var pageZoom = document.getElementById('page-zoom');
 
-        function setZoom(level) {
-            html.classList.remove('zoom-75');
-            if (level === '0.75') {
-                html.classList.add('zoom-75');
-            }
-            zoomBtns.forEach(function(btn) {
-                btn.classList.toggle('active', btn.getAttribute('data-zoom') === level);
-            });
-            try { localStorage.setItem('terrapoint-zoom', level); } catch(e) {}
+        function applyZoom(level) {
+            level = parseFloat(level);
+            if (isNaN(level) || level <= 0) level = 1;
+            if (level > 1.001) level = 1;
+            pageZoom.style.setProperty('--zoom-level', level);
+            try { localStorage.setItem('terrapoint-zoom', String(level)); } catch(e) {}
         }
 
-        zoomBtns.forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                setZoom(this.getAttribute('data-zoom'));
+        if (slider) {
+            slider.addEventListener('input', function() {
+                applyZoom(this.value);
             });
-        });
+        }
 
         // Restore saved zoom level
         try {
             var saved = localStorage.getItem('terrapoint-zoom');
-            if (saved === '0.75') setZoom('0.75');
+            if (saved) {
+                var num = parseFloat(saved);
+                if (!isNaN(num) && num >= 0.5 && num <= 1) {
+                    if (slider) slider.value = String(num);
+                    applyZoom(num);
+                }
+            }
         } catch(e) {}
     })();
     </script>
