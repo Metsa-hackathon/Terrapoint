@@ -1467,6 +1467,25 @@
         });
         new CenterControl().addTo(map);
 
+        // Kui dashboard oli initMap ajal `display: none` (või mõni esivanem
+        // 0-laiune), Leaflet suurustab kaardi valesti. invalidateSize
+        // sunnib ümberarvutuse peale layout settimist.
+        // - requestAnimationFrame x2: kindel peale paigutust
+        // - 200ms setTimeout: tabas kaartide laadimise järel
+        // - window 'load': kõik ressursid (sh pildid, font) laetud
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() { map.invalidateSize(); });
+        });
+        setTimeout(function() { map.invalidateSize(); }, 200);
+        window.addEventListener('load', function() {
+            setTimeout(function() { map.invalidateSize(); }, 50);
+        });
+        // Kaardi ümberjoonistamine akna suuruse muutumisel
+        var resizeTimer;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function() { map.invalidateSize(); }, 150);
+        });
     }
 
     function showParcel(geometry) {
