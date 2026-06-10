@@ -1344,3 +1344,106 @@ async def serve_css(filename: str):
     if file_path.exists():
         return FileResponse(str(file_path), media_type="text/css")
     return Response(status_code=404)
+
+
+# ─── Maa-amet X-GIS WMS proxy ──────────────────────────────────────────────
+# Maa-amet X-GIS server (xgis.maaamet.ee) does NOT send CORS headers, so
+# browsers block the WMS tile requests from a different origin
+# (net::ERR_BLOCKED_BY_ORB). We proxy the GetMap requests through our
+# backend and add CORS + cache headers so the frontend Leaflet map can
+# load them as <img> tiles.
+#
+# Endpoint: GET /api/tiles/xgis?layer=EESTIFOTO&width=256&height=256
+#                        &srs=EPSG:3301&bbox=540000,6490000,560000,6510000
+#                        &format=image/jpeg&transparent=false&version=1.1.1
+XGIS_SERVICE_ID = "1r03lgo"  # core_aluskaardid — actual basemap service (1q45qgl returns blank at 256x256)
+_xgis_cache: dict[str, bytes] = {}  # simple per-process LRU-like cache
+_XGIS_CACHE_MAX = 512  # tiles
+
+
+@app.get("/api/tiles/xgis")
+async def xgis_tile_proxy(
+    layer: str,
+    bbox: str,             # "minX,minY,maxX,maxY" in the requested SRS units
+    srs: str = "EPSG:3301",
+    width: int = 256,
+    height: int = 256,
+    fmt: str = "image/jpeg",
+    transparent: bool = False,
+    version: str = "1.1.1",
+):
+    """Proxy one WMS GetMap tile from xgis.maaamet.ee, add CORS + cache headers.
+
+    Layer names are whitelisted (alphanumeric + underscore only) and the
+    format is restricted to image/jpeg / image/png to prevent SSRF on the
+    WMS endpoint.
+    """
+    import re as _re
+    if not _re.match(r"^[A-Za-z0-9_]+$", layer):
+        return Response(status_code=400, content=b"invalid layer name")
+    if fmt not in ("image/jpeg", "image/png"):
+        return Response(status_code=400, content=b"invalid format")
+    try:
+        parts = [float(x) for x in bbox.split(",")]
+        if len(parts) != 4:
+            raise ValueError
+    except ValueError:
+        return Response(status_code=400, content=b"invalid bbox")
+    width = max(1, min(2048, int(width)))
+    height = max(1, min(2048, int(height)))
+
+    # Cache key (layer + bbox + size + format). LCC bbox is small ints so safe.
+    cache_key = f"{layer}|{srs}|{','.join(f'{p:g}' for p in parts)}|{width}x{height}|{fmt}"
+    cached = _xgis_cache.get(cache_key)
+    if cached is not None:
+        return Response(
+            content=cached,
+            media_type=fmt,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Cache-Control": "public, max-age=86400",
+            },
+        )
+
+    xgis_url = (
+        f"https://xgis.maaamet.ee/xgis2/service/{XGIS_SERVICE_ID}"
+        f"?SERVICE=WMS&REQUEST=GetMap"
+        f"&LAYERS={layer}"
+        f"&FORMAT={fmt.replace('/', '%2F')}"
+        f"&TRANSPARENT={'true' if transparent else 'false'}"
+        f"&WIDTH={width}&HEIGHT={height}"
+        f"&SRS={srs.replace(':', '%3A')}"
+        f"&BBOX={bbox.replace(',', '%2C')}"
+        f"&VERSION={version}"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(xgis_url, headers={"User-Agent": "Terrapoint/1.0"})
+    except Exception as e:
+        return Response(status_code=502, content=f"xgis upstream error: {e}".encode())
+
+    body = resp.content
+    if resp.status_code != 200 or len(body) < 100:
+        # Return a small transparent PNG (1x1) so Leaflet doesn't loop
+        return Response(
+            content=b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82",
+            media_type="image/png",
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Cache-Control": "no-store",
+            },
+        )
+
+    if len(_xgis_cache) >= _XGIS_CACHE_MAX:
+        # Drop oldest entry (FIFO). dict preserves insertion order in py3.7+
+        _xgis_cache.pop(next(iter(_xgis_cache)))
+    _xgis_cache[cache_key] = body
+
+    return Response(
+        content=body,
+        media_type=fmt,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Cache-Control": "public, max-age=86400",
+        },
+    )
