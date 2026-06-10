@@ -2391,24 +2391,25 @@
     }
 
     // ═══ charts.js ═══
-    // Categorical palette — iga puuliik saab eristatava tooni (soojad/külmad
-    // värvid, kontrastsed heledused). Varasem siniste skaala muutis
-    // kõrvutised sektorid raskesti eristatavaks.
+    // Kategooriline 14-värviline palett — iga puuliik saab unikaalse
+    // tooni, mis on ka kõrvuti segmentides eristatav (Okabe-Ito baasil
+    // laiendatud). Eelmine versioon kasutas liiga palju rohelisi/
+    // pruune — väiksemad sektorid kadusid segaste toonide sisse.
     var SPECIES_COLORS = {
-        MA: '#d4a017',  // Harilik mänd      — kuldne (männi südamik)
-        KU: '#2d6a4f',  // Harilik kuusk     — sügav roheline (okaspuu)
-        KS: '#e9c46a',  // Ainuroheline kask — ere kollane (kasemahl/kask)
-        HB: '#a3b18a',  // Harilik haab      — kahvatu oliivroheline (haab)
-        LH: '#bc6c25',  // Harilik lehis     — roosteoranz (lehis sügisel)
-        LM: '#6d6875',  // Hall lepp         — tuhmhall-lilla (lepa koor)
-        LV: '#386641',  // Salu-lepp         — tume roheline (lepa leht)
-        TA: '#774936',  // Harilik tamm      — rikkalik pruun (tamme puit)
-        SA: '#cba135',  // Harilik saar      — sinepikollane (saare puit)
-        VA: '#d62828',  // Harilik vaher     — punane (vaher sügisel)
-        PK: '#8d6e63',  // Harilik pöök      — soe taupe (pöögi puit)
-        JA: '#588157',  // Harilik jalakas   — keskmine roheline (jalaka lehestik)
-        RE: '#b5c99a',  // Harilik remmelgas — kahvatu kollakasroheline (pajukasv)
-        SP: '#1b4332',  // Siberi seedermänd — väga tume roheline (seeder)
+        MA: '#E69F00',  // Harilik mänd      — oranz (soe, hele)
+        KU: '#0072B2',  // Harilik kuusk     — sinine (külm, tume)
+        KS: '#F0E442',  // Ainuroheline kask — ere kollane
+        HB: '#CC79A7',  // Harilik haab      — roosa
+        LH: '#D55E00',  // Harilik lehis     — vermillion (sügis)
+        LM: '#999999',  // Hall lepp         — neutraalne hall
+        LV: '#009E73',  // Salu-lepp         — teal (sinakasroheline)
+        TA: '#6F4E37',  // Harilik tamm      — tume pruun
+        SA: '#9370DB',  // Harilik saar      — lilla
+        VA: '#DC143C',  // Harilik vaher     — karmiinpunane
+        PK: '#BDB76B',  // Harilik pöök      — tume khaki (oliivikollane)
+        JA: '#556B2F',  // Harilik jalakas   — tume oliivroheline
+        RE: '#7B68EE',  // Harilik remmelgas — keskmine sinakas-lilla
+        SP: '#2F4F4F',  // Siberi seedermänd — tume tahvelhall
     };
 
     // Väärtuse graafik — semantiline värvimine: tulu roheline+sinine,
