@@ -84,8 +84,18 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   ignoreerib getTileUrl override'i).
 - **CSS versioon v19 → v20** (cache bust jkl019 → jkl020).
 
+### Reverted
+- **Lehe suurendamise slider (50/75/100) eemaldatud** — commit
+  218756f lisas bottom-left valge pilli koos noolega (slider thumb).
+  Kasutajad ei oodanud sellist lehe-skaala juhtnuppu ja see jäi
+  segadust tekitavaks. Eemaldatud HTML (.zoom-controls, .page-zoom
+  wrapper), JS init ja kõik sellega seotud CSS reeglid.
+- **Põhikaart kaart.maaamet.ee WMS** — eelnev revert (3e56d8b) tõi
+  tagasi katkise WMS lahenduse. Reapply (e8f15e8) taastas X-GIS
+  1r03lgo proxy + CIR-NGR vaikimisi aluskaardiks.
+
 ### Changed
-- **Zoom 0.75x / 1x nupp viidud kaardist välja** — vana `position: absolute`
+- **Zoom 0.75x / 1x nupp viidud kaardist välja** — vana `position: absolute` — vana `position: absolute`
   `.map-wrapper` sees asendatud `position: fixed` `bottom: 12px; left: 12px`
   poolt, nüüd on nupp kogu lehe vasakus alumises nurgas, mitte kaardi
   sees. Z-index 600 → 1500 (jääb alla nav-header'ile 2000, kuid kõrgem
