@@ -2391,18 +2391,33 @@
     }
 
     // ═══ charts.js ═══
-    // Blue-scale palette — same tokens as CSS, resolved to hex for Chart.js
-    // Sorted by visual weight: dark = largest segment, light = smallest
-    var CHART_PALETTE = ['#0a3d9e', '#1d4ed8', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe'];
+    // Categorical palette — iga puuliik saab eristatava tooni (soojad/külmad
+    // värvid, kontrastsed heledused). Varasem siniste skaala muutis
+    // kõrvutised sektorid raskesti eristatavaks.
     var SPECIES_COLORS = {
-        MA: '#0a3d9e', KU: '#1d4ed8', KS: '#3b82f6', HB: '#60a5fa',
-        LH: '#1e40af', LM: '#2563eb', LV: '#93c5fd', TA: '#07153d',
-        SA: '#3b82f6', VA: '#60a5fa', PK: '#1d4ed8', JA: '#0a3d9e',
-        RE: '#bfdbfe', SP: '#1e40af',
+        MA: '#d4a017',  // Harilik mänd      — kuldne (männi südamik)
+        KU: '#2d6a4f',  // Harilik kuusk     — sügav roheline (okaspuu)
+        KS: '#e9c46a',  // Ainuroheline kask — ere kollane (kasemahl/kask)
+        HB: '#a3b18a',  // Harilik haab      — kahvatu oliivroheline (haab)
+        LH: '#bc6c25',  // Harilik lehis     — roosteoranz (lehis sügisel)
+        LM: '#6d6875',  // Hall lepp         — tuhmhall-lilla (lepa koor)
+        LV: '#386641',  // Salu-lepp         — tume roheline (lepa leht)
+        TA: '#774936',  // Harilik tamm      — rikkalik pruun (tamme puit)
+        SA: '#cba135',  // Harilik saar      — sinepikollane (saare puit)
+        VA: '#d62828',  // Harilik vaher     — punane (vaher sügisel)
+        PK: '#8d6e63',  // Harilik pöök      — soe taupe (pöögi puit)
+        JA: '#588157',  // Harilik jalakas   — keskmine roheline (jalaka lehestik)
+        RE: '#b5c99a',  // Harilik remmelgas — kahvatu kollakasroheline (pajukasv)
+        SP: '#1b4332',  // Siberi seedermänd — väga tume roheline (seeder)
     };
 
+    // Väärtuse graafik — semantiline värvimine: tulu roheline+sinine,
+    // kulu rooste+hall. Kasutaja eristab koheselt tulubaarid kulu baaridest.
     var VALUE_COLORS = {
-        log: '#0a3d9e', pulp: '#1d4ed8', harvest: '#94a3b8', transport: '#cbd5e1',
+        log:        '#2d6a4f',  // Palk       (tulu) — roheline
+        pulp:       '#1d4ed8',  // Paberipuit (tulu) — sinine
+        harvest:    '#bc6c25',  // Varumine   (kulu) — rooste
+        transport:  '#8d99ae',  // Transport  (kulu) — jahe hall
     };
 
     var compositionChart = null;

@@ -46,7 +46,8 @@
     --info:       #1d4ed8;
     --info-bg:    #eff6ff;
 
-    /* Data category palette — blue scale, used for chart segments, donut slices */
+    /* Data category palette — legacy blue scale, pole kasutusel (Chart.js
+       võtab värvid otse JS-st SPECIES_COLORS / VALUE_COLORS kaardist). */
     --data-cat-1: #dbeafe;   /* blue-100 — smallest share */
     --data-cat-2: #93c5fd;   /* blue-300 */
     --data-cat-3: #3b82f6;   /* blue-500 */
