@@ -183,8 +183,8 @@ a { color: var(--blue-700); text-decoration: none; }
 .t-display { font-family: var(--ff-display); font-weight: 400; letter-spacing: -0.02em; line-height: 1.05; }
 .t-eyebrow {
     font-family: var(--ff-sans);
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.14em;
     color: var(--ink-4);
@@ -435,12 +435,12 @@ a { color: var(--blue-700); text-decoration: none; }
     letter-spacing: -0.01em;
 }
 .addr-sub {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--ink-4);
     margin-top: 2px;
 }
 .addr-kataster {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--blue-700);
     margin-top: 4px;
     font-family: var(--ff-mono);
@@ -483,7 +483,7 @@ a { color: var(--blue-700); text-decoration: none; }
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     flex-shrink: 0;
 }
@@ -536,10 +536,10 @@ a { color: var(--blue-700); text-decoration: none; }
 }
 .callout-label {
     font-family: var(--ff-sans);
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
     color: var(--surface-callout-label);
     margin-bottom: var(--s-2);
 }
@@ -567,7 +567,7 @@ a { color: var(--blue-700); text-decoration: none; }
 
 /* Subtle inline links — secondary action with a hairline arrow */
 .muted-link {
-    font-size: 14px;
+    font-size: 14.5px;
     color: var(--blue-700);
     text-decoration: none;
     border-bottom: 1px solid var(--blue-200);
@@ -691,7 +691,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     text-align: center;
     padding: 48px 20px;
     color: var(--ink-4);
-    font-size: 13px;
+    font-size: 14px;
     gap: 6px;
 }
 .sidebar-empty svg { color: var(--ink-6); margin-bottom: 4px; }
@@ -743,7 +743,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 }
 .loading-text {
     font-family: var(--ff-mono);
-    font-size: 12px;
+    font-size: 13px;
     color: var(--ink-4);
     text-align: center;
     letter-spacing: 0.04em;
@@ -810,13 +810,13 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 3px 9px 3px 7px;
+    padding: 4px 11px 4px 9px;
     margin-bottom: 18px;
     background: var(--white);
     border: 1px solid var(--hair);
     border-radius: var(--r-full);
     box-shadow: var(--sh-1);
-    font-size: 12.5px;
+    font-size: 13.5px;
     color: var(--ink-3);
     font-weight: 500;
     letter-spacing: -0.005em;
@@ -897,11 +897,11 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 10px;
+    padding: 5px 12px;
     background: var(--white);
     border: 1px solid var(--hair);
     border-radius: var(--r-full);
-    font-size: 13px;
+    font-size: 14px;
     color: var(--ink-3);
     cursor: pointer;
     transition: all var(--t-fast) var(--ease);
@@ -915,7 +915,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     transform: translateY(-1px);
 }
 .landing-hint .kbd {
-    font-size: 9px;
+    font-size: 11px;
     color: var(--ink-5);
     background: var(--paper-2);
     padding: 1px 4px;
@@ -938,13 +938,13 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 }
 .landing-meta-num {
     font-family: var(--ff-sans);
-    font-size: 24px;
+    font-size: 28px;
     color: var(--ink);
     font-feature-settings: "tnum" 1;
     letter-spacing: -0.02em;
 }
 .landing-meta-label {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--ink-4);
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -1003,7 +1003,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .section-head h2 em { font-style: italic; color: var(--blue-700); }
 .section-head .section-meta {
     font-family: var(--ff-mono);
-    font-size: 11.5px;
+    font-size: 13px;
     color: var(--ink-4);
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -1031,7 +1031,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 }
 .fact:hover { background: var(--paper); }
 .fact-label {
-    font-size: 10.5px;
+    font-size: 12px;
     color: var(--ink-4);
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -1058,7 +1058,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     font-feature-settings: "tnum" 1, "ss01" 1;
 }
 .fact-value .unit {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--ink-4);
     font-weight: 400;
     margin-left: 3px;
@@ -1166,7 +1166,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     backdrop-filter: blur(10px) saturate(140%);
     -webkit-backdrop-filter: blur(10px) saturate(140%);
     box-shadow: var(--sh-2);
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
     letter-spacing: -0.005em;
     line-height: 1.2;
@@ -1235,7 +1235,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     text-align: center;
 }
 .map-confirm-eyebrow {
-    font-size: 10.5px;
+    font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -1370,8 +1370,8 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .map-legend.collapsed .map-legend-section,
 .map-legend.collapsed .map-legend-title { display: none; }
 .map-legend-title {
-    font-weight: 600;
-    font-size: 11.5px;
+    font-weight: 700;
+    font-size: 12.5px;
     color: var(--ink-2);
     margin-bottom: 6px;
     text-transform: uppercase;
@@ -1390,8 +1390,8 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .map-legend-section { margin-bottom: 6px; }
 .map-legend-section:last-child { margin-bottom: 0; }
 .map-legend-subtitle {
-    font-size: 10px;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 700;
     color: var(--ink-4);
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -1403,7 +1403,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     gap: 6px;
     padding: 1px 0;
     line-height: 1.4;
-    font-size: 11.5px;
+    font-size: 13px;
 }
 .legend-swatch {
     width: 12px; height: 12px;
@@ -1540,7 +1540,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 
 .card-head-text { flex: 1; min-width: 0; }
 .card-header h3 {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -1552,7 +1552,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     word-break: break-word;
 }
 .section-desc {
-    font-size: 14px;
+    font-size: 14.5px;
     color: var(--ink-4);
     margin: 4px 0 0;
     line-height: 1.4;
@@ -1578,7 +1578,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    padding: 8px 0;
+    padding: 9px 0;
     font-size: 16px;
     border-bottom: 1px solid var(--paper-3);
     position: relative;
@@ -1587,7 +1587,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .info-row .label {
     color: var(--ink-4);
     font-weight: 400;
-    font-size: 15px;
+    font-size: 15.5px;
     letter-spacing: -0.005em;
     min-width: 0;
 }
@@ -1596,7 +1596,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     font-weight: 500;
     color: var(--ink-2);
     text-align: right;
-    font-size: 15.5px;
+    font-size: 16px;
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
     letter-spacing: -0.005em;
@@ -2322,14 +2322,14 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     letter-spacing: 0;
 }
 .eraldis-sheet-meta {
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--ink-2);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 .eraldis-sheet-sub {
-    font-size: 11.5px;
+    font-size: 12.5px;
     color: var(--ink-4);
     white-space: nowrap;
     overflow: hidden;
@@ -2380,10 +2380,10 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 }
 .chart-card:hover { box-shadow: var(--sh-3); }
 .chart-card h3 {
-    font-size: 10.5px;
+    font-size: 13px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
     color: var(--ink-3);
     margin-bottom: 14px;
     display: flex;
@@ -2477,7 +2477,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12.5px;
+    font-size: 13.5px;
 }
 th, td {
     text-align: left;
@@ -2544,8 +2544,8 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 /* Status badges */
 .toetus-badge {
     flex-shrink: 0;
-    font-size: 11.5px;
-    padding: 4px 10px;
+    font-size: 13px;
+    padding: 5px 12px;
     border-radius: var(--r-full);
     font-weight: 700;
     white-space: nowrap;
@@ -2568,7 +2568,7 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 
 /* Category meta line */
 .toetus-cat {
-    font-size: 12px;
+    font-size: 13.5px;
     color: var(--ink-4);
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -2588,7 +2588,7 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 /* Amount block — labeled, with pill-shaped amounts */
 .toetus-amount-block { display: flex; flex-direction: column; gap: 6px; }
 .toetus-amount-label {
-    font-size: 11.5px;
+    font-size: 13px;
     color: var(--ink-4);
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -2601,11 +2601,11 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 }
 .toetus-amount-pill {
     display: inline-block;
-    padding: 5px 11px;
+    padding: 5px 12px;
     border-radius: var(--r-full);
     background: var(--paper-2);
     color: var(--ink-3);
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 600;
     font-family: var(--ff-mono);
     border: 1px solid var(--hair);
@@ -2652,11 +2652,11 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
     display: flex;
     flex-direction: column;
     gap: 2px;
-    font-size: 13px;
+    font-size: 13.5px;
     line-height: 1.45;
 }
 .toetus-voor-label {
-    font-size: 11.5px;
+    font-size: 13px;
     color: var(--ink-4);
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -2702,7 +2702,7 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
     justify-content: space-between;
     align-items: center;
     padding: 12px 14px;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--ink-3);
     background: var(--paper);
@@ -2712,10 +2712,10 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 .toetus-details-count {
     background: var(--ink-5);
     color: #fff;
-    padding: 2px 9px;
+    padding: 3px 10px;
     border-radius: var(--r-full);
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
     letter-spacing: 0.02em;
 }
 .toetus-details[open] > .toetus-list-ineligible { padding: 12px; border-top: 1px solid var(--hair); }
@@ -2723,7 +2723,7 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 /* Count line */
 .toetus-count {
     padding: 8px 0 0;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     color: var(--ink-4);
     text-align: center;
 }
@@ -2733,7 +2733,7 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
     margin-top: 14px;
     padding-top: 10px;
     border-top: 1px solid var(--hair);
-    font-size: 11px;
+    font-size: 14px;
     color: var(--ink-4);
     text-align: right;
 }
@@ -2757,9 +2757,9 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 .eligible-banner-count {
     background: var(--success);
     color: #fff;
-    padding: 2px 10px;
+    padding: 3px 11px;
     border-radius: var(--r-full);
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
 }
 
@@ -2770,7 +2770,7 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 #kitsendused-info .kitsendused-table .col-kirjeldus { width: 48%; }
 #kitsendused-info .kitsendused-table .col-link { width: 24%; }
 #kitsendused-info th {
-    font-size: 11.5px; padding: 10px 8px; text-align: left;
+    font-size: 13px; padding: 10px 8px; text-align: left;
     border-bottom: 1px solid var(--hair); font-weight: 700;
 }
 #kitsendused-info th:last-child { text-align: right; }
@@ -2817,7 +2817,7 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
     letter-spacing: -0.005em;
 }
 .info-dd-text.show { display: block; }
-.info-dd-text .dd-field { font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+.info-dd-text .dd-field { font-size: 13px; color: var(--ink-3); line-height: 1.5; }
 .info-dd-text .dd-value {
     margin-top: 5px;
     padding-top: 5px;
@@ -2829,7 +2829,7 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 }
 
 /* ═══ UTILITIES ════════════════════════════════════════════════════════════ */
-.muted { color: var(--ink-4); font-size: 12.5px; font-style: italic; }
+.muted { color: var(--ink-4); font-size: 13.5px; font-style: italic; }
 .hidden { display: none !important; }
 
 /* ═══ CARD PLACEHOLDER (ühtne kõikidele sektsioonidele kuni otsing) ═══ */
@@ -2857,14 +2857,14 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
     opacity: 0.55;
 }
 .card-placeholder-title {
-    font-size: 13px;
+    font-size: 14.5px;
     font-weight: 600;
     color: var(--ink-3);
     margin: 0;
     line-height: 1.4;
 }
 .card-placeholder-hint {
-    font-size: 12px;
+    font-size: 13.5px;
     color: var(--ink-5);
     margin: 0;
     line-height: 1.45;
@@ -2888,7 +2888,7 @@ footer {
     letter-spacing: -0.01em;
     font-weight: 400;
 }
-.footer-sources { color: var(--ink-4); font-size: 11.5px; font-family: var(--ff-mono); letter-spacing: 0.02em; }
+.footer-sources { color: var(--ink-4); font-size: 13px; font-family: var(--ff-mono); letter-spacing: 0.02em; }
 
 /* ═══ LEAFLET OVERRIDES ═══════════════════════════════════════════════════ */
 .leaflet-bar,
@@ -2996,14 +2996,14 @@ footer {
 .eraldised-controls button.active { background: var(--blue-700); color: white; border-color: var(--blue-700); }
 .eraldised-table-header {
     display: grid; grid-template-columns: 36px 1fr 65px 65px 70px 75px 90px;
-    padding: 6px 10px; font-size: 11px; text-transform: uppercase; color: var(--ink-4);
-    letter-spacing: 0.06em; font-weight: 600; border-bottom: 1px solid var(--hair);
+    padding: 6px 10px; font-size: 12px; text-transform: uppercase; color: var(--ink-4);
+    letter-spacing: 0.06em; font-weight: 700; border-bottom: 1px solid var(--hair);
     background: var(--paper-2);
     min-width: 460px;
 }
 .eraldised-row {
     display: grid; grid-template-columns: 36px 1fr 65px 65px 70px 75px 90px;
-    padding: 8px 10px; border-bottom: 1px solid var(--hair); font-size: 14px;
+    padding: 9px 10px; border-bottom: 1px solid var(--hair); font-size: 14.5px;
     align-items: center; transition: background 0.1s;
     min-width: 460px;
 }
@@ -3055,13 +3055,13 @@ footer {
 /* Metsateatised table — 4 columns (Tüüp, Staatus, Kehtiv kuni, Pindala) */
 .teatised-table-header {
     display: grid; grid-template-columns: 1.2fr 1fr 1fr 90px;
-    padding: 8px 16px; font-size: 11.5px; text-transform: uppercase; color: var(--ink-4);
-    letter-spacing: 0.06em; font-weight: 600; border-bottom: 1px solid var(--hair);
+    padding: 8px 16px; font-size: 13px; text-transform: uppercase; color: var(--ink-4);
+    letter-spacing: 0.05em; font-weight: 700; border-bottom: 1px solid var(--hair);
     background: var(--paper-2);
 }
 .teatised-row {
     display: grid; grid-template-columns: 1.2fr 1fr 1fr 90px;
-    padding: 10px 16px; border-bottom: 1px solid var(--hair); font-size: 14px;
+    padding: 10px 16px; border-bottom: 1px solid var(--hair); font-size: 14.5px;
     align-items: center; transition: background 0.1s;
 }
 .teatised-row:hover { background: var(--paper-2); }
@@ -3069,8 +3069,8 @@ footer {
 /* Metsateatised staatus — värviline badge nagu toetuste puhul */
 .teatised-status {
     display: inline-flex; align-items: center; gap: 5px;
-    padding: 3px 9px; border-radius: var(--r-full);
-    font-size: 11.5px; font-weight: 600; line-height: 1.3;
+    padding: 4px 11px; border-radius: var(--r-full);
+    font-size: 13px; font-weight: 700; line-height: 1.3;
     letter-spacing: 0.01em;
 }
 .teatised-status::before {
@@ -3157,60 +3157,60 @@ footer {
     .landing-search .search-box button { width: 44px; height: 44px; }
     .landing-search .search-box button svg { width: 16px; height: 16px; }
     .landing-hints { gap: 6px; margin-top: 10px; }
-    .landing-hint { font-size: 11px; padding: 4px 8px; gap: 4px; }
-    .landing-hint .kbd { font-size: 9px; padding: 0px 4px; }
+    .landing-hint { font-size: 13.5px; padding: 6px 11px; gap: 4px; }
+    .landing-hint .kbd { font-size: 10px; padding: 0px 5px; }
     .landing-search .search-icon { display: flex; }
     .landing-search .search-icon svg { width: 18px; height: 18px; }
     .landing-meta { gap: 12px; margin-top: 24px; }
-    .landing-meta-num { font-size: 18px; }
-    .landing-meta-label { font-size: 9px; letter-spacing: 0.04em; }
-    .landing-eyebrow { font-size: 10px; padding: 2px 7px 2px 6px; gap: 4px; margin-bottom: 12px; letter-spacing: 0.01em; }
-    .landing-eyebrow .dot { width: 4px; height: 4px; box-shadow: 0 0 0 2px rgba(4, 120, 87, 0.18); }
+    .landing-meta-num { font-size: 22px; }
+    .landing-meta-label { font-size: 11px; letter-spacing: 0.04em; }
+    .landing-eyebrow { font-size: 11.5px; padding: 3px 9px 3px 8px; gap: 4px; margin-bottom: 12px; letter-spacing: 0.01em; }
+    .landing-eyebrow .dot { width: 5px; height: 5px; box-shadow: 0 0 0 2px rgba(4, 120, 87, 0.18); }
 
     .section-head { flex-direction: column; align-items: flex-start; gap: 4px; }
-    .section-head h2 { font-size: 22px; }
-    .section-head .section-meta { font-size: 10.5px; }
+    .section-head h2 { font-size: 24px; }
+    .section-head .section-meta { font-size: 12px; }
 
     .facts-strip { grid-template-columns: repeat(2, 1fr); gap: 0; }
     .fact { padding: 14px 14px; }
     .fact-value { font-size: 19px; }
-    .fact-label { font-size: 9.5px; }
+    .fact-label { font-size: 11px; }
 
     .metrics-grid { grid-template-columns: 1fr; gap: 12px; }
     .metric-card { grid-column: span 1 !important; padding: 16px 16px 14px; border-radius: var(--r-sm); }
     .metric-card.span-6, .metric-card.span-8, .metric-card.span-12 { grid-column: span 1 !important; }
-    .card-header h3 { font-size: 12px; letter-spacing: 0.08em; }
-    .section-desc { font-size: 13px; }
+    .card-header h3 { font-size: 13.5px; letter-spacing: 0.08em; }
+    .section-desc { font-size: 14.5px; }
     .card-icon { width: 30px; height: 30px; border-radius: 7px; }
     .card-icon svg { width: 14px; height: 14px; }
 
     .card-placeholder { padding: 20px 12px 18px; gap: 6px; }
     .card-placeholder-icon { width: 34px; height: 34px; }
     .card-placeholder-icon svg { width: 18px; height: 18px; }
-    .card-placeholder-title { font-size: 12px; }
-    .card-placeholder-hint { font-size: 11px; }
+    .card-placeholder-title { font-size: 14px; }
+    .card-placeholder-hint { font-size: 13px; }
 
     .eraldised-table-header,
     .eraldised-row {
         grid-template-columns: 32px 1fr 55px 55px 60px 65px 80px;
-        font-size: 10px;
-        padding: 6px 8px;
+        font-size: 12px;
+        padding: 8px 8px;
         min-width: 380px;
     }
-    .eraldised-row { font-size: 12px; }
+    .eraldised-row { font-size: 14px; }
 
-    .info-row { padding: 9px 0; }
-    .info-row .label { font-size: 14px; }
-    .info-row .value { font-size: 14.5px; }
+    .info-row { padding: 10px 0; }
+    .info-row .label { font-size: 15px; }
+    .info-row .value { font-size: 15.5px; }
     .big-number { font-size: 32px; }
-    .big-number .unit { font-size: 13.5px; }
+    .big-number .unit { font-size: 14px; }
     .value-block { padding: 12px 14px 10px; }
-    .value-block-label { font-size: 11.5px; }
-    .value-block .sub { font-size: 12.5px; }
-    .value-block .row { font-size: 13px; gap: 12px; flex-wrap: wrap; }
-    .callout-label { font-size: 11px; }
-    .callout-value { font-size: 1.65rem; }
-    .callout-breakdown { font-size: 0.9rem; }
+    .value-block-label { font-size: 12px; }
+    .value-block .sub { font-size: 13px; }
+    .value-block .row { font-size: 13.5px; gap: 12px; flex-wrap: wrap; }
+    .callout-label { font-size: 12px; }
+    .callout-value { font-size: 1.75rem; }
+    .callout-breakdown { font-size: 0.95rem; }
 
     #map { height: clamp(380px, 60vh, 560px); }
     .map-hint {
@@ -3241,8 +3241,8 @@ footer {
         font-size: 10.5px;
         padding: 6px 8px 5px;
     }
-    .map-legend-title { font-size: 9.5px; }
-    .map-legend-subtitle { font-size: 9px; }
+    .map-legend-title { font-size: 11px; }
+    .map-legend-subtitle { font-size: 10.5px; }
     .map-legend-row { font-size: 10.5px; }
     .map-legend-toggle { width: 18px; height: 18px; font-size: 11px; }
 
@@ -3281,20 +3281,25 @@ footer {
 
     /* Toetused — mobile sizing tweaks */
     .toetus-card { padding: 14px 14px 12px; gap: 9px; }
-    .toetus-title { font-size: 15px; line-height: 1.3; }
-    .toetus-cat { font-size: 11px; letter-spacing: 0.04em; }
-    .toetus-desc { font-size: 13.5px; line-height: 1.55; }
-    .toetus-amount-pill { font-size: 12.5px; padding: 4px 10px; }
-    .toetus-amount-label { font-size: 11px; }
-    .toetus-reason { font-size: 13px; line-height: 1.5; padding: 9px 10px; }
-    .toetus-cta { min-height: 44px; font-size: 14px; }
+    .toetus-title { font-size: 15.5px; line-height: 1.3; }
+    .toetus-cat { font-size: 13px; letter-spacing: 0.04em; }
+    .toetus-desc { font-size: 14px; line-height: 1.55; }
+    .toetus-amount-pill { font-size: 13.5px; padding: 5px 11px; }
+    .toetus-amount-label { font-size: 13px; }
+    .toetus-reason { font-size: 13.5px; line-height: 1.5; padding: 9px 10px; }
+    .toetus-cta { min-height: 44px; font-size: 14.5px; }
     .toetus-footer { padding-top: 10px; gap: 9px; }
-    .toetus-badge { font-size: 10.5px; padding: 3px 9px; }
+    .toetus-badge { font-size: 12.5px; padding: 4px 11px; }
+    .toetus-voor { font-size: 13.5px; }
+    .toetus-voor-label { font-size: 13px; }
+    .toetus-source { font-size: 13.5px; }
+    .toetus-details > .muted-summary { font-size: 14px; }
+    .toetus-details-count { font-size: 12.5px; padding: 3px 9px; }
 
     /* Metsateatised — mobile */
-    .teatised-table-header { font-size: 10.5px; padding: 8px 12px; }
-    .teatised-row { font-size: 13px; padding: 10px 12px; }
-    .teatised-status { font-size: 10.5px; padding: 2px 8px; }
+    .teatised-table-header { font-size: 12.5px; padding: 8px 12px; }
+    .teatised-row { font-size: 14px; padding: 10px 12px; }
+    .teatised-status { font-size: 12.5px; padding: 3px 10px; }
 
     /* ── Touch targets: bump everything that taps to ≥44px on mobile ── */
     .ai-chat-input-wrap input,
@@ -3355,7 +3360,7 @@ footer {
     border-radius: var(--r-full);
     background: transparent;
     color: var(--ink-3);
-    font-size: 12.5px;
+    font-size: 13.5px;
     font-weight: 600;
     font-family: var(--ff-mono);
     cursor: pointer;
@@ -3451,23 +3456,23 @@ html.zoom-75 {
     max-width: calc(100% - 40px);
 }
 .about-photo-caption-title {
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.92);
+    color: rgba(255,255,255,0.95);
     font-family: var(--ff-mono);
 }
 .about-photo-caption-names {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
     letter-spacing: -0.005em;
     color: var(--white);
 }
 @media (max-width: 640px) {
     .about-photo-caption { left: 14px; bottom: 12px; }
-    .about-photo-caption-title { font-size: 10px; }
-    .about-photo-caption-names { font-size: 12px; }
+    .about-photo-caption-title { font-size: 12.5px; }
+    .about-photo-caption-names { font-size: 13.5px; }
 }
 .about-eyebrow {
     display: inline-flex;
@@ -3477,7 +3482,7 @@ html.zoom-75 {
     border-radius: 999px;
     background: var(--ink);
     color: var(--blue-200);
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
     letter-spacing: 0.02em;
     margin-bottom: 24px;
@@ -3571,8 +3576,8 @@ html.zoom-75 {
     border-radius: 999px;
     background: var(--blue-50);
     color: var(--blue-900);
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
     letter-spacing: 0.02em;
     margin-bottom: 16px;
 }
@@ -3658,10 +3663,10 @@ html.zoom-75 {
 .source-card-own .source-link { color: var(--blue-700); }
 .source-card-own .source-icon { color: var(--blue-700); background: var(--blue-50); }
 .source-org {
-    font-size: 10.5px;
+    font-size: 12.5px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     color: var(--blue-700);
     margin-bottom: 4px;
 }
@@ -3673,7 +3678,7 @@ html.zoom-75 {
     line-height: 1.3;
 }
 .source-desc {
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1.5;
     color: var(--ink-3);
     margin: 0;
