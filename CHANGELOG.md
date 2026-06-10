@@ -8,6 +8,16 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 
 ## [Määramata] - 2026-06-10
 
+### Fixed
+- **Desktop: sektsioonid täidavad terve ekraani** — landing ja dashboard
+  olid `max-width: 960px` / `var(--max-w)` piiratud, mistõttu 1920px
+  ekraanil jäi ~192px valget ala mõlemale poole. Eemaldatud max-width
+  piirangud mõlemalt sektsioonilt, lisatud täislaiuses taustad (landing:
+  sinine gradient, dashboard: paper-2 → paper gradient), sisu tsentreeritud
+  `.section > *` kaudu. `.about` vahetatud `paper` → `paper-3` (tumedam
+  sinine, eraldub dashboard'ist). `.contact` sai tugevama `border-top`.
+  Mobiilil jääb laste max-width 100% — sisu täidab ekraani nagu varem.
+
 ### Reverted
 - **Kaart ja sektsioonid tagasi lehe algusesse** — eemaldatud `hidden`
   atribuut `<section id="dashboard">` pealt, et kaart (Leaflet) ja 8

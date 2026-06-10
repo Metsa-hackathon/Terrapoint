@@ -782,8 +782,16 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     position: relative;
     padding: 64px 24px 48px;
     text-align: center;
+    /* Full-bleed background so the section fills the viewport on desktop.
+       Children stay centered via .landing > * max-width below. */
+    background:
+        radial-gradient(ellipse 90% 50% at 50% 0%, rgba(96, 165, 250, 0.10), transparent 65%),
+        linear-gradient(180deg, #eef4fc 0%, var(--paper) 70%, var(--white) 100%);
+}
+.landing > * {
     max-width: 960px;
-    margin: 0 auto;
+    margin-left: auto;
+    margin-right: auto;
 }
 .landing::before {
     content: "";
@@ -945,12 +953,29 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 
 /* ═══ DASHBOARD ════════════════════════════════════════════════════════════ */
 .dashboard {
-    max-width: var(--max-w);
-    margin: 0 auto;
-    padding: 24px 24px 80px;
+    /* Full-bleed so the section fills the viewport on desktop; the
+       "white sides" become the dashboard's own paper-2 background. */
+    max-width: 100%;
+    margin: 0;
+    padding: 24px 0 80px;
+    background: linear-gradient(180deg, var(--paper-2) 0%, var(--paper) 30%, var(--paper) 70%, var(--paper-2) 100%);
     display: flex;
     flex-direction: column;
     gap: 24px;
+}
+.dashboard > * {
+    max-width: 100%;
+    padding-left: 12px;
+    padding-right: 12px;
+}
+@media (min-width: 768px) {
+    .dashboard > * {
+        max-width: var(--max-w);
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 24px;
+        padding-right: 24px;
+    }
 }
 /* `hidden` attribute must beat the `display: flex` above so the
    empty placeholder cards don't bleed into the landing/intro view. */
@@ -3080,8 +3105,12 @@ footer {
     .search-kbd { display: none !important; }
 
     .dashboard {
-        padding: 12px 6px 100px;
+        padding: 12px 0 100px;
         gap: 16px;
+    }
+    .dashboard > * {
+        padding-left: 6px;
+        padding-right: 6px;
     }
 
     .landing {
@@ -3334,7 +3363,7 @@ html.zoom-75 {
 .about {
     position: relative;
     padding: 80px 0 80px;
-    background: var(--paper);
+    background: var(--paper-3);
     overflow: hidden;
 }
 .about-inner {
@@ -3637,7 +3666,7 @@ html.zoom-75 {
 .contact {
     background: var(--white);
     padding: 80px 0;
-    border-top: 1px solid var(--hair);
+    border-top: 1px solid var(--hair-2);
     text-align: center;
 }
 .contact-inner {
