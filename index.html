@@ -25,7 +25,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=24">
+    <link rel="stylesheet" href="/static/css/style.css?v=25">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -367,7 +367,17 @@
                     <h3>Katastriüksuse andmed</h3>
                 </div>
                 <p class="section-desc">Katastritunnus, pindala, sihtotstarve, omand ja asukoht</p>
-                <div id="kataster-info"></div>
+                <div id="kataster-info">
+                    <div class="card-placeholder">
+                        <div class="card-placeholder-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                            </svg>
+                        </div>
+                        <p class="card-placeholder-title">Otsi krunti, et näha andmeid</p>
+                        <p class="card-placeholder-hint">Katastritunnus, pindala, sihtotstarve, omand</p>
+                    </div>
+                </div>
             </div>
 
             <div class="metric-card" id="card-mets">
@@ -383,7 +393,17 @@
                     <h3>Metsaeraldised</h3>
                 </div>
                 <p class="section-desc">Puuliik, vanus, tagavara, boniteet ja liikide koosseis</p>
-                <div id="mets-info"></div>
+                <div id="mets-info">
+                    <div class="card-placeholder">
+                        <div class="card-placeholder-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22V10"/><path d="M12 10c0-4 4-7 8-7-1 5-4 7-8 7z"/><path d="M12 14c0-3-3-5-6-5 1 4 3 5 6 5z"/><line x1="6" y1="22" x2="18" y2="22"/>
+                            </svg>
+                        </div>
+                        <p class="card-placeholder-title">Otsi krunti, et näha eraldisi</p>
+                        <p class="card-placeholder-hint">Puuliik, vanus, tagavara, boniteet, liigid</p>
+                    </div>
+                </div>
             </div>
 
             <div class="metric-card highlight-card" id="card-vaartus">
@@ -396,7 +416,17 @@
                     <h3>Metsa majanduslik väärtus</h3>
                 </div>
                 <p class="section-desc">Metsa ümarmaterjali turuväärtus praeguste hindadega</p>
-                <div id="vaartus-info"></div>
+                <div id="vaartus-info">
+                    <div class="card-placeholder">
+                        <div class="card-placeholder-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                        </div>
+                        <p class="card-placeholder-title">Otsi krunti, et näha väärtust</p>
+                        <p class="card-placeholder-hint">Palk, paberipuit, ümarmaterjali turuhind</p>
+                    </div>
+                </div>
             </div>
 
             <div class="metric-card" id="card-sinik">
@@ -409,7 +439,17 @@
                     <h3>Süsinikuvaru</h3>
                 </div>
                 <p class="section-desc">Metsa süsinikuvaru ja CO2 sidumise potentsiaal</p>
-                <div id="sinik-info"></div>
+                <div id="sinik-info">
+                    <div class="card-placeholder">
+                        <div class="card-placeholder-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                            </svg>
+                        </div>
+                        <p class="card-placeholder-title">Otsi krunti, et näha süsinikuvaru</p>
+                        <p class="card-placeholder-hint">CO2 kogus, sidumise potentsiaal, biomass</p>
+                    </div>
+                </div>
             </div>
 
             <div class="metric-card" id="card-teatised">
@@ -422,7 +462,17 @@
                     <h3>Metsateatised</h3>
                 </div>
                 <p class="section-desc">Kehtivad raie ja metsauuenduse teatised</p>
-                <div id="teatised-info"></div>
+                <div id="teatised-info">
+                    <div class="card-placeholder">
+                        <div class="card-placeholder-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+                            </svg>
+                        </div>
+                        <p class="card-placeholder-title">Otsi krunti, et näha teatisi</p>
+                        <p class="card-placeholder-hint">Kehtivad raie- ja uuendusteatised</p>
+                    </div>
+                </div>
             </div>
 
             <div class="metric-card" id="card-riskid">
@@ -435,7 +485,17 @@
                     <h3>Ohutegurid</h3>
                 </div>
                 <p class="section-desc">Ürask, kuivendamatus, raiesurve ja muud ohud</p>
-                <div id="riskid-info"></div>
+                <div id="riskid-info">
+                    <div class="card-placeholder">
+                        <div class="card-placeholder-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                        </div>
+                        <p class="card-placeholder-title">Otsi krunti, et näha ohte</p>
+                        <p class="card-placeholder-hint">Ürask, kuivendus, raiesurve, kahjustused</p>
+                    </div>
+                </div>
             </div>
 
             <div class="metric-card eudr-card" id="card-eudr">
@@ -449,19 +509,21 @@
                 </div>
                 <p class="section-desc">EL määruse 2023/1115 nõuetele vastavuse kontrollimine</p>
                 <div id="eudr-info">
-                    <p class="eudr-desc">GeoJSON Euroopa Liidu deforestatsiooniregulatsiooni jaoks.</p>
-                    <button id="eudr-btn" class="btn-eudr">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                        </svg>
-                        Laadi alla EUDR GeoJSON
-                    </button>
+                    <div class="card-placeholder">
+                        <div class="card-placeholder-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                        </div>
+                        <p class="card-placeholder-title">Otsi krunti, et kontrollida</p>
+                        <p class="card-placeholder-hint">EL määruse 2023/1115 nõuetele vastavus</p>
+                    </div>
                 </div>
             </div>
 
             <div class="metric-card" id="card-toetused">
                 <div class="card-header">
-                    <div class="card-icon vaartus-icon">
+                    <div class="card-icon toetused-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
                         </svg>
@@ -470,29 +532,37 @@
                 </div>
                 <p class="section-desc">Toetused ja hüvitised metsaomanikule</p>
                 <div id="toetused-info">
-                    <div class="initial-info">
-                        <div class="icon">&#128176;</div>
-                        <p>Otsi krunti, et näha toetusi</p>
-                        <p class="hint">Metsauuendus, hooldusraie, Natura 2000, kaitsealade hüvitised</p>
+                    <div class="card-placeholder">
+                        <div class="card-placeholder-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+                            </svg>
+                        </div>
+                        <p class="card-placeholder-title">Otsi krunti, et näha toetusi</p>
+                        <p class="card-placeholder-hint">Metsauuendus, hooldusraie, Natura 2000, kaitsealade hüvitised</p>
                     </div>
                 </div>
             </div>
 
             <div class="metric-card" id="card-kitsendused">
                 <div class="card-header">
-                    <div class="card-icon risk-icon">
+                    <div class="card-icon kitsendused-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                            <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/>
                         </svg>
                     </div>
                     <h3>Kitsendused ja piirangud</h3>
                 </div>
                 <p class="section-desc">Kaitsealad, piiranguvööndid ja muinsuskaitse</p>
                 <div id="kitsendused-info">
-                    <div class="initial-info">
-                        <div class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
-                        <p>Otsi krunti, et näha kitsendusi</p>
-                        <p class="hint">Kaitsealad, piiranguvööndid, muinsuskaitse</p>
+                    <div class="card-placeholder">
+                        <div class="card-placeholder-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/>
+                            </svg>
+                        </div>
+                        <p class="card-placeholder-title">Otsi krunti, et näha kitsendusi</p>
+                        <p class="card-placeholder-hint">Kaitsealad, piiranguvööndid, muinsuskaitse</p>
                     </div>
                 </div>
                 <div id="kitsendused-link" style="display:none;margin-top:8px">

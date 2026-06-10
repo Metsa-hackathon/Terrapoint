@@ -1496,13 +1496,15 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     border-color: var(--blue-700);
     transform: scale(1.05) rotate(-3deg);
 }
-.kataster-icon { background: var(--blue-50); color: var(--blue-700); border-color: var(--blue-200); }
-.mets-icon     { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
-.vaartus-icon  { background: var(--blue-50); color: var(--blue-700); border-color: var(--blue-200); }
-.sinik-icon    { background: #ecfeff; color: #0e7490; border-color: #a5f3fc; }
-.risk-icon     { background: var(--danger-bg); color: var(--danger); border-color: #fecaca; }
-.eudr-icon     { background: var(--blue-50); color: var(--blue-700); border-color: var(--blue-200); }
-.teatised-icon { background: var(--info-bg); color: var(--info); border-color: var(--blue-200); }
+.kataster-icon     { background: var(--blue-50); color: var(--blue-700); border-color: var(--blue-200); }
+.mets-icon         { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+.vaartus-icon      { background: var(--blue-50); color: var(--blue-700); border-color: var(--blue-200); }
+.sinik-icon        { background: #ecfeff; color: #0e7490; border-color: #a5f3fc; }
+.risk-icon         { background: var(--danger-bg); color: var(--danger); border-color: #fecaca; }
+.eudr-icon         { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
+.teatised-icon     { background: var(--info-bg); color: var(--info); border-color: var(--blue-200); }
+.toetused-icon     { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+.kitsendused-icon  { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
 
 .card-head-text { flex: 1; min-width: 0; }
 .card-header h3 {
@@ -2783,15 +2785,45 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 /* ═══ UTILITIES ════════════════════════════════════════════════════════════ */
 .muted { color: var(--ink-4); font-size: 12.5px; font-style: italic; }
 .hidden { display: none !important; }
-.initial-info {
-    padding: 16px 12px;
+
+/* ═══ CARD PLACEHOLDER (ühtne kõikidele sektsioonidele kuni otsing) ═══ */
+.card-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 16px 24px;
     text-align: center;
     color: var(--ink-4);
-    font-size: 12.5px;
+    border-top: 1px dashed var(--hair);
+    margin-top: 4px;
+    gap: 8px;
 }
-.initial-info .icon { font-size: 18px; margin-bottom: 6px; opacity: 0.4; }
-.initial-info p { margin: 3px 0; }
-.initial-info .hint { font-size: 11.5px; margin-top: 4px; opacity: 0.7; }
+.card-placeholder-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--paper-2);
+    color: var(--ink-4);
+    opacity: 0.55;
+}
+.card-placeholder-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-3);
+    margin: 0;
+    line-height: 1.4;
+}
+.card-placeholder-hint {
+    font-size: 11.5px;
+    color: var(--ink-5);
+    margin: 0;
+    line-height: 1.45;
+    max-width: 240px;
+}
 
 /* ═══ FOOTER ═══════════════════════════════════════════════════════════════ */
 footer {
@@ -3084,6 +3116,12 @@ footer {
     .section-desc { font-size: 12px; }
     .card-icon { width: 30px; height: 30px; border-radius: 7px; }
     .card-icon svg { width: 14px; height: 14px; }
+
+    .card-placeholder { padding: 20px 12px 18px; gap: 6px; }
+    .card-placeholder-icon { width: 34px; height: 34px; }
+    .card-placeholder-icon svg { width: 18px; height: 18px; }
+    .card-placeholder-title { font-size: 12.5px; }
+    .card-placeholder-hint { font-size: 11px; }
 
     .eraldised-table-header,
     .eraldised-row {
