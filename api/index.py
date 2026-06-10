@@ -336,6 +336,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
                 kood = e.get("puuliik_kood")
                 if kood:
                     liikide_koosseis.append({
+                        "eraldis_id": e.get("id"),
                         "puuliik_kood": kood,
                         "puuliik": e.get("puuliik", kood),
                         "tagavara_y_ha": e.get("tagavara_y_ha") or 0,
@@ -377,12 +378,25 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             avg_tagavara = eraldised[0].get("tagavara_y_ha") or 0
             avg_vanus = eraldised[0].get("vanus") or 0
 
-        # Peapuuliik = species with largest total area across all eraldised
-        species_area = {}
+        # Peapuuliik = species with largest total absolute volume (m³) across all
+        # eraldised. This matches the label promise "suurima tagavaraga liik"
+        # and a forester's intuition: a 0.5 ha old-growth spruce stand with 400
+        # m³/ha is more dominant than a 5 ha sparse 10-year-old pine clear-cut
+        # with 20 m³/ha, even though the pine has 10× the area.
+        species_volume = {}
         for e in eraldised:
             kood = e.get("puuliik_kood") or "MA"
-            species_area[kood] = species_area.get(kood, 0) + (e.get("pindala_ha") or 0)
-        puuliik = max(species_area, key=species_area.get) if species_area else "MA"
+            volume = (e.get("tagavara_y_ha") or 0) * (e.get("pindala_ha") or 0)
+            species_volume[kood] = species_volume.get(kood, 0) + volume
+        if species_volume and max(species_volume.values()) > 0:
+            puuliik = max(species_volume, key=species_volume.get)
+        else:
+            # Fallback: no volume data at all — use area
+            species_area = {}
+            for e in eraldised:
+                kood = e.get("puuliik_kood") or "MA"
+                species_area[kood] = species_area.get(kood, 0) + (e.get("pindala_ha") or 0)
+            puuliik = max(species_area, key=species_area.get) if species_area else "MA"
         # Pick primary eraldis from peapuuliik species (largest area within that species)
         peapuuliik_eraldised = [e for e in eraldised if (e.get("puuliik_kood") or "MA") == puuliik]
         primary = max(peapuuliik_eraldised, key=lambda e: (e.get("pindala_ha") or 0)) if peapuuliik_eraldised else max(eraldised, key=lambda e: (e.get("pindala_ha") or 0))
@@ -396,25 +410,44 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             if not species_only:
                 species_only = liikide_koosseis  # fallback to all if no valid species
 
-            # Aggregate by species code
+            # Aggregate by species code.
+            # Per-element tagavara_y_ha × parent eraldis pindala_ha = absolute
+            # volume (m³) of that element. Sum within (eraldis, species) first
+            # to avoid double-counting when an eraldis has multiple elements
+            # of the same species. This way the chart proportions match the
+            # peapuuliik "suurima tagavaraga liik" definition.
+            eraldis_pindala_map = {e.get("id"): (e.get("pindala_ha") or 0) for e in eraldised if e.get("id") is not None}
+            # species -> {puuliik, puuliik_kood, total_volume_m3, vanus_sum, count}
             aggregated = {}
-            for e in species_only:
-                kood = e.get("puuliik_kood", "")
+            # eraldis_id -> species -> summed tagavara_y_ha
+            eraldis_species_tagavara = {}
+            for el in species_only:
+                eid = el.get("eraldis_id")
+                kood = el.get("puuliik_kood", "")
+                if not kood:
+                    continue
+                eraldis_species_tagavara.setdefault(eid, {}).setdefault(kood, 0)
+                eraldis_species_tagavara[eid][kood] += (el.get("tagavara_y_ha") or 0)
                 if kood not in aggregated:
-                    aggregated[kood] = {"puuliik": e.get("puuliik"), "puuliik_kood": kood, "tagavara_y_ha": 0, "vanus_sum": 0, "count": 0}
-                aggregated[kood]["tagavara_y_ha"] += (e.get("tagavara_y_ha") or 0)
-                aggregated[kood]["vanus_sum"] += (e.get("vanus") or 0)
+                    aggregated[kood] = {"puuliik": el.get("puuliik"), "puuliik_kood": kood, "total_volume_m3": 0, "vanus_sum": 0, "count": 0}
+                aggregated[kood]["vanus_sum"] += (el.get("vanus") or 0)
                 aggregated[kood]["count"] += 1
+
+            for eid, species_in_erald in eraldis_species_tagavara.items():
+                pindala = eraldis_pindala_map.get(eid, 0)
+                for kood, sum_tagavara_per_ha in species_in_erald.items():
+                    if kood in aggregated:
+                        aggregated[kood]["total_volume_m3"] += sum_tagavara_per_ha * pindala
 
             species_list = list(aggregated.values())
 
-            # Use tagavara for proportions; fall back to equal if all zero
-            total_tagavara = sum(s["tagavara_y_ha"] for s in species_list)
-            if total_tagavara > 0:
+            # Use absolute volume (m³) for proportions; fall back to equal if all zero
+            total_volume = sum(s["total_volume_m3"] for s in species_list)
+            if total_volume > 0:
                 # First pass: raw percentages, filter <1%
                 raw_pcts = []
                 for s in species_list:
-                    pct = round(s["tagavara_y_ha"] / total_tagavara * 100)
+                    pct = round(s["total_volume_m3"] / total_volume * 100)
                     if pct < 1:
                         continue
                     raw_pcts.append((s, pct))
@@ -427,7 +460,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
                 for s, pct in raw_pcts:
                     koosseis_with_osakaal.append({
                         "puuliik": s["puuliik"], "puuliik_kood": s["puuliik_kood"],
-                        "tagavara_y_ha": round(s["tagavara_y_ha"], 1),
+                        "tagavara_y_ha": round(s["total_volume_m3"] / total_pindala, 1) if total_pindala else 0,
                         "vanus": round(s["vanus_sum"] / s["count"]) if s["count"] else 0,
                         "osakaal": pct,
                     })
@@ -453,7 +486,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
                 for s, pct in raw_area_pcts:
                     koosseis_with_osakaal.append({
                         "puuliik": s["puuliik"], "puuliik_kood": s["puuliik_kood"],
-                        "tagavara_y_ha": round(s["tagavara_y_ha"], 1) if s["tagavara_y_ha"] else 0,
+                        "tagavara_y_ha": 0,
                         "vanus": round(s["vanus_sum"] / s["count"]) if s["count"] else 0,
                         "osakaal": pct,
                     })
@@ -463,7 +496,11 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         raie = cutting_age_indicator(int(avg_vanus or 0), puuliik, boniteet)
 
         # Build eraldised summary for frontend (including geometry and per-eraldis value)
-        puuliik_nimi_map = {"MA": "harilik mänd", "KU": "harilik kuusk", "KS": "ainuroheline kask", "HB": "harilik haab", "LH": "harilik lehis", "LM": "hall lepp", "LV": "salu-lepp"}
+        # Short names that match SPECIES_NAMES in services/metsaregister.py,
+        # so the "Peapuuliik" label and the chart species legend show the
+        # same name (previously they diverged: "harilik mänd" vs "Mänd").
+        from services.metsaregister import SPECIES_NAMES
+        puuliik_nimi_map = SPECIES_NAMES
         eraldised_summary = []
         for e in eraldised:
             geom = e.get("geometry")

@@ -142,6 +142,7 @@ async def query_eraldis_element(eraldis_id: int) -> list[dict]:
         p = feat.get("properties", {})
         kood = p.get("puuliik_kood", "")
         result.append({
+            "eraldis_id": eraldis_id,
             "puuliik": SPECIES_NAMES.get(kood, kood),
             "puuliik_kood": kood,
             "vanus": p.get("vanus", 0),
