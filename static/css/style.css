@@ -809,14 +809,14 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .landing-eyebrow {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 10px 4px 8px;
+    gap: 5px;
+    padding: 3px 9px 3px 7px;
     margin-bottom: 18px;
     background: var(--white);
     border: 1px solid var(--hair);
     border-radius: var(--r-full);
     box-shadow: var(--sh-1);
-    font-size: 15px;
+    font-size: 12.5px;
     color: var(--ink-3);
     font-weight: 500;
     letter-spacing: -0.005em;
@@ -3682,7 +3682,7 @@ html.zoom-75 {
     .contact-inner { padding: 0 20px; }
 }
 .contact-title {
-    font-size: clamp(28px, 4vw, 40px);
+    font-size: clamp(20px, 3vw, 30px);
     line-height: 1.15;
     color: var(--ink);
     letter-spacing: -0.02em;
@@ -3704,11 +3704,11 @@ html.zoom-75 {
 }
 .contact-email {
     display: inline-block;
-    font-size: 17px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--blue-700);
     text-decoration: none;
-    padding: 12px 24px;
+    padding: 9px 18px;
     border: 1px solid var(--blue-200);
     border-radius: 999px;
     background: var(--blue-50);
