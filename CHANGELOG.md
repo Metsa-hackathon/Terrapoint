@@ -2,6 +2,25 @@
 
 Kõik olulised muudatused Terrapoint repositooriumis.
 
+> **Domeen**: tootmine töötab aadressil **terrapoint.ee** (Vercel custom
+> domain). `terrapoint.vercel.app` on sama projekti alias — push master
+> branchi uuendab mõlemat korraga.
+
+## [Määramata] - 2026-06-10
+
+### Changed
+- **Zoom 0.75x / 1x nupp viidud kaardist välja** — vana `position: absolute`
+  `.map-wrapper` sees asendatud `position: fixed` `bottom: 12px; left: 12px`
+  poolt, nüüd on nupp kogu lehe vasakus alumises nurgas, mitte kaardi
+  sees. Z-index 600 → 1500 (jääb alla nav-header'ile 2000, kuid kõrgem
+  kui muu lehe sisu). JS ei muutunud — `setZoom` töötab endiselt
+  `html.zoom-75` klassiga ja localStorage võti `terrapoint-zoom` säilib.
+
+### Docs
+- `CLAUDE.md` uuendatud: `terrapoint.ee` märgitud primaarse domeenina,
+  selgitatud et `terrapoint.vercel.app` on sama Vercel projekti alias.
+  Lisatud juhised hard refreshi kohta pärast deploy't.
+
 ## [Määramata] - 2026-06-09
 
 ### Fixed

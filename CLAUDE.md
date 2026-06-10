@@ -27,9 +27,16 @@ Metsa väärtuse ja andmete analüüsi veebirakendus. FastAPI backend + HTML/CSS
 - Kui bash käsk tagastab "exit code 1", ära proovi sama käsku uuesti — proovi alternatiivset lahendust.
 
 ## Keskkond
-- Vercel hostib frontend: terrapoint.vercel.app
+- **Tootmise domeen**: `terrapoint.ee` (Verceli custom domain, sama projekt
+  mis `terrapoint.vercel.app` — mõlemad on sama Vercel deployment, push
+  master branchi → mõlemad värskenevad kohe)
+- Vercel hostib frontend: `terrapoint.ee` (primary), `terrapoint.vercel.app` (alias)
 - Traefik proxyb backendi: 10.0.4.1:8099
 - Docker võrgud: coolify gateway 10.0.1.1, n8n 10.0.1.9
 
 ## Olulised reeglid
 - Kõik peab olema Verceliga ühilduv — frontend deployitakse Vercelile
+- Pärast `git push` oota ~30s Verceli deploy'ks, siis kontrolli brauseris
+  `terrapoint.ee` (cache võib vajada hard refresh: Cmd/Ctrl+Shift+R)
+- MD failid: `CLAUDE.md` (agent kontekst), `CHANGELOG.md` (ajalugu).
+  Ei ole eraldi `AGENTS.md` / `OPENCODE.md` — kogu agent info on `CLAUDE.md`-s.
