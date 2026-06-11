@@ -18,8 +18,6 @@
     <meta name="twitter:image" content="https://terrapoint.vercel.app/static/og-image.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
-    <script src="https://unpkg.com/proj4leaflet@1.0.2/src/proj4leaflet.js"></script>
     <!--     <!-- Maa-amet WMS layers use built-in L.tileLayer.wms; no extra plugin needed. -->
  -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -1359,137 +1357,75 @@
     }
 
     function initMap() {
-        // Map runs in Estonian LCC (EPSG:3301) because that's the only CRS the
-        // Maa-amet aluskaardid / ajalooline WMS endpoints serve. Maa-amet LCC
-        // WMS layers work directly in this projection. Web-Mercator tile
-        // providers (OSM, Esri) require reprojection which is too costly to
-        // do client-side per-tile, so we keep them as a separate optional
-        // overlay (turned off by default) — switching the basemap to them
-        // shows the area in a different projection (visually skewed) and
-        // an info banner warns the user.
-        proj4.defs('EPSG:3301', '+proj=lcc +lat_0=57.51755393055556 +lon_0=24 +lat_1=59.33333333333334 +lat_2=58 +x_0=500000 +y_0=6375000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
-        const estonianCrs = new L.Proj.CRS('EPSG:3301', '+proj=lcc +lat_0=57.51755393055556 +lon_0=24 +lat_1=59.33333333333334 +lat_2=58 +x_0=500000 +y_0=6375000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs', {
-            resolutions: [4000, 2000, 1000, 500, 250, 125, 62.5, 31.25, 15.625, 7.8125, 3.90625, 1.953125, 0.9765625, 0.48828125, 0.244140625],
-            origin: [40500, 5993000],
-        });
-
+        // Kaart töötab Web Mercator (EPSG:3857) projektsioonis — see on
+        // kõigi standardsete satelliit-tile-teenuste (Esri, Bing, OSM)
+        // loomulik CRS. Kataster WMS gsavalik.envir.ee toetab EPSG:3857.
+        // Eesti põhjalaiustel (59°N) Web Mercatori moonutus on ~1-2%
+        // võrreldes LCC-ga — metsakinnistu piiride jaoks aktsepteeritav.
         map = L.map('map', {
-            crs: estonianCrs,
+            crs: L.CRS.EPSG3857,
             zoomControl: false,
             attributionControl: true,
+            minZoom: 3,
+            maxZoom: 19,
         }).setView([58.5, 25.0], 7);
         L.control.zoom({ position: 'topright' }).addTo(map);
 
-        // Maa-amet X-GIS WMS proxy läbi meie backendi (/api/tiles/xgis).
-        // X-GIS server (xgis.maaamet.ee) ei saada CORS päiseid, mistõttu
-        // brauser blokeeriks WMS päringud (net::ERR_BLOCKED_BY_ORB). Meie
-        // proxy vahendab GetMap päringud, lisab CORS + cache päised.
+        // ═══ Aluskaardid: 2 satelliidikihti ═══
+        // 1. Esri World Imagery — värskeim (uusimad lennud/satelliidifotod).
+        //    Vaikimisi.
+        // 2. Esri Wayback 2026-02-26 (timeId 64001) — Esri talvise väljalaske
+        //    ajalooline pilt (2026-02-26). Märkus: Esri World Imagery baas
+        //    on Eesti jaoks valdavalt suvised aerofotod, mistõttu 2026-02-26
+        //    pildil ei pruugi lund näha olla (kinnistu piiride ja metsa
+        //    kontrollimiseks sobib). Päris talvise sat-pildi jaoks
+        //    vajaks NASA GIBS MODIS/VIIRS daily (250-375m, pilved) või
+        //    Sentinel-2 (talve mosaiiki pole vaba tile-teenusena).
+        //    Wayback timeId on valitud kõige uuem talvine väljalase.
         //
-        // Service: 1r03lgo (Maa-ameti aluskaardid / core_aluskaardid). 1q45qgl
-        // (default view) tagastab 500 vea 256x256 juures, 1r03lgo töötab.
-        //
-        // Oluline: Maa-ameti of10000, pohi_vr2 jt kihid on ScaleHint
-        // max=8.98 (1:8984) - tühjaks jäävad bbox > 1km. Ainuke kiht
-        // mis töötab kõigil suumidel on cir_ngr (CIR-NGR metsanduslik
-        // ortofoto). Seetõttu on see vaikimisi aluskaardiks.
-        const ProxyXgisLayer = L.GridLayer.extend({
-            createTile: function(coords) {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.alt = '';
-                img.setAttribute('role', 'presentation');
-                const size = this.getTileSize();
-                // Convert tile coords to LCC EPSG:3301 bbox.
-                // coords.x/y are in tile-space; tile pixel = size units;
-                // we project the 4 corners of the tile into LCC using the
-                // standard Web Mercator tile scheme (origin top-left,
-                // x grows east, y grows south) and reproject each corner
-                // to LCC for the bbox.
-                const tileSizeLL = this._map.unproject([coords.x * size.x, coords.y * size.y], coords.z);
-                const tileSizeLL2 = this._map.unproject([(coords.x + 1) * size.x, (coords.y + 1) * size.y], coords.z);
-                const p1 = proj4('EPSG:4326', 'EPSG:3301', [tileSizeLL.lng, tileSizeLL.lat]);
-                const p2 = proj4('EPSG:4326', 'EPSG:3301', [tileSizeLL2.lng, tileSizeLL2.lat]);
-                const minX = Math.min(p1[0], p2[0]), maxX = Math.max(p1[0], p2[0]);
-                const minY = Math.min(p1[1], p2[1]), maxY = Math.max(p1[1], p2[1]);
-                const bbox = `${minX},${minY},${maxX},${maxY}`;
-                img.src = `/api/tiles/xgis?layer=${this.options.layerName}&width=${size.x}&height=${size.y}&srs=EPSG%3A3301&bbox=${bbox}&fmt=${encodeURIComponent(this.options.fmt)}&version=1.1.1`;
-                img.onerror = () => { img.style.opacity = '0.15'; };
-                return img;
-            },
-        });
-        function xgisLayer(layerName, format, opts) {
-            return new ProxyXgisLayer(Object.assign({
-                maxZoom: 17, minZoom: 3, tileSize: 256,
-                layerName: layerName, fmt: format || 'image/jpeg',
-                attribution: opts.attribution || '',
-            }));
-        }
+        // Mõlemad on tasuta, ilma API võtmeta, attribution nõutav.
+        const suviFoto = L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            {
+                maxZoom: 19, minZoom: 3,
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+            }
+        );
 
-        // Vaikimisi aluskaart: CIR-NGR metsanduslik ortofoto (Maa-amet).
-        // Töötab kõigil suumidel - tervislik taimik erkpunane, lehtpuud
-        // leheta (kevadine lend märts-mai). Parim metsa tervise
-        // hindamiseks, mistõttu on vaikimisi.
-        const suviFoto = xgisLayer('cir_ngr', 'image/jpeg', {
-            attribution: '&copy; Maa-amet (metsanduslik ortofoto, CIR-NGR)',
-        });
+        const talveFoto = L.tileLayer(
+            'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/64001/{z}/{y}/{x}',
+            {
+                maxZoom: 19, minZoom: 3,
+                attribution: 'Esri Wayback 2026-02-26 &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+            }
+        );
 
-        // Ametlik värviline ortofoto (of10000) - töötab AINULT z>=15
-        // (bbox < 1km). Mujal jätab Maa-amet tühja tagi.
-        const ametlikOrto = xgisLayer('of10000', 'image/jpeg', {
-            attribution: '&copy; Maa-amet (ortofoto, värskeim, z≥15)',
-        });
-
-        // Põhikaart (pohi_vr2) - värviline rasterpõhikaart (töötab z≥15)
-        const pohiKaart = xgisLayer('pohi_vr2', 'image/png', {
-            attribution: '&copy; Maa-amet (põhikaart, z≥15)',
-        });
-
-        // Reljeef (pohi_vv) - põhikaart koos reljeefivarjutusega (z≥15)
-        const reljeefKaart = xgisLayer('pohi_vv', 'image/png', {
-            attribution: '&copy; Maa-amet (reljeef, z≥15)',
-        });
-
-        // Hallkaart (pohi_mvr2) - mustvalge rasterpõhikaart (z≥15)
-        const hallKaart = xgisLayer('pohi_mvr2', 'image/png', {
-            attribution: '&copy; Maa-amet (hallkaart, z≥15)',
-        });
-
-        // Esri World Imagery ja OpenStreetMap on Web-Mercatori põhised
-        // tile-teenused — nad ei tööta LCC (EPSG:3301) projektsiooniga:
-        // Leaflet arvutab LCC-s y-tile koordinaadid väljaspool Web-Mercatori
-        // [0..2^z-1] vahemikku (nt z=7, y=-62), server tagastab
-        // "Map data not yet available" placeholder'i. Seetõttu on
-        // need kaks aluskaarti aluskaartide valikust eemaldatud —
-        // kõik 5 Maa-ameti kihti töötavad LCC-proxy kaudu.
-        // (Vajadusel saab Web-Mercatori kihi lisada eraldi Web-Mercatori
-        // CRS-iga vaatesse, kuid siis kaovad Maa-ameti kihid.)
-
+        // Vaikimisi: suvine Esri satelliidifoto
         suviFoto.addTo(map);
 
-        // Cadastre WMS overlay (Maa-amet / gsavalik) — boundaries always toggleable
+        // Cadastre WMS overlay (Maa-amet / gsavalik) — katastripiiride
+        // kiht, alati sisse lülitatud (kasutaja saab vajadusel eemaldada).
+        // GetCapabilities kinnitab EPSG:3857 tuge. crs=EPSG:3857 WMS 1.3.0 jaoks.
         katasterWmsLayer = L.tileLayer.wms('https://gsavalik.envir.ee/geoserver/kataster/wms', {
             layers: 'ky_kehtiv',
             format: 'image/png',
             transparent: true,
-            version: '1.1.0',
+            version: '1.3.0',
+            crs: L.CRS.EPSG3857,
             opacity: 0.85,
-            attribution: '&copy; Maa-amet kataster',
+            attribution: '&copy; Maa- ja Ruumiamet kataster',
             zIndex: 350,
         }).addTo(map);
 
         // Click anywhere on map → reverse-lookup the cadastre at that point → run search
         map.on('click', handleMapClick);
 
+        // Aluskaardi vahetaja — 2 kihti (suvi + Esri Wayback talve väljalase).
+        // Vaikimisi kokkupandud (näitab ainult kihtide ikooni, avaneb klõpsuga).
         var baseLayers = {
-            'Metsanduslik ortofoto (Maa-amet, CIR-NGR)': suviFoto,
-            'Ametlik ortofoto (Maa-amet, z≥15)': ametlikOrto,
-            'Põhikaart (Maa-amet, z≥15)': pohiKaart,
-            'Reljeef (Maa-amet, z≥15)': reljeefKaart,
-            'Hallkaart (Maa-amet, z≥15)': hallKaart,
+            'Esri satelliit (värskeim)': suviFoto,
+            'Esri Wayback 2026-02-26': talveFoto,
         };
-        // Aluskaardi vahetaja on vaikimisi kokkupandud — kuvatakse ainult
-        // kihtide ikoon. Avaneb klõpsuga. Mitte-expandituna see võtab ~30%
-        // kaardi pindalast (desktop) / ~50% (phone) ja varjab sisu.
         L.control.layers(baseLayers, null, { position: 'bottomleft', collapsed: true }).addTo(map);
 
         // Center button

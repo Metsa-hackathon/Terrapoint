@@ -8,6 +8,26 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 
 ## [Määramata] - 2026-06-11
 
+### Changed
+- **Kaart: alustusest uus — Web Mercator + 2 satelliidikihti** —
+  eemaldatud LCC (EPSG:3301) CRS, proj4/proj4leaflet sõltuvused
+  ja kõik 5 Maa-ameti X-GIS aluskaarti (CIR-NGR, ametlik ortofoto,
+  põhikaart, reljeef, hallkaart). Kaart on nüüd Web Mercator
+  (EPSG:3857) ja kasutab kahte Esri satelliidikihti:
+  - **Esri satelliit (värskeim)** — vaikimisi
+    `https://server.arcgisonline.com/.../World_Imagery/MapServer/tile/{z}/{y}/{x}`
+  - **Esri Wayback 2026-02-26** (timeId 64001) — uusim talvine
+    väljalase. NB! Esri World Imagery baaspilt on Eesti jaoks
+    valdavalt suvised aerofotod, mistõttu 2026-02-26 pildil ei
+    pruugi lund näha olla. Päris talvise sat-pildi jaoks oleks
+    vaja NASA GIBS MODIS/VIIRS daily (250-375m, pilvine) või
+    Sentinel-2 (talve mosaiiki pole vaba tile-teenusena).
+  Katastri WMS (`gsavalik.envir.ee`) on uuendatud Web Mercatorile
+  (`crs=EPSG:3857`, WMS 1.3.0). Kliki-otsing, otsingukast ja
+  kõik 12 KIHID kihti (GeoJSON WFS päringutest) töötavad
+  muutumatult — Leaflet reprojseerib GeoJSON automaatselt.
+  `proj4` ja `proj4leaflet` script-id eemaldatud HTML head-ist.
+
 ### Fixed
 - **Kaart: aluskaardi vahetaja kokkupanduna vaikimisi** —
   `L.control.layers(..., { collapsed: false })` puhul kuvas Leaflet
