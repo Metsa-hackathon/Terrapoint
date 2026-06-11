@@ -1454,16 +1454,15 @@
             attribution: '&copy; Maa-amet (hallkaart, z≥15)',
         });
 
-        // Esri World Imagery - Web Mercator tile cache, displayed in LCC
-        // (visually accurate at zoom <12, mildly stretched at higher zooms)
-        const esriFoto = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 19, minZoom: 3, attribution: '&copy; Esri (satelliit)',
-        });
-
-        // OpenStreetMap - Web Mercator tile cache, displayed in LCC
-        const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19, minZoom: 3, attribution: '&copy; OpenStreetMap',
-        });
+        // Esri World Imagery ja OpenStreetMap on Web-Mercatori põhised
+        // tile-teenused — nad ei tööta LCC (EPSG:3301) projektsiooniga:
+        // Leaflet arvutab LCC-s y-tile koordinaadid väljaspool Web-Mercatori
+        // [0..2^z-1] vahemikku (nt z=7, y=-62), server tagastab
+        // "Map data not yet available" placeholder'i. Seetõttu on
+        // need kaks aluskaarti aluskaartide valikust eemaldatud —
+        // kõik 5 Maa-ameti kihti töötavad LCC-proxy kaudu.
+        // (Vajadusel saab Web-Mercatori kihi lisada eraldi Web-Mercatori
+        // CRS-iga vaatesse, kuid siis kaovad Maa-ameti kihid.)
 
         suviFoto.addTo(map);
 
@@ -1487,10 +1486,11 @@
             'Põhikaart (Maa-amet, z≥15)': pohiKaart,
             'Reljeef (Maa-amet, z≥15)': reljeefKaart,
             'Hallkaart (Maa-amet, z≥15)': hallKaart,
-            'Suvi (Esri satelliit)': esriFoto,
-            'OpenStreetMap': osm,
         };
-        L.control.layers(baseLayers, null, { position: 'bottomleft', collapsed: false }).addTo(map);
+        // Aluskaardi vahetaja on vaikimisi kokkupandud — kuvatakse ainult
+        // kihtide ikoon. Avaneb klõpsuga. Mitte-expandituna see võtab ~30%
+        // kaardi pindalast (desktop) / ~50% (phone) ja varjab sisu.
+        L.control.layers(baseLayers, null, { position: 'bottomleft', collapsed: true }).addTo(map);
 
         // Center button
         var CenterControl = L.Control.extend({

@@ -8,6 +8,24 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 
 ## [Määramata] - 2026-06-11
 
+### Fixed
+- **Kaart: aluskaardi vahetaja kokkupanduna vaikimisi** —
+  `L.control.layers(..., { collapsed: false })` puhul kuvas Leaflet
+  7 aluskaardi nimekirja kogu aeg lahti (võttis ~30% kaardi pindalast
+  desktopil, ~50% mobiilil, lõikas mobiilil "OpenStreetMap" rea
+  välja). Nüüd `collapsed: true` — näidatakse ainult kihtide
+  ikooni, avaneb klõpsuga.
+
+- **Kaart: eemaldatud Esri satelliit ja OpenStreetMap valikust** —
+  mõlemad on Web-Mercatori põhised tile-teenused, mis ei tööta
+  LCC (EPSG:3301) projektsiooniga: Leaflet arvutab LCC-s
+  y-tile koordinaadid väljaspool Web-Mercatori `[0..2^z-1]`
+  vahemikku (nt z=7 vaates y=-62), Maa-ameti/Esmi/OSM server
+  tagastab "Map data not yet available" placeholder'i. Kõik 5
+  allesjäänud Maa-ameti aluskaarti (CIR-NGR, ametlik ortofoto,
+  põhikaart, reljeef, hallkaart) töötavad LCC-proxy
+  (`/api/tiles/xgis`) kaudu kõigil suumidel.
+
 ### Changed
 - **Zoom nuppude asemel slider** — alumise vasakpoolse `1x / 0.75x`
   kahe-nupu toggle'i asemel nüüd pidev `<input type="range">` slider
