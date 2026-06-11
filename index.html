@@ -24,7 +24,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl027">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl028">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -1365,11 +1365,19 @@
         map = L.map('map', {
             crs: L.CRS.EPSG3857,
             zoomControl: false,
-            attributionControl: true,
+            // Eemaldame vaikimisi atribuudi — lisame oma, kujundatud
+            // kokkupandavana (väike "i" ikoon nurgas, hover/klõpsuga
+            // avaneb täistekst). Esri ja Maa-ameti atribuudid on
+            // juriidiliselt nõutavad (Esri ToS + CC-BY 4.0) — neid
+            // ei saa täielikult eemaldada, ainult peita kokkupanduna.
+            attributionControl: false,
             minZoom: 3,
             maxZoom: 19,
         }).setView([58.5, 25.0], 7);
         L.control.zoom({ position: 'topright' }).addTo(map);
+        // Leaflet atribuut ilma "Leaflet" prefix'ita (Leaflet pole
+        // nõutav kuvada). CSS teeb selle kokkupandavaks.
+        L.control.attribution({ position: 'bottomright', prefix: false }).addTo(map);
 
         // ═══ Aluskaardid: 2 satelliidikihti ═══
         // 1. Esri World Imagery — värskeim (uusimad lennud/satelliidifotod).

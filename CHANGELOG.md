@@ -9,6 +9,10 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 ## [Määramata] - 2026-06-11
 
 ### Changed
+- **Kaart: atribuut kokkupanduna** — Esri/Maa-ameti atribuut (Esri ToS +
+  CC-BY 4.0 nõutav) on nüüd vaikimisi väike "i" ikoon nurgas
+  (26×23px), hover/klõpsuga avaneb täistekst. "Leaflet" prefiks
+  eemaldatud (pole nõutav). CSS versioon v27 → v28 (cache bust).
 - **Kaart: alustusest uus — Web Mercator + 2 satelliidikihti** —
   eemaldatud LCC (EPSG:3301) CRS, proj4/proj4leaflet sõltuvused
   ja kõik 5 Maa-ameti X-GIS aluskaarti (CIR-NGR, ametlik ortofoto,

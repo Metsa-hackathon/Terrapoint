@@ -2954,6 +2954,75 @@ footer {
     transition: all var(--t-fast) var(--ease);
 }
 .center-control a:hover { background: var(--blue-50) !important; color: var(--blue-700) !important; }
+
+/* ═══ ATTRIBUTION: collapse by default ═══
+   Esri ja Maa-ameti atribuudid on juriidiliselt nõutavad (Esri ToS +
+   CC-BY 4.0). Kuvame nad kokkupanduna — väike "i" ikoon, hover/klõpsuga
+   avaneb täistekst. "Leaflet" prefiksi kustutame (pole nõutav). */
+.leaflet-control-attribution {
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border-radius: var(--r) !important;
+    border: 1px solid var(--hair) !important;
+    box-shadow: var(--sh-1) !important;
+    font-family: var(--ff-sans) !important;
+    font-size: 10.5px !important;
+    line-height: 1.4 !important;
+    color: var(--ink-3) !important;
+    padding: 3px 6px !important;
+    margin: 0 6px 6px 0 !important;
+    max-width: 26px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: max-width 0.18s var(--ease), background 0.15s;
+    user-select: none;
+}
+.leaflet-control-attribution::before {
+    content: "i";
+    display: inline-block;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--ink-2);
+    font-family: var(--ff-serif);
+}
+.leaflet-control-attribution a {
+    display: none;
+    color: var(--ink-2) !important;
+    text-decoration: none !important;
+}
+.leaflet-control-attribution a:hover { text-decoration: underline !important; }
+.leaflet-control-attribution:hover,
+.leaflet-control-attribution:focus,
+.leaflet-control-attribution:focus-within {
+    max-width: min(720px, 90vw);
+    background: rgba(255, 255, 255, 0.97) !important;
+    padding: 6px 10px !important;
+    cursor: auto;
+}
+.leaflet-control-attribution:hover::before,
+.leaflet-control-attribution:focus::before,
+.leaflet-control-attribution:focus-within::before {
+    display: none;
+}
+.leaflet-control-attribution:hover a,
+.leaflet-control-attribution:focus a,
+.leaflet-control-attribution:focus-within a {
+    display: inline;
+}
+.leaflet-control-attribution:hover,
+.leaflet-control-attribution:focus,
+.leaflet-control-attribution:focus-within {
+    white-space: normal;
+    text-overflow: clip;
+}
+@media (max-width: 640px) {
+    .leaflet-control-attribution { font-size: 10px !important; }
+}
+
 .leaflet-control-layers {
     border-radius: var(--r) !important;
     box-shadow: var(--sh-2) !important;
