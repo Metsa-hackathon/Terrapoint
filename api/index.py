@@ -846,24 +846,41 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         kahjustused.append({"tyyp": p.get("kahjustuse_tyyp", ""), "kirjeldus": p.get("kirjeldus", ""), "kuupaev": p.get("kuupaev", "")})
 
     # Build map overlay layers with geometry for frontend rendering
+    # Värvid ja joonestusstiilid on valitud nii, et kihid oleksid
+    # kaardil hästi nähtavad ja üksteisest eristatavad:
+    # - heledat ja tumedat tooni vaheldumine (järved vs vooluveed)
+    # - erinevad joone stiilid (solid/dashed/dotted) lisadiferentseerijana
+    # - kaitse- vs piirangualad erinevad nii värvilt kui ka joonest
     map_layers = {}
     LAYER_MAP = {
-        "kaitsealad": {"label": "Kaitsealad", "color": "#2d6a4f"},
-        "piirang": {"label": "Piiranguvööndid", "color": "#52796f"},
-        "yrask_eelis": {"label": "Üraski vaatlused", "color": "#e76f51"},
-        "yrask_mke": {"label": "Surnud puud (MKE)", "color": "#c1121f"},
-        "sood": {"label": "Sood", "color": "#457b9d"},
-        "natura_elupaik": {"label": "Natura elupaigad", "color": "#6a994e"},
-        "karuputk": {"label": "Karuputk", "color": "#d63384"},
-        "lageraiealad": {"label": "Lageraiealad", "color": "#adb5bd"},
-        "malestised": {"label": "Mälestised", "color": "#7b2cbf"},
-        "veekogud": {"label": "Järved", "color": "#48cae4"},
-        "vooluveed": {"label": "Vooluveed", "color": "#0096c7"},
+        # Natura (rohelised) — eristatud heledusega
+        "kaitsealad":      {"label": "Kaitsealad",      "color": "#1b4332", "dash": None,    "weight": 3, "fillOpacity": 0.30},
+        "natura_elupaik":  {"label": "Natura elupaigad", "color": "#74c69d", "dash": None,    "weight": 2, "fillOpacity": 0.40},
+        # Piirang (violetne) — erinev värv kaitsealadest
+        "piirang":         {"label": "Piiranguvööndid",  "color": "#7b2cbf", "dash": "6,4",  "weight": 2, "fillOpacity": 0.20},
+        # Ürask (oranž/punane) — kahjurid
+        "yrask_eelis":     {"label": "Üraski vaatlused", "color": "#e76f51", "dash": None,    "weight": 3, "fillOpacity": 0.35},
+        "yrask_mke":       {"label": "Surnud puud (MKE)", "color": "#c1121f", "dash": None,   "weight": 3, "fillOpacity": 0.45},
+        # Vesi (sinised) — järved hele, vooluveed tume paks joon
+        "sood":            {"label": "Sood",            "color": "#1d4e89", "dash": None,    "weight": 1, "fillOpacity": 0.30},
+        "veekogud":        {"label": "Järved",          "color": "#48cae4", "dash": None,    "weight": 2, "fillOpacity": 0.50},
+        "vooluveed":       {"label": "Vooluveed",       "color": "#023e8a", "dash": None,    "weight": 4, "fillOpacity": 0.0},
+        # Muud (eristatud värv + dash)
+        "karuputk":        {"label": "Karuputk",        "color": "#d63384", "dash": "2,3",   "weight": 2, "fillOpacity": 0.30},
+        "lageraiealad":    {"label": "Lageraiealad",    "color": "#6c757d", "dash": "8,4",   "weight": 2, "fillOpacity": 0.25},
+        "malestised":      {"label": "Mälestised",      "color": "#9d4edd", "dash": None,    "weight": 3, "fillOpacity": 0.40},
     }
     for key, meta in LAYER_MAP.items():
         features = layers_data.get(key, [])
         if features:
-            map_layers[key] = {"label": meta["label"], "color": meta["color"], "features": features}
+            map_layers[key] = {
+                "label": meta["label"],
+                "color": meta["color"],
+                "dash": meta.get("dash"),
+                "weight": meta.get("weight", 2),
+                "fillOpacity": meta.get("fillOpacity", 0.25),
+                "features": features,
+            }
 
     # Add eraldised as a map layer (colored by species)
     if eraldised_features:

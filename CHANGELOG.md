@@ -9,6 +9,28 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 ## [Määramata] - 2026-06-11
 
 ### Changed
+- **Kaart: kihid eristatavamad + kihtide legend** —
+  Ürask, Vooluveed, Järved jt 11 kihti on nüüd kaardil selgelt
+  nähtavad ja omavahel eristatavad:
+  - Värvid uuendatud (backend `LAYER_MAP`, api/index.py): iga kiht
+    sai unikaalse värvitooni + joone stiili (solid/dashed/dotted)
+    ja paksuse (weight 1-4). Sarnased värvid (järved vs vooluveed,
+    kaitsealad vs natura_elupaik) on nüüd selgelt eristatavad —
+    järved hele täidisega, vooluveed paks tume joon ilma täidise
+    täidiseta; kaitsealad tume metsaroheline, natura_elupaik
+    hele salvei-roheline.
+  - Vaikimisi weight 2 → 3, opacity 0.7 → 0.9, fillOpacity
+    0.15 → 0.30.
+  - Per-layer stiil salvestatakse backendi `map_layers` payloadi
+    (color, dash, weight, fillOpacity) — frontend rakendab
+    `L.geoJSON` style objektile.
+  - Uus `updateKihtLegend()` funktsioon jälgib aktiivseid
+    kihte ja joonistab nende värvid/jooned legendi alumisse
+    vasakusse nurka (eraldiste legend on paremas nurgas, atribuut
+    kokkupanduna). Legend peidab end automaatselt kui ühtegi
+    kihti pole sisse lülitatud või neil pole andmeid. Kuvab
+    iga kihi värvi + soolid/dashed/dotted mustri + nime.
+  CSS versioon v28 → v29 (cache bust).
 - **Kaart: atribuut kokkupanduna** — Esri/Maa-ameti atribuut (Esri ToS +
   CC-BY 4.0 nõutav) on nüüd vaikimisi väike "i" ikoon nurgas
   (26×23px), hover/klõpsuga avaneb täistekst. "Leaflet" prefiks

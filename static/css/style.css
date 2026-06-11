@@ -1441,6 +1441,77 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .map-legend-toggle:hover { background: var(--ink-2); color: var(--white); border-color: var(--ink-2); }
 .map-legend.collapsed .map-legend-toggle { position: static; margin: 0 auto; }
 
+/* ═══ KIHTIDE LEGEND ═══
+   Näitab kaardil aktiivsete kihtide (Ürask, Vooluveed, Järved jne)
+   värve ja joonestusstiile. Alumine vasak nurk — ei lähe konflikti
+   eraldiste legendiga (see on alumises paremas nurgas) ega atribuudiga. */
+.map-kiht-legend {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    z-index: 500;
+    max-width: 260px;
+    max-height: calc(100% - 28px);
+    overflow-y: auto;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    border: 1px solid var(--hair);
+    border-radius: var(--r);
+    box-shadow: var(--sh-2);
+    padding: 8px 10px 6px;
+    font-size: 12px;
+    color: var(--ink-2);
+    scrollbar-width: thin;
+}
+.kiht-legend-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--hair);
+}
+.kiht-legend-title {
+    font-weight: 700;
+    font-size: 11px;
+    color: var(--ink-2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+.kiht-legend-close {
+    background: transparent;
+    border: none;
+    color: var(--ink-4);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+    width: 20px; height: 20px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--t-fast) var(--ease);
+}
+.kiht-legend-close:hover { background: var(--ink-2); color: var(--white); }
+.kiht-legend-body { display: flex; flex-direction: column; gap: 1px; }
+.kiht-legend-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 1px 0;
+    line-height: 1.35;
+    font-size: 12px;
+}
+.kiht-legend-swatch {
+    width: 16px; height: 12px;
+    border-radius: 2.5px;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+.kiht-legend-label { color: var(--ink-2); }
+
 /* ═══ METRIC GRID ═══════════════════════════════════════════════════════════ */
 .metrics-grid {
     display: grid;
@@ -3423,6 +3494,8 @@ footer {
     .landing-hint { min-height: 32px; padding: 6px 10px; }
     .map-legend-toggle { width: 44px; height: 44px; font-size: 18px; }
     .map-hint-close { width: 32px; height: 32px; font-size: 18px; }
+    .map-kiht-legend { left: 8px; bottom: 8px; max-width: 200px; font-size: 11.5px; }
+    .kiht-legend-row { font-size: 11.5px; }
 }
 
 /* Very small phones */

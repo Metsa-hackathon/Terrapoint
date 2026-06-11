@@ -24,7 +24,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl028">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl029">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -348,6 +348,15 @@
                             <input type="checkbox" id="layer-vooluveed" data-layer="vooluveed">
                             <span class="toggle-label" style="border-left:3px solid var(--map-layer-vooluvesi);padding-left:4px">Vooluveed</span>
                         </label>
+                    </div>
+                </div>
+                <div class="map-kiht-legend" id="map-kiht-legend" hidden>
+                    <div class="kiht-legend-header">
+                        <span class="kiht-legend-title">Kihtide legend</span>
+                        <button class="kiht-legend-close" id="kiht-legend-close" type="button" aria-label="Sulge legend">×</button>
+                    </div>
+                    <div class="kiht-legend-body" id="kiht-legend-body">
+                        <!-- Populated by updateKihtLegend() based on which layers are toggled on -->
                     </div>
                 </div>
             </div>
@@ -1429,16 +1438,22 @@
         map.on('click', handleMapClick);
 
         // Aluskaardi vahetaja — 2 kihti (suvi + Esri Wayback talve väljalase).
-        // Vaikimisi kokkupandud (näitab ainult kihtide ikooni, avaneb klõpsuga).
+        // Paigutatud 'topright' (alla zoom-kontrollide), sest alumises
+        // vasakus nurgas on nüüd kihtide legend. Vaikimisi kokkupandud
+        // (näitab ainult kihtide ikooni, avaneb klõpsuga).
         var baseLayers = {
             'Esri satelliit (värskeim)': suviFoto,
             'Esri Wayback 2026-02-26': talveFoto,
         };
-        L.control.layers(baseLayers, null, { position: 'bottomleft', collapsed: true }).addTo(map);
+        L.control.layers(baseLayers, null, { position: 'topright', collapsed: true }).addTo(map);
 
         // Center button
         var CenterControl = L.Control.extend({
-            options: { position: 'bottomleft' },
+            // 'topright' alumise positsioonina — zoom-kontrollide ja
+            // basemap vahetaja all. Nii on kõik juhtnupud ühes veerus
+            // paremas servas, ei lähe konflikti KIHID paneeli ega
+            // kihtide legendiga vasakus servas.
+            options: { position: 'topright' },
             onAdd: function() {
                 var btn = L.DomUtil.create('div', 'leaflet-control-zoom leaflet-bar leaflet-control center-control');
                 btn.innerHTML = '<a href="#" title="Tsentreeri kaart" role="button" aria-label="Center map"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="shape-rendering:geometricPrecision"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg></a>';
@@ -1497,7 +1512,7 @@
         }
     }
 
-    function addOverlayLayer(name, features, color, isMarker) {
+    function addOverlayLayer(name, features, color, isMarker, styleOpts) {
         removeOverlayLayer(name);
         if (!features || features.length === 0) return;
         if (isMarker) {
@@ -1517,10 +1532,57 @@
             }).filter(Boolean);
             overlayLayers[name] = L.layerGroup(markers).addTo(map);
         } else {
-            overlayLayers[name] = L.geoJSON({ type: 'FeatureCollection', features }, {
-                style: { color: color, weight: 2, opacity: 0.7, fillColor: color, fillOpacity: 0.15 },
-            }).addTo(map);
+            // Eristatakse geometry tüüp: Point → kohandatud värviline marker
+            // (kihi värviga), Polygon/LineString → stiilitud jooned/täidised.
+            // Nii näevad ka punktkihid (nt karuputk, mälestised) välja sama
+            // legendi värviga, mitte ei lähe Leaflet'i vaikimisi sinise markerina.
+            const opts = styleOpts || {};
+            const hasPoints = features.some(f => f.geometry && f.geometry.type === 'Point');
+            const hasPolygons = features.some(f => f.geometry && (
+                f.geometry.type === 'Polygon' ||
+                f.geometry.type === 'MultiPolygon' ||
+                f.geometry.type === 'LineString' ||
+                f.geometry.type === 'MultiLineString'
+            ));
+
+            if (hasPolygons) {
+                // Polygonide/joonte stiil: weight, värv, dash, fillOpacity
+                const style = {
+                    color: opts.color || color,
+                    weight: opts.weight != null ? opts.weight : 3,
+                    opacity: 0.9,
+                    fillColor: opts.color || color,
+                    fillOpacity: opts.fillOpacity != null ? opts.fillOpacity : 0.30,
+                };
+                if (opts.dash) style.dashArray = opts.dash;
+                overlayLayers[name] = L.geoJSON({ type: 'FeatureCollection', features }, { style: style }).addTo(map);
+            } else if (hasPoints) {
+                // Ainult punktid → kohandatud värviline ring-marker
+                const c = opts.color || color;
+                const markers = features.map(f => {
+                    const coords = f.geometry.coordinates;
+                    if (!coords) return null;
+                    const props = f.properties || {};
+                    const label = props.nimi || props.nimetus || props.eesnimi || name;
+                    return L.marker([coords[1], coords[0]], {
+                        icon: L.divIcon({
+                            className: 'kiht-marker',
+                            html: '<div style="background:' + c + ';width:13px;height:13px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>',
+                            iconSize: [13, 13],
+                            iconAnchor: [6, 6],
+                        }),
+                    }).bindPopup('<b>' + escapeHtml(label) + '</b>');
+                }).filter(Boolean);
+                overlayLayers[name] = L.layerGroup(markers).addTo(map);
+            } else {
+                // Tundmatu geometry — jäta vahele
+                return;
+            }
         }
+    }
+
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
     }
 
     function removeOverlayLayer(name) {
@@ -1542,12 +1604,13 @@
                 // First time toggle, load from stored API data
                 var mapLayers = window._mapLayersData || {};
                 if (mapLayers[name]) {
-                    addOverlayLayer(name, mapLayers[name].features, mapLayers[name].color, false);
+                    addOverlayLayer(name, mapLayers[name].features, mapLayers[name].color, false, mapLayers[name]);
                 }
             }
         } else {
             removeOverlayLayer(name);
         }
+        updateKihtLegend();
     }
 
 
@@ -1568,9 +1631,10 @@
         checkboxes.forEach(function(cb) {
             var key = cb.dataset.layer;
             if (key && mapLayers[key] && cb.checked) {
-                addOverlayLayer(key, mapLayers[key].features, mapLayers[key].color, false);
+                addOverlayLayer(key, mapLayers[key].features, mapLayers[key].color, false, mapLayers[key]);
             }
         });
+        updateKihtLegend();
     }
 
     function addEraldisedLayer(features) {
@@ -1632,6 +1696,73 @@
             return;
         }
         legend.style.display = '';
+    }
+
+    // ═══ Kihtide legend — näitab kaardil aktiivsete kihtide värve ja
+    // joonestusstiile. Uuendatakse iga kord kui kasutaja lülitab kihi
+    // sisse/välja või laeb andmed. Näitab ainult neid kihte, millel
+    // on tegelikult tunnuseid (features) selles pargitud otsingus.
+    // Kui ühtegi kihti pole sisse lülitatud või ühelgi pole featuseid,
+    // peidetakse legend. ═══
+    function updateKihtLegend() {
+        var el = document.getElementById('map-kiht-legend');
+        var body = document.getElementById('kiht-legend-body');
+        if (!el || !body) return;
+
+        // Kogume kõik sisselülitatud kihid, millel on andmeid
+        var rows = [];
+        var checkboxes = document.querySelectorAll('.layer-toggle input[type=checkbox]');
+        checkboxes.forEach(function(cb) {
+            if (!cb.checked) return;
+            var key = cb.dataset.layer;
+            if (!key || key === 'kataster_wms') return; // kataster on eraldi
+            var data = (window._mapLayersData || {})[key];
+            if (!data || !data.features || data.features.length === 0) return;
+            // Leiame label-i kas cb.textContent-st või mapLayers label-st
+            var label = (cb.parentElement && cb.parentElement.querySelector('.toggle-label')) ?
+                        cb.parentElement.querySelector('.toggle-label').textContent.trim() :
+                        (data.label || key);
+            rows.push({
+                key: key,
+                label: label,
+                color: data.color || '#888',
+                dash: data.dash,
+                weight: data.weight || 2,
+                fillOpacity: data.fillOpacity != null ? data.fillOpacity : 0.3,
+            });
+        });
+
+        if (rows.length === 0) {
+            el.hidden = true;
+            body.innerHTML = '';
+            return;
+        }
+        el.hidden = false;
+
+        // Sorteerime alfabeetiliselt label-i järgi
+        rows.sort(function(a, b) { return a.label.localeCompare(b.label, 'et'); });
+
+        body.innerHTML = rows.map(function(r) {
+            // Eristame joone stiili: solid / dashed / dotted
+            var lineStyle;
+            if (r.dash === '2,3') lineStyle = 'dotted';
+            else if (r.dash) lineStyle = 'dashed';
+            else lineStyle = 'solid';
+            // Swatch: 14x14 kast, kujutab layer-i stiili
+            // Solid: täis värv, Dashed: lai joon katkendlik, Dotted: punktiir
+            var swatchStyle = 'background:' + r.color + ';';
+            if (lineStyle === 'dashed') {
+                swatchStyle = 'background:repeating-linear-gradient(90deg,' + r.color + ' 0 4px,transparent 4px 7px);border:1px solid ' + r.color + ';';
+            } else if (lineStyle === 'dotted') {
+                swatchStyle = 'background:repeating-linear-gradient(90deg,' + r.color + ' 0 1.5px,transparent 1.5px 4px);border:1px solid ' + r.color + ';';
+            } else {
+                swatchStyle += 'border:1.5px solid ' + r.color + ';';
+            }
+            return '<div class="kiht-legend-row">' +
+                   '<span class="kiht-legend-swatch" style="' + swatchStyle + '"></span>' +
+                   '<span class="kiht-legend-label">' + r.label + '</span>' +
+                   '</div>';
+        }).join('');
     }
 
     // ═══ dashboard.js ═══
@@ -2787,6 +2918,15 @@
                 var collapsed = legend.classList.toggle('collapsed');
                 legendBtn.textContent = collapsed ? '+' : '−';
                 legendBtn.setAttribute('aria-label', collapsed ? 'Ava legend' : 'Sulge legend');
+            });
+        }
+
+        // Kihtide legend close (kasutaja võib legendi sulgeda x nupust)
+        var kihtLegendClose = document.getElementById('kiht-legend-close');
+        if (kihtLegendClose) {
+            kihtLegendClose.addEventListener('click', function() {
+                var el = document.getElementById('map-kiht-legend');
+                if (el) el.hidden = true;
             });
         }
 
