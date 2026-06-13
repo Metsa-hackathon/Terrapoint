@@ -6,6 +6,38 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > domain). `terrapoint.vercel.app` on sama projekti alias — push master
 > branchi uuendab mõlemat korraga.
 
+## [Määramata] - 2026-06-13
+
+### Fixed
+- **Vasakus ülanurgas rippus juhuslik `-->` tekst** —
+  `index.html` `<head>`-is oli pesastatud HTML kommentaar
+  (`<!--     <!-- ... -->\n -->`), mille teine sulgev `-->` jäi
+  kommentaarist välja ja renderdus body esimese tekstisõlmena
+  (väikese noolena lehe ülaservas, päise kohal). Asendatud
+  ühe puhta `<!-- ... -->` reaga.
+
+### Removed
+- **Lehe suurenduse slider eemaldatud** (`#zoom-slider`,
+  `.zoom-controls`, `.page-zoom` wrapper, kogu zoom JS IIFE
+  ja umbes 170 rida zoom CSS-i). Brauseri natiivne `Ctrl/Cmd +`
+  / `Ctrl/Cmd -` (ja `Ctrl/Cmd + 0` reset) teevad sama tööd
+  paremini, ei varjuta kaarti vasakus alanurgas ega ei sega
+  legendi/atribuuti.
+  - HTML: kustutatud `<div class="page-zoom">` wrapper,
+    `<div class="zoom-controls">` plokk koos `<input type="range"
+    class="zoom-slider">` ja kõik tema kommentaarid.
+  - JS: kustutatud `// ═══ Zoom Controls ═══` IIFE
+    (`scheduleZoom`, `snapToMagnet`, `localStorage` salvestus
+    `terrapoint-zoom` võtmega — vana väärtus jääb brauserisse,
+    aga seda ei loeta enam, nii et see on kahjutu).
+  - CSS: kustutatud `.zoom-controls`, `.zoom-stack`,
+    `.zoom-tick-labels`, `.zoom-track`, `.zoom-track-wrap`,
+    `.zoom-slider` (kõik vendor pseudo-elemendid kaasa
+    arvatud), `.page-zoom` (sh `@supports not (zoom: 1)` fallback
+    ja `.is-zooming` overrride) ning `@media (max-width: 768px)`
+    sees olnud zoom-i mobile overrride-d.
+  - Cache buster: `?r=jkl029` → `?r=jkl030`.
+
 ## [Määramata] - 2026-06-11
 
 ### Changed
