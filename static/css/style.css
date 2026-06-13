@@ -536,7 +536,7 @@ a { color: var(--blue-700); text-decoration: none; }
 }
 .callout-label {
     font-family: var(--ff-sans);
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.12em;
@@ -546,17 +546,20 @@ a { color: var(--blue-700); text-decoration: none; }
 .callout-value {
     font-family: var(--ff-mono);
     font-variant-numeric: tabular-nums;
-    font-size: 1.95rem;
+    font-size: 1.75rem;
     font-weight: 700;
     color: var(--surface-callout-text);
     line-height: 1.15;
     letter-spacing: -0.02em;
 }
+#kataster-info .callout-value {
+    font-size: 1.75rem;
+}
 .callout-breakdown {
     display: flex;
     gap: var(--s-6);
     margin-top: var(--s-3);
-    font-size: 0.95rem;
+    font-size: 14.5px;
     color: var(--ink-3);
     flex-wrap: wrap;
 }
@@ -1629,7 +1632,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     flex: 1;
     min-width: 0;
     word-break: break-word;
-    transform: scale(0.9);
+    transform: scale(0.99);
     transform-origin: left center;
 }
 .section-desc {
@@ -1638,6 +1641,8 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     margin: 4px 0 0;
     line-height: 1.4;
     letter-spacing: -0.005em;
+    border-bottom: 1px solid var(--paper-3);
+    padding-bottom: 12px;
 }
 
 @keyframes cardIn {
@@ -1660,21 +1665,19 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     align-items: center;
     gap: 12px;
     padding: 9px 0;
-    font-size: 16px;
+    font-size: 14.5px;
     border-bottom: 1px solid var(--paper-3);
     position: relative;
-    transform: scale(0.9);
-    transform-origin: left center;
 }
 .info-row:last-child { border-bottom: none; }
 .info-row .label {
     color: var(--ink-4);
     font-weight: 400;
-    font-size: 15.5px;
+    font-size: 14.5px;
     letter-spacing: -0.005em;
     min-width: 0;
 }
-.metric-card.highlight-card > * {
+.metric-card > .card-header {
     transform: scale(0.9);
     transform-origin: left top;
 }
@@ -1685,17 +1688,12 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     transform: none;
 }
 
-#kataster-info .callout-surface {
-    transform: scale(0.9);
-    transform-origin: left top;
-}
-
 .info-row .value {
     font-family: var(--ff-mono);
     font-weight: 500;
     color: var(--ink-2);
     text-align: right;
-    font-size: 15.5px;
+    font-size: 14.5px;
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
     letter-spacing: -0.005em;
@@ -3378,8 +3376,8 @@ footer {
     .eraldised-row { font-size: 11px; }
 
     .info-row { padding: 10px 0; }
-    .info-row .label { font-size: 15px; }
-    .info-row .value { font-size: 15.5px; }
+    .info-row .label { font-size: 14.5px; }
+    .info-row .value { font-size: 14.5px; }
     .big-number { font-size: 32px; }
     .big-number .unit { font-size: 14px; }
     .value-block { padding: 12px 14px 10px; }
@@ -3388,7 +3386,7 @@ footer {
     .value-block .row { font-size: 13.5px; gap: 12px; flex-wrap: wrap; }
     .callout-label { font-size: 12px; }
     .callout-value { font-size: 1.75rem; }
-    .callout-breakdown { font-size: 0.95rem; }
+    .callout-breakdown { font-size: 14.5px; }
 
     #map { height: clamp(380px, 60vh, 560px); }
     .map-hint {
@@ -3496,6 +3494,15 @@ footer {
     .map-hint-close { width: 32px; height: 32px; font-size: 18px; }
     .map-kiht-legend { left: 8px; bottom: 8px; max-width: 200px; font-size: 11.5px; }
     .kiht-legend-row { font-size: 11.5px; }
+
+    .zoom-stack { min-width: 96px; }
+    .zoom-slider { width: 96px; }
+    .zoom-slider::-webkit-slider-thumb { width: 22px; height: 22px; margin-top: -10px; }
+    .zoom-slider::-moz-range-thumb { width: 22px; height: 22px; }
+    .zoom-tick-labels span:nth-child(1) { left: 11px; }
+    .zoom-tick-labels span:nth-child(3) { left: calc(100% - 11px); }
+    .zoom-track span:nth-child(1) { left: 11px; }
+    .zoom-track span:nth-child(3) { left: calc(100% - 11px); }
 }
 
 /* Very small phones */
@@ -3512,6 +3519,167 @@ footer {
     .map-controls { max-width: 130px; }
     .layer-toggle { max-width: 130px; }
     .map-legend { max-width: 160px; }
+}
+
+/* ═══ ZOOM CONTROLS ═══════════════════════════════════════════════════════ */
+/* The .zoom-controls element sits OUTSIDE the .page-zoom wrapper, so
+   the page zoom never affects it — slider, labels, ticks and the
+   whole pill stay at constant size and at the same viewport corner
+   no matter what the user picks on the slider. */
+.zoom-controls {
+    position: fixed;
+    bottom: 12px;
+    left: 12px;
+    z-index: 1500;
+    display: flex;
+    align-items: center;
+    background: var(--white);
+    border: 1px solid var(--hair);
+    border-radius: var(--r-full);
+    padding: 6px 14px;
+    box-shadow: var(--sh-3);
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
+}
+.zoom-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 110px;
+}
+.zoom-tick-labels {
+    position: relative;
+    height: 12px;
+    font-size: 10.5px;
+    font-family: var(--ff-mono);
+    color: var(--ink-3);
+    line-height: 1;
+    letter-spacing: -0.01em;
+}
+.zoom-tick-labels span {
+    position: absolute;
+    transform: translateX(-50%);
+    white-space: nowrap;
+}
+.zoom-tick-labels span:nth-child(1) { left: 9px; }
+.zoom-tick-labels span:nth-child(2) { left: 50%; }
+.zoom-tick-labels span:nth-child(3) { left: calc(100% - 9px); }
+.zoom-track-wrap {
+    position: relative;
+    height: 18px;
+    display: flex;
+    align-items: center;
+}
+.zoom-track {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 4px;
+    transform: translateY(-50%);
+    background: var(--paper-2);
+    border: 1px solid var(--hair);
+    border-radius: var(--r-full);
+    pointer-events: none;
+}
+.zoom-track span {
+    position: absolute;
+    top: 50%;
+    width: 1.5px;
+    height: 10px;
+    background: var(--ink-2);
+    opacity: 0.4;
+    border-radius: 1px;
+    transform: translate(-50%, -50%);
+}
+.zoom-track span:nth-child(1) { left: 9px; }
+.zoom-track span:nth-child(2) { left: 50%; }
+.zoom-track span:nth-child(3) { left: calc(100% - 9px); }
+.zoom-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 110px;
+    height: 18px;
+    background: transparent;
+    outline: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    position: relative;
+    z-index: 1;
+    -webkit-tap-highlight-color: transparent;
+}
+.zoom-slider::-webkit-slider-runnable-track {
+    background: transparent;
+    border: none;
+    height: 4px;
+}
+.zoom-slider::-moz-range-track {
+    background: transparent;
+    border: none;
+    height: 4px;
+}
+.zoom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: -8px;
+    border-radius: 50%;
+    background: var(--blue-700);
+    border: 2px solid var(--white);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+    cursor: pointer;
+    transition: box-shadow var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+    position: relative;
+    z-index: 2;
+}
+.zoom-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--blue-700);
+    border: 2px solid var(--white);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+    cursor: pointer;
+    transition: box-shadow var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.zoom-slider:hover::-webkit-slider-thumb {
+    transform: scale(1.1);
+}
+.zoom-slider:hover::-moz-range-thumb {
+    transform: scale(1.1);
+}
+.zoom-slider:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.35);
+}
+.zoom-slider:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.35);
+}
+
+/* Page zoom wrapper — sits inside <body>, wraps every page section
+   (header, sidebar, loading, sections, footer). The .zoom-controls
+   element is a sibling of this wrapper, NOT a descendant, so it
+   stays at constant size regardless of zoom. The .zoom-75 class is
+   toggled by the slider JS; --zoom-level is set on this element. */
+.page-zoom {
+    will-change: transform;
+    zoom: var(--zoom-level, 1);
+    height: calc(100% + (1 / var(--zoom-level, 1) - 1) * 100vh);
+}
+@supports not (zoom: 1) {
+    .page-zoom {
+        transform: scale(var(--zoom-level, 1));
+        transform-origin: top left;
+        width: calc(100% / var(--zoom-level, 1));
+        min-height: calc(100vh / var(--zoom-level, 1));
+    }
+}
+
+.page-zoom.is-zooming,
+.page-zoom.is-zooming * {
+    transition: none !important;
+    animation: none !important;
 }
 
 /* Reduced motion */
