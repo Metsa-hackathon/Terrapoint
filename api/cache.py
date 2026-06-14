@@ -1,6 +1,7 @@
 """
 Terrapoint — In-memory TTL Cache
 """
+from __future__ import annotations
 import time
 import threading
 

@@ -1,0 +1,26 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   Terrapoint — Font size knobs
+   Edit a value, save, and hard-refresh the browser (Cmd+Shift+R) to see it.
+
+   Three tiers:
+     Tier 1 — content box titles (.card-header h3)
+     Tier 2 — information rows + explanations
+              (.section-desc, .info-row, .info-row .label,
+               .info-row .value, .callout-breakdown)
+     Tier 3 — tables
+              (.eraldised-table-header, .eraldised-row, .comp-table)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+    --tier-1-title:  14px;
+    --tier-2-row:    14.5px;
+    --tier-3-table:  11px;
+}
+
+@media (max-width: 768px) {
+    :root {
+        --tier-1-title:  13.5px;
+        --tier-2-row:    14.5px;
+        --tier-3-table:  11px;
+    }
+}

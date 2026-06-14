@@ -4,6 +4,7 @@ Terrapoint — Eesti metsa- ja kinnistuandmete API
 Versioon: 2.1.0
 Autor: Terrapoint
 """
+from __future__ import annotations
 
 import time
 import asyncio

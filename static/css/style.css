@@ -557,7 +557,7 @@ a { color: var(--blue-700); text-decoration: none; }
 }
 .callout-breakdown {
     display: flex;
-    gap: var(--s-6);
+    gap: var(--s-4);
     margin-top: var(--s-3);
     font-size: 14.5px;
     color: var(--ink-3);
@@ -1622,7 +1622,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 
 .card-head-text { flex: 1; min-width: 0; }
 .card-header h3 {
-    font-size: 14px;
+    font-size: var(--tier-1-title);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -1636,7 +1636,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     transform-origin: left center;
 }
 .section-desc {
-    font-size: 14.5px;
+    font-size: var(--tier-2-row);
     color: var(--ink-4);
     margin: 4px 0 0;
     line-height: 1.4;
@@ -1665,7 +1665,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     align-items: center;
     gap: 12px;
     padding: 9px 0;
-    font-size: 14.5px;
+    font-size: var(--tier-2-row);
     border-bottom: 1px solid var(--paper-3);
     position: relative;
 }
@@ -1673,7 +1673,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .info-row .label {
     color: var(--ink-4);
     font-weight: 400;
-    font-size: 14.5px;
+    font-size: var(--tier-2-row);
     letter-spacing: -0.005em;
     min-width: 0;
 }
@@ -1693,7 +1693,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     font-weight: 500;
     color: var(--ink-2);
     text-align: right;
-    font-size: 14.5px;
+    font-size: var(--tier-2-row);
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
     letter-spacing: -0.005em;
@@ -1861,9 +1861,12 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .comp-table {
     width: 100%;
     margin-top: 12px;
-    font-size: 15.5px;
+    font-size: var(--tier-3-table);
     border-collapse: collapse;
     border-top: 1px solid var(--paper-3);
+}
+.comp-table td {
+    font-size: var(--tier-3-table);
 }
 .comp-table td {
     padding: 8px 0;
@@ -2867,15 +2870,16 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 #kitsendused-info .kitsendused-table .col-kirjeldus { width: 48%; }
 #kitsendused-info .kitsendused-table .col-link { width: 24%; }
 #kitsendused-info th {
-    font-size: 13px; padding: 10px 8px; text-align: left;
+    font-size: var(--tier-3-table); padding: 10px 8px; text-align: left;
     border-bottom: 1px solid var(--hair); font-weight: 700;
+    text-transform: none; letter-spacing: 0; background: transparent; color: var(--ink);
 }
 #kitsendused-info th:last-child { text-align: right; }
 #kitsendused-info td { word-break: break-word; overflow-wrap: anywhere; padding: 10px 8px; vertical-align: top; }
-#kitsendused-info td:nth-child(1) { font-size: 13.5px; font-family: var(--ff-sans); }
-#kitsendused-info td:nth-child(2) { font-size: 13.5px; line-height: 1.5; font-family: var(--ff-sans); color: var(--ink-3); }
+#kitsendused-info td:nth-child(1) { font-size: var(--tier-3-table); font-family: var(--ff-sans); }
+#kitsendused-info td:nth-child(2) { font-size: var(--tier-3-table); line-height: 1.5; font-family: var(--ff-sans); color: var(--ink-3); }
 #kitsendused-info td:nth-child(3) { text-align: right; }
-#kitsendused-info td:nth-child(3) a { font-size: 13px; }
+#kitsendused-info td:nth-child(3) a { font-size: var(--tier-3-table); }
 #kitsendused-info tr:hover td { background: var(--paper-2); }
 /* ═══ INFO DROPDOWNS ═══════════════════════════════════════════════════════ */
 .info-dd {
@@ -3162,14 +3166,14 @@ footer {
 .eraldised-controls button.active { background: var(--blue-700); color: white; border-color: var(--blue-700); }
 .eraldised-table-header {
     display: grid; grid-template-columns: 28px minmax(80px, 1fr) 42px 56px 48px 56px 76px;
-    padding: 6px 8px; font-size: 11px; color: var(--ink-4);
+    padding: 6px 8px; font-size: var(--tier-3-table); color: var(--ink-4);
     font-weight: 500; border-bottom: 1px solid var(--hair);
     background: var(--paper-2);
     align-items: center;
 }
 .eraldised-row {
     display: grid; grid-template-columns: 28px minmax(80px, 1fr) 42px 56px 48px 56px 76px;
-    padding: 6px 8px; border-bottom: 1px solid var(--hair); font-size: 11px;
+    padding: 6px 8px; border-bottom: 1px solid var(--hair); font-size: var(--tier-3-table);
     align-items: center; transition: background 0.1s;
     min-height: 30px;
 }
@@ -3232,13 +3236,13 @@ footer {
 /* Metsateatised table — 4 columns (Tüüp, Staatus, Kehtiv kuni, Pindala) */
 .teatised-table-header {
     display: grid; grid-template-columns: 1.2fr 1fr 1fr 90px;
-    padding: 8px 16px; font-size: 13px; text-transform: uppercase; color: var(--ink-4);
+    padding: 8px 16px; font-size: var(--tier-3-table); text-transform: uppercase; color: var(--ink-4);
     letter-spacing: 0.05em; font-weight: 700; border-bottom: 1px solid var(--hair);
     background: var(--paper-2);
 }
 .teatised-row {
     display: grid; grid-template-columns: 1.2fr 1fr 1fr 90px;
-    padding: 10px 16px; border-bottom: 1px solid var(--hair); font-size: 14.5px;
+    padding: 10px 16px; border-bottom: 1px solid var(--hair); font-size: var(--tier-3-table);
     align-items: center; transition: background 0.1s;
 }
 .teatised-row:hover { background: var(--paper-2); }
@@ -3247,7 +3251,7 @@ footer {
 .teatised-status {
     display: inline-flex; align-items: center; gap: 5px;
     padding: 4px 11px; border-radius: var(--r-full);
-    font-size: 13px; font-weight: 700; line-height: 1.3;
+    font-size: var(--tier-3-table); font-weight: 700; line-height: 1.3;
     letter-spacing: 0.01em;
 }
 .teatised-status::before {
@@ -3356,8 +3360,7 @@ footer {
     .metrics-grid { grid-template-columns: 1fr; gap: 12px; }
     .metric-card { grid-column: span 1 !important; padding: 16px 16px 14px; border-radius: var(--r-sm); }
     .metric-card.span-6, .metric-card.span-8, .metric-card.span-12 { grid-column: span 1 !important; }
-    .card-header h3 { font-size: 13.5px; letter-spacing: 0.08em; }
-    .section-desc { font-size: 14.5px; }
+    .card-header h3 { letter-spacing: 0.08em; }
     .card-icon { width: 30px; height: 30px; border-radius: 7px; }
     .card-icon svg { width: 14px; height: 14px; }
 
@@ -3370,14 +3373,10 @@ footer {
     .eraldised-table-header,
     .eraldised-row {
         grid-template-columns: 22px minmax(60px, 1fr) 32px 42px 36px 42px 58px;
-        font-size: 10px;
         padding: 5px 6px;
     }
-    .eraldised-row { font-size: 11px; }
 
     .info-row { padding: 10px 0; }
-    .info-row .label { font-size: 14.5px; }
-    .info-row .value { font-size: 14.5px; }
     .big-number { font-size: 32px; }
     .big-number .unit { font-size: 14px; }
     .value-block { padding: 12px 14px 10px; }
@@ -3386,7 +3385,6 @@ footer {
     .value-block .row { font-size: 13.5px; gap: 12px; flex-wrap: wrap; }
     .callout-label { font-size: 12px; }
     .callout-value { font-size: 1.75rem; }
-    .callout-breakdown { font-size: 14.5px; }
 
     #map { height: clamp(380px, 60vh, 560px); }
     .map-hint {
@@ -3473,9 +3471,9 @@ footer {
     .toetus-details-count { font-size: 12.5px; padding: 3px 9px; }
 
     /* Metsateatised — mobile */
-    .teatised-table-header { font-size: 12.5px; padding: 8px 12px; }
-    .teatised-row { font-size: 14px; padding: 10px 12px; }
-    .teatised-status { font-size: 12.5px; padding: 3px 10px; }
+    .teatised-table-header { padding: 8px 12px; }
+    .teatised-row { padding: 10px 12px; }
+    .teatised-status { padding: 3px 10px; }
 
     /* ── Touch targets: bump everything that taps to ≥44px on mobile ── */
     .ai-chat-input-wrap input,
