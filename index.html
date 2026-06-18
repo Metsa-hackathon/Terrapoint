@@ -66,7 +66,7 @@
     <script src="/static/js/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl033">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl039">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl040">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -544,6 +544,12 @@
                         <p class="card-placeholder-hint">Puuliik, vanus, tagavara, boniteet, liigid</p>
                     </div>
                 </div>
+                <div class="card-composition" id="composition-wrap" style="display:none">
+                    <div class="card-composition-label">Liikide koosseis</div>
+                    <div class="card-composition-chart">
+                        <canvas id="chart-composition-eraldised"></canvas>
+                    </div>
+                </div>
             </div>
 
             <div class="metric-card highlight-card" id="card-vaartus">
@@ -709,27 +715,6 @@
                     <a href="https://infoleht.keskkonnainfo.ee/" target="_blank" rel="noopener" class="muted-link">
                         Rohkem infot Keskkonnainfo lehel →
                     </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Charts Section (hidden until search) -->
-        <div id="charts-section" class="charts-section" style="display:none">
-            <div class="section-header">
-                <h2>Graafikud</h2>
-            </div>
-            <div class="charts-grid">
-                <div class="chart-card">
-                    <h3>Puuliikide koosseis</h3>
-                    <div class="chart-wrapper">
-                        <canvas id="chart-composition"></canvas>
-                    </div>
-                </div>
-                <div class="chart-card">
-                    <h3>Väärtuse jaotus</h3>
-                    <div class="chart-wrapper">
-                        <canvas id="chart-value"></canvas>
-                    </div>
                 </div>
             </div>
         </div>
@@ -2654,10 +2639,13 @@
         if (kitsEl) kitsEl.innerHTML = '<p class="muted">—</p>';
         var toetEl = document.getElementById('toetused-info');
         if (toetEl) toetEl.innerHTML = '<p class="muted">—</p>';
+        // Hide composition chart on error
+        var compWrap = document.getElementById('composition-wrap');
+        if (compWrap) compWrap.style.display = 'none';
+        if (typeof compositionChart !== 'undefined' && compositionChart) { compositionChart.destroy(); compositionChart = null; }
     }
 
     function showDashboard() {
-        document.getElementById('charts-section').style.display = '';
         // Hide landing, reveal dashboard
         var landing = document.getElementById('landing');
         var dashboard = document.getElementById('dashboard');
@@ -2703,17 +2691,7 @@
         SP: '#2F4F4F',  // Siberi seedermänd — tume tahvelhall
     };
 
-    // Väärtuse graafik — semantiline värvimine: tulu roheline+sinine,
-    // kulu rooste+hall. Kasutaja eristab koheselt tulubaarid kulu baaridest.
-    var VALUE_COLORS = {
-        log:        '#2d6a4f',  // Palk       (tulu) — roheline
-        pulp:       '#1d4ed8',  // Paberipuit (tulu) — sinine
-        harvest:    '#bc6c25',  // Varumine   (kulu) — rooste
-        transport:  '#8d99ae',  // Transport  (kulu) — jahe hall
-    };
-
     var compositionChart = null;
-    var valueChart = null;
 
     if (typeof Chart !== 'undefined') {
         Chart.defaults.font.family = "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
@@ -2722,14 +2700,15 @@
     }
 
     function renderCompositionChart(species) {
-        var ctx = document.getElementById('chart-composition');
-        if (!ctx || !species || species.length === 0) return;
+        var ctx = document.getElementById('chart-composition-eraldised');
+        var wrap = document.getElementById('composition-wrap');
+        if (!ctx || !species || species.length === 0) { if (wrap) wrap.style.display = 'none'; return; }
         if (compositionChart) compositionChart.destroy();
 
         var names = SPECIES_NAMES;
         // Filter to actual tree species only, then merge duplicates
         var validSpecies = species.filter(function(s) { return SPECIES_COLORS[s.puuliik_kood || s.puuliik]; });
-        if (validSpecies.length === 0) return;
+        if (validSpecies.length === 0) { if (wrap) wrap.style.display = 'none'; return; }
         var merged = {};
         validSpecies.forEach(function(s) {
             var code = s.puuliik_kood || s.puuliik;
@@ -2749,6 +2728,8 @@
         var values = sorted.map(function(s) { return s.osakaal; });
         var colors = sorted.map(function(s) { return SPECIES_COLORS[s.code] || '#6c757d'; });
 
+        if (wrap) wrap.style.display = '';
+
         compositionChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -2756,22 +2737,22 @@
                 datasets: [{
                     data: values,
                     backgroundColor: colors,
-                    borderWidth: 3,
+                    borderWidth: 2,
                     borderColor: '#ffffff',
                     hoverBorderWidth: 0,
-                    hoverOffset: 6,
+                    hoverOffset: 4,
                 }],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: '62%',
-                layout: { padding: { top: 4, bottom: 4, left: 4, right: 4 } },
+                cutout: '58%',
+                layout: { padding: { top: 2, bottom: 2, left: 2, right: 2 } },
                 plugins: {
                     legend: {
-                        position: 'bottom',
+                        position: 'right',
                         align: 'center',
-                        labels: { padding: 12, usePointStyle: true, pointStyleWidth: 10, boxWidth: 10, font: { size: 12, weight: '500' } },
+                        labels: { padding: 8, usePointStyle: true, pointStyleWidth: 8, boxWidth: 8, font: { size: 12, weight: '500' } },
                     },
                     tooltip: {
                         backgroundColor: 'rgba(26, 29, 35, 0.9)',
@@ -2782,73 +2763,6 @@
                         displayColors: true,
                         callbacks: {
                             label: function(ctx) { return ' ' + ctx.label + ': ' + ctx.parsed + '%'; },
-                        },
-                    },
-                },
-            },
-        });
-    }
-
-    function renderValueChart(data) {
-        var ctx = document.getElementById('chart-value');
-        if (!ctx || !data) return;
-        if (valueChart) valueChart.destroy();
-
-        var m3 = data.tagavara_m3 || 0;
-        var lp = data.log_price || 0;
-        var pp = data.pulp_price || 0;
-        var harvestCost = m3 * 18;
-        var transportCost = m3 * 9;
-        var logValue = m3 * 0.6 * lp;
-        var pulpValue = m3 * 0.4 * pp;
-
-        valueChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Palk', 'Paberipuit', 'Varumine', 'Transport'],
-                datasets: [{
-                    data: [Math.round(logValue), Math.round(pulpValue), Math.round(harvestCost), Math.round(transportCost)],
-                    backgroundColor: [VALUE_COLORS.log, VALUE_COLORS.pulp, VALUE_COLORS.harvest, VALUE_COLORS.transport],
-                    borderRadius: 8,
-                    borderSkipped: false,
-                    barPercentage: 0.7,
-                    categoryPercentage: 0.8,
-                }],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(26, 29, 35, 0.9)',
-                        titleFont: { weight: '600' },
-                        bodyFont: { size: 13 },
-                        padding: 12,
-                        cornerRadius: 8,
-                        callbacks: {
-                            label: function(ctx) {
-                                var v = ctx.parsed.y;
-                                return ' ' + v.toLocaleString('et-EE').replace(/,/g, ' ') + ' €';
-                            },
-                        },
-                    },
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: { font: { size: 11, weight: '500' }, color: '#64748b' },
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: '#eef2f8', drawBorder: false },
-                        ticks: {
-                            font: { size: 11 },
-                            color: '#94a3b8',
-                            callback: function(v) {
-                                if (v >= 1000) return (v / 1000).toFixed(0) + 'k €';
-                                return v + ' €';
-                            },
                         },
                     },
                 },
@@ -3302,10 +3216,9 @@
             hideLoading();
             showDashboard();
 
-            // Render charts AFTER browser lays out the now-visible canvas
+            // Render composition chart AFTER browser lays out the now-visible canvas
             requestAnimationFrame(function() {
                 if (data.mets && data.mets.liikide_koosseis) renderCompositionChart(data.mets.liikide_koosseis);
-                if (data.vaartus) renderValueChart(data.vaartus);
             });
 
             // Trigger AI analysis
