@@ -56,4 +56,4 @@ class TTLCache:
 
 # Singleton instances
 wfs_cache = TTLCache(default_ttl=7200)    # 2h for WFS queries
-search_cache = TTLCache(default_ttl=600)   # 10min for search results
+search_cache = TTLCache(default_ttl=300)   # 5min for search results

@@ -1,13 +1,16 @@
 from datetime import datetime, date
 
-TODAY = date.today()
+
+def _today() -> date:
+    """Dynaamiline kuupäev — uueneb iga kutsungiga, mitte fikseeritud laadimisel."""
+    return date.today()
 
 
 def _parse_date(d: str) -> date:
     """Parse 'DD.MM.YYYY' or 'DD.MM' (assumes current year) to date."""
     parts = d.strip().split(".")
     day, month = int(parts[0]), int(parts[1])
-    year = int(parts[2]) if len(parts) > 2 else TODAY.year
+    year = int(parts[2]) if len(parts) > 2 else _today().year
     return date(year, month, day)
 
 
@@ -19,12 +22,13 @@ def _voor_status(voor: str) -> str:
     ranges = re.findall(r"(\d{2}\.\d{2}(?:\.\d{4})?)\s*[-–]\s*(\d{2}\.\d{2}(?:\.\d{4})?)", voor)
     if not ranges:
         return "unknown"
+    today = _today()
     for start_s, end_s in ranges:
         start = _parse_date(start_s)
         end = _parse_date(end_s)
-        if start <= TODAY <= end:
+        if start <= today <= end:
             return "open"
-        if TODAY < start:
+        if today < start:
             return "upcoming"
     return "closed"
 

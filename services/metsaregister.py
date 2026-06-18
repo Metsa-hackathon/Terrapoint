@@ -157,7 +157,7 @@ async def query_natura_2000(bbox_str: str) -> list[dict]:
         f"{config.GEOBASE}/metsaregister/wfs?"
         f"service=WFS&request=GetFeature&typeName=metsaregister:natura_2000_alad"
         f"&srsName=EPSG:4326&outputFormat=application/json"
-        f"&bbox={bbox_str}"
+        f"&bbox={bbox_str},EPSG:4326"
     )
     return await _wfs_get(url, timeout=10.0, retries=1)
 
