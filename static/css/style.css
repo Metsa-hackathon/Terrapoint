@@ -839,13 +839,14 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 }
 
 .landing-title {
-    font-family: var(--ff-display);
-    font-size: clamp(36px, 5.5vw, 58px);
-    line-height: 1.05;
+    font-family: "Bricolage Grotesque", "Geist", "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: clamp(38px, 6vw, 64px);
+    line-height: 1.04;
     color: var(--ink);
     letter-spacing: -0.035em;
     margin-bottom: 14px;
     font-weight: 700;
+    font-optical-sizing: auto;
 }
 .landing-title em {
     font-style: italic;
