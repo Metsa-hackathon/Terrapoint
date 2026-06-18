@@ -122,7 +122,7 @@
     /* Type */
     --ff-sans: "Geist", "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
     --ff-mono: "Geist Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    --ff-display: "Instrument Serif", "Fraunces", "Source Serif Pro", Georgia, serif;
+    --ff-display: "Geist", "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
     --ff-estonian: "Geist", "Inter Tight", system-ui, sans-serif; /* Geist covers Estonian diacritics */
 
     /* Motion */
@@ -180,7 +180,7 @@ a { color: var(--blue-700); text-decoration: none; }
 
 /* ─── Type scale ──────────────────────────────────────────────────────────── */
 .t-mono { font-family: var(--ff-mono); font-feature-settings: "tnum" 1, "cv11" 1, "ss01" 1; }
-.t-display { font-family: var(--ff-display); font-weight: 400; letter-spacing: -0.02em; line-height: 1.05; }
+.t-display { font-family: var(--ff-display); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
 .t-eyebrow {
     font-family: var(--ff-sans);
     font-size: 12px;
@@ -571,12 +571,12 @@ a { color: var(--blue-700); text-decoration: none; }
 /* Subtle inline links — secondary action with a hairline arrow */
 .muted-link {
     font-size: 14.5px;
-    color: var(--blue-700);
+    color: var(--blue-900);
     text-decoration: none;
-    border-bottom: 1px solid var(--blue-200);
+    border-bottom: 1px solid var(--blue-300);
     transition: border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
 }
-.muted-link:hover { color: var(--blue-900); border-bottom-color: var(--blue-700); }
+.muted-link:hover { color: var(--blue-950); border-bottom-color: var(--blue-700); }
 
 /* Status pill — green for "active"/"present" state */
 .pill-success {
@@ -841,21 +841,21 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .landing-title {
     font-family: var(--ff-display);
     font-size: clamp(36px, 5.5vw, 58px);
-    line-height: 1.02;
+    line-height: 1.05;
     color: var(--ink);
-    letter-spacing: -0.025em;
+    letter-spacing: -0.035em;
     margin-bottom: 14px;
-    font-weight: 400;
+    font-weight: 700;
 }
 .landing-title em {
     font-style: italic;
-    color: #3b82f6;
-    font-weight: 400;
+    color: var(--blue-700);
+    font-weight: 700;
 }
 .landing-title .ampersand {
     color: var(--blue-400);
     font-style: italic;
-    font-weight: 300;
+    font-weight: 500;
 }
 
 .landing-sub {
@@ -1006,12 +1006,12 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .section-head h2 {
     font-family: var(--ff-display);
     font-size: 28px;
-    font-weight: 400;
+    font-weight: 700;
     color: var(--ink);
-    letter-spacing: -0.02em;
-    line-height: 1.1;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
 }
-.section-head h2 em { font-style: italic; color: var(--blue-700); }
+.section-head h2 em { font-style: italic; color: var(--blue-700); font-weight: 700; }
 .section-head .section-meta {
     font-family: var(--ff-mono);
     font-size: 13px;
@@ -3618,11 +3618,9 @@ footer {
     font-weight: 800;
 }
 .about-title em {
-    font-style: normal;
-    background: linear-gradient(135deg, var(--blue-900), var(--blue-600));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    font-style: italic;
+    color: var(--blue-700);
+    font-weight: 800;
 }
 .about-lead {
     font-size: 15px;
@@ -3711,11 +3709,9 @@ footer {
     max-width: 760px;
 }
 .sources-title em {
-    font-style: normal;
-    background: linear-gradient(135deg, var(--blue-900), var(--blue-600));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    font-style: italic;
+    color: var(--blue-700);
+    font-weight: 800;
 }
 .sources-sub { display: none; }
 .sources-grid {
@@ -3795,7 +3791,7 @@ footer {
 .source-desc {
     font-size: 14px;
     line-height: 1.5;
-    color: var(--ink-3);
+    color: var(--ink-2);
     margin: 0;
 }
 .source-arrow {
@@ -3852,11 +3848,9 @@ footer {
     font-weight: 800;
 }
 .contact-title em {
-    font-style: normal;
-    background: linear-gradient(135deg, var(--blue-900), var(--blue-600));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    font-style: italic;
+    color: var(--blue-700);
+    font-weight: 800;
 }
 .contact-lead {
     font-size: 15px;

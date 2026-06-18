@@ -12,15 +12,15 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-    --tier-1-title:  14px;
-    --tier-2-row:    14.5px;
-    --tier-3-table:  11px;
+    --tier-1-title:  15px;
+    --tier-2-row:    15px;
+    --tier-3-table:  13px;
 }
 
 @media (max-width: 768px) {
     :root {
-        --tier-1-title:  13.5px;
-        --tier-2-row:    14.5px;
-        --tier-3-table:  11px;
+        --tier-1-title:  14.5px;
+        --tier-2-row:    15px;
+        --tier-3-table:  13px;
     }
 }
