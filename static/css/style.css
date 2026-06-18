@@ -2051,6 +2051,38 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
         repeating-linear-gradient(0deg, transparent 0 31px, rgba(15, 23, 42, 0.015) 31px 32px),
         var(--white);
 }
+.ai-analyze-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 28px 18px 8px;
+}
+.ai-analyze-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    background: var(--blue-900);
+    color: #fff;
+    border: none;
+    border-radius: var(--r-md, 8px);
+    font-family: var(--ff-sans);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.ai-analyze-btn:hover { background: var(--blue-950); }
+.ai-analyze-btn:active { transform: translateY(1px); }
+.ai-analyze-btn svg { flex-shrink: 0; }
+.ai-analyze-cta-hint {
+    font-size: 13px;
+    color: var(--ink-4);
+    text-align: center;
+    margin: 0;
+    max-width: 320px;
+}
 
 .ai-message {
     display: flex;
