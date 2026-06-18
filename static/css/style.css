@@ -743,7 +743,18 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     display: flex;
     flex-direction: column;
     gap: 18px;
+    align-items: center;
 }
+.loading-spinner {
+    width: 44px;
+    height: 44px;
+    border: 3px solid var(--paper-4);
+    border-top-color: var(--blue-600);
+    border-radius: 50%;
+    animation: loadingSpin 0.7s linear infinite;
+    margin-bottom: 4px;
+}
+@keyframes loadingSpin { to { transform: rotate(360deg); } }
 .loading-text {
     font-family: var(--ff-mono);
     font-size: 13px;

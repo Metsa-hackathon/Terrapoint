@@ -66,7 +66,7 @@
     <script src="/static/js/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl033">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl038">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl039">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -289,6 +289,7 @@
     <!-- Loading State -->
     <div id="loading" class="loading hidden" style="display:none">
         <div class="loading-content">
+            <div class="loading-spinner" aria-hidden="true"></div>
             <div class="skeleton-grid">
                 <div class="skeleton skeleton-map"></div>
                 <div class="skeleton-cards">
@@ -321,6 +322,7 @@
                     <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M5 12h14M12 5l7 7-7 7"/>
                     </svg></span>
+                    <span class="btn-spinner" aria-hidden="true"></span>
                 </button>
             </div>
             <div class="landing-hints" aria-label="Näidispäringud">
@@ -777,7 +779,7 @@
                 <span class="dot" aria-hidden="true"></span>
                 Andmeallikad
             </div>
-            <h2 class="sources-title">Eesti <em>riiklikud registrid</em>, milledest Terrapoint oma <em>arvutused</em> tuletab.</h2>
+            <h2 class="sources-title">Eesti <em>riiklikud registrid</em>, millest Terrapoint oma <em>arvutused</em> teeb.</h2>
 
             <div class="sources-grid">
                 <a class="source-card" href="https://geoportaal.maaamet.ee" target="_blank" rel="noopener" aria-label="Maa- ja Ruumiamet">
@@ -3266,10 +3268,14 @@
         if (!nr) { showError('Sisesta katastri number.'); return; }
 
         var btn = document.getElementById('search-btn');
+        var landBtn = document.getElementById('search-btn-landing');
         var searchBox = btn.closest('.search-box');
+        var landSearchBox = landBtn ? landBtn.closest('.search-box') : null;
         btn.disabled = true;
         btn.classList.add('is-loading');
+        if (landBtn) { landBtn.disabled = true; landBtn.classList.add('is-loading'); }
         searchBox.classList.add('is-searching');
+        if (landSearchBox) landSearchBox.classList.add('is-searching');
 
         showLoading();
 
@@ -3322,6 +3328,8 @@
             btn.disabled = false;
             btn.classList.remove('is-loading');
             searchBox.classList.remove('is-searching');
+            if (landBtn) { landBtn.disabled = false; landBtn.classList.remove('is-loading'); }
+            if (landSearchBox) landSearchBox.classList.remove('is-searching');
         }
 
     }
