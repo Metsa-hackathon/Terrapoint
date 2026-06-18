@@ -1,0 +1,22 @@
+{
+  "name": "Terrapoint — Eesti metsaandmete analüüs",
+  "short_name": "Terrapoint",
+  "description": "Terrapoint on Eesti metsaandmete analüüsi tööriist. Otsi katastri numbri järgi ja saa metsa väärtus, eraldised, süsinikuvaru, riskid ja toetused.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#0a3d9e",
+  "lang": "et",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities", "business"],
+  "icons": [
+    {
+      "src": "/static/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

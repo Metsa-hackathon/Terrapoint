@@ -3,25 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Terrapoint — Eesti metsaandmete analüüs</title>
-    <meta name="description" content="Terrapoint on Eesti metsaandmete analüüsi tööriist. Otsi katastri numbri järgi ja saa metsa väärtus, eraldised, süsinikuvaru, riskid ja toetused.">
+    <title>Terrapoint — Eesti metsaandmete analüüs | Metsa väärtus, eraldised, süsinikuvaru</title>
+    <meta name="description" content="Terrapoint on Eesti metsaandmete analüüsi tasuta tööriist. Otsi katastri numbri või aadressi järgi ja saa metsa majanduslik väärtus, eraldised, süsinikuvaru, ohutegurid, toetused ja kitsendused reaalajas riiklikest registritest.">
+    <meta name="keywords" content="Terrapoint, metsa andmed, metsa väärtus, kataster, katastritunnus, metsaeraldised, süsinikuvaru, metsatoetused, kitsendused, Eesti mets, metsa analüüs, maa-amet, metsaregister, puidu hind, metsa omanik, Natura 2000, EL deforestatsioon, metsakaart, kinnistu andmed">
+    <meta name="author" content="Terrapoint">
+    <meta name="publisher" content="Terrapoint">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1, max-preview:-1">
+    <meta name="googlebot" content="index, follow">
+    <meta name="language" content="Estonian">
+    <meta name="geo.region" content="EE">
+    <meta name="geo.placename" content="Estonia">
+    <meta name="geo.position" content="58.5953;25.0136">
+    <meta name="ICBM" content="58.5953, 25.0136">
+    <meta name="rating" content="general">
+    <meta name="distribution" content="global">
+    <meta name="revisit-after" content="7 days">
+    <link rel="canonical" href="https://terrapoint.ee/">
+    <link rel="alternate" hreflang="et" href="https://terrapoint.ee/">
+    <link rel="alternate" hreflang="x-default" href="https://terrapoint.ee/">
     <meta name="theme-color" content="#0a3d9e">
+    <meta name="msapplication-TileColor" content="#0a3d9e">
+    <meta name="application-name" content="Terrapoint">
+    <meta name="apple-mobile-web-app-title" content="Terrapoint">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="color-scheme" content="light">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="apple-touch-icon" href="/static/favicon.svg">
+    <link rel="mask-icon" href="/static/favicon.svg" color="#0a3d9e">
+    <link rel="manifest" href="/site.webmanifest">
     <meta property="og:title" content="Terrapoint — Eesti metsaandmete analüüs">
-    <meta property="og:description" content="Metsa väärtus, eraldised, süsinikuvaru, riskid ja toetused ühe otsinguga.">
+    <meta property="og:description" content="Metsa väärtus, eraldised, süsinikuvaru, riskid ja toetused ühe otsinguga. Tasuta ja reaalajas Eesti riiklikest registritest.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://terrapoint.vercel.app">
-    <meta property="og:image" content="https://terrapoint.vercel.app/static/og-image.png">
-    <meta name="twitter:card" content="summary">
+    <meta property="og:url" content="https://terrapoint.ee/">
+    <meta property="og:site_name" content="Terrapoint">
+    <meta property="og:locale" content="et_EE">
+    <meta property="og:locale:alternate" content="en_US">
+    <meta property="og:image" content="https://terrapoint.ee/static/og-image.png">
+    <meta property="og:image:secure_url" content="https://terrapoint.ee/static/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Terrapoint — Eesti metsaandmete analüüsi tööriist: metsa väärtus, eraldised, süsinikuvaru, riskid ja toetused.">
+    <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Terrapoint — Eesti metsaandmete analüüs">
-    <meta name="twitter:description" content="Metsa väärtus, eraldised, süsinikuvaru, riskid ja toetused ühe otsinguga.">
-    <meta name="twitter:image" content="https://terrapoint.vercel.app/static/og-image.png">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Maa-amet WMS layers use built-in L.tileLayer.wms; no extra plugin needed. -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <meta name="twitter:description" content="Metsa väärtus, eraldised, süsinikuvaru, riskid ja toetused ühe otsinguga. Tasuta ja reaalajas Eesti riiklikest registritest.">
+    <meta name="twitter:image" content="https://terrapoint.ee/static/og-image.png">
+    <meta name="twitter:image:alt" content="Terrapoint — Eesti metsaandmete analüüsi tööriist">
+    <meta name="twitter:site" content="@terrapoint">
+    <meta name="twitter:label1" content="Otsing">
+    <meta name="twitter:data1" content="Katastri number või aadress">
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://tiles.maaamet.ee">
+    <link rel="dns-prefetch" href="https://tiles.maaamet.ee">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl032">
     <link rel="stylesheet" href="/static/css/style.css?r=jkl036">
@@ -29,6 +71,153 @@
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
     </style>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://terrapoint.ee/#website",
+          "name": "Terrapoint",
+          "alternateName": "Terrapoint — Eesti metsaandmete analüüs",
+          "url": "https://terrapoint.ee/",
+          "inLanguage": "et",
+          "description": "Eesti metsaandmete analüüsi tööriist: metsa väärtus, eraldised, süsinikuvaru, riskid ja toetused.",
+          "publisher": { "@id": "https://terrapoint.ee/#organization" },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://terrapoint.ee/?kataster={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://terrapoint.ee/#organization",
+          "name": "Terrapoint",
+          "url": "https://terrapoint.ee/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://terrapoint.ee/static/og-image.png",
+            "width": 1200,
+            "height": 630,
+            "contentUrl": "https://terrapoint.ee/static/og-image.png"
+          },
+          "email": "mailto:arle.reidma@gmail.com",
+          "description": "Eesti metsaandmete analüüsi tööriist. Võitja: „Metsikult andmetes 2026” häkaton (Keskkonnaagentuur).",
+          "founder": [
+            { "@type": "Person", "name": "Arle Aron Reidma" },
+            { "@type": "Person", "name": "Krister Koger" },
+            { "@type": "Person", "name": "Kaspar Mälgand" }
+          ],
+          "award": "„Metsikult andmetes 2026” häkatoni võit (Keskkonnaagentuur)",
+          "knowsAbout": ["Eesti metsandus", "kataster", "metsaregister", "süsinikuvaru", "puidu hinnad", "metsatoetused", "ruumianalüüs"]
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://terrapoint.ee/#webapp",
+          "name": "Terrapoint",
+          "alternateName": "Terrapoint — Metsaportaal",
+          "url": "https://terrapoint.ee/",
+          "inLanguage": "et",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web (kõik brauserid)",
+          "browserRequirements": "requiresJavaScript",
+          "softwareVersion": "2.1.0",
+          "isAccessibleForFree": true,
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "EUR",
+            "availability": "https://schema.org/InStock"
+          },
+          "featureList": [
+            "Metsa majanduslik väärtus",
+            "Metsaeraldised ja teatised",
+            "Süsinikuvaru",
+            "Ohutegurid ja üraskirisk",
+            "EL deforestatsiooni-kontroll (EUDR)",
+            "Metsatoetused ja hüvitised",
+            "Kitsendused ja piirangud",
+            "AI-analüüs",
+            "Katastriüksuse andmed kaardilt"
+          ],
+          "about": {
+            "@type": "Thing",
+            "name": "Eesti metsa- ja kinnistuandmete analüüs",
+            "description": "Eesti avalikest metsa- ja kinnisturegistritest koondatud andmed ühte otsingusse."
+          },
+          "author": { "@id": "https://terrapoint.ee/#organization" },
+          "publisher": { "@id": "https://terrapoint.ee/#organization" }
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://terrapoint.ee/#faq",
+          "inLanguage": "et",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Mis on Terrapoint?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Terrapoint on Eesti metsaandmete analüüsi veebirakendus, mis koondab riiklikest registritest metsa- ja kinnistuandmed ühte otsingusse. Sisesta katastritunnus või aadress ja vaata oma metsa väärtust, eraldisi, süsinikuvaru, riske ja toetusi."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Kas Terrapoint on tasuta?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Jah, Terrapoint on tasuta kasutamiseks. Kõik andmed pärinevad avalikest Eesti riiklikest registritest ja arvutused tehakse reaalajas."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Milliseid andmeid Terrapoint näitab?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Terrapoint näitab katastriüksuse andmeid, metsaeraldisi, metsa majanduslikku väärtust, süsinikuvaru, metsateatisi, ohutegureid, EL deforestatsiooni-kontrolli, toetusi ja hüvitisi ning kitsendusi ja piiranguid."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Kust Terrapoint andmed pärinevad?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Andmed pärinevad Eesti riiklikest registritest: Maa- ja Ruumiamet (kataster ja ortofoto), Metsaregister (eraldised ja teatised), EELIS (kaitstavad alad), Kitsenduste kaart, LiDAR kõrgusmudel, Muinsuskaitseamet, Sentinel-2 satelliitkaugseire, Statistikaamet ja RMK. Puidu hinnad pärinevad Eesti Erametsaliidult."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Kuidas arvutatakse metsa majanduslikku väärtust?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Metsa väärtus arvutatakse eraldiste puuliikide koosseisu, vanuse, tagavara ja Erametsaliidu puiduhindade põhjal. Tulemus näitab nii iga eraldis kui ka kogu kinnistu väärtust eurodes."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Kas Terrapoint töötab kogu Eestis?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Jah, Terrapoint töötab kõikide Eesti katastriüksuste jaoks, mille andmed on riiklikes registrites saadaval."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Kuidas Terrapointiga kontakti võtta?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Kirjuta aadressile arle.reidma@gmail.com küsimuste, soovide või koostööettepanekutega."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
 </head>
 <body>
     <!-- Top Navigation Bar -->
@@ -112,6 +301,7 @@
         </div>
     </div>
 
+    <main>
     <!-- Landing / Intro (visible until first search) -->
     <section class="landing" id="landing" aria-label="Terrapoint sissejuhatus">
         <div class="landing-eyebrow">
@@ -701,6 +891,7 @@
             </div>
         </div>
     </section>
+    </main>
 
     <footer>
         <div class="footer-content">
