@@ -66,7 +66,7 @@
     <script src="/static/js/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl033">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl040">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl041">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -2308,6 +2308,113 @@
         }, 300);
     }
 
+    function renderEudr(fullData) {
+        var el = document.getElementById('eudr-info');
+        if (!el) return;
+        if (!fullData || !fullData.kataster) { el.innerHTML = '<p class="muted">EUDR andmeid pole saadaval</p>'; return; }
+
+        var k = fullData.kataster;
+        var m = fullData.mets || {};
+        var t = fullData.toetused || {};
+        var r = fullData.riskid || {};
+
+        // Geograafilised koordinaadid — arvuta centroidist kui geometry on olemas
+        var lat = null, lon = null;
+        if (k.geometry) {
+            try {
+                var coords = k.geometry.coordinates;
+                if (k.geometry.type === 'Polygon' && coords && coords[0]) {
+                    var ring = coords[0];
+                    var sx = 0, sy = 0;
+                    ring.forEach(function(c) { sx += c[0]; sy += c[1]; });
+                    lon = (sx / ring.length).toFixed(6);
+                    lat = (sy / ring.length).toFixed(6);
+                } else if (k.geometry.type === 'MultiPolygon' && coords && coords[0] && coords[0][0]) {
+                    var ring = coords[0][0];
+                    var sx = 0, sy = 0;
+                    ring.forEach(function(c) { sx += c[0]; sy += c[1]; });
+                    lon = (sx / ring.length).toFixed(6);
+                    lat = (sy / ring.length).toFixed(6);
+                }
+            } catch (e) { lat = null; lon = null; }
+        }
+
+        var eraldised = m.eraldised || [];
+        var metsPindala = eraldised.reduce(function(a, e) { return a + (e.pindala_ha || 0); }, 0);
+        var kinnistuPindala = k.pindala_ha || 0;
+
+        // EUDR nõuetele vastavuse kontroll
+        var checks = [];
+        checks.push({ ok: !!kinnistuPindala, label: 'Kinnistu pindala', value: kinnistuPindala ? kinnistuPindala.toFixed(2) + ' ha' : 'puudub' });
+        checks.push({ ok: !!lat && !!lon, label: 'Geograafilised koordinaadid', value: (lat && lon) ? lat + '°N, ' + lon + '°E' : 'puuduvad' });
+        checks.push({ ok: !!k.sihtotstarbe || !!k.sihtotstarve, label: 'Sihtotstarve', value: k.sihtotstarbe || k.sihtotstarve || '—' });
+        checks.push({ ok: eraldised.length > 0, label: 'Metsaeraldised', value: eraldised.length + ' tk (' + metsPindala.toFixed(1) + ' ha)' });
+        checks.push({ ok: !!k.mk_nimi, label: 'Maakond', value: k.mk_nimi || '—' });
+        checks.push({ ok: !!k.ov_nimi, label: 'Vald', value: k.ov_nimi || '—' });
+
+        // Kaitsestaatus
+        var protectionBadges = [];
+        var natura = t.natura_2000 || (r.natura_2000);
+        var kaitseala = t.kaitseala || (r.kaitseala);
+        var sood = t.sood || (r.sood);
+        protectionBadges.push({ active: natura, label: 'Natura 2000' });
+        protectionBadges.push({ active: kaitseala, label: 'Kaitseala' });
+        protectionBadges.push({ active: sood, label: 'Sood' });
+
+        // Vastavuse kokkuvõte
+        var passedChecks = checks.filter(function(c) { return c.ok; }).length;
+        var totalChecks = checks.length;
+        var allPass = passedChecks === totalChecks;
+        var riskLevel = (natura || kaitseala) ? 'Kõrge risk — kaitseala piirangud' : (sood ? 'Keskmine risk — soostik' : 'Madal risk — kaitseala ei ole');
+
+        var html = '';
+
+        // Vastavuse staatuse banner
+        var bannerColor = allPass ? 'var(--success)' : 'var(--warn)';
+        var bannerBg = allPass ? 'var(--success-bg)' : 'var(--warn-bg)';
+        html += '<div style="background:' + bannerBg + ';border-left:3px solid ' + bannerColor + ';padding:10px 12px;border-radius:4px;margin-bottom:14px">';
+        html += '<div style="font-size:13px;font-weight:600;color:' + bannerColor + ';margin-bottom:2px">EUDR deklaratsioon</div>';
+        html += '<div style="font-size:13px;color:var(--ink-3)">' + passedChecks + '/' + totalChecks + ' nõuet täidetud · ' + escHtml(riskLevel) + '</div>';
+        html += '</div>';
+
+        // Nõuete kontroll
+        html += '<div class="info-row-list" style="margin-bottom:14px">';
+        checks.forEach(function(c) {
+            var icon = c.ok ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color:var(--success)"><polyline points="20 6 9 17 4 12"/></svg>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink-5)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+            html += '<div class="info-row"><span class="label">' + icon + ' ' + escHtml(c.label) + '</span><span class="value">' + escHtml(c.value) + '</span></div>';
+        });
+        html += '</div>';
+
+        // Kaitsestaatus badge-d
+        html += '<div style="margin-bottom:14px">';
+        html += '<div class="label" style="margin-bottom:6px">Looduskaitse staatus</div>';
+        html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+        protectionBadges.forEach(function(b) {
+            var cls = b.active ? 'pill-warn' : 'pill-neutral';
+            var txt = b.active ? b.label + ' ✓' : b.label + ' —';
+            html += '<span class="' + cls + '">' + escHtml(txt) + '</span>';
+        });
+        html += '</div></div>';
+
+        // Eksport nupp
+        var katasterNr = k.number || (fullData.kataster && fullData.kataster.number) || '';
+        html += '<button id="eudr-btn" class="eudr-export-btn" type="button">';
+        html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+        html += 'Lae EUDR GeoJSON alla';
+        html += '</button>';
+        html += '<p style="font-size:12px;color:var(--ink-4);margin-top:8px">GeoJSON vastab EL määruse 2023/1115 nõuetele — sisaldab koordinaate, kinnistu ja metsa andmeid.</p>';
+
+        el.innerHTML = html;
+
+        // Ühenda eksport nupu handler
+        var btn = document.getElementById('eudr-btn');
+        if (btn) {
+            btn.addEventListener('click', function() {
+                if (katasterNr) exportEUDR(katasterNr);
+            });
+        }
+    }
+
     function renderRiskid(data) {
         var el = document.getElementById('riskid-info');
         if (!data) { el.innerHTML = '<p class="muted">Riskiandmeid pole</p>'; return; }
@@ -2639,6 +2746,8 @@
         if (kitsEl) kitsEl.innerHTML = '<p class="muted">—</p>';
         var toetEl = document.getElementById('toetused-info');
         if (toetEl) toetEl.innerHTML = '<p class="muted">—</p>';
+        var eudrEl = document.getElementById('eudr-info');
+        if (eudrEl) eudrEl.innerHTML = '<p class="muted">—</p>';
         // Hide composition chart on error
         var compWrap = document.getElementById('composition-wrap');
         if (compWrap) compWrap.style.display = 'none';
@@ -3053,12 +3162,6 @@
             }
         });
 
-        var eudrBtn = document.getElementById('eudr-btn');
-        if (eudrBtn) eudrBtn.addEventListener('click', function() {
-            var nr = (currentData && currentData.kataster && currentData.kataster.number) || document.getElementById('kataster-input').value.trim();
-            if (nr) exportEUDR(nr);
-        });
-
         document.querySelectorAll('.layer-toggle input[type=checkbox]').forEach(function(cb) {
             cb.addEventListener('change', function(e) {
                 var key = e.target.dataset.layer;
@@ -3208,6 +3311,7 @@
             safe(renderTeatised, data.teatised, 'teatised');
             safe(renderKitsendused, data.kitsendused, 'kitsendused');
             safe(renderToetused, data.toetused, 'toetused');
+            safe(renderEudr, data, 'eudr');
 
             // Load map overlay layers
             if (data.map_layers) loadMapLayers(data.map_layers);
