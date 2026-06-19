@@ -4,13 +4,5 @@
 User-agent: *
 Allow: /
 Disallow: /api/
-Disallow: /static/img/
-
-# Otsingumootoritele avatud põhileht
-Allow: /$
-Allow: /meit
-Allow: /allikad
-Allow: /kontakt
 
 Sitemap: https://terrapoint.ee/sitemap.xml
-Host: https://terrapoint.ee

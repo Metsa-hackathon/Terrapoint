@@ -1334,6 +1334,38 @@ async def root():
     return HTMLResponse(content="<h1>Terrapoint</h1>", status_code=500)
 
 
+# ─── SEO: robots.txt + sitemap.xml ─────────────────────────────────────────
+# Google (ja teised otsingumootorid) pääsevad terrapoint.ee peale läbi
+# FastAPI backend'i (Vercel ei ole deployitud). Seetõttu peame
+# robots.txt ja sitemap.xml otse backendist väljastama, muidu Google
+# saab 404 ja ei indekseeri lehte.
+
+@app.get("/robots.txt")
+async def robots_txt():
+    """robots.txt otsingumootoritele. Lubab kõik peale /api/."""
+    path = PROJECT_ROOT / "robots.txt"
+    if not path.exists():
+        return Response(status_code=404)
+    return FileResponse(
+        str(path),
+        media_type="text/plain; charset=utf-8",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@app.get("/sitemap.xml")
+async def sitemap_xml():
+    """XML sitemap otsingumootoritele."""
+    path = PROJECT_ROOT / "sitemap.xml"
+    if not path.exists():
+        return Response(status_code=404)
+    return FileResponse(
+        str(path),
+        media_type="application/xml; charset=utf-8",
+        headers={"Cache-Control": "public, max-age=86400", "X-Robots-Tag": "all"},
+    )
+
+
 @app.get("/static/{filename:path}")
 async def serve_static(filename: str):
     """Teeninda staatilisi faile (/static/ kataloogist)."""
