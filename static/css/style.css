@@ -146,6 +146,7 @@ html {
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
+    overscroll-behavior-y: none;
 }
 body {
     font-family: var(--ff-sans);
@@ -159,6 +160,7 @@ body {
         radial-gradient(900px 500px at 100% 100%, rgba(10, 61, 158, 0.04), transparent 60%);
     background-attachment: fixed;
     overflow-x: hidden;
+    overscroll-behavior-y: none;
     min-height: 100vh;
     min-height: 100dvh;
 }
@@ -170,7 +172,7 @@ a { color: var(--blue-700); text-decoration: none; }
 
 /* Scrollbars — thin, only in the blue family */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-track { background: #f3f4f6; }
 ::-webkit-scrollbar-thumb {
     background: var(--paper-4);
     border: 2px solid var(--paper);
@@ -299,7 +301,7 @@ a { color: var(--blue-700); text-decoration: none; }
     max-width: 580px;
     min-width: 0;
     height: 42px;
-    padding: 0 4px 0 14px;
+    padding: 0 2px 0 14px;
     background: var(--white);
     border: 1px solid var(--hair);
     border-radius: var(--r-full);
@@ -938,8 +940,8 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     padding: 0 14px;
 }
 .landing-search .search-box button {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
 }
 .landing-search .search-box button svg { width: 16px; height: 16px; }
@@ -1158,17 +1160,15 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 /* Map controls — refined, integrated */
 .map-controls {
     position: absolute;
-    bottom: 12px;
+    top: 12px;
     left: 12px;
     z-index: 1000;
     display: flex;
-    flex-direction: column-reverse;
+    flex-direction: column;
     gap: 4px;
     max-width: 260px;
     max-height: calc(100% - 24px);
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: thin;
+    overflow: hidden;
 }
 .map-controls-toggle {
     display: flex;
@@ -1222,7 +1222,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 7px 8px 7px 12px;
+    padding: 6px 7px 6px 11px;
     max-width: calc(100% - 32px);
     background: rgba(15, 23, 42, 0.86);
     color: #fff;
@@ -1231,7 +1231,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     backdrop-filter: blur(10px) saturate(140%);
     -webkit-backdrop-filter: blur(10px) saturate(140%);
     box-shadow: var(--sh-2);
-    font-size: 13px;
+    font-size: 11.5px;
     font-weight: 500;
     letter-spacing: -0.005em;
     line-height: 1.2;
@@ -1373,6 +1373,11 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 2px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
 }
 .toggle-item {
     display: flex;
@@ -1414,11 +1419,11 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 /* Map legend */
 .map-legend {
     position: absolute;
-    bottom: 14px;
+    bottom: 34px;
     right: 14px;
     z-index: 500;
     max-width: 280px;
-    max-height: calc(100% - 28px);
+    max-height: calc(100% - 48px);
     overflow-y: auto;
     background: rgba(255, 255, 255, 0.94);
     backdrop-filter: blur(14px) saturate(160%);
@@ -1500,15 +1505,15 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 
 /* ═══ KIHTIDE LEGEND ═══
    Näitab kaardil aktiivsete kihtide (Ürask, Vooluveed, Järved jne)
-   värve ja joonestusstiile. Ülemine vasak nurk hoiab alumise nurga
-   vabana kihtide nupule. */
+   värve ja joonestusstiile. Paigutatud KIHID nupu alla, sest see on
+   nüüd samuti ülemises vasakus nurgas. */
 .map-kiht-legend {
     position: absolute;
-    top: 14px;
+    top: 64px;
     left: 14px;
     z-index: 500;
     max-width: 260px;
-    max-height: calc(100% - 28px);
+    max-height: calc(100% - 78px);
     overflow-y: auto;
     background: rgba(255, 255, 255, 0.94);
     backdrop-filter: blur(14px) saturate(160%);
@@ -2063,21 +2068,21 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .ai-analyze-btn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 22px;
+    gap: 6px;
+    padding: 9px 17px;
     background: var(--blue-900);
     color: #fff;
     border: none;
     border-radius: var(--r-md, 8px);
     font-family: var(--ff-sans);
-    font-size: 15px;
+    font-size: 11.5px;
     font-weight: 600;
     cursor: pointer;
     transition: background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
 }
 .ai-analyze-btn:hover { background: var(--blue-950); }
 .ai-analyze-btn:active { transform: translateY(1px); }
-.ai-analyze-btn svg { flex-shrink: 0; }
+.ai-analyze-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
 .ai-analyze-cta-hint {
     font-size: 13px;
     color: var(--ink-4);
@@ -3084,7 +3089,7 @@ footer {
 .center-control { margin-top: 6px !important; border-radius: var(--r) !important; box-shadow: var(--sh-2) !important; }
 .center-control a {
     background: var(--white) !important;
-    color: var(--ink-2) !important;
+    color: var(--ink-4) !important;
     border: 1px solid var(--hair) !important;
     border-radius: var(--r) !important;
     width: 32px !important;
@@ -3097,6 +3102,8 @@ footer {
     transition: all var(--t-fast) var(--ease);
 }
 .center-control a:hover { background: var(--blue-50) !important; color: var(--blue-700) !important; }
+.center-control a svg { opacity: 0.9; transition: opacity var(--t-fast) var(--ease); }
+.center-control a:hover svg { opacity: 1; }
 
 /* ═══ ATTRIBUTION: collapse by default ═══
    Esri ja Maa-ameti atribuudid on juriidiliselt nõutavad (Esri ToS +
@@ -3459,16 +3466,17 @@ footer {
 
     #map { height: clamp(380px, 60vh, 560px); }
     .map-hint {
-        top: 50px;
+        top: 66px;
         font-size: 10.5px;
-        padding: 5px 5px 5px 9px;
-        gap: 5px;
+        line-height: 1.1;
+        padding: 2px 2px 2px 7px;
+        gap: 2.5px;
         max-width: calc(100% - 16px);
         white-space: nowrap;
     }
-    .map-hint svg { width: 12px; height: 12px; }
-    .map-hint-close { width: 18px; height: 18px; font-size: 13px; }
-    .map-controls { bottom: 8px; left: 8px; max-width: 140px; max-height: calc(100% - 16px); }
+    .map-hint svg { width: 10px; height: 10px; }
+    .map-hint-close { width: 14px; height: 14px; font-size: 11px; }
+    .map-controls { top: 8px; bottom: auto; left: 8px; flex-direction: column; max-width: 140px; max-height: calc(100% - 16px); }
     .layer-toggle {
         font-size: 10px;
         max-width: 140px;
@@ -3481,7 +3489,7 @@ footer {
     .toggle-item .toggle-label::before { width: 7px; height: 7px; }
     .map-legend {
         right: 8px;
-        bottom: 8px;
+        bottom: 30px;
         max-width: 180px;
         font-size: 10.5px;
         padding: 6px 8px 5px;
@@ -3558,8 +3566,7 @@ footer {
     .toggle-item .toggle-label { font-size: 12px; }
     .landing-hint { min-height: 32px; padding: 6px 10px; }
     .map-legend-toggle { width: 44px; height: 44px; font-size: 18px; }
-    .map-hint-close { width: 32px; height: 32px; font-size: 18px; }
-    .map-kiht-legend { top: 8px; left: 8px; max-width: 200px; font-size: 11.5px; }
+    .map-kiht-legend { top: 60px; left: 8px; max-width: 200px; font-size: 11.5px; }
     .kiht-legend-row { font-size: 11.5px; }
 }
 

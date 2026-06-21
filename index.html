@@ -21,8 +21,8 @@
     <link rel="canonical" href="https://terrapoint.ee/">
     <link rel="alternate" hreflang="et" href="https://terrapoint.ee/">
     <link rel="alternate" hreflang="x-default" href="https://terrapoint.ee/">
-    <meta name="theme-color" content="#0a3d9e">
-    <meta name="msapplication-TileColor" content="#0a3d9e">
+    <meta name="theme-color" content="#f3f4f6">
+    <meta name="msapplication-TileColor" content="#f3f4f6">
     <meta name="application-name" content="Terrapoint">
     <meta name="apple-mobile-web-app-title" content="Terrapoint">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -66,7 +66,7 @@
     <script src="/static/js/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl033">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl044">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl045">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -1588,24 +1588,22 @@
         map.on('click', handleMapClick);
 
         // Aluskaardi vahetaja — 2 kihti (suvi + Esri Wayback talve väljalase).
-        // Paigutatud 'topright' (alla zoom-kontrollide), sest alumises
-        // vasakus nurgas on nüüd kihtide legend. Vaikimisi kokkupandud
-        // (näitab ainult kihtide ikooni, avaneb klõpsuga).
+        // Paigutatud 'bottomleft', sest Kihid nupp on ülemises vasakus
+        // nurgas ja zoom-kontrollid jäävad oma kohale paremas üleval.
+        // Vaikimisi kokkupandud (näitab ainult kihtide ikooni, avaneb klõpsuga).
         var baseLayers = {
             'Esri satelliit (värskeim)': suviFoto,
             'Esri Wayback 2026-02-26': talveFoto,
         };
-        L.control.layers(baseLayers, null, { position: 'topright', collapsed: true }).addTo(map);
+        var basemapPosition = 'bottomleft';
+        var basemapControl = L.control.layers(baseLayers, null, { position: basemapPosition, collapsed: true });
 
-        // Center button
+        // Center button — basemap vahetaja kohal, samas alumises vasakus
+        // nurgas. Zoom-kontrollid ('topright') jäävad puutumata.
         var CenterControl = L.Control.extend({
-            // 'topright' alumise positsioonina — zoom-kontrollide ja
-            // basemap vahetaja all. Nii on kõik juhtnupud ühes veerus
-            // paremas servas, ei lähe konflikti KIHID paneeli ega
-            // kihtide legendiga vasakus servas.
             options: { position: 'topright' },
             onAdd: function() {
-                var btn = L.DomUtil.create('div', 'leaflet-control-zoom leaflet-bar leaflet-control center-control');
+                var btn = L.DomUtil.create('div', 'leaflet-bar leaflet-control center-control');
                 btn.innerHTML = '<a href="#" title="Tsentreeri kaart" role="button" aria-label="Center map"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="shape-rendering:geometricPrecision"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg></a>';
                 L.DomEvent.disableClickPropagation(btn);
                 btn.firstChild.addEventListener('click', function(e) {
@@ -1619,7 +1617,14 @@
                 return btn;
             }
         });
-        new CenterControl().addTo(map);
+        var centerControl = new CenterControl({ position: basemapPosition });
+
+        // 'leaflet-bottom' nurgas kuvatakse uuemad kontrollid eelmiste
+        // KOHAL (vastupidi 'leaflet-top' nurgale, kus uuemad jäävad alla) —
+        // nii et tsentreerimisnupp lisatakse basemap vahetajast pärast,
+        // et see jääks selle kohale (kehtib nii mobiilis kui lauaarvutis).
+        basemapControl.addTo(map);
+        centerControl.addTo(map);
 
         // Kui dashboard oli initMap ajal `display: none` (või mõni esivanem
         // 0-laiune), Leaflet suurustab kaardi valesti. invalidateSize
