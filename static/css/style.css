@@ -1158,9 +1158,12 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 /* Map controls — refined, integrated */
 .map-controls {
     position: absolute;
-    top: 12px;
+    bottom: 12px;
     left: 12px;
     z-index: 1000;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 4px;
     max-width: 260px;
     max-height: calc(100% - 24px);
     overflow-y: auto;
@@ -1180,7 +1183,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     border: 1px solid var(--hair);
     border-radius: var(--r);
     padding: 8px 12px;
-    margin-bottom: 4px;
     box-shadow: var(--sh-2);
     cursor: pointer;
     font-family: inherit;
@@ -1498,11 +1500,11 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 
 /* ═══ KIHTIDE LEGEND ═══
    Näitab kaardil aktiivsete kihtide (Ürask, Vooluveed, Järved jne)
-   värve ja joonestusstiile. Alumine vasak nurk — ei lähe konflikti
-   eraldiste legendiga (see on alumises paremas nurgas) ega atribuudiga. */
+   värve ja joonestusstiile. Ülemine vasak nurk hoiab alumise nurga
+   vabana kihtide nupule. */
 .map-kiht-legend {
     position: absolute;
-    bottom: 14px;
+    top: 14px;
     left: 14px;
     z-index: 500;
     max-width: 260px;
@@ -3162,6 +3164,7 @@ footer {
 }
 @media (max-width: 640px) {
     .leaflet-control-attribution { font-size: 10px !important; }
+    .leaflet-control-zoom { display: none !important; }
 }
 
 .leaflet-control-layers {
@@ -3374,7 +3377,7 @@ footer {
     .search-box {
         flex: 1;
         height: 44px;
-        padding: 0 4px 0 12px;
+        padding: 2px 2px 2px 12px;
         border-radius: var(--r-full);
         min-width: 0;
         max-width: none;
@@ -3383,8 +3386,8 @@ footer {
     }
     .search-box input { font-size: 15px; padding: 0 8px; min-width: 0; }
     .search-icon { display: none; }
-    .search-box button { width: 44px; height: 44px; border-radius: 50%; }
-    .search-box button svg { width: 14px; height: 14px; }
+    .hero .search-box button { width: 38px; height: 38px; border-radius: 50%; }
+    .hero .search-box button svg { width: 16px; height: 16px; }
     .search-kbd { display: none !important; }
 
     .dashboard {
@@ -3400,7 +3403,7 @@ footer {
         padding: 40px 18px 32px;
     }
     .landing-title { font-size: 38px; line-height: 1.04; }
-    .landing-sub { font-size: 13px; line-height: 1.45; margin-bottom: 20px; }
+    .landing-sub { font-size: 15px; line-height: 1.5; margin-bottom: 20px; }
     .landing-search .search-box { height: 52px; padding: 0 4px 0 14px; }
     .landing-search .search-box input { font-size: 16px; padding: 0 10px; }
     .landing-search .search-box button { width: 44px; height: 44px; }
@@ -3465,7 +3468,7 @@ footer {
     }
     .map-hint svg { width: 12px; height: 12px; }
     .map-hint-close { width: 18px; height: 18px; font-size: 13px; }
-    .map-controls { top: 8px; left: 8px; max-width: 140px; }
+    .map-controls { bottom: 8px; left: 8px; max-width: 140px; max-height: calc(100% - 16px); }
     .layer-toggle {
         font-size: 10px;
         max-width: 140px;
@@ -3546,6 +3549,7 @@ footer {
     .ai-chat-input-wrap button { width: 44px; height: 44px; }
     .search-box { min-height: 40px; }
     .search-box button { width: 44px; height: 44px; }
+    .hero .search-box button { width: 38px; height: 38px; }
     .landing-search .search-box { min-height: 48px; }
     .landing-search .search-box button { width: 44px; height: 44px; }
     .ai-hint { min-height: 36px; padding: 8px 12px; font-size: 12.5px; }
@@ -3555,7 +3559,7 @@ footer {
     .landing-hint { min-height: 32px; padding: 6px 10px; }
     .map-legend-toggle { width: 44px; height: 44px; font-size: 18px; }
     .map-hint-close { width: 32px; height: 32px; font-size: 18px; }
-    .map-kiht-legend { left: 8px; bottom: 8px; max-width: 200px; font-size: 11.5px; }
+    .map-kiht-legend { top: 8px; left: 8px; max-width: 200px; font-size: 11.5px; }
     .kiht-legend-row { font-size: 11.5px; }
 }
 
@@ -3564,7 +3568,7 @@ footer {
     .facts-strip { grid-template-columns: 1fr 1fr; }
     .fact-value { font-size: 17px; }
     .landing-title { font-size: 30px; line-height: 1.05; }
-    .landing-sub { font-size: 12.5px; }
+    .landing-sub { font-size: 14px; }
     .big-number { font-size: 28px; }
     .brand-mark { display: inline-flex; align-items: center; }
     .brand-name { display: none; }
@@ -3715,6 +3719,15 @@ footer {
     color: var(--blue-700);
 }
 .about-hackathon-badge svg { width: 14px; height: 14px; flex-shrink: 0; }
+@media (max-width: 640px) {
+    .about-hackathon {
+        margin-top: 4px;
+        padding: 7px 11px;
+        font-size: 11.5px;
+    }
+    .about-hackathon-badge { gap: 6px; }
+    .about-hackathon-badge svg { width: 12px; height: 12px; }
+}
 .about-hackathon-title,
 .about-hackathon-sub,
 .about-hackathon-text { display: none; }
