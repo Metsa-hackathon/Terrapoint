@@ -66,7 +66,7 @@
     <script src="/static/js/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl033">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl045">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl060">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -2001,6 +2001,10 @@
         return SPECIES_NAMES[code] || code;
     }
 
+    function tablePanelSummary(count, labelHtml) {
+        return '<summary class="table-panel-summary"><span class="table-panel-count">' + count + '</span>' + labelHtml + '</summary>';
+    }
+
     function animateNumber(el, target, suffix, decimals) {
         if (target == null) { el.textContent = '—'; return; }
         const duration = 800;
@@ -2256,24 +2260,23 @@
             var totalEraldisValue = 0;
             data.eraldised.forEach(function(e) { totalEraldisValue += (e.vaartus_eur || 0); });
 
-            html += '<details class="eraldised-panel" style="margin-top:0.75rem">';
+            html += '<details class="eraldised-panel table-panel eraldised-table-panel" style="margin-top:0.75rem">';
 
             // Header as summary
-            html += '<summary style="display:flex;align-items:center;gap:0.5rem;padding:10px 16px;font-weight:700;font-size:0.85rem;color:var(--ink-2);cursor:pointer;list-style:none;border-bottom:1px solid var(--hair)">';
-            html += '<span style="background:var(--blue-700);color:#fff;padding:2px 8px;border-radius:var(--r-full);font-size:0.75rem">' + data.eraldised.length + '</span>';
-            html += 'Eraldised — kokku <span style="color:var(--ink)">' + formatEur(totalEraldisValue) + '</span>';
-            html += '</summary>';
+            html += tablePanelSummary(data.eraldised.length, 'Eraldised — kokku <span class="table-panel-total">' + formatEur(totalEraldisValue) + '</span>');
 
             // Table
-            html += '<div class="eraldised-table-header">';
-            html += '<div>#</div><div>Puuliik</div><div>Vanus</div><div>Tagavara</div><div>Boniteet</div><div>Pindala</div><div style="text-align:right">Väärtus</div>';
+            html += '<div class="table-grid-hscroll">';
+            html += '<div class="table-grid-header eraldised-table-header">';
+            html += '<div>#</div><div>Puuliik</div><div>Vanus</div><div class="table-header-tooltip-cell"><span class="table-header-tooltip" data-full-label="Tagavara" aria-label="Tagavara" tabindex="0">Tagav.</span></div><div class="table-header-tooltip-cell"><span class="table-header-tooltip" data-full-label="Boniteet" aria-label="Boniteet" tabindex="0">Bon.</span></div><div class="table-header-tooltip-cell"><span class="table-header-tooltip" data-full-label="Pindala" aria-label="Pindala" tabindex="0">Pind.</span></div><div style="text-align:right">Väärtus</div>';
             html += '</div>';
 
+            html += '<div class="table-grid-scroll">';
             data.eraldised.forEach(function(e, i) {
                 var sp = speciesName(e.puuliik_kood || e.puuliik, e.puuliik);
                 var b = e.boniteet || BONITEET_LABELS[e.boniteedi_kood] || '—';
                 var v = e.vaartus_eur ? formatEur(e.vaartus_eur) : '—';
-                html += '<div class="eraldised-row">';
+                html += '<div class="table-grid-row eraldised-row">';
                 html += '<div class="er-nr">' + (i + 1) + '</div>';
                 html += '<div class="er-species">' + escHtml(sp) + '</div>';
                 html += '<div>' + (e.vanus || '—') + '</div>';
@@ -2283,6 +2286,8 @@
                 html += '<div class="er-value">' + v + '</div>';
                 html += '</div>';
             });
+            html += '</div>';
+            html += '</div>'; // end table-grid-hscroll
 
             html += '</details>'; // end panel
         }
@@ -2504,47 +2509,29 @@
             return '<span class="teatised-status status-muud">' + escHtml(staatus) + '</span>';
         }
 
-        window._teatisedData = data;
-        window._teatisedPerPage = 5;
+        var html = '<details class="eraldised-panel table-panel teatised-panel" open>';
+        html += tablePanelSummary(data.length, 'Metsateatised');
 
-        function renderTable() {
-            var pp = window._teatisedPerPage;
-            var all = window._teatisedData;
-            var visible = pp === 'all' ? all : all.slice(0, pp);
+        html += '<div class="table-grid-hscroll">';
+        html += '<div class="table-grid-header teatised-table-header">';
+        html += '<div>Tüüp</div><div>Staatus</div><div>Kehtiv kuni</div><div>Pindala</div>';
+        html += '</div>';
 
-            var html = '<div class="eraldised-controls"><span>Näita:</span>';
-            [5, 10].forEach(function(n) {
-                html += '<button data-perpage="' + n + '"' + (pp === n ? ' class="active"' : '') + '>' + n + '</button>';
-            });
-            html += '<button data-perpage="all"' + (pp === 'all' ? ' class="active"' : '') + '>Kõik</button>';
+        html += '<div class="table-grid-scroll">';
+        data.forEach(function(t) {
+            html += '<div class="table-grid-row teatised-row">';
+            html += '<div>' + escHtml(t.tyyp || '—') + '</div>';
+            html += '<div>' + teatisedStatusBadge(t.staatus, t.active) + '</div>';
+            html += '<div>' + escHtml(t.kehtiv_kuni || '—') + '</div>';
+            html += '<div>' + (t.pindala_ha ? formatNum(t.pindala_ha, 2) + ' ha' : '—') + '</div>';
             html += '</div>';
+        });
+        html += '</div>';
+        html += '</div>'; // end table-grid-hscroll
 
-            html += '<div class="teatised-table-header">';
-            html += '<div>Tüüp</div><div>Staatus</div><div>Kehtiv kuni</div><div>Pindala</div>';
-            html += '</div>';
+        html += '</details>';
 
-            visible.forEach(function(t) {
-                html += '<div class="teatised-row">';
-                html += '<div>' + escHtml(t.tyyp || '—') + '</div>';
-                html += '<div>' + teatisedStatusBadge(t.staatus, t.active) + '</div>';
-                html += '<div>' + escHtml(t.kehtiv_kuni || '—') + '</div>';
-                html += '<div>' + (t.pindala_ha ? formatNum(t.pindala_ha, 2) + ' ha' : '—') + '</div>';
-                html += '</div>';
-            });
-
-            html += '<div style="padding:10px 0 4px;font-size:0.875rem;color:var(--ink-4)">Näitan ' + visible.length + ' / ' + all.length + '</div>';
-
-            el.innerHTML = html;
-            el.querySelectorAll('.eraldised-controls button').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    var val = btn.getAttribute('data-perpage');
-                    window._teatisedPerPage = val === 'all' ? 'all' : parseInt(val);
-                    renderTable();
-                });
-            });
-        }
-
-        renderTable();
+        el.innerHTML = html;
     }
 
     function renderKitsendused(data) {
@@ -2563,13 +2550,16 @@
         var eelisLink = katasterNr ? 'https://infoleht.keskkonnainfo.ee/?q=' + encodeURIComponent(katasterNr) : 'https://infoleht.keskkonnainfo.ee/';
         var maaametLink = 'https://xgis.maaamet.ee/xgis2/page/app/maainfo?search=' + encodeURIComponent(katasterNr);
 
-        window._kitsendusedData = data;
-        window._kitsendusedPerPage = 5;
-
         function kitsRows(items) {
             var rows = '';
             items.forEach(function(k) {
                 var tyyp = k.tyyp || '';
+                var kirjeldus = k.kirjeldus || '';
+                var hasDescription = kirjeldus && kirjeldus.trim().toLowerCase() !== tyyp.trim().toLowerCase();
+                var rowClass = 'table-grid-row kitsendused-row' + (hasDescription ? ' has-kitsendused-desc' : '');
+                var rowAttrs = hasDescription
+                    ? ' tabindex="0" data-description="' + escHtml(kirjeldus) + '" aria-label="' + escHtml(tyyp + ': ' + kirjeldus) + '"'
+                    : '';
                 var link = eelisLink;
                 var linkText = 'EELIS';
                 if (tyyp.indexOf('kaitsealad') >= 0 || tyyp.indexOf('loodusala') >= 0 || tyyp.indexOf('piirang') >= 0 || tyyp.indexOf('sood') >= 0) {
@@ -2583,38 +2573,34 @@
                 } else if (tyyp.indexOf('yrask') >= 0) {
                     link = eelisLink; linkText = 'EELIS';
                 }
-                rows += '<tr><td><strong>' + escHtml(k.tyyp) + '</strong></td><td>' + escHtml(k.kirjeldus) + '</td>';
-                rows += '<td><a href="' + escHtml(link) + '" target="_blank" rel="noopener" class="muted-link">' + escHtml(linkText) + ' →</a></td></tr>';
+                rows += '<div class="' + rowClass + '"' + rowAttrs + '>';
+                rows += '<div title="' + escHtml(tyyp) + '"><strong>' + escHtml(tyyp) + '</strong>' + (hasDescription ? '<span class="kitsendused-desc-mark" aria-hidden="true">*</span>' : '') + '</div>';
+                rows += '<div class="kitsendused-link"><a href="' + escHtml(link) + '" target="_blank" rel="noopener" class="muted-link">' + escHtml(linkText) + ' →</a></div>';
+                rows += '</div>';
             });
             return rows;
         }
 
-        function renderKitsTable() {
-            var pp = window._kitsendusedPerPage;
-            var all = window._kitsendusedData;
-            var visible = pp === 'all' ? all : all.slice(0, pp);
-            var html = '<div class="eraldised-controls"><span>Näita:</span>';
-            [5, 10].forEach(function(n) {
-                html += '<button data-perpage="' + n + '"' + (pp === n ? ' class="active"' : '') + '>' + n + '</button>';
+        var html = '<details class="eraldised-panel table-panel kitsendused-panel" open>';
+        html += tablePanelSummary(data.length, 'Kitsendused ja piirangud');
+        html += '<div class="table-grid-hscroll">';
+        html += '<div class="table-grid-header kitsendused-table-header"><div>Tüüp</div><div>Lisainfo</div></div>';
+        html += '<div class="table-grid-scroll">' + kitsRows(data) + '</div>';
+        html += '</div>'; // end table-grid-hscroll
+        html += '</details>';
+        el.innerHTML = html;
+        if (linkEl) linkEl.style.display = '';
+        el.querySelectorAll('.kitsendused-row.has-kitsendused-desc').forEach(function(row) {
+            row.addEventListener('click', function(ev) {
+                if (ev.target.closest('a')) return;
+                row.classList.toggle('show-kitsendused-desc');
             });
-            html += '<button data-perpage="all"' + (pp === 'all' ? ' class="active"' : '') + '>Kõik</button>';
-            html += '</div>';
-            html += '<div class="kitsendused-scroll"><table class="kitsendused-table"><colgroup><col class="col-tyyp"><col class="col-kirjeldus"><col class="col-link"></colgroup><thead><tr><th>Tüüp</th><th>Kirjeldus</th><th>Lisainfo</th></tr></thead><tbody>';
-            html += kitsRows(visible);
-            html += '</tbody></table></div>';
-            html += '<div style="padding:10px 0 4px;font-size:0.875rem;color:var(--ink-4)">Näitan ' + visible.length + ' / ' + all.length + '</div>';
-            el.innerHTML = html;
-            if (linkEl) linkEl.style.display = '';
-            el.querySelectorAll('.eraldised-controls button').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    var val = btn.getAttribute('data-perpage');
-                    window._kitsendusedPerPage = val === 'all' ? 'all' : parseInt(val);
-                    renderKitsTable();
-                });
+            row.addEventListener('keydown', function(ev) {
+                if (ev.key !== 'Enter' && ev.key !== ' ') return;
+                ev.preventDefault();
+                row.classList.toggle('show-kitsendused-desc');
             });
-        }
-
-        renderKitsTable();
+        });
     }
 
     function renderToetused(data) {
