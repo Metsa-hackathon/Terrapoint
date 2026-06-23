@@ -2674,6 +2674,20 @@ td { font-family: var(--ff-mono); color: var(--ink-3); font-size: 12px; }
 td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 
 /* ═══ TOETUSED ══════════════════════════════════════════════════════════════ */
+.toetus-list-scroll {
+    max-height: 640px;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    /* CSS-only scroll shadow: fades in/out purely from scroll position. */
+    background:
+        linear-gradient(var(--white) 30%, rgba(255, 255, 255, 0)) center top,
+        linear-gradient(rgba(255, 255, 255, 0), var(--white) 70%) center bottom,
+        radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0)) center top,
+        radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0)) center bottom;
+    background-repeat: no-repeat;
+    background-size: 100% 24px, 100% 24px, 100% 10px, 100% 10px;
+    background-attachment: local, local, scroll, scroll;
+}
 .toetus-list { display: flex; flex-direction: column; gap: 10px; }
 .toetus-card {
     border: 1px solid var(--hair);

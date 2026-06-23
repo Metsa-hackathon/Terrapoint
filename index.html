@@ -2677,55 +2677,28 @@
             return html;
         }
 
-        window._toetusedData = eligible;
-        window._toetusedPerPage = 5;
-
-        function renderEligibleCards() {
-            var pp = window._toetusedPerPage;
-            var all = window._toetusedData;
-            var visible = pp === 'all' ? all : all.slice(0, pp);
-
-            var html = '';
-            if (all.length > 0) {
-                html += '<div class="eligible-banner"><strong>Sobivad toetused</strong><span class="eligible-banner-count">' + all.length + '</span></div>';
-                html += '<div class="eraldised-controls"><span>Näita:</span>';
-                [5, 10].forEach(function(n) {
-                    html += '<button data-perpage="' + n + '"' + (pp === n ? ' class="active"' : '') + '>' + n + '</button>';
-                });
-                html += '<button data-perpage="all"' + (pp === 'all' ? ' class="active"' : '') + '>Kõik</button>';
-                html += '</div>';
-                html += '<div class="toetus-list">';
-                visible.forEach(function(t) { html += renderCard(t, true); });
-                html += '</div>';
-                if (visible.length < all.length) {
-                    html += '<div class="toetus-count">Näitan ' + visible.length + ' / ' + all.length + '</div>';
-                }
-            }
-
-            if (ineligible.length > 0) {
-                html += '<details class="toetus-details"' + (all.length === 0 ? ' open' : '') + '>';
-                html += '<summary class="muted-summary">';
-                html += '<span class="toetus-details-label">Muud toetused, ei vasta tingimustele</span>';
-                html += '<span class="toetus-details-count">' + ineligible.length + '</span>';
-                html += '</summary>';
-                html += '<div class="toetus-list toetus-list-ineligible">';
-                ineligible.forEach(function(t) { html += renderCard(t, false); });
-                html += '</div></details>';
-            }
-
-            html += '<div class="toetus-source">Allikas: <a href="https://www.eramets.ee/toetused/" target="_blank" rel="noopener">eramets.ee</a></div>';
-
-            el.innerHTML = html;
-            el.querySelectorAll('.eraldised-controls button').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    var val = btn.getAttribute('data-perpage');
-                    window._toetusedPerPage = val === 'all' ? 'all' : parseInt(val);
-                    renderEligibleCards();
-                });
-            });
+        var html = '';
+        if (eligible.length > 0) {
+            html += '<div class="eligible-banner"><strong>Sobivad toetused</strong><span class="eligible-banner-count">' + eligible.length + '</span></div>';
+            html += '<div class="toetus-list-scroll"><div class="toetus-list">';
+            eligible.forEach(function(t) { html += renderCard(t, true); });
+            html += '</div></div>';
         }
 
-        renderEligibleCards();
+        if (ineligible.length > 0) {
+            html += '<details class="toetus-details"' + (eligible.length === 0 ? ' open' : '') + '>';
+            html += '<summary class="muted-summary">';
+            html += '<span class="toetus-details-label">Muud toetused, ei vasta tingimustele</span>';
+            html += '<span class="toetus-details-count">' + ineligible.length + '</span>';
+            html += '</summary>';
+            html += '<div class="toetus-list toetus-list-ineligible">';
+            ineligible.forEach(function(t) { html += renderCard(t, false); });
+            html += '</div></details>';
+        }
+
+        html += '<div class="toetus-source">Allikas: <a href="https://www.eramets.ee/toetused/" target="_blank" rel="noopener">eramets.ee</a></div>';
+
+        el.innerHTML = html;
     }
 
     function showLoading() {
