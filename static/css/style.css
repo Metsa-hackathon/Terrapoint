@@ -4310,6 +4310,10 @@ footer {
     color: var(--ink-2);
     letter-spacing: -0.01em;
 }
+.feedback-label-optional {
+    font-weight: 400;
+    color: var(--ink-4);
+}
 .feedback-input,
 .feedback-textarea {
     width: 100%;
