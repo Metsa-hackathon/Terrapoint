@@ -240,6 +240,7 @@
                 <a href="#meist">Meist</a>
                 <a href="#allikad">Allikad</a>
                 <a href="#kontakt">Kontakt</a>
+                <a href="#tagasiside">Tagasiside</a>
             </nav>
         </div>
         <div class="nav-right">
@@ -872,6 +873,39 @@
                     <p class="source-desc">Väärtus, süsinikuvaru, terviseindeks, üraskirisk, AI-analüüs.</p>
                 </div>
             </div>
+        </div>
+    </section>
+
+    <!-- Tagasiside -->
+    <section class="feedback" id="tagasiside" aria-label="Tagasiside">
+        <div class="feedback-inner">
+            <div class="feedback-eyebrow">
+                <span class="dot" aria-hidden="true"></span>
+                Tagasiside
+            </div>
+            <h2 class="feedback-title">Sinu <em>arvamus</em> loeb</h2>
+            <p class="feedback-lead">Aita meil Terrapointi paremaks teha. Küsi, soovita või anna tagasisidet.</p>
+            <form class="feedback-form" id="feedback-form">
+                <div class="feedback-field">
+                    <label class="feedback-label" for="feedback-name">Nimi</label>
+                    <input class="feedback-input" type="text" id="feedback-name" name="name" required placeholder="Sinu nimi">
+                </div>
+                <div class="feedback-field">
+                    <label class="feedback-label" for="feedback-email">E-post</label>
+                    <input class="feedback-input" type="email" id="feedback-email" name="email" required placeholder="sinu@epost.ee">
+                </div>
+                <div class="feedback-field">
+                    <label class="feedback-label" for="feedback-message">Sõnum</label>
+                    <textarea class="feedback-textarea" id="feedback-message" name="message" required placeholder="Kirjuta oma sõnum siia..." rows="4"></textarea>
+                </div>
+                <button class="feedback-submit" type="submit" id="feedback-submit">
+                    <span class="feedback-submit-text">Saada</span>
+                    <span class="feedback-submit-loader" hidden>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                    </span>
+                </button>
+                <p class="feedback-status" id="feedback-status" role="alert"></p>
+            </form>
         </div>
     </section>
     </main>
@@ -3347,6 +3381,59 @@
 
     }
 
+    // ═══ Tagasiside vorm ═══
+    (function() {
+        var form = document.getElementById('feedback-form');
+        var status = document.getElementById('feedback-status');
+        var submitBtn = document.getElementById('feedback-submit');
+        var submitText = submitBtn.querySelector('.feedback-submit-text');
+        var submitLoader = submitBtn.querySelector('.feedback-submit-loader');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (submitBtn.disabled) return;
+
+            var data = {
+                name: document.getElementById('feedback-name').value.trim(),
+                email: document.getElementById('feedback-email').value.trim(),
+                message: document.getElementById('feedback-message').value.trim(),
+                source: 'terrapoint.ee',
+                timestamp: new Date().toISOString()
+            };
+
+            submitBtn.disabled = true;
+            submitText.textContent = 'Saadan...';
+            submitLoader.hidden = false;
+            status.hidden = true;
+            status.className = 'feedback-status';
+
+            fetch('https://n8n.arleserver.cfd/webhook/terrapointwebhook', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(function(r) {
+                if (!r.ok) throw new Error('Viga: ' + r.status);
+                return r.text();
+            })
+            .then(function() {
+                status.textContent = 'Täname! Sinu sõnum on edastatud.';
+                status.className = 'feedback-status feedback-status-ok';
+                status.hidden = false;
+                form.reset();
+            })
+            .catch(function(err) {
+                status.textContent = 'Saatmine ebaõnnestus. Proovi hiljem uuesti.';
+                status.className = 'feedback-status feedback-status-err';
+                status.hidden = false;
+            })
+            .finally(function() {
+                submitBtn.disabled = false;
+                submitText.textContent = 'Saada';
+                submitLoader.hidden = true;
+            });
+        });
+    })();
     </script>
 </body>
 </html>

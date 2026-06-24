@@ -4238,3 +4238,147 @@ footer {
 .contact-card-title,
 .contact-card-cta,
 .contact-card-cta svg { display: none; }
+
+/* ═══ TAGASISIDE ══════════════════════════════════════════════════════════ */
+.feedback {
+    background: var(--paper);
+    padding: 80px 0;
+    border-top: 1px solid var(--hair-2);
+    text-align: center;
+}
+.feedback-inner {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 0 32px;
+}
+@media (max-width: 640px) {
+    .feedback { padding: 56px 0; }
+    .feedback-inner { padding: 0 20px; }
+}
+.feedback-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--blue-50);
+    color: var(--blue-900);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin: 0 auto 16px;
+    box-shadow: 0 4px 16px -4px rgba(7, 21, 61, 0.12);
+}
+.feedback-eyebrow .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--blue-600);
+    display: inline-block;
+}
+.feedback-title {
+    font-size: clamp(24px, 3.4vw, 34px);
+    line-height: 1.15;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    margin: 0 0 16px;
+    font-weight: 800;
+}
+.feedback-title em {
+    font-style: italic;
+    color: var(--blue-700);
+    font-weight: 800;
+}
+.feedback-lead {
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--ink-3);
+    margin: 0 0 32px;
+}
+.feedback-form {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.feedback-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.feedback-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-2);
+    letter-spacing: -0.01em;
+}
+.feedback-input,
+.feedback-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink-2);
+    background: var(--white);
+    border: 1px solid var(--hair);
+    border-radius: var(--r);
+    transition: border-color var(--t-base) var(--ease), box-shadow var(--t-base) var(--ease);
+    outline: none;
+    font-family: var(--ff-sans);
+}
+.feedback-input:focus,
+.feedback-textarea:focus {
+    border-color: var(--blue-400);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+.feedback-input::placeholder,
+.feedback-textarea::placeholder {
+    color: var(--ink-5);
+}
+.feedback-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+.feedback-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--white);
+    background: var(--blue-700);
+    border: none;
+    border-radius: var(--r);
+    cursor: pointer;
+    transition: background var(--t-base) var(--ease), transform var(--t-fast) var(--ease);
+    align-self: flex-start;
+}
+.feedback-submit:hover {
+    background: var(--blue-900);
+}
+.feedback-submit:active {
+    transform: scale(0.98);
+}
+.feedback-submit:disabled {
+    background: var(--ink-5);
+    cursor: not-allowed;
+    transform: none;
+}
+.feedback-submit-loader svg {
+    animation: feedback-spin 0.8s linear infinite;
+}
+@keyframes feedback-spin {
+    to { transform: rotate(360deg); }
+}
+.feedback-status {
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+}
+.feedback-status-ok {
+    color: var(--success);
+}
+.feedback-status-err {
+    color: var(--danger);
+}
