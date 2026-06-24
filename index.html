@@ -304,45 +304,59 @@
     </div>
 
     <main>
-    <!-- Landing / Intro (visible until first search) -->
-    <section class="landing" id="landing" aria-label="Terrapoint sissejuhatus">
-        <h1 class="landing-title">Sinu mets <em>numbrite</em><br>ja <em>kaardi</em> peal.</h1>
-        <p class="landing-sub">Sisesta katastritunnus, aadress või vali kinnistu otse kaardilt. Vaata kinnistu turuväärtust, eraldiste seisukorda, süsinikuvaru, ohutegureid ja võimalike toetusi. Kõik vaid ühe otsingu kaugusel.</p>
-        <div class="landing-search">
-            <div class="search-box">
-                <div class="search-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="7.5"/><path d="m20 20-4.2-4.2"/>
-                    </svg>
-                </div>
-                <div class="search-input-wrap">
-                    <input type="text" id="kataster-input-landing" placeholder="nt 78404:409:0113 või Kadaka pst 159" autocomplete="off" inputmode="text" enterkeyhint="search">
-                    <div id="address-dropdown-landing" class="address-dropdown" style="display:none"></div>
-                </div>
-                <button id="search-btn-landing" aria-label="Otsi">
-                    <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M5 12h14M12 5l7 7-7 7"/>
-                    </svg></span>
-                    <span class="btn-spinner" aria-hidden="true"></span>
-                </button>
-            </div>
-            <div class="landing-hints" aria-label="Näidispäringud">
-                <button class="landing-hint" data-q="78404:409:0113"><span class="kbd">kataster</span>78404:409:0113</button>
-                <button class="landing-hint" data-q="Kadaka pst 159"><span class="kbd">aadress</span>Kadaka pst 159</button>
-            </div>
+    <!-- Landing / Intro — angled forest hero (trees at an angle, disappear on scroll) -->
+    <section class="landing hero-scene" id="landing" aria-label="Terrapoint sissejuhatus">
+        <div class="hero-trees" aria-hidden="true">
+            <div class="hero-tree hero-tree--left hero-tree--left-1"><img src="/static/img/tree-barrier-left.png" alt="" loading="eager" decoding="async"></div>
+            <div class="hero-tree hero-tree--left hero-tree--left-2"><img src="/static/img/tree-barrier-left2.png" alt="" loading="eager" decoding="async"></div>
+            <div class="hero-tree hero-tree--left hero-tree--left-3"><img src="/static/img/tree-row-aspen.png" alt="" loading="eager" decoding="async"></div>
+            <div class="hero-tree hero-tree--right hero-tree--right-1"><img src="/static/img/tree-barrier-right.png" alt="" loading="eager" decoding="async"></div>
+            <div class="hero-tree hero-tree--right hero-tree--right-2"><img src="/static/img/tree-barrier-right2.png" alt="" loading="eager" decoding="async"></div>
+            <div class="hero-tree hero-tree--right hero-tree--right-3"><img src="/static/img/tree-row-larch.png" alt="" loading="eager" decoding="async"></div>
         </div>
-        <div class="landing-meta">
-            <div class="landing-meta-item">
-                <div class="landing-meta-num">9+</div>
-                <div class="landing-meta-label">Andmeallikat</div>
+        <div class="hero-content">
+            <div class="landing-eyebrow">
+                <span class="dot" aria-hidden="true"></span>
+                Eesti metsaandmed · reaalajas
             </div>
-            <div class="landing-meta-item">
-                <div class="landing-meta-num">500k+</div>
-                <div class="landing-meta-label">Eraldist Eestis</div>
+            <h1 class="landing-title">Sinu mets <em>numbrite</em><br>ja <em>kaardi</em> peal.</h1>
+            <p class="landing-sub">Sisesta katastritunnus, aadress või vali kinnistu otse kaardilt. Vaata kinnistu turuväärtust, eraldiste seisukorda, süsinikuvaru, ohutegureid ja võimalike toetusi. Kõik vaid ühe otsingu kaugusel.</p>
+            <div class="landing-search">
+                <div class="search-box">
+                    <div class="search-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="7.5"/><path d="m20 20-4.2-4.2"/>
+                        </svg>
+                    </div>
+                    <div class="search-input-wrap">
+                        <input type="text" id="kataster-input-landing" placeholder="nt 78404:409:0113 või Kadaka pst 159" autocomplete="off" inputmode="text" enterkeyhint="search">
+                        <div id="address-dropdown-landing" class="address-dropdown" style="display:none"></div>
+                    </div>
+                    <button id="search-btn-landing" aria-label="Otsi">
+                        <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg></span>
+                        <span class="btn-spinner" aria-hidden="true"></span>
+                    </button>
+                </div>
+                <div class="landing-hints" aria-label="Näidispäringud">
+                    <button class="landing-hint" data-q="78404:409:0113"><span class="kbd">kataster</span>78404:409:0113</button>
+                    <button class="landing-hint" data-q="Kadaka pst 159"><span class="kbd">aadress</span>Kadaka pst 159</button>
+                </div>
             </div>
-            <div class="landing-meta-item">
-                <div class="landing-meta-num">~3s</div>
-                <div class="landing-meta-label">Päringu aeg</div>
+            <div class="landing-meta">
+                <div class="landing-meta-item">
+                    <div class="landing-meta-num">9+</div>
+                    <div class="landing-meta-label">Andmeallikat</div>
+                </div>
+                <div class="landing-meta-item">
+                    <div class="landing-meta-num">500k+</div>
+                    <div class="landing-meta-label">Eraldist Eestis</div>
+                </div>
+                <div class="landing-meta-item">
+                    <div class="landing-meta-num">~3s</div>
+                    <div class="landing-meta-label">Päringu aeg</div>
+                </div>
             </div>
         </div>
     </section>
@@ -3435,5 +3449,6 @@
         });
     })();
     </script>
+    <script defer src="/static/js/hero.js"></script>
 </body>
 </html>

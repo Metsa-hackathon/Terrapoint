@@ -834,33 +834,136 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .skeleton-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 
 /* ═══ HERO LANDING ═════════════════════════════════════════════════════════ */
+/* ═══ HERO SCENE — transparent tree barriers, trunk anchored to the screen
+   edge, leaning inward (60° → 90°), rising up and away on scroll. ═══ */
 .landing {
     position: relative;
-    padding: 64px 24px 48px;
+    min-height: clamp(640px, 92vh, 920px);
+    padding: clamp(40px, 7vh, 84px) 24px clamp(28px, 5vh, 56px);
     text-align: center;
-    /* Full-bleed background so the section fills the viewport on desktop.
-       Children stay centered via .landing > * max-width below. */
+    overflow: hidden;
     background:
-        radial-gradient(ellipse 90% 50% at 50% 0%, rgba(96, 165, 250, 0.10), transparent 65%),
-        linear-gradient(180deg, #eef4fc 0%, var(--paper) 70%, var(--white) 100%);
+        radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255,255,255,0.55), transparent 65%),
+        linear-gradient(180deg, #eef4fc 0%, #e6eff7 55%, #dce6f0 100%);
+    --s: 0;
+    color: var(--ink);
 }
-.landing > * {
-    max-width: 960px;
-    margin-left: auto;
-    margin-right: auto;
+.landing > .hero-content {
+    position: relative;
+    z-index: 3;
+    max-width: 920px;
+    margin: 0 auto;
+    transform: translateY(calc(var(--s-content) * -8vh));
+    opacity: calc(1 - var(--s-content));
+    will-change: transform, opacity;
 }
-.landing::before {
-    content: "";
+.landing::before { content: none; }
+
+/* 3 trees per side, spaced out vertically along each edge. Each tree's
+   trunk is anchored to the screen edge via translateX(±50%). The scroll
+   motion is a PURE rotation on the trunk axis (the tree pivots from
+   its leaned angle to upright) — no lift, no circular path. A soft
+   ground/fog gradient at the bottom of the tree layer hides the flat
+   cut at the end of each trunk so we don't see the "end of the trunk". */
+.hero-trees {
     position: absolute;
     inset: 0;
-    background:
-        radial-gradient(600px 200px at 50% 0%, rgba(96, 165, 250, 0.10), transparent 60%),
-        repeating-linear-gradient(135deg, transparent 0 39px, rgba(10, 61, 158, 0.025) 39px 40px);
     pointer-events: none;
-    z-index: -1;
-    mask-image: linear-gradient(to bottom, black, transparent);
-    -webkit-mask-image: linear-gradient(to bottom, black, transparent);
+    z-index: 1;
 }
+/* Ground/fog: gradient at the bottom of the HERO SECTION (on .landing,
+   not on the trees container) so it reliably paints above the trees
+   (the trees are inside .hero-trees with their own stacking context;
+   the ground is in the .landing context, above .hero-trees, below
+   .hero-content). Fully opaque at the very bottom so the rembg cut
+   at the end of each trunk is not visible — the cut blends into the
+   same color as the hero's bottom background. */
+.landing::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 22vh;
+    background: linear-gradient(to top,
+        #dce6f0 0%,
+        #dce6f0 40%,
+        rgba(220, 230, 240, 0.5) 70%,
+        transparent 100%);
+    pointer-events: none;
+    z-index: 2;
+}
+.hero-tree {
+    position: absolute;
+    width: auto;
+    --tilt: 0deg;
+    transform-origin: 50% 100%;
+    will-change: opacity;
+    opacity: var(--s-op);
+}
+.hero-tree--left {
+    left: 0;
+    transform: translateX(-50%);
+}
+.hero-tree--right {
+    right: 0;
+    transform: translateX(50%);
+}
+/* Push the 4 middle + upper trees further OUTSIDE the frame (trunks
+   off-screen) so only their foliage is visible inside the hero. The
+   2 bottom trees keep their trunks at the edge. */
+.hero-tree--left-2,
+.hero-tree--left-3 { left: -8vw; }
+.hero-tree--right-2,
+.hero-tree--right-3 { right: -8vw; }
+/* 3 trees per side, spaced out along the edge with a clear gap between
+   each pair. Lean is ~55° from vertical (more horizontal — the user
+   said the previous 40° was "angled too up"). */
+.hero-tree--left-1  { bottom: 0;   height: 60vh; --tilt:  55deg; }
+.hero-tree--left-2  { bottom: 36vh; height: 52vh; --tilt:  57deg; }
+.hero-tree--left-3  { bottom: 56vh; height: 44vh; --tilt:  53deg; }
+.hero-tree--right-1 { bottom: 0;   height: 58vh; --tilt: -55deg; }
+.hero-tree--right-2 { bottom: 36vh; height: 50vh; --tilt: -57deg; }
+.hero-tree--right-3 { bottom: 56vh; height: 42vh; --tilt: -53deg; }
+
+.hero-tree img {
+    display: block;
+    height: 100%;
+    width: auto;
+    transform-origin: 50% 100%;
+    will-change: transform;
+    filter: drop-shadow(0 24px 36px rgba(7, 21, 61, 0.13));
+    /* Scroll motion: pure rotation on the trunk axis. From the leaned
+       base tilt to 0° (upright). No translateY. */
+    transform: rotate(calc(var(--tilt) * (1 - var(--s))));
+}
+/* Per-tree ground patch: a large, very soft radial gradient at the
+   base of every tree that hides the rembg cut at the end of the
+   trunk. The element is intentionally much larger than the visible
+   solid area and the gradient fades to transparent well before the
+   element's edges, so the patch's rectangular shape is never
+   visible — it reads as soft fog blending into the hero background.
+   The solid color matches the hero's bottom bg (#dce6f0) so the
+   trunk base blends in. */
+.hero-tree::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 560px;
+    height: 160px;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse 55% 60% at center 70%,
+        #dce6f0 0%,
+        #dce6f0 18%,
+        rgba(220, 230, 240, 0.45) 45%,
+        rgba(220, 230, 240, 0.15) 70%,
+        transparent 100%);
+    pointer-events: none;
+    z-index: 2;
+}
+
+.landing-eyebrow { transform-origin: 50% 50%; }
 
 .landing-eyebrow {
     display: inline-flex;
@@ -1577,7 +1680,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 /* ═══ METRIC GRID ═══════════════════════════════════════════════════════════ */
 .metrics-grid {
     display: grid;
-    grid-template-columns: 1fr 1.5fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
 }
 .metric-card {
@@ -3646,8 +3749,15 @@ footer {
     }
 
     .landing {
-        padding: 40px 18px 32px;
+        padding: 36px 16px 28px;
+        min-height: 560px;
     }
+    .hero-tree--left-1  { bottom: 0;   height: 46vh; }
+    .hero-tree--left-2  { bottom: 32vh; height: 40vh; }
+    .hero-tree--left-3  { bottom: 52vh; height: 34vh; }
+    .hero-tree--right-1 { bottom: 0;   height: 44vh; }
+    .hero-tree--right-2 { bottom: 32vh; height: 38vh; }
+    .hero-tree--right-3 { bottom: 52vh; height: 32vh; }
     .landing-title { font-size: 38px; line-height: 1.04; }
     .landing-sub { font-size: 15px; line-height: 1.5; margin-bottom: 20px; }
     .landing-search .search-box { height: 52px; padding: 0 4px 0 14px; }
@@ -3844,6 +3954,12 @@ footer {
     .fact-value { font-size: 17px; }
     .landing-title { font-size: 30px; line-height: 1.05; }
     .landing-sub { font-size: 14px; }
+    .hero-tree--left-1  { bottom: 0;   height: 36vh; }
+    .hero-tree--left-2  { bottom: 28vh; height: 30vh; }
+    .hero-tree--left-3  { bottom: 46vh; height: 26vh; }
+    .hero-tree--right-1 { bottom: 0;   height: 34vh; }
+    .hero-tree--right-2 { bottom: 28vh; height: 28vh; }
+    .hero-tree--right-3 { bottom: 46vh; height: 24vh; }
     .big-number { font-size: 28px; }
     .brand-mark { display: inline-flex; align-items: center; }
     .brand-name { display: none; }
