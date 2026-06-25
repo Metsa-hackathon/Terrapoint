@@ -67,7 +67,7 @@
     --map-eraldis-hooldus:    #047857;  /* deep green — mature, healthy */
     --map-eraldis-noor:       #1d4ed8;  /* blue — too young for cutting */
 
-    /* Map — kihi piirda joon (10 layer toggle swatches) */
+    /* Map — kihi piirda joon (18 layer toggle swatches) */
     --map-layer-kaitseala:  #047857;    /* green — protected */
     --map-layer-piirang:    #0f766e;    /* teal — restriction */
     --map-layer-yrask:      #c2410c;    /* burnt orange — pest */
@@ -79,6 +79,13 @@
     --map-layer-veekogu:    #0284c7;    /* cyan — lake */
     --map-layer-vooluvesi:  #0e7490;    /* teal-deep — river */
     --map-layer-kataster:   #b45309;    /* amber-700 — cadastre boundaries */
+    --map-layer-yrask-mke:  #c1121f;    /* dark red — confirmed dead trees */
+    --map-layer-kotkas:     #b45309;    /* amber — eagle (KMA) protection */
+    --map-layer-veekaitse:  #0ea5e9;    /* sky — water protection zone */
+    --map-layer-ranna:      #14b8a6;    /* teal — shore restriction */
+    --map-layer-uleujutus:  #06b6d4;    /* cyan — flood risk */
+    --map-layer-kaitsevoond:#a78bfa;    /* light violet — heritage zone */
+    --map-layer-piiranguk:  #8b5cf6;    /* violet — heritage restriction */
 
     /* Promotional callout surface — used for kinnistu turuväärtus box */
     --surface-callout:        #f0f6ff;  /* very light blue, distinct from paper-2 */
@@ -1309,7 +1316,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     box-shadow: var(--sh-2);
     cursor: pointer;
     font-family: inherit;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--ink-2);
     letter-spacing: 0.06em;
@@ -1354,7 +1361,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     backdrop-filter: blur(10px) saturate(140%);
     -webkit-backdrop-filter: blur(10px) saturate(140%);
     box-shadow: var(--sh-2);
-    font-size: 11.5px;
+    font-size: 13px;
     font-weight: 500;
     letter-spacing: -0.005em;
     line-height: 1.2;
@@ -1522,14 +1529,15 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .toggle-item .toggle-label {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
     border-left: none !important;
     padding: 0 !important;
-    font-size: 11.5px;
+    font-size: 13px;
+    font-weight: 500;
 }
 .toggle-item .toggle-label::before {
     content: "";
-    width: 10px; height: 10px;
+    width: 12px; height: 12px;
     border-radius: 3px;
     background: currentColor;
     flex-shrink: 0;
@@ -1645,7 +1653,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     border-radius: var(--r);
     box-shadow: var(--sh-2);
     padding: 8px 10px 6px;
-    font-size: 12px;
+    font-size: 13px;
     color: var(--ink-2);
     scrollbar-width: thin;
 }
@@ -1687,7 +1695,8 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     gap: 7px;
     padding: 1px 0;
     line-height: 1.35;
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 500;
 }
 .kiht-legend-swatch {
     width: 16px; height: 12px;
@@ -3355,17 +3364,19 @@ footer {
     font-family: var(--ff-sans) !important;
     border: 1px solid var(--hair);
 }
-.leaflet-popup-content { margin: 12px 14px !important; font-size: 12.5px !important; line-height: 1.5 !important; }
+.leaflet-popup-content { margin: 12px 14px !important; font-size: 14px !important; line-height: 1.5 !important; }
 .leaflet-popup-tip { box-shadow: var(--sh-1) !important; }
 .leaflet-tooltip {
     background: var(--ink) !important;
     color: var(--white) !important;
     border: none !important;
     border-radius: 6px !important;
-    padding: 4px 8px !important;
-    font-size: 11.5px !important;
+    padding: 5px 10px !important;
+    font-size: 13px !important;
+    font-weight: 500;
     font-family: var(--ff-sans) !important;
     box-shadow: var(--sh-2) !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 .leaflet-tooltip::before { border-top-color: var(--ink) !important; }
 
@@ -3873,7 +3884,7 @@ footer {
     #map { height: clamp(380px, 60vh, 560px); }
     .map-hint {
         top: 66px;
-        font-size: 10.5px;
+        font-size: 12px;
         line-height: 1.1;
         padding: 2px 2px 2px 7px;
         gap: 2.5px;
@@ -3884,15 +3895,15 @@ footer {
     .map-hint-close { width: 14px; height: 14px; font-size: 11px; }
     .map-controls { top: 8px; bottom: auto; left: 8px; flex-direction: column; max-width: 140px; max-height: calc(100% - 16px); }
     .layer-toggle {
-        font-size: 10px;
+        font-size: 12px;
         max-width: 140px;
         grid-template-columns: 1fr;
         padding: 3px;
         gap: 0;
     }
-    .toggle-item { padding: 3px 6px; min-height: 24px; }
-    .toggle-item .toggle-label { font-size: 10px; gap: 4px; }
-    .toggle-item .toggle-label::before { width: 7px; height: 7px; }
+    .toggle-item { padding: 3px 6px; min-height: 28px; }
+    .toggle-item .toggle-label { font-size: 12px; gap: 5px; }
+    .toggle-item .toggle-label::before { width: 10px; height: 10px; }
     .map-legend {
         right: 8px;
         bottom: 30px;
@@ -3967,11 +3978,11 @@ footer {
     .ai-hint { min-height: 36px; padding: 8px 12px; font-size: 12.5px; }
     .map-controls-toggle { min-height: 44px; padding: 8px 12px; }
     .toggle-item { min-height: 40px; padding: 8px 10px; }
-    .toggle-item .toggle-label { font-size: 12px; }
+    .toggle-item .toggle-label { font-size: 13px; }
     .landing-hint { min-height: 32px; padding: 6px 10px; }
     .map-legend-toggle { width: 44px; height: 44px; font-size: 18px; }
-    .map-kiht-legend { top: 60px; left: 8px; max-width: 200px; font-size: 11.5px; }
-    .kiht-legend-row { font-size: 11.5px; }
+    .map-kiht-legend { top: 60px; left: 8px; max-width: 200px; font-size: 12.5px; }
+    .kiht-legend-row { font-size: 12.5px; }
 }
 
 /* Very small phones */

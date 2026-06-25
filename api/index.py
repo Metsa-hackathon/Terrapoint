@@ -858,21 +858,29 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     map_layers = {}
     LAYER_MAP = {
         # Natura (rohelised) — eristatud heledusega
-        "kaitsealad":      {"label": "Kaitsealad",      "color": "#1b4332", "dash": None,    "weight": 3, "fillOpacity": 0.30},
-        "natura_elupaik":  {"label": "Natura elupaigad", "color": "#74c69d", "dash": None,    "weight": 2, "fillOpacity": 0.40},
+        "kaitsealad":      {"label": "Kaitsealad",      "color": "#1b4332", "dash": None,    "weight": 4, "fillOpacity": 0.35},
+        "natura_elupaik":  {"label": "Natura elupaigad", "color": "#74c69d", "dash": None,    "weight": 3, "fillOpacity": 0.40},
         # Piirang (violetne) — erinev värv kaitsealadest
-        "piirang":         {"label": "Piiranguvööndid",  "color": "#7b2cbf", "dash": "6,4",  "weight": 2, "fillOpacity": 0.20},
+        "piirang":         {"label": "Piiranguvööndid",  "color": "#7b2cbf", "dash": "6,4",  "weight": 3, "fillOpacity": 0.30},
         # Ürask (oranž/punane) — kahjurid
-        "yrask_eelis":     {"label": "Üraski vaatlused", "color": "#e76f51", "dash": None,    "weight": 3, "fillOpacity": 0.35},
-        "yrask_mke":       {"label": "Surnud puud (MKE)", "color": "#c1121f", "dash": None,   "weight": 3, "fillOpacity": 0.45},
+        "yrask_eelis":     {"label": "Üraski vaatlused", "color": "#e76f51", "dash": None,    "weight": 4, "fillOpacity": 0.45},
+        "yrask_mke":       {"label": "Surnud puud (MKE)", "color": "#c1121f", "dash": None,   "weight": 4, "fillOpacity": 0.55},
         # Vesi (sinised) — järved hele, vooluveed tume paks joon
-        "sood":            {"label": "Sood",            "color": "#1d4e89", "dash": None,    "weight": 1, "fillOpacity": 0.30},
-        "veekogud":        {"label": "Järved",          "color": "#48cae4", "dash": None,    "weight": 2, "fillOpacity": 0.50},
+        "sood":            {"label": "Sood",            "color": "#1d4e89", "dash": None,    "weight": 2.5, "fillOpacity": 0.40},
+        "veekogud":        {"label": "Järved",          "color": "#48cae4", "dash": None,    "weight": 2.5, "fillOpacity": 0.50},
         "vooluveed":       {"label": "Vooluveed",       "color": "#023e8a", "dash": None,    "weight": 4, "fillOpacity": 0.0},
+        # Veekaitse ja üleujutus (kitsendused)
+        "veekaitse":       {"label": "Veekaitsevöönd",  "color": "#0ea5e9", "dash": "4,3",   "weight": 2.5, "fillOpacity": 0.20},
+        "ranna_piirang":   {"label": "Ranna piirang",   "color": "#14b8a6", "dash": None,    "weight": 2, "fillOpacity": 0.22},
+        "uleujutus":       {"label": "Üleujutusala",    "color": "#06b6d4", "dash": "6,6",   "weight": 2.5, "fillOpacity": 0.25},
+        "kma_kitsendused": {"label": "Kotkas (KMA)",    "color": "#b45309", "dash": "4,4",   "weight": 3, "fillOpacity": 0.25},
+        # Muinsuskaitse (violetne spekter)
+        "malestised":      {"label": "Mälestised",      "color": "#6d28d9", "dash": None,    "weight": 3, "fillOpacity": 0.40},
+        "kaitsevoondid":   {"label": "Kaitsevöönd (MK)", "color": "#a78bfa", "dash": "4,3",  "weight": 2, "fillOpacity": 0.20},
+        "piirangukeelualad":{"label": "Piirangu keeluala", "color": "#8b5cf6","dash": None,   "weight": 2, "fillOpacity": 0.18},
         # Muud (eristatud värv + dash)
-        "karuputk":        {"label": "Karuputk",        "color": "#d63384", "dash": "2,3",   "weight": 2, "fillOpacity": 0.30},
-        "lageraiealad":    {"label": "Lageraiealad",    "color": "#6c757d", "dash": "8,4",   "weight": 2, "fillOpacity": 0.25},
-        "malestised":      {"label": "Mälestised",      "color": "#9d4edd", "dash": None,    "weight": 3, "fillOpacity": 0.40},
+        "karuputk":        {"label": "Karuputk",        "color": "#d63384", "dash": "2,3",   "weight": 2.5, "fillOpacity": 0.40},
+        "lageraiealad":    {"label": "Lageraiealad",    "color": "#6c757d", "dash": "8,4",   "weight": 3, "fillOpacity": 0.30},
     }
     for key, meta in LAYER_MAP.items():
         features = layers_data.get(key, [])
