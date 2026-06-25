@@ -113,6 +113,10 @@ async def _read_limited_json(request: Request, max_bytes: int) -> dict:
     return payload
 
 
+def _forest_area_ha(eraldised: list[dict]) -> float:
+    return round(sum((e.get("pindala_ha") or 0) for e in eraldised), 2)
+
+
 def _chat_completion_payload(model: str, messages: list[dict]) -> dict:
     return {
         "model": model,
@@ -330,7 +334,6 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     carbon = {}
     raie = {}
     liikide_koosseis = []
-    pindala = 0
 
     # Process kitsendused from layers
     kitsendused_keys = [
@@ -441,8 +444,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
                 eraldis["vanus"] = round(sum(t * v for t, v in weighted) / total_t)
 
         # Aggregate across all eraldised (weighted by pindala)
-        total_pindala = sum((e.get("pindala_ha") or 0) for e in eraldised)
-        pindala = total_pindala
+        total_pindala = _forest_area_ha(eraldised)
 
         # Weighted average tagavara and vanus
         if total_pindala > 0:
@@ -508,10 +510,10 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
                 aggregated[kood]["count"] += 1
 
             for eid, species_in_erald in eraldis_species_tagavara.items():
-                pindala = eraldis_pindala_map.get(eid, 0)
+                eraldis_pindala = eraldis_pindala_map.get(eid, 0)
                 for kood, sum_tagavara_per_ha in species_in_erald.items():
                     if kood in aggregated:
-                        aggregated[kood]["total_volume_m3"] += sum_tagavara_per_ha * pindala
+                        aggregated[kood]["total_volume_m3"] += sum_tagavara_per_ha * eraldis_pindala
 
             species_list = list(aggregated.values())
 
@@ -771,7 +773,8 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             "trees_equivalent": carbon.get("trees_equivalent"),
         }
 
-    kataster_data["mets_pindala_ha"] = pindala if eraldised else 0
+    mets_pindala_ha = _forest_area_ha(eraldised) if eraldised else 0
+    kataster_data["mets_pindala_ha"] = mets_pindala_ha
 
     natura_2000 = bool(natura_features)
     kaitseala_features = layers_data.get("kaitsealad", [])
@@ -789,7 +792,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         "keskm_vanus": int(avg_vanus) if eraldised else 0,
         "peapuuliik_kood": puuliik if eraldised else None,
         "keskm_raievanus": keskm_raievanus,
-        "mets_pindala": pindala if eraldised else 0,
+        "mets_pindala": mets_pindala_ha,
         "siht1": kataster_data.get("sihtotstarve", ""),
         "kaitseala": bool(kaitseala_features),
         "pindala_ha": kataster_data.get("pindala_ha", 0),
