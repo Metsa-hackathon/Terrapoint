@@ -3770,16 +3770,17 @@ footer {
         padding: 36px 16px 28px;
         min-height: 560px;
     }
-    /* Trees: minimal corner accents on phones — fixed px so they never
-       grow into content when the viewport is stretched vertically. */
+    /* Trees: visible corner accents on phones — fixed px so they never
+       grow into content when the viewport is stretched vertically.
+       Moved inward (1vw) so more of the tree shows; moderate height. */
     .hero-tree--left-2,
     .hero-tree--left-3,
     .hero-tree--right-2,
     .hero-tree--right-3 { display: none; }
-    .hero-tree--left-1  { left: -6vw;  bottom: 0; height: 80px; max-height: 10vh; }
-    .hero-tree--right-1 { right: -6vw; bottom: 0; height: 75px; max-height: 10vh; }
+    .hero-tree--left-1  { left: 1vw;  bottom: 0; height: 105px; max-height: 14vh; }
+    .hero-tree--right-1 { right: 1vw; bottom: 0; height: 100px; max-height: 14vh; }
     .landing::after { height: 8vh; }
-    .hero-tree::after { width: 140px; height: 50px; }
+    .hero-tree::after { width: 160px; height: 56px; }
     .landing-title { font-size: 38px; line-height: 1.04; }
     .landing-sub { font-size: 15px; line-height: 1.5; margin-bottom: 20px; }
     .landing-search .search-box { height: 52px; padding: 0 4px 0 14px; }
@@ -3980,10 +3981,10 @@ footer {
     .hero-tree--left-3,
     .hero-tree--right-2,
     .hero-tree--right-3 { display: none; }
-    .hero-tree--left-1  { left: -8vw;  bottom: 0; height: 60px; max-height: 9vh; }
-    .hero-tree--right-1 { right: -8vw; bottom: 0; height: 56px; max-height: 9vh; }
+    .hero-tree--left-1  { left: 0;    bottom: 0; height: 82px; max-height: 12vh; }
+    .hero-tree--right-1 { right: 0;   bottom: 0; height: 76px; max-height: 12vh; }
     .landing::after { height: 6vh; }
-    .hero-tree::after { width: 110px; height: 40px; }
+    .hero-tree::after { width: 130px; height: 46px; }
     .big-number { font-size: 28px; }
     .brand-mark { display: inline-flex; align-items: center; }
     .brand-name { display: none; }
