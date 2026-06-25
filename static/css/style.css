@@ -902,20 +902,20 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     opacity: var(--s-op);
 }
 .hero-tree--left {
-    left: 0;
+    left: 2vw;
     transform: translateX(-50%);
 }
 .hero-tree--right {
-    right: 0;
+    right: 2vw;
     transform: translateX(50%);
 }
 /* Push the 4 middle + upper trees further OUTSIDE the frame (trunks
    off-screen) so only their foliage is visible inside the hero. The
-   2 bottom trees keep their trunks at the edge. */
+   2 bottom trees keep their trunks near the edge (2vw in). */
 .hero-tree--left-2,
-.hero-tree--left-3 { left: -8vw; }
+.hero-tree--left-3 { left: -4vw; }
 .hero-tree--right-2,
-.hero-tree--right-3 { right: -8vw; }
+.hero-tree--right-3 { right: -4vw; }
 /* 3 trees per side, spaced out along the edge with a clear gap between
    each pair. Lean is ~55° from vertical (more horizontal — the user
    said the previous 40° was "angled too up"). */
