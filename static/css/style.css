@@ -3722,8 +3722,8 @@ footer {
     }
     .section-head h2 { font-size: 24px; }
     .map-legend { max-width: 220px; font-size: 11.5px; }
-    /* Trees: hidden on phone — they looked broken at small widths. */
-    .hero-trees { display: none; }
+    /* Trees: small tablet / large phone (true phones hit the 640px block below). */
+    .hero-tree--left-1  { left: 0;     bottom: 0;   height: 32vh; }
     .hero-tree--left-2  { left: -10vw; bottom: 22vh; height: 26vh; }
     .hero-tree--left-3  { left: -10vw; bottom: 40vh; height: 22vh; }
     .hero-tree--right-1 { right: 0;    bottom: 0;   height: 30vh; }
@@ -3770,15 +3770,15 @@ footer {
         padding: 36px 16px 28px;
         min-height: 560px;
     }
-    /* Trees: small corner accents on phones. */
-    .hero-tree--left-1  { left: 0;     bottom: 0;   height: 28vh; }
-    .hero-tree--left-2  { left: -14vw; bottom: 20vh; height: 22vh; }
-    .hero-tree--left-3  { left: -14vw; bottom: 36vh; height: 18vh; }
-    .hero-tree--right-1 { right: 0;    bottom: 0;   height: 26vh; }
-    .hero-tree--right-2 { right: -14vw; bottom: 20vh; height: 20vh; }
-    .hero-tree--right-3 { right: -14vw; bottom: 36vh; height: 16vh; }
-    .landing::after { height: 12vh; }
-    .hero-tree::after { width: 240px; height: 80px; }
+    /* Trees: small corner accents on phones — much smaller, pushed outside. */
+    .hero-tree--left-1  { left: -4vw;  bottom: 0;   height: 12vh; }
+    .hero-tree--left-2  { left: -18vw; bottom: 8vh; height: 10vh; }
+    .hero-tree--left-3  { left: -18vw; bottom: 18vh; height: 8vh; }
+    .hero-tree--right-1 { right: -4vw; bottom: 0;   height: 11vh; }
+    .hero-tree--right-2 { right: -18vw; bottom: 8vh; height: 9vh; }
+    .hero-tree--right-3 { right: -18vw; bottom: 18vh; height: 7vh; }
+    .landing::after { height: 10vh; }
+    .hero-tree::after { width: 160px; height: 60px; }
     .landing-title { font-size: 38px; line-height: 1.04; }
     .landing-sub { font-size: 15px; line-height: 1.5; margin-bottom: 20px; }
     .landing-search .search-box { height: 52px; padding: 0 4px 0 14px; }
@@ -3975,14 +3975,14 @@ footer {
     .fact-value { font-size: 17px; }
     .landing-title { font-size: 30px; line-height: 1.05; }
     .landing-sub { font-size: 14px; }
-    .hero-tree--left-1  { left: 0;   bottom: 0;   height: 24vh; }
-    .hero-tree--left-2  { left: -18vw; bottom: 18vh; height: 18vh; }
-    .hero-tree--left-3  { left: -18vw; bottom: 32vh; height: 14vh; }
-    .hero-tree--right-1 { right: 0;  bottom: 0;   height: 22vh; }
-    .hero-tree--right-2 { right: -18vw; bottom: 18vh; height: 16vh; }
-    .hero-tree--right-3 { right: -18vw; bottom: 32vh; height: 12vh; }
-    .landing::after { height: 12vh; }
-    .hero-tree::after { width: 200px; height: 60px; }
+    .hero-tree--left-1  { left: -6vw;  bottom: 0;   height: 10vh; }
+    .hero-tree--left-2  { left: -22vw; bottom: 7vh; height: 8vh; }
+    .hero-tree--left-3  { left: -22vw; bottom: 15vh; height: 6vh; }
+    .hero-tree--right-1 { right: -6vw; bottom: 0;   height: 9vh; }
+    .hero-tree--right-2 { right: -22vw; bottom: 7vh; height: 7vh; }
+    .hero-tree--right-3 { right: -22vw; bottom: 15vh; height: 5vh; }
+    .landing::after { height: 8vh; }
+    .hero-tree::after { width: 130px; height: 50px; }
     .big-number { font-size: 28px; }
     .brand-mark { display: inline-flex; align-items: center; }
     .brand-name { display: none; }
