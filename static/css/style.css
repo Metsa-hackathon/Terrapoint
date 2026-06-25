@@ -3770,15 +3770,16 @@ footer {
         padding: 36px 16px 28px;
         min-height: 560px;
     }
-    /* Trees: small corner accents on phones — much smaller, pushed outside. */
-    .hero-tree--left-1  { left: -4vw;  bottom: 0;   height: 12vh; }
-    .hero-tree--left-2  { left: -18vw; bottom: 8vh; height: 10vh; }
-    .hero-tree--left-3  { left: -18vw; bottom: 18vh; height: 8vh; }
-    .hero-tree--right-1 { right: -4vw; bottom: 0;   height: 11vh; }
-    .hero-tree--right-2 { right: -18vw; bottom: 8vh; height: 9vh; }
-    .hero-tree--right-3 { right: -18vw; bottom: 18vh; height: 7vh; }
-    .landing::after { height: 10vh; }
-    .hero-tree::after { width: 160px; height: 60px; }
+    /* Trees: minimal corner accents on phones — fixed px so they never
+       grow into content when the viewport is stretched vertically. */
+    .hero-tree--left-2,
+    .hero-tree--left-3,
+    .hero-tree--right-2,
+    .hero-tree--right-3 { display: none; }
+    .hero-tree--left-1  { left: -6vw;  bottom: 0; height: 80px; max-height: 10vh; }
+    .hero-tree--right-1 { right: -6vw; bottom: 0; height: 75px; max-height: 10vh; }
+    .landing::after { height: 8vh; }
+    .hero-tree::after { width: 140px; height: 50px; }
     .landing-title { font-size: 38px; line-height: 1.04; }
     .landing-sub { font-size: 15px; line-height: 1.5; margin-bottom: 20px; }
     .landing-search .search-box { height: 52px; padding: 0 4px 0 14px; }
@@ -3975,14 +3976,14 @@ footer {
     .fact-value { font-size: 17px; }
     .landing-title { font-size: 30px; line-height: 1.05; }
     .landing-sub { font-size: 14px; }
-    .hero-tree--left-1  { left: -6vw;  bottom: 0;   height: 10vh; }
-    .hero-tree--left-2  { left: -22vw; bottom: 7vh; height: 8vh; }
-    .hero-tree--left-3  { left: -22vw; bottom: 15vh; height: 6vh; }
-    .hero-tree--right-1 { right: -6vw; bottom: 0;   height: 9vh; }
-    .hero-tree--right-2 { right: -22vw; bottom: 7vh; height: 7vh; }
-    .hero-tree--right-3 { right: -22vw; bottom: 15vh; height: 5vh; }
-    .landing::after { height: 8vh; }
-    .hero-tree::after { width: 130px; height: 50px; }
+    .hero-tree--left-2,
+    .hero-tree--left-3,
+    .hero-tree--right-2,
+    .hero-tree--right-3 { display: none; }
+    .hero-tree--left-1  { left: -8vw;  bottom: 0; height: 60px; max-height: 9vh; }
+    .hero-tree--right-1 { right: -8vw; bottom: 0; height: 56px; max-height: 9vh; }
+    .landing::after { height: 6vh; }
+    .hero-tree::after { width: 110px; height: 40px; }
     .big-number { font-size: 28px; }
     .brand-mark { display: inline-flex; align-items: center; }
     .brand-name { display: none; }
