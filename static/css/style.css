@@ -3722,15 +3722,8 @@ footer {
     }
     .section-head h2 { font-size: 24px; }
     .map-legend { max-width: 220px; font-size: 11.5px; }
-    /* Trees: small tablet / large phone (true phones hit the 640px block below). */
-    .hero-tree--left-1  { left: 0;     bottom: 0;   height: 32vh; }
-    .hero-tree--left-2  { left: -10vw; bottom: 22vh; height: 26vh; }
-    .hero-tree--left-3  { left: -10vw; bottom: 40vh; height: 22vh; }
-    .hero-tree--right-1 { right: 0;    bottom: 0;   height: 30vh; }
-    .hero-tree--right-2 { right: -10vw; bottom: 22vh; height: 24vh; }
-    .hero-tree--right-3 { right: -10vw; bottom: 40vh; height: 20vh; }
-    .landing::after { height: 14vh; }
-    .hero-tree::after { width: 320px; height: 100px; }
+    /* Trees: hidden on phone / small tablet — desktop keeps the full forest. */
+    .hero-trees { display: none; }
 }
 
 /* Phone */
@@ -3770,17 +3763,7 @@ footer {
         padding: 36px 16px 28px;
         min-height: 560px;
     }
-    /* Trees: visible corner accents on phones — fixed px so they never
-       grow into content when the viewport is stretched vertically.
-       Moved inward (1vw) so more of the tree shows; moderate height. */
-    .hero-tree--left-2,
-    .hero-tree--left-3,
-    .hero-tree--right-2,
-    .hero-tree--right-3 { display: none; }
-    .hero-tree--left-1  { left: 1vw;  bottom: 0; height: 105px; max-height: 14vh; }
-    .hero-tree--right-1 { right: 1vw; bottom: 0; height: 100px; max-height: 14vh; }
     .landing::after { height: 8vh; }
-    .hero-tree::after { width: 160px; height: 56px; }
     .landing-title { font-size: 38px; line-height: 1.04; }
     .landing-sub { font-size: 15px; line-height: 1.5; margin-bottom: 20px; }
     .landing-search .search-box { height: 52px; padding: 0 4px 0 14px; }
@@ -3977,14 +3960,7 @@ footer {
     .fact-value { font-size: 17px; }
     .landing-title { font-size: 30px; line-height: 1.05; }
     .landing-sub { font-size: 14px; }
-    .hero-tree--left-2,
-    .hero-tree--left-3,
-    .hero-tree--right-2,
-    .hero-tree--right-3 { display: none; }
-    .hero-tree--left-1  { left: 0;    bottom: 0; height: 82px; max-height: 12vh; }
-    .hero-tree--right-1 { right: 0;   bottom: 0; height: 76px; max-height: 12vh; }
     .landing::after { height: 6vh; }
-    .hero-tree::after { width: 130px; height: 46px; }
     .big-number { font-size: 28px; }
     .brand-mark { display: inline-flex; align-items: center; }
     .brand-name { display: none; }
