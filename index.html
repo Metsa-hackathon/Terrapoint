@@ -66,7 +66,7 @@
     <script src="/static/js/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl033">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl063">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl064">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -3089,22 +3089,57 @@
         });
 
         // Landing address autocomplete (mirrors nav behaviour)
-        var landAddrTimer = null;
-        if (landInput && landDropdown) {
-            landInput.addEventListener('input', function() {
-                var val = landInput.value.trim();
-                clearTimeout(landAddrTimer);
-                if (val.length < 3) { landDropdown.style.display = 'none'; return; }
-                if (/^\d{5}:\d{3}:\d{4}$/.test(val)) { landDropdown.style.display = 'none'; return; }
-                landAddrTimer = setTimeout(function() { searchAddresses(val, landDropdown, landInput); }, 350);
-            });
-            landInput.addEventListener('blur', function() {
-                setTimeout(function() { landDropdown.style.display = 'none'; }, 200);
-            });
-            landInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') landDropdown.style.display = 'none';
-            });
-        }
+    var landAddrTimer = null;
+    function landHighlight(delta) {
+        if (!landDropdown) return;
+        var items = landDropdown.querySelectorAll('.address-item');
+        if (!items.length) return;
+        var idx = (landDropdown._activeIndex == null ? -1 : landDropdown._activeIndex) + delta;
+        if (idx < 0) idx = items.length - 1;
+        if (idx >= items.length) idx = 0;
+        items.forEach(function(it, i) { it.classList.toggle('is-active', i === idx); });
+        landDropdown._activeIndex = idx;
+        var active = items[idx];
+        if (active && active.scrollIntoView) active.scrollIntoView({ block: 'nearest' });
+    }
+    function landPickActive() {
+        if (!landDropdown) return false;
+        var items = landDropdown.querySelectorAll('.address-item');
+        if (!items.length || landDropdown.style.display === 'none') return false;
+        var idx = landDropdown._activeIndex;
+        if (idx == null || idx < 0) idx = 0;
+        if (idx >= items.length) return false;
+        selectAddressItem(items[idx], landDropdown, landInput);
+        return true;
+    }
+    if (landInput && landDropdown) {
+        landInput.addEventListener('input', function() {
+            var val = landInput.value.trim();
+            clearTimeout(landAddrTimer);
+            if (val.length < 3) { landDropdown.style.display = 'none'; return; }
+            if (/^\d{5}:\d{3}:\d{4}$/.test(val)) { landDropdown.style.display = 'none'; return; }
+            // show immediate loading feedback while we wait for debounce + fetch
+            showDropdownLoading(landDropdown);
+            landDropdown._activeIndex = -1;
+            landAddrTimer = setTimeout(function() { searchAddresses(val, landDropdown, landInput); }, 350);
+        });
+        landInput.addEventListener('blur', function() {
+            setTimeout(function() { landDropdown.style.display = 'none'; }, 200);
+        });
+        landInput.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowDown') {
+                if (landDropdown.style.display !== 'none') { e.preventDefault(); landHighlight(1); }
+            } else if (e.key === 'ArrowUp') {
+                if (landDropdown.style.display !== 'none') { e.preventDefault(); landHighlight(-1); }
+            } else if (e.key === 'Enter') {
+                if (landPickActive()) { e.preventDefault(); return; }
+                var v = landInput.value.trim();
+                if (v) smartSubmit(v);
+            } else if (e.key === 'Escape') {
+                landDropdown.style.display = 'none';
+            }
+        });
+    }
 
         // Focus the landing search initially (it's more prominent)
         if (landInput) landInput.focus();
@@ -3263,6 +3298,26 @@
         var addressTimer = null;
         var input = document.getElementById('kataster-input');
         var dropdown = document.getElementById('address-dropdown');
+        function navHighlight(delta) {
+            var items = dropdown.querySelectorAll('.address-item');
+            if (!items.length) return;
+            var idx = (dropdown._activeIndex == null ? -1 : dropdown._activeIndex) + delta;
+            if (idx < 0) idx = items.length - 1;
+            if (idx >= items.length) idx = 0;
+            items.forEach(function(it, i) { it.classList.toggle('is-active', i === idx); });
+            dropdown._activeIndex = idx;
+            var active = items[idx];
+            if (active && active.scrollIntoView) active.scrollIntoView({ block: 'nearest' });
+        }
+        function navPickActive() {
+            var items = dropdown.querySelectorAll('.address-item');
+            if (!items.length || dropdown.style.display === 'none') return false;
+            var idx = dropdown._activeIndex;
+            if (idx == null || idx < 0) idx = 0;
+            if (idx >= items.length) return false;
+            selectAddressItem(items[idx], dropdown, input);
+            return true;
+        }
 
         input.addEventListener('input', function() {
             var val = input.value.trim();
@@ -3270,6 +3325,8 @@
             if (val.length < 3) { dropdown.style.display = 'none'; return; }
             // If it looks like a kataster number, don't search addresses
             if (/^\d{5}:\d{3}:\d{4}$/.test(val)) { dropdown.style.display = 'none'; return; }
+            showDropdownLoading(dropdown);
+            dropdown._activeIndex = -1;
             addressTimer = setTimeout(function() { searchAddresses(val); }, 350);
         });
 
@@ -3278,24 +3335,56 @@
         });
 
         input.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') dropdown.style.display = 'none';
+            if (e.key === 'ArrowDown') {
+                if (dropdown.style.display !== 'none') { e.preventDefault(); navHighlight(1); }
+            } else if (e.key === 'ArrowUp') {
+                if (dropdown.style.display !== 'none') { e.preventDefault(); navHighlight(-1); }
+            } else if (e.key === 'Enter') {
+                if (navPickActive()) { e.preventDefault(); return; }
+            } else if (e.key === 'Escape') {
+                dropdown.style.display = 'none';
+            }
         });
     });
 
     function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+    function showDropdownLoading(dropdown) {
+        if (!dropdown) return;
+        dropdown.innerHTML = '<div class="addr-loading"><span class="addr-spinner" aria-hidden="true"></span>Otsin aadresse…</div>';
+        dropdown.style.display = '';
+    }
+    function showDropdownEmpty(dropdown) {
+        if (!dropdown) return;
+        dropdown.innerHTML = '<div class="addr-empty">Aadresse ei leitud</div>';
+        dropdown.style.display = '';
+    }
+    function selectAddressItem(item, dropdown, target) {
+        var kataster = item.dataset.kataster;
+        if (!kataster) return;
+        target.value = kataster;
+        var navInput = document.getElementById('kataster-input');
+        if (target !== navInput) navInput.value = kataster;
+        dropdown.style.display = 'none';
+        doSearch();
+    }
     async function searchAddresses(query, dropdownEl, targetInput) {
         var dropdown = dropdownEl || document.getElementById('address-dropdown');
         var target = targetInput || document.getElementById('kataster-input');
+        var seq = (dropdown._seq || 0) + 1;
+        dropdown._seq = seq;
         try {
             var resp = await fetch('/api/address/' + encodeURIComponent(query));
             var data = await resp.json();
-            if (!data.results || data.results.length === 0) {
-                dropdown.style.display = 'none';
+            if (seq !== dropdown._seq) return; // a newer request superseded this one
+            var results = (data && data.results) || [];
+            if (results.length === 0) {
+                showDropdownEmpty(dropdown);
+                dropdown._activeIndex = -1;
                 return;
             }
             var html = '';
-            data.results.forEach(function(r) {
+            results.forEach(function(r) {
                 var label = r.aadress || r.asula || '';
                 var sub = [r.asula, r.vald, r.maakond].filter(Boolean).join(', ');
                 html += '<div class="address-item" data-kataster="' + escHtml(r.katastri_nr) + '">';
@@ -3306,21 +3395,22 @@
             });
             dropdown.innerHTML = html;
             dropdown.style.display = '';
+            // auto-highlight first result so Enter immediately picks it
+            dropdown._activeIndex = 0;
+            var firstItem = dropdown.querySelector('.address-item');
+            if (firstItem) firstItem.classList.add('is-active');
 
             dropdown.querySelectorAll('.address-item').forEach(function(item) {
                 item.addEventListener('mousedown', function(e) {
                     e.preventDefault();
-                    var kataster = item.dataset.kataster;
-                    target.value = kataster;
-                    // sync to nav input
-                    var navInput = document.getElementById('kataster-input');
-                    if (target !== navInput) navInput.value = kataster;
-                    dropdown.style.display = 'none';
-                    doSearch();
+                    selectAddressItem(item, dropdown, target);
                 });
             });
         } catch(e) {
-            dropdown.style.display = 'none';
+            if (seq === dropdown._seq) {
+                showDropdownEmpty(dropdown);
+                dropdown._activeIndex = -1;
+            }
         }
     }
 

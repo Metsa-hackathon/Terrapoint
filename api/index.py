@@ -123,6 +123,14 @@ async def address_search(q: str = ""):
         safe_q = _re.sub(r"[^a-zA-Z0-9äöüšžõÄÖÜŠŽÕ\s\-]", "", q).strip()
         if len(safe_q) < 2:
             return json_response({"results": []})
+
+        # Cache hit? (2h TTL via wfs_cache) — address data is slow/flaky upstream,
+        # so a hit returns instantly without hitting Keskkonnaagentuur WFS.
+        cache_key = f"addr:{safe_q.lower()}"
+        cached = wfs_cache.get(cache_key)
+        if cached is not None:
+            return json_response({"results": cached})
+
         cql = urllib.parse.quote(f"l_aadress LIKE '%{safe_q}%'")
         url = (
             f"{config.GEOBASE}/kataster/wfs?"
@@ -160,6 +168,9 @@ async def address_search(q: str = ""):
                 "asula": p.get("ay_nimi", ""),
                 "katastri_nr": p.get("tunnus", ""),
             })
+
+        # Cache results (even empty list) for 2h
+        wfs_cache.set(cache_key, results, ttl=7200)
 
         return json_response({"results": results})
     except Exception as exc:

@@ -428,8 +428,28 @@ a { color: var(--blue-700); text-decoration: none; }
     transition: background var(--t-fast) var(--ease);
     border: 1px solid transparent;
 }
-.address-item:hover { background: var(--paper-2); border-color: var(--hair); }
+.address-item:hover,
+.address-item.is-active { background: var(--paper-2); border-color: var(--hair); }
 .address-item + .address-item { margin-top: 1px; }
+.addr-loading,
+.addr-empty {
+    padding: 12px;
+    font-size: 13px;
+    color: var(--ink-4);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.addr-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--hair);
+    border-top-color: var(--blue-700);
+    border-radius: 50%;
+    animation: addr-spin 0.7s linear infinite;
+    flex-shrink: 0;
+}
+@keyframes addr-spin { to { transform: rotate(360deg); } }
 .addr-main {
     font-size: 14px;
     font-weight: 500;
@@ -841,7 +861,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     min-height: clamp(640px, 92vh, 920px);
     padding: clamp(40px, 7vh, 84px) 24px clamp(28px, 5vh, 56px);
     text-align: center;
-    overflow: hidden;
     background:
         radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255,255,255,0.55), transparent 65%),
         linear-gradient(180deg, #eef4fc 0%, #e6eff7 55%, #dce6f0 100%);
@@ -869,6 +888,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     position: absolute;
     inset: 0;
     pointer-events: none;
+    overflow: hidden;
     z-index: 1;
 }
 /* Ground/fog: gradient at the bottom of the HERO SECTION (on .landing,
