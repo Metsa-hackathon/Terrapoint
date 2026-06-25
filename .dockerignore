@@ -1,0 +1,12 @@
+.env
+.env.*
+.git
+.gitignore
+.vercel
+.venv
+__pycache__
+*.pyc
+*.log
+server_*.log
+node_modules
+tests

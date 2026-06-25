@@ -9,9 +9,10 @@ import threading
 class TTLCache:
     """Thread-safe in-memory cache with TTL per key."""
 
-    def __init__(self, default_ttl: int = 300):
+    def __init__(self, default_ttl: int = 300, max_entries: int = 512):
         self._data: dict[str, tuple[float, object]] = {}
         self._default_ttl = default_ttl
+        self._max_entries = max_entries
         self._lock = threading.Lock()
 
     def get(self, key: str) -> object | None:
@@ -28,6 +29,8 @@ class TTLCache:
     def set(self, key: str, value: object, ttl: int | None = None) -> None:
         expires_at = time.time() + (ttl if ttl is not None else self._default_ttl)
         with self._lock:
+            while len(self._data) >= self._max_entries:
+                self._data.pop(next(iter(self._data)))
             self._data[key] = (expires_at, value)
 
     def make_key(self, *parts: str) -> str:
@@ -55,5 +58,5 @@ class TTLCache:
 
 
 # Singleton instances
-wfs_cache = TTLCache(default_ttl=7200)    # 2h for WFS queries
-search_cache = TTLCache(default_ttl=300)   # 5min for search results
+wfs_cache = TTLCache(default_ttl=7200, max_entries=512)    # 2h for WFS queries
+search_cache = TTLCache(default_ttl=300, max_entries=256)  # 5min for search results

@@ -66,7 +66,7 @@
     <script src="/static/js/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl033">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl065">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl066">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -2316,13 +2316,13 @@
             if (sorted.length > 0) {
                 compHtml = '<table class="comp-table">';
                 sorted.forEach(function(s) {
-                    compHtml += '<tr><td>' + s.name + '</td><td style="font-weight:600">' + s.osakaal + '%</td><td class="bar-cell"><span class="comp-bar" style="width:' + Math.min(s.osakaal, 100) + '%"></span></td></tr>';
+                    compHtml += '<tr><td>' + escHtml(s.name) + '</td><td style="font-weight:600">' + s.osakaal + '%</td><td class="bar-cell"><span class="comp-bar" style="width:' + Math.min(s.osakaal, 100) + '%"></span></td></tr>';
                 });
                 compHtml += '</table>';
             }
         }
         var html = '';
-        html += '<div class="info-row"><span class="label">Peapuuliik ' + ddInfo('Krundi peamine puuliik, suurima tagavaraga liik') + '</span><span class="value">' + speciesName(data.puuliik_kood || data.puuliik, data.puuliik) + '</span></div>';
+        html += '<div class="info-row"><span class="label">Peapuuliik ' + ddInfo('Krundi peamine puuliik, suurima tagavaraga liik') + '</span><span class="value">' + escHtml(speciesName(data.puuliik_kood || data.puuliik, data.puuliik)) + '</span></div>';
         html += '<div class="info-row"><span class="label">Keskmine vanus ' + ddInfo('Kõigi eraldiste pindala-kaalutud keskmine vanus aastates') + '</span><span class="value">' + (data.vanus || '—') + ' a</span></div>';
         html += '<div class="info-row"><span class="label">Tagavara ' + ddInfo('Metsa ümarmaterjali kogus hektari kohta (m³/ha). Mida suurem, seda väärtuslikum mets.') + '</span><span class="value">' + formatNum(data.tagavara_y_ha) + ' m³/ha</span></div>';
         html += '<div class="info-row"><span class="label">Boniteet ' + ddInfo('Metsakasvukoha kvaliteet: I=parim, VII=halvim. Mõjutab metsa kasvukiirust ja raievanust.', valueExplain('boniteet', boniteet)) + '</span><span class="value">' + escHtml(boniteet) + '</span></div>';

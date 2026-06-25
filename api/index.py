@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import time
 import asyncio
+import math
 import os
 import httpx
 import orjson
@@ -17,7 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from contextlib import asynccontextmanager
 
 import sys
@@ -40,9 +41,11 @@ from api.cache import search_cache, wfs_cache
 
 class ChatRequest(BaseModel):
     """AI vestluse päring."""
+    model_config = ConfigDict(extra="ignore")
+
     kataster_nr: str = Field(..., min_length=1, description="Katastritunnus (nt 78404:409:0113)")
-    message: str = Field(..., min_length=1, max_length=2000, description="Kasutaja sõnum")
-    history: list[dict] = Field(default_factory=list, description="Vestluse ajalugu")
+    message: str = Field(..., min_length=1, max_length=600, description="Kasutaja sõnum")
+    history: list[dict] = Field(default_factory=list, max_length=10, description="Vestluse ajalugu")
     data: dict | None = Field(default=None, description="Eelnevalt laetud kinnistuandmed")
 
 
@@ -55,6 +58,57 @@ class ErrorResponse(BaseModel):
 # ── Application setup ─────────────────────────────────────────────
 
 _uptime_start = time.time()
+MAX_CHAT_BODY_BYTES = 1_000_000
+MAX_CHAT_HISTORY_ITEMS = 6
+MAX_CHAT_HISTORY_CHARS = 500
+MAX_CHAT_PROMPT_CHARS = 16_000
+CHAT_RATE_LIMIT = 8
+CHAT_RATE_WINDOW_SECONDS = 60
+_rate_limit_buckets: dict[tuple[str, str], list[float]] = {}
+XGIS_ALLOWED_LAYERS = {"EESTIFOTO", "HYBRID", "nCHM2017"}
+XGIS_ALLOWED_SRS = {"EPSG:3301"}
+XGIS_ALLOWED_VERSIONS = {"1.1.1"}
+
+
+def _client_identifier(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for", "").split(",", 1)[0].strip()
+    if forwarded:
+        return forwarded[:64]
+    if request.client and request.client.host:
+        return request.client.host[:64]
+    return "unknown"
+
+
+def _check_rate_limit(identifier: str, bucket: str, limit: int, window_seconds: int, now: float | None = None) -> tuple[bool, int]:
+    now = now if now is not None else time.time()
+    cutoff = now - window_seconds
+    key = (identifier, bucket)
+    entries = [ts for ts in _rate_limit_buckets.get(key, []) if ts > cutoff]
+    if len(entries) >= limit:
+        retry_after = max(1, int(window_seconds - (now - entries[0])))
+        _rate_limit_buckets[key] = entries
+        return False, retry_after
+    entries.append(now)
+    _rate_limit_buckets[key] = entries
+    if len(_rate_limit_buckets) > 2048:
+        for old_key in list(_rate_limit_buckets.keys())[:256]:
+            _rate_limit_buckets.pop(old_key, None)
+    return True, 0
+
+
+async def _read_limited_json(request: Request, max_bytes: int) -> dict:
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > max_bytes:
+            raise HTTPException(status_code=413, detail="request body too large")
+    try:
+        payload = orjson.loads(body)
+    except orjson.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="invalid json")
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="invalid json")
+    return payload
 
 
 @asynccontextmanager
@@ -69,15 +123,15 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url="/api/redoc",
 )
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=config.CORS_ORIGINS, allow_methods=["GET", "POST", "OPTIONS"], allow_headers=["Content-Type", "Authorization"])
 
 # Serve static files and frontend
 STATIC_DIR = PROJECT_ROOT / "static"
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
-def json_response(data: dict, status: int = 200) -> Response:
-    return Response(content=orjson.dumps(data), media_type="application/json", status_code=status)
+def json_response(data: dict, status: int = 200, headers: dict[str, str] | None = None) -> Response:
+    return Response(content=orjson.dumps(data), media_type="application/json", status_code=status, headers=headers)
 
 
 @app.get("/api/health")
@@ -174,7 +228,8 @@ async def address_search(q: str = ""):
 
         return json_response({"results": results})
     except Exception as exc:
-        return json_response({"error": str(exc)}, 500)
+        print(f"[address] lookup failed: {type(exc).__name__}: {exc}", flush=True)
+        return json_response({"error": "Aadressiotsing ebaõnnestus. Proovi uuesti."}, 502)
 
 
 VPS_API = "https://terrapoint.46-62-230-110.sslip.io/api"
@@ -188,7 +243,8 @@ async def search(kataster_nr: str, request: Request):
                 resp = await client.get(f"{VPS_API}/search/{kataster_nr}")
                 return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
         except Exception as exc:
-            return json_response({"error": f"VPS proxy error: {exc}"}, 502)
+            print(f"[search] VPS proxy error: {type(exc).__name__}: {exc}", flush=True)
+            return json_response({"error": "Otsinguteenusega ei õnnestu hetkel ühendust saada. Proovi uuesti."}, 502)
     try:
         return await _search(kataster_nr)
     except HTTPException:
@@ -196,7 +252,7 @@ async def search(kataster_nr: str, request: Request):
     except Exception as exc:
         import traceback
         print(f"[ERROR] {exc}\n{traceback.format_exc()}")
-        return json_response({"error": str(exc)}, 500)
+        return json_response({"error": "Otsing ebaõnnestus. Proovi uuesti."}, 500)
 
 
 def _filter_features_by_geometry(features, parcel_geom):
@@ -1126,10 +1182,19 @@ async def chat(request: Request):
     andmed (data) koos süsteemi promptiga AI-le.
     """
     try:
-        body = await request.json()
-        kataster_nr = str(body.get("kataster_nr", "")).strip()
-        user_message_raw = str(body.get("message", "")).strip()
-        history_raw = body.get("history", [])
+        allowed, retry_after = _check_rate_limit(_client_identifier(request), "chat", CHAT_RATE_LIMIT, CHAT_RATE_WINDOW_SECONDS)
+        if not allowed:
+            return json_response({"error": "Liiga palju AI päringuid. Oota hetk ja proovi uuesti."}, 429, headers={"Retry-After": str(retry_after)})
+
+        body = await _read_limited_json(request, MAX_CHAT_BODY_BYTES)
+        try:
+            chat_request = ChatRequest.model_validate(body)
+        except ValidationError:
+            return json_response({"error": "Päringu andmed ei sobi. Kontrolli küsimust ja proovi uuesti."}, 400)
+
+        kataster_nr = chat_request.kataster_nr.strip()
+        user_message_raw = chat_request.message.strip()
+        history_raw = chat_request.history
 
         if not kataster_nr or not user_message_raw:
             return json_response({"error": "Sisesta küsimus ja otsi kinnistu enne."}, 400)
@@ -1141,7 +1206,7 @@ async def chat(request: Request):
             history_raw = []
         history = history_raw[-10:]
 
-        data = body.get("data")
+        data = chat_request.data
         if not data or not isinstance(data, dict):
             return json_response({"error": "Otsi kinnistu esimesena, seejärel küsi AI-lt."}, 400)
 
@@ -1150,13 +1215,13 @@ async def chat(request: Request):
             return json_response({"error": "Andmed ei vasta katastri numbrile. Otsi kinnistu uuesti."}, 400)
 
         sanitized_history = []
-        for h in history:
+        for h in history[-MAX_CHAT_HISTORY_ITEMS:]:
             if not isinstance(h, dict):
                 continue
             role = h.get("role", "user")
             if role not in ("user", "assistant"):
                 continue
-            content = str(h.get("content", "")).strip()[:800]
+            content = str(h.get("content", "")).strip()[:MAX_CHAT_HISTORY_CHARS]
             if not content:
                 continue
             sanitized_history.append({"role": role, "content": content})
@@ -1164,6 +1229,8 @@ async def chat(request: Request):
         user_message = user_message_raw[:600]
 
         system_prompt = build_system_prompt(data)
+        if len(system_prompt) > MAX_CHAT_PROMPT_CHARS:
+            return json_response({"error": "Kinnistu andmeid on AI päringu jaoks liiga palju. Proovi lehte värskendada ja otsi uuesti."}, 400)
 
         messages = [{"role": "system", "content": system_prompt}]
         messages.extend(sanitized_history)
@@ -1179,9 +1246,8 @@ async def chat(request: Request):
         async def stream_response():
             saw_content = False
             saw_reasoning = False
-            full_reasoning_buf = []
             try:
-                timeout = httpx.Timeout(connect=5.0, read=180.0, write=10.0, pool=5.0)
+                timeout = httpx.Timeout(connect=5.0, read=45.0, write=10.0, pool=5.0)
                 async with httpx.AsyncClient(timeout=timeout) as client:
                     async with client.stream(
                         "POST",
@@ -1196,7 +1262,7 @@ async def chat(request: Request):
                             "messages": messages,
                             "stream": True,
                             "temperature": 0.4,
-                            "max_tokens": 6144,
+                            "max_tokens": 1200,
                             "reasoning_effort": "low",
                             "top_p": 0.9,
                         },
@@ -1229,8 +1295,7 @@ async def chat(request: Request):
                             reasoning_piece = delta.get("reasoning_content", "")
                             if reasoning_piece:
                                 saw_reasoning = True
-                                full_reasoning_buf.append(reasoning_piece)
-                                yield "data: " + orjson.dumps({"reasoning": reasoning_piece}).decode() + "\n\n"
+                                continue
                             content_piece = delta.get("content", "")
                             if content_piece:
                                 saw_content = True
@@ -1264,7 +1329,12 @@ async def chat(request: Request):
         return json_response({"error": "AI vastus võttis liiga kaua. Proovi lühemat küsimust."}, 504)
     except httpx.ConnectError:
         return json_response({"error": "AI teenusele ei õnnestu hetkel ühendust saada. Proovi mõne hetke pärast."}, 503)
+    except HTTPException as exc:
+        if exc.status_code == 413:
+            return json_response({"error": "Päring on liiga suur. Värskenda lehte ja proovi uuesti."}, 413)
+        return json_response({"error": "Päringu andmed ei sobi. Kontrolli küsimust ja proovi uuesti."}, exc.status_code)
     except Exception as exc:
+        print(f"[chat] request error: {type(exc).__name__}: {exc}", flush=True)
         return json_response({"error": "Midagi läks valesti. Proovi uuesti."}, 500)
 
 
@@ -1440,18 +1510,27 @@ async def xgis_tile_proxy(
     WMS endpoint.
     """
     import re as _re
-    if not _re.match(r"^[A-Za-z0-9_]+$", layer):
+    if layer not in XGIS_ALLOWED_LAYERS or not _re.match(r"^[A-Za-z0-9_]+$", layer):
         return Response(status_code=400, content=b"invalid layer name")
+    if srs not in XGIS_ALLOWED_SRS:
+        return Response(status_code=400, content=b"invalid srs")
+    if version not in XGIS_ALLOWED_VERSIONS:
+        return Response(status_code=400, content=b"invalid version")
     if fmt not in ("image/jpeg", "image/png"):
         return Response(status_code=400, content=b"invalid format")
     try:
         parts = [float(x) for x in bbox.split(",")]
         if len(parts) != 4:
             raise ValueError
+        min_x, min_y, max_x, max_y = parts
+        if not all(math.isfinite(p) for p in parts) or min_x >= max_x or min_y >= max_y:
+            raise ValueError
+        if min_x < 300_000 or max_x > 800_000 or min_y < 6_300_000 or max_y > 6_700_000:
+            raise ValueError
     except ValueError:
         return Response(status_code=400, content=b"invalid bbox")
-    width = max(1, min(2048, int(width)))
-    height = max(1, min(2048, int(height)))
+    width = max(1, min(512, int(width)))
+    height = max(1, min(512, int(height)))
 
     # Cache key (layer + bbox + size + format). LCC bbox is small ints so safe.
     cache_key = f"{layer}|{srs}|{','.join(f'{p:g}' for p in parts)}|{width}x{height}|{fmt}"
@@ -1461,7 +1540,6 @@ async def xgis_tile_proxy(
             content=cached,
             media_type=fmt,
             headers={
-                "Access-Control-Allow-Origin": "*",
                 "Cache-Control": "public, max-age=86400",
             },
         )
@@ -1481,7 +1559,8 @@ async def xgis_tile_proxy(
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(xgis_url, headers={"User-Agent": "Terrapoint/1.0"})
     except Exception as e:
-        return Response(status_code=502, content=f"xgis upstream error: {e}".encode())
+        print(f"[xgis] upstream error: {type(e).__name__}: {e}", flush=True)
+        return Response(status_code=502, content=b"xgis upstream error")
 
     body = resp.content
     if resp.status_code != 200 or len(body) < 100:
@@ -1490,7 +1569,6 @@ async def xgis_tile_proxy(
             content=b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82",
             media_type="image/png",
             headers={
-                "Access-Control-Allow-Origin": "*",
                 "Cache-Control": "no-store",
             },
         )
@@ -1504,7 +1582,6 @@ async def xgis_tile_proxy(
         content=body,
         media_type=fmt,
         headers={
-            "Access-Control-Allow-Origin": "*",
             "Cache-Control": "public, max-age=86400",
         },
     )
