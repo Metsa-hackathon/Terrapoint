@@ -1169,7 +1169,7 @@
                 signal: controller.signal,
             });
 
-            if (!resp.ok && !resp.body) {
+            if (!resp.ok) {
                 var t = await resp.text().catch(function() { return ''; });
                 if (t.indexOf('FUNCTION_INVOCATION_TIMEOUT') > -1 || resp.status === 504) {
                     throw new Error('AI vastus aegus. Proovi lühemat küsimust.');

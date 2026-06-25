@@ -1,6 +1,6 @@
 import unittest
 
-from api.index import ChatRequest, _check_rate_limit, _rate_limit_buckets
+from api.index import ChatRequest, _chat_completion_payload, _check_rate_limit, _rate_limit_buckets
 
 
 class SecurityBoundaryTests(unittest.TestCase):
@@ -34,6 +34,13 @@ class SecurityBoundaryTests(unittest.TestCase):
                 "history": [{"role": "user", "content": "x"}] * 11,
                 "data": {"kataster": {"number": "78404:409:0113"}},
             })
+
+    def test_chat_completion_payload_keeps_large_streaming_budget(self):
+        payload = _chat_completion_payload("test-model", [{"role": "user", "content": "Kas raiuda?"}])
+
+        self.assertTrue(payload["stream"])
+        self.assertGreaterEqual(payload["max_tokens"], 8192)
+        self.assertEqual(payload["reasoning_effort"], "low")
 
 
 if __name__ == "__main__":

@@ -62,6 +62,8 @@ MAX_CHAT_BODY_BYTES = 1_000_000
 MAX_CHAT_HISTORY_ITEMS = 6
 MAX_CHAT_HISTORY_CHARS = 500
 MAX_CHAT_PROMPT_CHARS = 16_000
+MAX_CHAT_REASONING_CHARS = 2_000
+CHAT_MAX_TOKENS = int(os.environ.get("OPENCODE_ZEN_MAX_TOKENS", "8192"))
 CHAT_RATE_LIMIT = 8
 CHAT_RATE_WINDOW_SECONDS = 60
 _rate_limit_buckets: dict[tuple[str, str], list[float]] = {}
@@ -109,6 +111,18 @@ async def _read_limited_json(request: Request, max_bytes: int) -> dict:
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="invalid json")
     return payload
+
+
+def _chat_completion_payload(model: str, messages: list[dict]) -> dict:
+    return {
+        "model": model,
+        "messages": messages,
+        "stream": True,
+        "temperature": 0.4,
+        "max_tokens": CHAT_MAX_TOKENS,
+        "reasoning_effort": "low",
+        "top_p": 0.9,
+    }
 
 
 @asynccontextmanager
@@ -1245,7 +1259,7 @@ async def chat(request: Request):
 
         async def stream_response():
             saw_content = False
-            saw_reasoning = False
+            reasoning_chars_sent = 0
             try:
                 timeout = httpx.Timeout(connect=5.0, read=45.0, write=10.0, pool=5.0)
                 async with httpx.AsyncClient(timeout=timeout) as client:
@@ -1257,15 +1271,7 @@ async def chat(request: Request):
                             "Content-Type": "application/json",
                             "Accept": "text/event-stream",
                         },
-                        json={
-                            "model": model,
-                            "messages": messages,
-                            "stream": True,
-                            "temperature": 0.4,
-                            "max_tokens": 1200,
-                            "reasoning_effort": "low",
-                            "top_p": 0.9,
-                        },
+                        json=_chat_completion_payload(model, messages),
                     ) as resp:
                         if resp.status_code != 200:
                             if resp.status_code == 400:
@@ -1294,19 +1300,16 @@ async def chat(request: Request):
                             delta = choices[0].get("delta", {})
                             reasoning_piece = delta.get("reasoning_content", "")
                             if reasoning_piece:
-                                saw_reasoning = True
+                                remaining = MAX_CHAT_REASONING_CHARS - reasoning_chars_sent
+                                if remaining > 0:
+                                    preview = reasoning_piece[:remaining]
+                                    reasoning_chars_sent += len(preview)
+                                    yield "data: " + orjson.dumps({"reasoning": preview}).decode() + "\n\n"
                                 continue
                             content_piece = delta.get("content", "")
                             if content_piece:
                                 saw_content = True
                                 yield "data: " + orjson.dumps({"content": content_piece}).decode() + "\n\n"
-
-                # If no final content but reasoning was emitted, the model
-                # burned all its tokens thinking and never produced an answer.
-                # Tell the user the real reason (token budget exhausted) and
-                # suggest a more focused question.
-                if not saw_content and saw_reasoning:
-                    yield "data: " + orjson.dumps({"content": "\n\nAI mudel jäi oma mõttekäiku kinni ega jõudnud lõpliku vastuseni. Palun sõnasta küsimus lühemalt ja konkreetsemalt (näiteks „kas peaksin raiuma“, „milliseid toetusi saan“, „kui suur on mu metsa väärtus“)."}).decode() + "\n\n"
 
                 yield "data: [DONE]\n\n"
             except httpx.ReadTimeout:
