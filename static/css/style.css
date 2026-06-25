@@ -3692,6 +3692,15 @@ footer {
     .metric-card { grid-column: span 6; }
     .metric-card.span-8 { grid-column: span 12; }
     .metric-card.span-6 { grid-column: span 6; }
+    /* Trees: medium on tablets, pushed further outside than desktop. */
+    .hero-tree--left-1  { left: 0;    bottom: 0;   height: 44vh; }
+    .hero-tree--left-2  { left: -6vw; bottom: 28vh; height: 36vh; }
+    .hero-tree--left-3  { left: -6vw; bottom: 50vh; height: 30vh; }
+    .hero-tree--right-1 { right: 0;   bottom: 0;   height: 42vh; }
+    .hero-tree--right-2 { right: -6vw; bottom: 28vh; height: 34vh; }
+    .hero-tree--right-3 { right: -6vw; bottom: 50vh; height: 28vh; }
+    .landing::after { height: 18vh; }
+    .hero-tree::after { width: 420px; height: 120px; }
 }
 
 /* Small tablet / large phone */
@@ -3713,6 +3722,15 @@ footer {
     }
     .section-head h2 { font-size: 24px; }
     .map-legend { max-width: 220px; font-size: 11.5px; }
+    /* Trees: smaller on small tablets / large phones. */
+    .hero-tree--left-1  { left: 0;     bottom: 0;   height: 32vh; }
+    .hero-tree--left-2  { left: -10vw; bottom: 22vh; height: 26vh; }
+    .hero-tree--left-3  { left: -10vw; bottom: 40vh; height: 22vh; }
+    .hero-tree--right-1 { right: 0;    bottom: 0;   height: 30vh; }
+    .hero-tree--right-2 { right: -10vw; bottom: 22vh; height: 24vh; }
+    .hero-tree--right-3 { right: -10vw; bottom: 40vh; height: 20vh; }
+    .landing::after { height: 14vh; }
+    .hero-tree::after { width: 320px; height: 100px; }
 }
 
 /* Phone */
@@ -3752,12 +3770,15 @@ footer {
         padding: 36px 16px 28px;
         min-height: 560px;
     }
-    .hero-tree--left-1  { bottom: 0;   height: 46vh; }
-    .hero-tree--left-2  { bottom: 32vh; height: 40vh; }
-    .hero-tree--left-3  { bottom: 52vh; height: 34vh; }
-    .hero-tree--right-1 { bottom: 0;   height: 44vh; }
-    .hero-tree--right-2 { bottom: 32vh; height: 38vh; }
-    .hero-tree--right-3 { bottom: 52vh; height: 32vh; }
+    /* Trees: small corner accents on phones. */
+    .hero-tree--left-1  { left: 0;     bottom: 0;   height: 28vh; }
+    .hero-tree--left-2  { left: -14vw; bottom: 20vh; height: 22vh; }
+    .hero-tree--left-3  { left: -14vw; bottom: 36vh; height: 18vh; }
+    .hero-tree--right-1 { right: 0;    bottom: 0;   height: 26vh; }
+    .hero-tree--right-2 { right: -14vw; bottom: 20vh; height: 20vh; }
+    .hero-tree--right-3 { right: -14vw; bottom: 36vh; height: 16vh; }
+    .landing::after { height: 12vh; }
+    .hero-tree::after { width: 240px; height: 80px; }
     .landing-title { font-size: 38px; line-height: 1.04; }
     .landing-sub { font-size: 15px; line-height: 1.5; margin-bottom: 20px; }
     .landing-search .search-box { height: 52px; padding: 0 4px 0 14px; }
@@ -3954,12 +3975,14 @@ footer {
     .fact-value { font-size: 17px; }
     .landing-title { font-size: 30px; line-height: 1.05; }
     .landing-sub { font-size: 14px; }
-    .hero-tree--left-1  { bottom: 0;   height: 36vh; }
-    .hero-tree--left-2  { bottom: 28vh; height: 30vh; }
-    .hero-tree--left-3  { bottom: 46vh; height: 26vh; }
-    .hero-tree--right-1 { bottom: 0;   height: 34vh; }
-    .hero-tree--right-2 { bottom: 28vh; height: 28vh; }
-    .hero-tree--right-3 { bottom: 46vh; height: 24vh; }
+    .hero-tree--left-1  { left: 0;   bottom: 0;   height: 24vh; }
+    .hero-tree--left-2  { left: -18vw; bottom: 18vh; height: 18vh; }
+    .hero-tree--left-3  { left: -18vw; bottom: 32vh; height: 14vh; }
+    .hero-tree--right-1 { right: 0;  bottom: 0;   height: 22vh; }
+    .hero-tree--right-2 { right: -18vw; bottom: 18vh; height: 16vh; }
+    .hero-tree--right-3 { right: -18vw; bottom: 32vh; height: 12vh; }
+    .landing::after { height: 12vh; }
+    .hero-tree::after { width: 200px; height: 60px; }
     .big-number { font-size: 28px; }
     .brand-mark { display: inline-flex; align-items: center; }
     .brand-name { display: none; }
