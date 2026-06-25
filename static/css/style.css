@@ -3722,8 +3722,8 @@ footer {
     }
     .section-head h2 { font-size: 24px; }
     .map-legend { max-width: 220px; font-size: 11.5px; }
-    /* Trees: smaller on small tablets / large phones. */
-    .hero-tree--left-1  { left: 0;     bottom: 0;   height: 32vh; }
+    /* Trees: hidden on phone — they looked broken at small widths. */
+    .hero-trees { display: none; }
     .hero-tree--left-2  { left: -10vw; bottom: 22vh; height: 26vh; }
     .hero-tree--left-3  { left: -10vw; bottom: 40vh; height: 22vh; }
     .hero-tree--right-1 { right: 0;    bottom: 0;   height: 30vh; }
