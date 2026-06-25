@@ -4,7 +4,7 @@
 Metsa väärtuse ja andmete analüüsi veebirakendus. FastAPI backend + HTML/CSS/JS frontend.
 
 ## Olulised käsud
-- **Backend käivitamine:** `python3 -m uvicorn main:app --host 0.0.0.0 --port 8099`
+- **Backend käivitamine:** `python3 -m uvicorn api.index:app --host 0.0.0.0 --port 8099`
 - **Paigaldus:** `pip install -r requirements.txt`
 
 ## Git konventsioonid
