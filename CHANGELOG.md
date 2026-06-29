@@ -6,6 +6,33 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > domain). `terrapoint.vercel.app` on sama projekti alias — push master
 > branchi uuendab mõlemat korraga.
 
+## [Määramata] - 2026-06-29
+
+### Fixed
+- **Eraldiste tabel: kõik 7 veergu nähtavad ka 3-veerulise Mac kaardi
+  laiuse juures** — eraldiste tabeli kõige olulisem veerg "Väärtus"
+  (kus on raha) lõigati ära Mac 3-veerulise paigutuse juures (eraldiste kaart
+  ~357px laiune, 28px sisemise veerisega → eraldiste paneel ~299px).
+  Puuliigi veergu ("Kask", "Haab", "Kuusk") oli näha ainult 1 täht ("K",
+  "H"). Parandused:
+  1. `.metric-card:has(.eraldised-table-panel)` sai kitsama sisemise
+     veerise (28px → 14px), mis annab tabelile ~28px rohkem ruumi.
+  2. `.eraldised-table-header` / `.eraldised-row` said kitsamad veerud
+     (22px → 18px, 80px → minmax(0, 1fr) Puuliigile, 42px → 30px Vanusele,
+     56px → 38px Tagavarale, 48px → 32px Boniteedile, 56px → 40px
+     Pindalale, 76px → 72px Väärtusele).
+  3. Rakkude padding 8px → 6px, gap 10px → 8px.
+  4. `.er-value` font 0.92em + `white-space: nowrap` (pikad väärtused
+     nagu "12 074 €" mahuvad).
+  5. `.eraldised-panel` sai nähtava õhukese kerimisriba
+     (`scrollbar-width: thin`, `scrollbar-color: rgba(0,0,0,0.25)`,
+     webkit thumb 8px) — macOS peidab kerimisribad vaikimisi, mis
+     jättis mulje, et väärtuse veerg on "kadunud".
+  Testitud Mac 1440px, Windows 1920px, iPhone 390px, iPad 1024px,
+  Android 412px. Nüüd näitab iga seade kõiki 7 veergu koos
+  puuliiginime ja väärtusega (NBSP-tuhandelise eraldajaga numbrid
+  nagu "12 074 €" mahuvad ilma kärpimiseta).
+
 ## [Määramata] - 2026-06-13
 
 ### Fixed

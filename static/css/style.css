@@ -1737,6 +1737,14 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     animation: cardIn 0.5s var(--ease-out) backwards;
     color: var(--ink-2);
 }
+/* Tighter padding on cards that hold the eraldised table — the 7-column
+   table needs more horizontal room than the 28px default gives it. The
+   table panel itself has padding:0, so reducing the card padding
+   directly widens the available space. */
+.metric-card:has(.eraldised-table-panel) {
+    padding-left: 14px;
+    padding-right: 14px;
+}
 .metric-card:nth-child(1) { animation-delay: 0.02s; }
 .metric-card:nth-child(2) { animation-delay: 0.06s; }
 .metric-card:nth-child(3) { animation-delay: 0.10s; }
@@ -3400,7 +3408,16 @@ footer {
 .custom-marker { cursor: pointer; }
 
 /* ═══ ERALDISED EXPANDED PANEL ═══ */
-.eraldised-panel { padding: 0; overflow-x: auto; }
+.eraldised-panel { padding: 0; overflow-x: auto;
+    /* Visible thin scrollbar on overflow so user knows they can scroll
+       (macOS hides scrollbars by default which made the value column
+       look cut off). */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0,0,0,0.25) transparent;
+}
+.eraldised-panel::-webkit-scrollbar { height: 8px; }
+.eraldised-panel::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.25); border-radius: 4px; }
+.eraldised-panel::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.4); }
 .eraldised-panel > summary.table-panel-summary::-webkit-details-marker { display: none; }
 .eraldised-panel > summary.table-panel-summary::marker { content: ""; }
 #card-mets .eraldised-panel > summary.table-panel-summary,
@@ -3487,22 +3504,28 @@ footer {
 .eraldised-controls button.active { background: var(--blue-700); color: white; border-color: var(--blue-700); }
 .table-grid-header {
     display: grid;
-    padding: var(--table-grid-pad-y, 6px) var(--table-grid-pad-x, 8px);
+    padding: var(--table-grid-pad-y, 6px) var(--table-grid-pad-x, 6px);
     font-size: var(--tier-3-table); color: var(--ink-4);
     font-weight: 500; border-bottom: 1px solid var(--hair);
     background: var(--paper-2);
     align-items: center;
+    /* Tightened cell gap so 7 columns fit in ~450px card width */
+    column-gap: 8px;
 }
 .table-grid-row {
     display: grid;
-    padding: var(--table-grid-pad-y, 6px) var(--table-grid-pad-x, 8px);
+    padding: var(--table-grid-pad-y, 6px) var(--table-grid-pad-x, 6px);
     border-bottom: 1px solid var(--hair); font-size: var(--tier-3-table);
     align-items: center; transition: background 0.1s;
     min-height: var(--table-grid-row-min, 30px);
+    column-gap: 8px;
 }
 .eraldised-table-header,
 .eraldised-row {
-    grid-template-columns: 28px minmax(80px, 1fr) 42px 56px 48px 56px 76px;
+    /* Column widths tuned to fit inside the eraldised-panel which is
+       ~300px wide on Mac 3-col layout. Puuliik min 0 lets it shrink,
+       Väärtus min 72px fits "12 074 €" with NBSP thousand separator. */
+    grid-template-columns: 18px minmax(0, 1fr) 30px 38px 32px 40px 72px;
 }
 .teatised-table-header,
 .teatised-row {
@@ -3589,7 +3612,7 @@ footer {
 }
 .eraldised-row .er-nr { font-weight: 600; color: var(--ink-2); }
 .eraldised-row .er-species { font-weight: 500; }
-.eraldised-row .er-value { font-weight: 700; color: var(--ink); font-family: var(--ff-mono); text-align: right; }
+.eraldised-row .er-value { font-weight: 700; color: var(--ink); font-family: var(--ff-mono); text-align: right; font-size: 0.92em; white-space: nowrap; }
 .teatised-table-header > *:nth-child(n+3),
 .teatised-row > *:nth-child(n+3) {
     text-align: right;
