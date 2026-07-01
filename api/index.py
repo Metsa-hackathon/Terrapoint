@@ -931,11 +931,13 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     # Eraldiste pindala → eraldise_nr lookup (1:1) ja varukoopia
     # kõigi eraldiste pindalatest järjestatuna.
     eraldised_by_area = {}
+    valid_eraldis_nrs = set()
     for e in (eraldised or []):
         area = e.get("pindala_ha")
         nr = e.get("eraldis_nr")
         if area is not None and nr is not None:
             eraldised_by_area.setdefault(round(float(area), 2), []).append(nr)
+            valid_eraldis_nrs.add(nr)
 
     teatised = []
     for feat in teatised_features:
@@ -945,15 +947,21 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         staatus = "KEHTIV" if p.get("kehtiv_kuni") else otsus
         kehtiv = p.get("kehtiv_kuni") or ""
         raw_eraldis = p.get("eraldise_nr")
-        # Kui WFS-i eraldise_nr on aasta või puudub, otsime eraldiste
-        # nimekirjast sama pindala järgi. Kui unikaalne vaste leitakse,
-        # kasutame seda; muidu jätame None (frontend kuvab "—").
-        if _is_year_like(raw_eraldis) or raw_eraldis in (None, ""):
-            area = round(float(p.get("pindala") or 0), 2)
-            candidates = eraldised_by_area.get(area, [])
-            eraldis_nr = candidates[0] if len(candidates) == 1 else None
-        else:
+        area = round(float(p.get("pindala") or 0), 2)
+
+        # 1) Proovime alati esmalt sobitada pindala järgi (kõige usaldusväärsem).
+        # Kui unikaalne vaste leitakse, kasutame seda — isegi kui WFS-i
+        # eraldise_nr on olemas (WFS andmed on vigased).
+        candidates = eraldised_by_area.get(area, [])
+        if len(candidates) == 1:
+            eraldis_nr = candidates[0]
+        # 2) Kui pindalaga ei sobi, aga WFS-i eraldise_nr on eraldiste
+        # nimekirjas, kasutame WFS-i väärtust.
+        elif raw_eraldis is not None and not _is_year_like(raw_eraldis) and raw_eraldis in valid_eraldis_nrs:
             eraldis_nr = raw_eraldis
+        # 3) Muidu None (frontend kuvab "—").
+        else:
+            eraldis_nr = None
         teatised.append({
             "tyyp": TOO_NIMETUSED.get(too_kood, too_kood),
             "tyyp_kood": too_kood,
