@@ -1,0 +1,23 @@
+/* TEAM */
+Terrapoint — Eesti metsaandmete analüüs
+
+Asutajad / Founders:
+  Krister Koger
+  Kaspar Mälgand
+  Arle Aron Reidma
+
+Võit: „Metsikult andmetes 2026" häkaton, korraldaja Keskkonnaagentuur.
+
+Kontakt: arle.reidma@gmail.com
+Veebileht: https://terrapoint.ee
+
+/* SITE */
+Viimased uuendused: https://terrapoint.ee/CHANGELOG.md
+Lähtekood: privaatne (suletud lähtekood, käitame ise)
+Hostitud: Vercel (terrapoint.vercel.app, terrapoint.ee)
+Andmeallikad: Maa-amet, Metsaregister, EELIS, Erametsaliit, KIK,
+  Muinsuskaitseamet, Statistikaamet, RMK, Sentinel-2
+
+/* THANKS */
+Keskkonnaagentuur — „Metsikult andmetes 2026" häkatoni korraldus
+Eesti avaandmete kogukond — API-d ja registrid

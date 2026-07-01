@@ -1,0 +1,16 @@
+# Terrapoint — security contact (RFC 9116)
+# Eesti metsaandmete analüüsi veebirakendus
+
+Contact: mailto:arle.reidma@gmail.com
+Contact: https://terrapoint.ee/#kontakt
+Expires: 2027-12-31T23:59:59Z
+Preferred-Languages: et, en
+Canonical: https://terrapoint.ee/.well-known/security.txt
+
+# Vastuvõetud raportid
+# - phishing / õngitsemine (nt Smart-ID, Swedbank, SEB, LHV, eesti.ee imitatsioon)
+# - haavatavused rakenduses (CSP bypass, XSS, IDOR, SSRF)
+# - andmelekke riskid (kataster / omanikuandmed)
+#
+# Ei sobi: üldine tagasiside funktsionaalsuse kohta — selleks palun
+# kasutage tagasisidevormi veebilehel.
