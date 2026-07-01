@@ -3513,6 +3513,24 @@ footer {
 }
 .leaflet-tooltip::before { border-top-color: var(--ink) !important; }
 
+/* Püsiv eraldise numbri label kaardil — väike, poolläbipaistev,
+   valge teksti ja tumeda taustaga, ei blokeeri klõpsu */
+.eraldis-label {
+    background: rgba(15, 23, 42, 0.78) !important;
+    color: var(--white) !important;
+    border: none !important;
+    border-radius: 4px !important;
+    padding: 1px 6px !important;
+    font-size: 11px !important;
+    font-weight: 600;
+    font-family: var(--ff-sans) !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.35) !important;
+    text-shadow: none;
+    pointer-events: none;
+    white-space: nowrap;
+}
+.eraldis-label::before { display: none !important; }
+
 /* Custom map markers */
 .custom-marker { cursor: pointer; }
 

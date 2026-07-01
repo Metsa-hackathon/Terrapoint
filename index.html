@@ -1907,6 +1907,16 @@
                 var val = p.vaartus_eur ? Math.round(p.vaartus_eur).toLocaleString('et-EE').replace(/,/g, ' ') + ' €' : '—';
                 var valHa = p.vaartus_per_ha ? Math.round(p.vaartus_per_ha).toLocaleString('et-EE').replace(/,/g, ' ') + ' €/ha' : '';
                 layer.bindTooltip('Klikka hinnangu nägemiseks', {sticky: true});
+                // Püsiv label eraldise numbriga — kuvatakse alati kaardil,
+                // mitte ainult hõljumisel. Stiili järgi piisavalt väike,
+                // et paljude eraldiste korral kaarti ei ummistaks.
+                if (p.eraldis_nr) {
+                    layer.bindTooltip(String(p.eraldis_nr), {
+                        permanent: true,
+                        direction: 'center',
+                        className: 'eraldis-label',
+                    });
+                }
                 var rColor = p.color || 'var(--map-eraldis-hooldus)';
                 var rLabel = p.raie_liik || '';
                 var vrColors = {noormets:'var(--blue-500)',keskmine:'var(--blue-700)',kups:'var(--blue-900)',vanamets:'var(--danger)'};
