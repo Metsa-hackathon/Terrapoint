@@ -1906,16 +1906,21 @@
                 var p = feature.properties || {};
                 var val = p.vaartus_eur ? Math.round(p.vaartus_eur).toLocaleString('et-EE').replace(/,/g, ' ') + ' €' : '—';
                 var valHa = p.vaartus_per_ha ? Math.round(p.vaartus_per_ha).toLocaleString('et-EE').replace(/,/g, ' ') + ' €/ha' : '';
-                layer.bindTooltip('Klikka hinnangu nägemiseks', {sticky: true});
-                // Püsiv label eraldise numbriga — kuvatakse alati kaardil,
-                // mitte ainult hõljumisel. Stiili järgi piisavalt väike,
-                // et paljude eraldiste korral kaarti ei ummistaks.
+                // Püsiv eraldise numbri silt polügooni tsentris.
+                // L.marker + divIcon on töökindlam kui bindTooltip permanent:true
+                // (viimane ei pruugi alati DOM-i ilmuda).
                 if (p.eraldis_nr) {
-                    layer.bindTooltip(String(p.eraldis_nr), {
-                        permanent: true,
-                        direction: 'center',
-                        className: 'eraldis-label',
-                    });
+                    var centroid = null;
+                    try { centroid = layer.getBounds().getCenter(); } catch (e) {}
+                    if (centroid) {
+                        var labelIcon = L.divIcon({
+                            className: 'eraldis-label-wrap',
+                            html: '<div class="eraldis-label">' + escHtml(String(p.eraldis_nr)) + '</div>',
+                            iconSize: null,
+                            iconAnchor: [0, 0],
+                        });
+                        L.marker(centroid, { icon: labelIcon, interactive: false, keyboard: false }).addTo(map);
+                    }
                 }
                 var rColor = p.color || 'var(--map-eraldis-hooldus)';
                 var rLabel = p.raie_liik || '';
