@@ -3339,7 +3339,8 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
     flex-shrink: 0;
 }
 .metric-card.wide-card .ph-list .ph-slot {
-    width: 90px;
+    flex: 1;
+    max-width: 220px;
 }
 
 /* ═══ FOOTER ═══════════════════════════════════════════════════════════════ */
