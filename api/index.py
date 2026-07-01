@@ -1521,6 +1521,32 @@ async def sitemap_xml():
     )
 
 
+@app.get("/.well-known/security.txt")
+async def security_txt():
+    """RFC 9116 security.txt — turvalisuse kontaktandmed."""
+    path = PROJECT_ROOT / "static" / "security-txt"
+    if not path.exists():
+        return Response(status_code=404)
+    return FileResponse(
+        str(path),
+        media_type="text/plain; charset=utf-8",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@app.get("/humans.txt")
+async def humans_txt():
+    """Läbipaistvus: kes on saidi taga."""
+    path = PROJECT_ROOT / "static" / "humans.txt"
+    if not path.exists():
+        return Response(status_code=404)
+    return FileResponse(
+        str(path),
+        media_type="text/plain; charset=utf-8",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
 @app.get("/static/{filename:path}")
 async def serve_static(filename: str):
     """Teeninda staatilisi faile (/static/ kataloogist)."""
