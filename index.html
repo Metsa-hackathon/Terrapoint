@@ -258,6 +258,7 @@
                     </svg>
                 </div>
                 <div class="search-input-wrap">
+                    <label for="kataster-input" class="visually-hidden">Katastritunnus või aadress</label>
                     <input type="text" id="kataster-input" placeholder="Katastri number või aadress" autocomplete="off" inputmode="text" enterkeyhint="search">
                     <div id="address-dropdown" class="address-dropdown" style="display:none"></div>
                 </div>
@@ -336,6 +337,7 @@
                         </svg>
                     </div>
                     <div class="search-input-wrap">
+                        <label for="kataster-input-landing" class="visually-hidden">Katastritunnus või aadress</label>
                         <input type="text" id="kataster-input-landing" placeholder="nt 78404:409:0113 või Kadaka pst 159" autocomplete="off" inputmode="text" enterkeyhint="search">
                         <div id="address-dropdown-landing" class="address-dropdown" style="display:none"></div>
                     </div>
@@ -404,6 +406,7 @@
             </div>
             <div class="ai-chat-input-area" id="ai-chat-input-area" style="display:none">
                 <div class="ai-chat-input-wrap">
+                    <label for="ai-chat-input" class="visually-hidden">Küsimus AI-le</label>
                     <textarea id="ai-chat-input" placeholder="Küsi oma metsa kohta..." autocomplete="off" rows="1"></textarea>
                     <button id="ai-chat-send" aria-label="Saada">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1226,21 +1229,32 @@
                         throw new Error(obj.error);
                     }
                     if (obj.reasoning) {
+                        // Mudeli mõttekäik — logime diagnostikaks, kuid EI näita kasutajale
                         fullReasoning += obj.reasoning;
-                        if (thinkBlock) {
-                            thinkBlock.innerHTML = '<span class="ai-thinking-text">Mõtleb</span><span class="ai-thinking-snippet">' + escHtml(fullReasoning.slice(-200)) + '</span>';
-                            aiAutoScroll();
+                        // Visuaalne spinner jääb nähtavaks, kuid teksti me ei kuva
+                        if (thinkBlock && firstAnswerChunk === true) {
+                            // Jäta "Mõtleb..." spinner (algne sisu), ära lisa reasoning teksti
                         }
                     }
                     if (obj.content) {
                         fullText += obj.content;
-                        // Strip leaked thinking/assistant tags live
-                        var cleaned = fullText.replace(/<𝑎𝑛𝑡𝑚𝑙:thinking_mode>[^<]*<\/𝑎𝑛𝑡𝑚𝑙:thinking_mode>/g, '').replace(/<\/?assistant>/g, '').trim();
+                        // Eemalda mudeli lekitatud reasoning/planning märgendid.
+                        // OpenCode Zen DeepSeek jätab vahel kogemata oma CoT-d vastuse sisse.
+                        // Lisaks eemaldame "Mõtleb" prefiksi (mudeli enda silt) kui see on
+                        // esimesel real ilma reavahetuseta.
+                        var cleaned = fullText
+                            .replace(/<𝑎𝑛𝑡𝑚𝑙:thinking_mode>[\s\S]*?<\/𝑎𝑛𝑡𝑚𝑙:thinking_mode>/g, '')
+                            .replace(/<\/?assistant>/g, '')
+                            // Kõrvalda "Mõtleb..." või "Mõtleb" prefiks kui mudel on
+                            // oma CoT sildi vastusesse lekinud (nt "Mõtleb the user asks...")
+                            .replace(/^\s*M[oõ]tleb[\s.,:!?-]*/i, '')
+                            .replace(/^[\s(]*(we are given|let's|note that|struktuur:|kokkuv[oõ]te:)[^)\n]*[\n)]?/im, '')
+                            .trim();
                         if (answerBlock) {
                             if (firstAnswerChunk) {
                                 firstAnswerChunk = false;
-                                // Hide thinking block when answer starts
-                                if (thinkBlock) thinkBlock.style.display = 'none';
+                                // Eemalda mõtlemis-placholder KOOS selle sisuga, mitte lihtsalt peida
+                                if (thinkBlock) thinkBlock.remove();
                             }
                             answerBlock.innerHTML = aiFormatResponse(cleaned);
                             aiAutoScroll();
@@ -1252,9 +1266,11 @@
 
             if (!fullText.trim()) {
                 if (fullReasoning.trim()) {
-                    if (thinkBlock) thinkBlock.style.display = 'none';
+                    // Ära leki mudeli mõttekäiku — kasutaja jaoks pole see info vajalik
+                    // ja see võib sisaldada süsteemse prompte kaja või pooleliolevaid instruktsioone.
+                    if (thinkBlock) thinkBlock.remove();
                     if (answerBlock) {
-                        answerBlock.innerHTML = '<em style="color:var(--ink-4)">AI töötas läbi andmed, kuid lõplik vastus jäi napiks. Mõttekäik:</em><br><br>' + escHtml(fullReasoning.slice(-2000));
+                        answerBlock.innerHTML = '<em style="color:var(--ink-4)">AI töötas andmed läbi, kuid lõplik vastus jäi napiks. Proovi sama küsimust uuesti või sõnasta see lühemalt.</em>';
                         aiAutoScroll();
                     }
                     fullText = '[Mudel ei väljastanud lõplikku vastust. Proovi sama küsimust uuesti või sõnasta see lühemalt.]';
@@ -2861,6 +2877,26 @@
         document.getElementById('loading').classList.add('hidden');
     }
 
+    // Inline-vihje otsingu sisendi juurde (ei kata kogu ekraani).
+    // Kasutatakse näiteks "Sisesta katastritunnus või aadress" puhul tühja otsingu korral.
+    var _inputHintTimer = null;
+    function showInputHint(msg) {
+        var input = document.getElementById('kataster-input');
+        if (!input) return;
+        // Eemalda vana vihje ja lisa uus
+        var existing = input.parentElement.querySelector('.input-hint');
+        if (existing) existing.remove();
+        if (_inputHintTimer) { clearTimeout(_inputHintTimer); _inputHintTimer = null; }
+        var hint = document.createElement('div');
+        hint.className = 'input-hint';
+        hint.textContent = msg;
+        hint.setAttribute('role', 'status');
+        input.parentElement.appendChild(hint);
+        // Värvikaart kohe inputi alla, fookus inputile
+        input.focus();
+        _inputHintTimer = setTimeout(function() { hint.remove(); _inputHintTimer = null; }, 4000);
+    }
+
     function renderErrorState(msg) {
         var ield = document.getElementById('kataster-info');
         if (ield) ield.innerHTML = '<div class="error-state"><div class="error-state-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="error-state-text">' + escHtml(msg) + '</div><div class="error-state-hint">Kontrolli katastritunnust ja proovi uuesti.</div></div>';
@@ -3078,10 +3114,35 @@
         // Smart submit (typed/entered): katastritunnus → direct search; address → auto-pick first match
         // Same as chip submit so Enter behaves consistently across landing and nav
         var KATASTER_RE = /^\d{5}:\d{3}:\d{4}$/;
+        // Kataster-sarnane: ainult numbrid, eraldajad ("-", " ", "." või ":") ja
+        // vähemalt üks number. Lubame ":" et "78404:409:113" (vale pikkusega) saaks
+        // samuti normaliseerida.
+        var KATASTER_LIKE_RE = /^[\s\d.\-:]+$/;
+        function _maybeKataster(value) {
+            if (KATASTER_RE.test(value)) return value;
+            if (KATASTER_LIKE_RE.test(value) && /\d/.test(value)) {
+                // Asenda kõik eraldajad kooloniteks; normaliseeri topeltkoolonid
+                var normalized = value.replace(/[\s.\-]+/g, ':').replace(/:+/g, ':').replace(/^:|:$/g, '');
+                var m = normalized.match(/^(\d{1,5}):(\d{1,4}):(\d{1,5})$/);
+                if (m) {
+                    // Pad short groups: 7840:409:0113 → 78400:409:0113
+                    return m[1].padStart(5, '0') + ':' + m[2].padStart(3, '0') + ':' + m[3].padStart(4, '0');
+                }
+            }
+            return null;
+        }
         function smartSubmit(value) {
             if (navInput) navInput.value = value;
             if (landInput) landInput.value = value;
-            if (KATASTER_RE.test(value)) {
+            var normalizedKataster = _maybeKataster(value);
+            if (normalizedKataster) {
+                // Sisend oli kataster (või kataster-sarnane). Kui kuju vajab
+                // normaliseerimist, näita kasutajale sõbralikku vihjet ja paranda.
+                if (normalizedKataster !== value) {
+                    showInputHint('Katastritunnus korrigeeritud kujule ' + normalizedKataster);
+                    if (navInput) navInput.value = normalizedKataster;
+                    if (landInput) landInput.value = normalizedKataster;
+                }
                 doSearch();
                 return;
             }
@@ -3296,7 +3357,13 @@
 
         // Nav smart submit: katastritunnus → direct; address → pick first match
         function navSmartSubmit(value) {
-            if (KATASTER_RE.test(value)) {
+            var normalizedKataster = _maybeKataster(value);
+            if (normalizedKataster) {
+                if (normalizedKataster !== value) {
+                    showInputHint('Katastritunnus korrigeeritud kujule ' + normalizedKataster);
+                    document.getElementById('kataster-input').value = normalizedKataster;
+                    if (landInput) landInput.value = normalizedKataster;
+                }
                 doSearch();
                 return;
             }
@@ -3320,12 +3387,14 @@
 
         document.getElementById('search-btn').addEventListener('click', function() {
             var v = (document.getElementById('kataster-input').value || '').trim();
-            if (v) navSmartSubmit(v);
+            if (!v) { showInputHint('Sisesta katastritunnus või aadress.'); return; }
+            navSmartSubmit(v);
         });
         document.getElementById('kataster-input').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 var v = (document.getElementById('kataster-input').value || '').trim();
-                if (v) navSmartSubmit(v);
+                if (!v) { showInputHint('Sisesta katastritunnus või aadress.'); return; }
+                navSmartSubmit(v);
             }
         });
 
