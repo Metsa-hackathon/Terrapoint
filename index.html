@@ -2877,26 +2877,6 @@
         document.getElementById('loading').classList.add('hidden');
     }
 
-    // Inline-vihje otsingu sisendi juurde (ei kata kogu ekraani).
-    // Kasutatakse näiteks "Sisesta katastritunnus või aadress" puhul tühja otsingu korral.
-    var _inputHintTimer = null;
-    function showInputHint(msg) {
-        var input = document.getElementById('kataster-input');
-        if (!input) return;
-        // Eemalda vana vihje ja lisa uus
-        var existing = input.parentElement.querySelector('.input-hint');
-        if (existing) existing.remove();
-        if (_inputHintTimer) { clearTimeout(_inputHintTimer); _inputHintTimer = null; }
-        var hint = document.createElement('div');
-        hint.className = 'input-hint';
-        hint.textContent = msg;
-        hint.setAttribute('role', 'status');
-        input.parentElement.appendChild(hint);
-        // Värvikaart kohe inputi alla, fookus inputile
-        input.focus();
-        _inputHintTimer = setTimeout(function() { hint.remove(); _inputHintTimer = null; }, 4000);
-    }
-
     function renderErrorState(msg) {
         var ield = document.getElementById('kataster-info');
         if (ield) ield.innerHTML = '<div class="error-state"><div class="error-state-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="error-state-text">' + escHtml(msg) + '</div><div class="error-state-hint">Kontrolli katastritunnust ja proovi uuesti.</div></div>';
@@ -3136,10 +3116,8 @@
             if (landInput) landInput.value = value;
             var normalizedKataster = _maybeKataster(value);
             if (normalizedKataster) {
-                // Sisend oli kataster (või kataster-sarnane). Kui kuju vajab
-                // normaliseerimist, näita kasutajale sõbralikku vihjet ja paranda.
+                // Sisend oli kataster (või kataster-sarnane). Normaliseeri vaikselt.
                 if (normalizedKataster !== value) {
-                    showInputHint('Katastritunnus korrigeeritud kujule ' + normalizedKataster);
                     if (navInput) navInput.value = normalizedKataster;
                     if (landInput) landInput.value = normalizedKataster;
                 }
@@ -3217,16 +3195,14 @@
         if (landBtn) {
             landBtn.addEventListener('click', function() {
                 var v = (landInput && landInput.value || '').trim();
-                if (!v) { showInputHint('Sisesta katastritunnus või aadress.'); return; }
-                smartSubmit(v);
+                if (v) smartSubmit(v);
             });
         }
         if (landInput) {
             landInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
                     var v = landInput.value.trim();
-                    if (!v) { showInputHint('Sisesta katastritunnus või aadress.'); return; }
-                    smartSubmit(v);
+                    if (v) smartSubmit(v);
                 }
             });
         }
@@ -3362,7 +3338,6 @@
             var normalizedKataster = _maybeKataster(value);
             if (normalizedKataster) {
                 if (normalizedKataster !== value) {
-                    showInputHint('Katastritunnus korrigeeritud kujule ' + normalizedKataster);
                     document.getElementById('kataster-input').value = normalizedKataster;
                     if (landInput) landInput.value = normalizedKataster;
                 }
@@ -3389,14 +3364,12 @@
 
         document.getElementById('search-btn').addEventListener('click', function() {
             var v = (document.getElementById('kataster-input').value || '').trim();
-            if (!v) { showInputHint('Sisesta katastritunnus või aadress.'); return; }
-            navSmartSubmit(v);
+            if (v) navSmartSubmit(v);
         });
         document.getElementById('kataster-input').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 var v = (document.getElementById('kataster-input').value || '').trim();
-                if (!v) { showInputHint('Sisesta katastritunnus või aadress.'); return; }
-                navSmartSubmit(v);
+                if (v) navSmartSubmit(v);
             }
         });
 
