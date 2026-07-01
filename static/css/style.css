@@ -3838,6 +3838,7 @@ footer {
 @media (max-width: 1024px) {
     .facts-strip { grid-template-columns: repeat(2, 1fr); }
     .metric-card { grid-column: span 6; }
+    .metric-card.wide-card { grid-column: 1 / span 6; }
     .metric-card.span-8 { grid-column: span 12; }
     .metric-card.span-6 { grid-column: span 6; }
     /* Trees: medium on tablets, pushed further outside than desktop. */
