@@ -5,7 +5,10 @@ import httpx
 from fastapi import HTTPException
 import config
 
-_KATASTER_RE = re.compile(r'^\d{1,5}:\d{1,4}:\d{1,5}(:\d{1,4})?$')
+from services.validation import KATASTER_RE
+
+# Alias järgmiseks kasutuseks selles failis (allavoolu kontrollib sama mustrit)
+_KATASTER_RE = KATASTER_RE
 
 
 class KatasterWFSError(Exception):
@@ -14,8 +17,10 @@ class KatasterWFSError(Exception):
 
 def _validate_kataster_nr(kataster_nr: str) -> str:
     """Sanitize kataster_nr to prevent CQL injection."""
-    if not _KATASTER_RE.match(kataster_nr):
-        raise HTTPException(status_code=400, detail=f"Vigane katastritunnus: {kataster_nr}")
+    if not _KATASTER_RE.match(kataster_nr or ""):
+        # Ära peegelda kasutaja sisendit veateates — väldib logide mürgitust
+        # ja tulevasi XSS-mustreid, kui veateade peaks kunagi HTML-i jõudma.
+        raise HTTPException(status_code=400, detail="Vigane katastritunnus")
     return kataster_nr
 
 

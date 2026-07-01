@@ -28,6 +28,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from services.kataster import query_kataster
 from services.metsaregister import query_eraldis, query_eraldis_element, query_natura_2000, query_teatised, query_kahjustused
+from services.validation import _validate_kataster_nr_or_400
 from services.layers import query_all_layers
 from services.subsidies import check_subsidies
 from calculators.carbon import carbon_potential
@@ -73,9 +74,11 @@ XGIS_ALLOWED_VERSIONS = {"1.1.1"}
 
 
 def _client_identifier(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for", "").split(",", 1)[0].strip()
-    if forwarded:
-        return forwarded[:64]
+    # Trust only the direct peer IP. X-Forwarded-For is attacker-controlled
+    # (anyone can set it on a direct request) — Vercel edge sets it correctly,
+    # but anything hitting the VPS directly could spoof the rate-limit key.
+    # If you ever need to honor a trusted proxy, validate the peer is in
+    # the trusted set first (e.g. 10.0.4.1 for our Traefik).
     if request.client and request.client.host:
         return request.client.host[:64]
     return "unknown"
@@ -186,10 +189,15 @@ async def health():
 
 
 @app.get("/api/address/{q:path}")
-async def address_search(q: str = ""):
+async def address_search(q: str = "", request: Request = None):
     try:
         if not q or len(q) < 2:
             return json_response({"results": []})
+        # Rate limit: aadressi otsing on WFS-i jaoks kallis (3 retry'd)
+        if request is not None:
+            allowed, retry_after = _check_rate_limit(_client_identifier(request), "address", 30, 60)
+            if not allowed:
+                return json_response({"error": "Liiga palju päringuid. Proovi uuesti mõne sekundi pärast."}, 429, {"Retry-After": str(retry_after)})
 
         import urllib.parse, re as _re
         safe_q = _re.sub(r"[^a-zA-Z0-9äöüšžõÄÖÜŠŽÕ\s\-]", "", q).strip()
@@ -246,7 +254,8 @@ async def address_search(q: str = ""):
 
         return json_response({"results": results})
     except Exception as exc:
-        print(f"[address] lookup failed: {type(exc).__name__}: {exc}", flush=True)
+        # Logi ainult tüüp, mitte str(exc) — väldib URL-i lekkimist logidesse
+        print(f"[address] lookup failed: {type(exc).__name__}", flush=True)
         return json_response({"error": "Aadressiotsing ebaõnnestus. Proovi uuesti."}, 502)
 
 
@@ -254,6 +263,13 @@ VPS_API = "https://terrapoint.46-62-230-110.sslip.io/api"
 
 @app.get("/api/search/{kataster_nr:path}")
 async def search(kataster_nr: str, request: Request):
+    # Kõigepealt valideeri formaat — kaitseb path-traversal SSRF-i eest
+    # Vercel→VPS proxy kaudu (nt "/api/search/../api/chat").
+    _validate_kataster_nr_or_400(kataster_nr)
+    # Rate limit: kaitse WFS-i ülekoormuse eest (1 kataster = ~30 WFS päringut)
+    allowed, retry_after = _check_rate_limit(_client_identifier(request), "search", 20, 60)
+    if not allowed:
+        return json_response({"error": "Liiga palju päringuid. Proovi uuesti mõne sekundi pärast."}, 429, {"Retry-After": str(retry_after)})
     # On Vercel, proxy to VPS to avoid 10s timeout
     if os.environ.get("VERCEL"):
         try:
@@ -261,7 +277,7 @@ async def search(kataster_nr: str, request: Request):
                 resp = await client.get(f"{VPS_API}/search/{kataster_nr}")
                 return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
         except Exception as exc:
-            print(f"[search] VPS proxy error: {type(exc).__name__}: {exc}", flush=True)
+            print(f"[search] VPS proxy error: {type(exc).__name__}", flush=True)
             return json_response({"error": "Otsinguteenusega ei õnnestu hetkel ühendust saada. Proovi uuesti."}, 502)
     try:
         return await _search(kataster_nr)
@@ -269,12 +285,17 @@ async def search(kataster_nr: str, request: Request):
         raise
     except Exception as exc:
         import traceback
-        print(f"[ERROR] {exc}\n{traceback.format_exc()}")
+        print(f"[ERROR] {type(exc).__name__}: {exc}\n{traceback.format_exc()}")
         return json_response({"error": "Otsing ebaõnnestus. Proovi uuesti."}, 500)
 
 
 def _filter_features_by_geometry(features, parcel_geom):
-    """Filter WFS features to only those that actually intersect the parcel geometry."""
+    """Filter WFS features to only those that actually intersect the parcel geometry.
+
+    NB: kui geomeetriat ei õnnestu parsida, JÄTAME FEATURE'I VÄLJA — ohutus-tagajärg
+    vale-andmete kaasamisest (nt "kinnistu on kaitsealal" või "kriitiline üraskioht")
+    on palju hullem kui false-negative.
+    """
     if not features or not parcel_geom:
         return features
     try:
@@ -288,7 +309,7 @@ def _filter_features_by_geometry(features, parcel_geom):
                 if feat_shape.intersects(parcel_shape):
                     filtered.append(f)
             except Exception:
-                filtered.append(f)  # include if can't parse geometry
+                continue
         return filtered
     except Exception:
         return features
@@ -1400,29 +1421,36 @@ async def chat(request: Request):
             return json_response({"error": "Päring on liiga suur. Värskenda lehte ja proovi uuesti."}, 413)
         return json_response({"error": "Päringu andmed ei sobi. Kontrolli küsimust ja proovi uuesti."}, exc.status_code)
     except Exception as exc:
-        print(f"[chat] request error: {type(exc).__name__}: {exc}", flush=True)
+        print(f"[chat] request error: {type(exc).__name__}", flush=True)
         return json_response({"error": "Midagi läks valesti. Proovi uuesti."}, 500)
 
 
 @app.get("/api/export/eudr/{kataster_nr:path}")
-async def export_eudr(kataster_nr: str):
+async def export_eudr(kataster_nr: str, request: Request):
     """Ekspordi EUDR GeoJSON fail.
 
     Tagastab EL deforestatsioonivastase määruse nõuetele
     vastava GeoJSON faili alla laadimiseks.
     Sisaldab katastriandmeid, metsaeraldiseid ja looduskaitsestaatust.
     """
+    # Varajane valideerimine — väldib WFS-i ülekoormust vigase sisendiga
+    _validate_kataster_nr_or_400(kataster_nr)
+    # Rate limit: EUDR on kõige raskem endpoint (19+ WFS päringut)
+    allowed, retry_after = _check_rate_limit(_client_identifier(request), "eudr", 10, 60)
+    if not allowed:
+        return json_response({"error": "Liiga palju päringuid. Proovi uuesti mõne sekundi pärast."}, 429, {"Retry-After": str(retry_after)})
     kataster_data = await query_kataster(kataster_nr)
     if not kataster_data:
         return json_response({"error": "Krunti ei leitud"}, 404)
 
-    # Get centroid for coordinates
+    # Get centroid for coordinates — EUDR nõuab geokoordinaate.
+    # Kui arvutus ebaõnnestub, tagasta 502 — ära saada välja EUDR-mittekõlblikku faili.
     try:
         geom = shape(kataster_data["geometry"])
         centroid = geom.centroid
         lon, lat = round(centroid.x, 6), round(centroid.y, 6)
     except Exception:
-        lon, lat = None, None
+        return json_response({"error": "Geomeetria viga: tsentroidit ei saa arvutada. EUDR-faili ei saa genereerida."}, 502)
 
     # Get forest data
     eraldised = await query_eraldis(kataster_nr)
