@@ -66,7 +66,7 @@
     <script src="/static/js/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl033">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl071">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl072">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -539,7 +539,7 @@
         </div>
 
         <!-- Metric Cards Grid (always visible, empty until search) -->
-        <div class="metrics-grid">
+        <div class="metrics-grid" id="metrics-grid">
             <div class="metric-card" id="card-kataster">
                 <div class="card-header">
                     <div class="card-icon kataster-icon">
@@ -715,7 +715,7 @@
                 </div>
             </div>
 
-            <div class="metric-card wide-card" id="card-teatised">
+            <div class="metric-card" id="card-teatised">
                 <div class="card-header">
                     <div class="card-icon teatised-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -738,7 +738,7 @@
                 </div>
             </div>
 
-            <div class="metric-card wide-card" id="card-toetused">
+            <div class="metric-card" id="card-toetused">
                 <div class="card-header">
                     <div class="card-icon toetused-icon">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -3520,6 +3520,10 @@
 
             hideLoading();
             showDashboard();
+
+            // Märgi grid loetuks — 3x2 + 1x3 layout (laiad kaardid täislaiaks)
+            var mg = document.getElementById('metrics-grid');
+            if (mg) mg.classList.add('metrics-grid--loaded');
 
             // Render composition chart AFTER browser lays out the now-visible canvas
             requestAnimationFrame(function() {
