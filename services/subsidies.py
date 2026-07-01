@@ -279,6 +279,8 @@ def _eraldised_to_summary(eraldised: list[dict]) -> list[dict]:
     """Convert full eraldis records to lightweight summaries for the API response.
 
     Each summary has: eraldis_nr, puuliik, puuliik_kood, vanus, pindala_ha.
+    Tulemus sorditakse eraldis_nr järgi numbriliselt (tõusev), et UI-s
+    kuvatakse eraldiste numbrid alati järjest: 1, 2, 5, 6, ... mitte 1, 10, 11, 2.
     """
     out = []
     for e in eraldised or []:
@@ -292,6 +294,7 @@ def _eraldised_to_summary(eraldised: list[dict]) -> list[dict]:
             "vanus": e.get("vanus") or 0,
             "pindala_ha": e.get("pindala_ha") or 0,
         })
+    out.sort(key=lambda e: (e["eraldis_nr"] if isinstance(e["eraldis_nr"], (int, float)) else 0))
     return out
 
 

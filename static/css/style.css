@@ -2884,28 +2884,33 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
     opacity: 0.85;
 }
 
-/* Top row: title + status badge */
+/* Top row: title + status badge — stakitakse kitsastes (1/3) kaartides
+   vertikaalselt, et badge ei suruks pikka pealkirja kitsale reale. */
 .toetus-top {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: 8px;
 }
 .toetus-title {
     color: var(--ink-1);
     font-size: 15px;
     font-weight: 700;
     line-height: 1.3;
-    flex: 1;
     min-width: 0;
-    word-break: break-word;
+    /* `overflow-wrap: break-word` katkestab ainult tühikute juures (mitte
+       keset sõna nagu vana `word-break: break-word`). "Vääriselupaiga"
+       pikk sõna jääb nüüd terveks või murtakse ainult viimase võimalusena. */
+    overflow-wrap: break-word;
+    word-break: normal;
 }
 
 /* Status badges */
 .toetus-badge {
+    align-self: flex-start;
     flex-shrink: 0;
-    font-size: 13px;
-    padding: 5px 12px;
+    font-size: 12px;
+    padding: 4px 10px;
     border-radius: var(--r-full);
     font-weight: 700;
     white-space: nowrap;
