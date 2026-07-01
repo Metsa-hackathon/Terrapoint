@@ -66,7 +66,7 @@
     <script src="/static/js/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl033">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl074">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl076">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -2593,14 +2593,28 @@
         html += '<div>Tüüp</div><div>Eraldis</div><div>Staatus</div><div>Kehtiv kuni</div><div>Pindala</div>';
         html += '</div>';
 
-        html += '<div class="table-grid-scroll">';
-        data.forEach(function(t) {
-            var eraldisNr = (t.eraldis !== null && t.eraldis !== undefined && t.eraldis !== '') ? t.eraldis : '';
-            // Veerg "Eraldis" näitab ainult numbrit (nt 901), et mobiilis
-            // ei läheks kärbitud. Täistekst "Eraldis 901" on tooltip-is.
-            var eraldisCell = eraldisNr !== ''
-                ? '<span class="teatised-eraldis-nr" title="Eraldis ' + escHtml(String(eraldisNr)) + '">' + escHtml(String(eraldisNr)) + '</span>'
-                : '<span class="muted">—</span>';
+         html += '<div class="table-grid-scroll">';
+         data.forEach(function(t) {
+             // Metsaregistri WFS-i andmekvaliteedi viga: mõnede teatiste puhul
+             // on `eraldise_nr` väljas hoopis aasta (nt 2026, 2028) või
+             // otsuse number, mitte tegelik eraldise number. Tuvastame
+             // aasta-laadse väärtuse (täisarv 1900–2100) ja kuvame "—",
+             // et vältida segadust Kehtiv kuni veerus oleva aastaga.
+             var raw = t.eraldis;
+             var eraldisNr = '';
+             if (raw !== null && raw !== undefined && raw !== '') {
+                 var n = Number(raw);
+                 if (Number.isFinite(n) && Number.isInteger(n) && n >= 1900 && n <= 2100) {
+                     eraldisNr = ''; // aasta — ära kuva
+                 } else {
+                     eraldisNr = String(raw);
+                 }
+             }
+             // Veerg "Eraldis" näitab ainult numbrit (nt 901), et mobiilis
+             // ei läheks kärbitud. Täistekst "Eraldis 901" on tooltip-is.
+             var eraldisCell = eraldisNr !== ''
+                 ? '<span class="teatised-eraldis-nr" title="Eraldis ' + escHtml(eraldisNr) + '">' + escHtml(eraldisNr) + '</span>'
+                 : '<span class="muted">—</span>';
             html += '<div class="table-grid-row teatised-row">';
             html += '<div>' + escHtml(t.tyyp || '—') + '</div>';
             html += '<div class="teatised-eraldis">' + eraldisCell + '</div>';
