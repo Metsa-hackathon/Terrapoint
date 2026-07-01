@@ -290,18 +290,6 @@ a { color: var(--blue-700); text-decoration: none; }
     justify-content: center;
 }
 
-/* Visually hidden (a11y): loetav ekraanilugejaga, peidetud visuaalselt */
-.visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
 .hamburger:hover { background: var(--paper-2); color: var(--ink-2); border-color: var(--hair-2); }
 .hamburger:active { transform: scale(0.96); }
 .hamburger svg { width: 18px; height: 18px; }
