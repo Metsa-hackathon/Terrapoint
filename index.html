@@ -3217,14 +3217,16 @@
         if (landBtn) {
             landBtn.addEventListener('click', function() {
                 var v = (landInput && landInput.value || '').trim();
-                if (v) smartSubmit(v);
+                if (!v) { showInputHint('Sisesta katastritunnus või aadress.'); return; }
+                smartSubmit(v);
             });
         }
         if (landInput) {
             landInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
                     var v = landInput.value.trim();
-                    if (v) smartSubmit(v);
+                    if (!v) { showInputHint('Sisesta katastritunnus või aadress.'); return; }
+                    smartSubmit(v);
                 }
             });
         }
