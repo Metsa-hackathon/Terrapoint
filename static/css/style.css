@@ -1745,6 +1745,14 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     padding-left: 14px;
     padding-right: 14px;
 }
+
+/* Data-heavy cards (Metsateatised, Toetused) vajavad rohkem ruumi kui
+   3-veeruline grid pakub. "grid-column: 1 / -1" tähendab, et kaart
+   hõivab kogu rea (olenemata veergude arvust). Mobiilis (<640px) on
+   grid juba 1-veeruline, nii et see langeb kokku vaikimisi paigutusega. */
+.metric-card.wide-card {
+    grid-column: 1 / -1;
+}
 .metric-card:nth-child(1) { animation-delay: 0.02s; }
 .metric-card:nth-child(2) { animation-delay: 0.06s; }
 .metric-card:nth-child(3) { animation-delay: 0.10s; }
