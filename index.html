@@ -66,7 +66,7 @@
     <script src="/static/js/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl033">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl072">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl073">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -3520,10 +3520,6 @@
 
             hideLoading();
             showDashboard();
-
-            // Märgi grid loetuks — 3x2 + 1x3 layout (laiad kaardid täislaiaks)
-            var mg = document.getElementById('metrics-grid');
-            if (mg) mg.classList.add('metrics-grid--loaded');
 
             // Render composition chart AFTER browser lays out the now-visible canvas
             requestAnimationFrame(function() {
