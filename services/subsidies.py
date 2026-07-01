@@ -281,6 +281,7 @@ def _eraldised_to_summary(eraldised: list[dict]) -> list[dict]:
     Each summary has: eraldis_nr, puuliik, puuliik_kood, vanus, pindala_ha.
     Tulemus sorditakse eraldis_nr järgi numbriliselt (tõusev), et UI-s
     kuvatakse eraldiste numbrid alati järjest: 1, 2, 5, 6, ... mitte 1, 10, 11, 2.
+    Toetab nii int/float kui ka string-kujul numbreid (nt "901").
     """
     out = []
     for e in eraldised or []:
@@ -294,7 +295,18 @@ def _eraldised_to_summary(eraldised: list[dict]) -> list[dict]:
             "vanus": e.get("vanus") or 0,
             "pindala_ha": e.get("pindala_ha") or 0,
         })
-    out.sort(key=lambda e: (e["eraldis_nr"] if isinstance(e["eraldis_nr"], (int, float)) else 0))
+
+    def _sort_key(item: dict):
+        n = item["eraldis_nr"]
+        if isinstance(n, (int, float)):
+            return (0, float(n))
+        # String, mis on parsitav numbrina — käsitle numbrina
+        try:
+            return (0, float(str(n)))
+        except (ValueError, TypeError):
+            return (1, str(n))
+
+    out.sort(key=_sort_key)
     return out
 
 
