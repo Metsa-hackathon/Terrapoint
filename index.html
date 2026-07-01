@@ -66,7 +66,7 @@
     <script src="/static/js/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl033">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl066">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl067">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -1998,7 +1998,7 @@
 
     // ═══ dashboard.js ═══
     const SPECIES_NAMES = {
-        MA: 'Harilik mänd', KU: 'Harilik kuusk', KS: 'Ainuroheline kask', HB: 'Harilik haab',
+        MA: 'Harilik mänd', KU: 'Harilik kuusk', KS: 'Harilik kask', HB: 'Harilik haab',
         LH: 'Harilik lehis', LM: 'Hall lepp', LV: 'Salu-lepp', TA: 'Harilik tamm',
         SA: 'Harilik saar', VA: 'Harilik vaher', PK: 'Harilik pöök', JA: 'Harilik jalakas',
         RE: 'Harilik remmelgas', SP: 'Siberi seedermänd',
@@ -2590,13 +2590,20 @@
 
         html += '<div class="table-grid-hscroll">';
         html += '<div class="table-grid-header teatised-table-header">';
-        html += '<div>Tüüp</div><div>Staatus</div><div>Kehtiv kuni</div><div>Pindala</div>';
+        html += '<div>Tüüp</div><div>Eraldis</div><div>Staatus</div><div>Kehtiv kuni</div><div>Pindala</div>';
         html += '</div>';
 
         html += '<div class="table-grid-scroll">';
         data.forEach(function(t) {
+            var eraldisNr = (t.eraldis !== null && t.eraldis !== undefined && t.eraldis !== '') ? t.eraldis : '';
+            // Veerg "Eraldis" näitab ainult numbrit (nt 901), et mobiilis
+            // ei läheks kärbitud. Täistekst "Eraldis 901" on tooltip-is.
+            var eraldisCell = eraldisNr !== ''
+                ? '<span class="teatised-eraldis-nr" title="Eraldis ' + escHtml(String(eraldisNr)) + '">' + escHtml(String(eraldisNr)) + '</span>'
+                : '<span class="muted">—</span>';
             html += '<div class="table-grid-row teatised-row">';
             html += '<div>' + escHtml(t.tyyp || '—') + '</div>';
+            html += '<div class="teatised-eraldis">' + eraldisCell + '</div>';
             html += '<div>' + teatisedStatusBadge(t.staatus, t.active) + '</div>';
             html += '<div>' + escHtml(t.kehtiv_kuni || '—') + '</div>';
             html += '<div>' + (t.pindala_ha ? formatNum(t.pindala_ha, 2) + ' ha' : '—') + '</div>';
@@ -2718,6 +2725,10 @@
             var catName = categoryNames[t.category] || t.category;
             var cls = isEligible ? 'toetus-card toetus-eligible' : 'toetus-card toetus-ineligible';
             var items = amountItems(t.summa);
+            var matchedEraldised = t.eraldised_match || [];
+            var matchedCount = t.eraldised_match_count || 0;
+            var matchedHa = t.eraldised_match_ha || 0;
+            var filterLabel = t.eraldised_filter_label || '';
 
             var html = '<div class="' + cls + '">';
             // Top row: title (left) + status badge (right)
@@ -2738,6 +2749,34 @@
                     html += '<span class="toetus-amount-pill' + (isEligible ? ' eligible' : '') + '">' + escHtml(s) + '</span>';
                 });
                 html += '</div></div>';
+            }
+            // Sobivate eraldiste plokk — näitab, millistele konkreetsetele
+            // eraldistele toetust saab taotleda. Kuvatakse ainult siis kui
+            // toetus üldtingimustele vastab ja vähemalt üks eraldis sobib.
+            if (isEligible && matchedEraldised.length > 0) {
+                html += '<div class="toetus-eraldised-block">';
+                html += '<div class="toetus-eraldised-label">Sobib eraldistele</div>';
+                html += '<div class="toetus-eraldised-list">';
+                matchedEraldised.forEach(function(e) {
+                    var nr = e.eraldis_nr;
+                    var sp = e.puuliik || '';
+                    var tooltip = 'Eraldis ' + nr + (sp ? ' · ' + sp : '');
+                    if (e.vanus) tooltip += ' · ' + e.vanus + ' a';
+                    if (e.pindala_ha) tooltip += ' · ' + e.pindala_ha.toFixed(2).replace('.', ',') + ' ha';
+                    html += '<span class="toetus-eraldised-chip" title="' + escHtml(tooltip) + '">'
+                          + escHtml(String(nr))
+                          + '</span>';
+                });
+                html += '</div>';
+                html += '<div class="toetus-eraldised-meta">';
+                if (matchedHa > 0) {
+                    html += '<span class="toetus-eraldised-ha">' + matchedHa.toFixed(2).replace('.', ',') + ' ha kokku</span>';
+                }
+                if (filterLabel) {
+                    html += '<span class="toetus-eraldised-filter"> · ' + escHtml(filterLabel) + '</span>';
+                }
+                html += '</div>';
+                html += '</div>';
             }
             // Ineligible reason box
             if (!isEligible && t.pohjus) {
@@ -2858,7 +2897,7 @@
     var SPECIES_COLORS = {
         MA: '#E69F00',  // Harilik mänd      — oranz (soe, hele)
         KU: '#0072B2',  // Harilik kuusk     — sinine (külm, tume)
-        KS: '#F0E442',  // Ainuroheline kask — ere kollane
+        KS: '#F0E442',  // Harilik kask — ere kollane
         HB: '#CC79A7',  // Harilik haab      — roosa
         LH: '#D55E00',  // Harilik lehis     — vermillion (sügis)
         LM: '#999999',  // Hall lepp         — neutraalne hall

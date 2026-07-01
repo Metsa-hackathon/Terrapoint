@@ -58,6 +58,9 @@ SUBSIDY_PROGRAMS = [
         "voor_url": "https://www.eramets.ee/toetuste_tahtajad/",
         "description": "Natura 2000 alal kuni 160 €/ha, mujal kaitsealadel 60 €/ha. Hüvitab looduskaitseliste piirangute tõttu saamata jäänud tulu. Taotlus esitada igal aastal uuesti e-PRIAs. Min 0,3 ha.",
         "category": "looduskaitse",
+        # Hõlmab kõiki kinnistu eraldisi kaitsealal/Natura 2000 alal
+        "eraldised_filter": lambda d: d.get("eraldised", []) if (d.get("kaitseala") or d.get("natura_2000")) else [],
+        "eraldised_filter_label": "Kõik kinnistu eraldised kaitsealal või Natura 2000 alal",
     },
     {
         "name": "Vääriselupaiga hooldus",
@@ -69,6 +72,8 @@ SUBSIDY_PROGRAMS = [
         "url": "https://www.eramets.ee/toetused/vaariselupaiga-kaitseks-lepingu-solmimine/",
         "description": "Vääriselupaiga kaitseks 20-aastase lepingu sõlmimine. Sisaldab kaitse-eeskirja koostamist ja hoolduskava. Taotlemine aastaringselt.",
         "category": "looduskaitse",
+        "eraldised_filter": lambda d: d.get("eraldised", []) if d.get("vaariselupaik") else [],
+        "eraldised_filter_label": "Vääriselupaiga eraldised (tuvastatakse EELIS andmetest)",
     },
     {
         "name": "Metsakasutuse kitsendustest hüvitis",
@@ -80,6 +85,8 @@ SUBSIDY_PROGRAMS = [
         "url": "https://www.kik.ee/et/toetatavad-tegevused",
         "description": "Metsakasutuse kitsendustest põhjustatud kahjude ja kulude hüvitamine erametsaomanikele. Erinevalt looduskaitse hüvitisest (saamata jäänud tulu), kompenseerib tegelikud kahjud ja kulud.",
         "category": "looduskaitse",
+        "eraldised_filter": lambda d: d.get("eraldised", []) if (d.get("kaitseala") or d.get("natura_2000") or d.get("natura_elupaik")) else [],
+        "eraldised_filter_label": "Kõik eraldised kitsendustega alal",
     },
 
     # === Metsameede (PRIA/KIK) ===
@@ -97,6 +104,11 @@ SUBSIDY_PROGRAMS = [
         "url": "https://www.eramets.ee/toetused/metsameede/",
         "description": "Hooldusraie kuni 10a puistus, metsakahjustuste ennetamine (männikärsakas, juurepess), loodusõnnetuses kahjustada saanud metsa uuendamine. Elurikkuse nõuded: säilikpuud ja lamapuit.",
         "category": "metsahooldus",
+        "eraldised_filter": lambda d: [
+            e for e in d.get("eraldised", [])
+            if 10 <= (e.get("vanus") or 0) <= 60
+        ],
+        "eraldised_filter_label": "Eraldised vanusega 10–60 aastat",
     },
     {
         "name": "Kliimakindla metsa kujundamine",
@@ -113,6 +125,11 @@ SUBSIDY_PROGRAMS = [
         "voor_url": "https://www.eramets.ee/toetuste_tahtajad/",
         "description": "Hooldusraie 11–30a metsas. Mitmeliigilise ja struktuuririkka metsa kujundamine. Min 1 ha aastas, max 30 ha. Ainult e-PRIA kaudu. Eelarve 1,6M €.",
         "category": "metsahooldus",
+        "eraldised_filter": lambda d: [
+            e for e in d.get("eraldised", [])
+            if 11 <= (e.get("vanus") or 0) <= 30
+        ],
+        "eraldised_filter_label": "Eraldised vanusega 11–30 aastat",
     },
 
     # === Metsastamine (KIK) ===
@@ -133,6 +150,9 @@ SUBSIDY_PROGRAMS = [
         "voor_url": "https://www.eramets.ee/toetuste_tahtajad/",
         "description": "Uue metsa rajamine. Min 0,3 ha, laius vähemalt 15m, max 30 ha omaniku kohta. Ainult metsaühistu kaudu (min 200 liiget). Eelarve 840 000 €.",
         "category": "metsastamine",
+        # Metsastamise toetus: kinnistul ei tohi olla metsa, seega eraldisi pole
+        "eraldised_filter": lambda d: [],
+        "eraldised_filter_label": "Metsastatavale alale (eraldisi hetkel ei ole)",
     },
 
     # === Metsa uuendamine (KIK) ===
@@ -151,6 +171,11 @@ SUBSIDY_PROGRAMS = [
         "voor_url": "https://www.eramets.ee/toetuste_tahtajad/metsa-uuendamine/",
         "description": "Metsa uuendamine pärast raievanust või metsa hukkumist. Ainult metsaühistu kaudu (min 200 liiget). Taimede soetamine, istutamine, maapinna ettevalmistus, hooldus. Eelarve 622 000 €.",
         "category": "metsastamine",
+        "eraldised_filter": lambda d: [
+            e for e in d.get("eraldised", [])
+            if (e.get("vanus") or 0) >= (e.get("raievanus") or 999)
+        ],
+        "eraldised_filter_label": "Raieküpsed eraldised (vanus ≥ raievanus)",
     },
 
     # === Kooreürask (KIK) ===
@@ -165,6 +190,11 @@ SUBSIDY_PROGRAMS = [
         "voor_url": "https://www.eramets.ee/toetuste_tahtajad/uraskikahjustuste-ennetamise-toetus/",
         "description": "Püünispuud, feromoonpüünised ja tormikahjustuste likvideerimine. Kehtivad inventeerimisandmed nõutud. Konsulendi kinnitus tööde kohta vajalik. Eelarve 30 000 €.",
         "category": "kahjuritõrje",
+        "eraldised_filter": lambda d: [
+            e for e in d.get("eraldised", [])
+            if (e.get("puuliik_kood") or "") == "KU" and (e.get("vanus") or 0) > 30
+        ],
+        "eraldised_filter_label": "Üle 30a vanused kuuse eraldised",
     },
 
     # === KIK / Inventeerimine ===
@@ -178,6 +208,8 @@ SUBSIDY_PROGRAMS = [
         "url": "https://www.eramets.ee/toetused/metsa-inventeerimise-toetus/",
         "description": "Metsa inventeerimisandmete koostamise toetus. Makstakse üks kord 7 aasta jooksul. Sisaldab metsakava koostamist.",
         "category": "inventeerimine",
+        "eraldised_filter": lambda d: d.get("eraldised", []),
+        "eraldised_filter_label": "Kõik kinnistu metsaeraldised",
     },
 
     # === KIK / Maaparandus ===
@@ -191,6 +223,8 @@ SUBSIDY_PROGRAMS = [
         "url": "https://www.eramets.ee/toetused/metsamaaparandustoode-toetus/",
         "description": "Drenaažisüsteemide korrastamine, truupide vahetus, kraavide puhastamine. Eesmärk on parandada metsamaa veerežiimi.",
         "category": "maaparandus",
+        "eraldised_filter": lambda d: [e for e in d.get("eraldised", []) if e.get("kuivendatud")],
+        "eraldised_filter_label": "Kuivendatud eraldised",
     },
 
     # === KIK / Pärandkultuur ===
@@ -205,6 +239,8 @@ SUBSIDY_PROGRAMS = [
         "voor_url": "https://www.eramets.ee/toetuste_tahtajad/parandkultuuri-sailitamise-ja-eksponeerimise-toetus/",
         "description": "Pärandkultuuri objektide (kiviaiad, vanad puud, ajaloolised paigad) taastamine, hooldamine ja avalikuks kasutamiseks kohandamine. Eelarve 10 000 €.",
         "category": "kultuur",
+        "eraldised_filter": lambda d: d.get("eraldised", []),
+        "eraldised_filter_label": "Kõik metsaeraldised (pärandkultuuri objektid valitakse eraldi)",
     },
 
     # === PRIA / Metsaühistu ===
@@ -218,6 +254,8 @@ SUBSIDY_PROGRAMS = [
         "url": "https://www.eramets.ee/toetused/uhistutoetus/",
         "description": "Metsaühistute tegevuse toetamine. Sisaldab liikmetele teenuste osutamist, koolituste korraldamist ja ühiseid metsamajandamise tegevusi.",
         "category": "ühistu",
+        "eraldised_filter": lambda d: d.get("eraldised", []),
+        "eraldised_filter_label": "Kõik metsaühistu liikme metsaeraldised",
     },
 
     # === KIK / Metssigad ===
@@ -231,8 +269,30 @@ SUBSIDY_PROGRAMS = [
         "url": "https://www.eramets.ee/metssigade-kuttimise-toetus/",
         "description": "Aafrika seakatku tõkestamiseks metssigade küttimise toetus. Ainult jahipiirkonna kasutajatele.",
         "category": "kahjuritõrje",
+        "eraldised_filter": lambda d: [],
+        "eraldised_filter_label": "Metssigade küttimise toetus ei ole seotud eraldistega",
     },
 ]
+
+
+def _eraldised_to_summary(eraldised: list[dict]) -> list[dict]:
+    """Convert full eraldis records to lightweight summaries for the API response.
+
+    Each summary has: eraldis_nr, puuliik, puuliik_kood, vanus, pindala_ha.
+    """
+    out = []
+    for e in eraldised or []:
+        nr = e.get("eraldis_nr")
+        if nr is None:
+            continue
+        out.append({
+            "eraldis_nr": nr,
+            "puuliik": e.get("puuliik") or e.get("puuliik_kood") or "?",
+            "puuliik_kood": e.get("puuliik_kood") or "",
+            "vanus": e.get("vanus") or 0,
+            "pindala_ha": e.get("pindala_ha") or 0,
+        })
+    return out
 
 
 def check_subsidies(data: dict) -> list[dict]:
@@ -250,6 +310,17 @@ def check_subsidies(data: dict) -> list[dict]:
             except Exception:
                 pohjus = "Tingimuste kontroll ebaõnnestus"
 
+        # Eraldistega seotus: millistele konkreetsetele eraldistele toetus
+        # kohaldub (või oleks kohaldatav, kui üldtingimused on täidetud).
+        matched_eraldised = []
+        if "eraldised_filter" in prog:
+            try:
+                matched_eraldised = prog["eraldised_filter"](data) or []
+            except Exception:
+                matched_eraldised = []
+        matched_summary = _eraldised_to_summary(matched_eraldised)
+        matched_ha = round(sum(e.get("pindala_ha", 0) for e in matched_summary), 2)
+
         voor = prog.get("voor", "")
         results.append({
             "nimi": prog["name"],
@@ -264,6 +335,10 @@ def check_subsidies(data: dict) -> list[dict]:
             "kirjeldus": prog.get("description"),
             "pohjus": pohjus,
             "category": prog.get("category", ""),
+            "eraldised_match": matched_summary,
+            "eraldised_match_count": len(matched_summary),
+            "eraldised_match_ha": matched_ha,
+            "eraldised_filter_label": prog.get("eraldised_filter_label", ""),
         })
 
     # Sort: eligible first (by voor_status: open > upcoming > other), then ineligible

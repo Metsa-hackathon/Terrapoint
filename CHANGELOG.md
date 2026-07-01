@@ -6,6 +6,47 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > domain). `terrapoint.vercel.app` on sama projekti alias — push master
 > branchi uuendab mõlemat korraga.
 
+## [Määramata] - 2026-07-01
+
+### Added
+- **Metsateatiste tabel: uus veerg "Eraldis"** — iga metsateatise juures
+  on nüüd näidatud, millisele konkreetsele eraldisele teatis käib
+  (andmed pärinevad Metsaregistri WFS-i `eraldise_nr` väljast). Number
+  on tabelis eraldi veerus "Eraldis" (tooltip näitab täisteksti
+  "Eraldis N"). Mobiilil näitab ainult numbrit, et ei läheks kärbitud.
+  Uuendatud ka `grid-template-columns` (desktop + mobiil) ja veergude
+  joondusreeglid: Tüüp/Eraldis/Staatus vasakule, Kehtiv kuni/Pindala
+  paremale.
+- **Toetused: "Sobib eraldistele" plokk** — iga sobiva toetuse juures
+  on nüüd näidatud, millistele konkreetsetele eraldistele toetust
+  saab taotleda. Väljund:
+  1. Rohelised eraldise-numbrite "chip-id" (nt 1, 16, 5, 12, …).
+  2. Kogupindala "X,XX ha kokku".
+  3. Seletav silt, mis kirjeldab filtrit (nt "Eraldised vanusega
+     10–60 aastat", "Kuivendatud eraldised", "Raieküpsed eraldised
+     (vanus ≥ raievanus)").
+  Iga toetuse jaoks on `services/subsidies.py`-s uus `eraldised_filter`
+  lambda, mis tagastab sobivate eraldiste nimekirja. Filtreid on 13
+  toetuse jaoks: looduskaitse, metsameede, kliimakindla metsa
+  kujundamine, metsastamine, metsa uuendamine, kooreüraski tõrje,
+  inventeerimine, maaparandus, pärandkultuur, metsaühistu, metssigade
+  küttimine jt. Tagastatakse ka `eraldised_match_count` (sobivate arv),
+  `eraldised_match_ha` (kogupindala) ja `eraldised_filter_label`
+  (inimloetav filter). Lisatud 12 testi `tests/test_subsidy_eraldised.py`
+  (kõik vanad + uued 18 testi läbivad).
+
+### Fixed
+- **Liikide koosseis: "Ainuroheline kask" → "Harilik kask"** —
+  vana nimi oli AI-hallutsinatsioon (sellist puuliiki ei eksisteeri
+  Eesti metsanduses). Kask (KS) on õige nimetusega "harilik kask"
+  (*Betula pendula*). Parandatud kolmes kohas:
+  - `api/index.py` riskiskoori label ("Peapuuliik: …").
+  - `index.html` frontend `SPECIES_NAMES` map.
+  - `index.html` SPECIES_COLORS legendi kommentaar.
+  Tagasihoidlik "Kask" (ilma "harilik" eesliiteta) jääb alles
+  backendi `services/metsaregister.py` lühinimeks ja chart-i
+  legendis.
+
 ## [Määramata] - 2026-06-29
 
 ### Fixed

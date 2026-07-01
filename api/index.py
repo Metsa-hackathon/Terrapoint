@@ -802,6 +802,24 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         "natura_elupaik": bool(layers_data.get("natura_elupaik")),
         "karuputk": bool(layers_data.get("karuputk")),
         "yrask_tsoon": bool(yrask_features),
+        # Eraldiste nimekiri: subsidies.py kasutab seda, et näidata
+        # iga toetuse juures, millistele konkreetsetele eraldistele toetus
+        # kohaldub. Edastame ainult vajalikud väljad (eraldis_nr, puuliik,
+        # puuliik_kood, vanus, pindala_ha, raievanus, kuivendatud), et
+        # vastuse maht püsiks väike.
+        "eraldised": [
+            {
+                "eraldis_nr": e.get("eraldis_nr"),
+                "puuliik": e.get("puuliik"),
+                "puuliik_kood": e.get("puuliik_kood"),
+                "vanus": e.get("vanus") or 0,
+                "pindala_ha": e.get("pindala_ha") or 0,
+                "raievanus": e.get("raievanus"),
+                "kuivendatud": bool(e.get("kuivendatud", False)),
+            }
+            for e in eraldised
+            if e.get("eraldis_nr") is not None
+        ],
     }
     toetused = check_subsidies(subsidy_data)
 
@@ -821,7 +839,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         kuusk_eradised = [e for e in eraldised if e.get("puuliik_kood") == "KU"]
         max_kuusk_v = max((e.get("vanus") or 0) for e in kuusk_eradised) if kuusk_eradised else 0
         # Peapuuliik — already calculated above by tagavara*area
-        peapuuliik_nimi = {"MA": "harilik mänd", "KU": "harilik kuusk", "KS": "ainuroheline kask", "HB": "harilik haab", "LH": "harilik lehis", "LM": "hall lepp", "LV": "salu-lepp"}.get(puuliik, puuliik)
+        peapuuliik_nimi = {"MA": "harilik mänd", "KU": "harilik kuusk", "KS": "harilik kask", "HB": "harilik haab", "LH": "harilik lehis", "LM": "hall lepp", "LV": "salu-lepp"}.get(puuliik, puuliik)
 
         if yrask_features:
             yrask_score = 3
