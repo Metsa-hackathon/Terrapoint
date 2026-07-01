@@ -3275,43 +3275,71 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
 .muted { color: var(--ink-4); font-size: 13.5px; font-style: italic; }
 .hidden { display: none !important; }
 
-/* ═══ CARD PLACEHOLDER (ühtne kõikidele sektsioonidele kuni otsing) ═══ */
+/* ═══ CARD PLACEHOLDER (ühtne kõikidele sektsioonidele kuni otsing) ═══
+   Struktuurne "preview" — näitab väljade nimesid, mida pärast otsingut
+   täidetakse. Täidab kaardi pinna tihedalt, ei jäta tühja keskele
+   tsentreeritud ikooni nagu varem. */
 .card-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 28px 16px 24px;
-    text-align: center;
-    color: var(--ink-3);
+    padding: 14px 0 8px;
     border-top: 1px dashed var(--hair);
     margin-top: 4px;
-    gap: 8px;
+    color: var(--ink-3);
 }
-.card-placeholder-icon {
+.ph-eyebrow {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: var(--paper-2);
-    color: var(--blue-700);
-    border: 1px solid var(--blue-200);
-}
-.card-placeholder-title {
-    font-size: 14.5px;
+    gap: 6px;
+    font-size: 10.5px;
     font-weight: 600;
-    color: var(--ink-2);
-    margin: 0;
-    line-height: 1.4;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+    margin-bottom: 10px;
 }
-.card-placeholder-hint {
+.ph-eyebrow::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--blue-300, #93c5fd);
+    box-shadow: 0 0 0 2px var(--blue-100, #dbeafe);
+}
+.ph-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+.ph-list li {
+    padding: 9px 0;
+    border-bottom: 1px solid var(--paper-3);
     font-size: 13.5px;
     color: var(--ink-3);
-    margin: 0;
-    line-height: 1.5;
-    max-width: 260px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    min-height: 36px;
+}
+.ph-list li:last-child {
+    border-bottom: none;
+}
+.ph-list .ph-label {
+    font-weight: 500;
+    color: var(--ink-2);
+    letter-spacing: -0.005em;
+}
+.ph-list .ph-slot {
+    display: block;
+    width: 70px;
+    height: 7px;
+    border-radius: 3.5px;
+    background: linear-gradient(to right, var(--paper-2) 0%, var(--paper-3) 100%);
+    flex-shrink: 0;
+}
+.metric-card.wide-card .ph-list .ph-slot {
+    width: 90px;
 }
 
 /* ═══ FOOTER ═══════════════════════════════════════════════════════════════ */
@@ -3946,11 +3974,11 @@ footer {
     .card-icon { width: 30px; height: 30px; border-radius: 7px; }
     .card-icon svg { width: 14px; height: 14px; }
 
-    .card-placeholder { padding: 20px 12px 18px; gap: 6px; }
-    .card-placeholder-icon { width: 34px; height: 34px; }
-    .card-placeholder-icon svg { width: 18px; height: 18px; }
-    .card-placeholder-title { font-size: 14px; }
-    .card-placeholder-hint { font-size: 13px; }
+    .card-placeholder { padding: 12px 0 8px; }
+    .ph-eyebrow { font-size: 10px; margin-bottom: 8px; }
+    .ph-list li { padding: 8px 0; min-height: 32px; font-size: 13px; }
+    .ph-list .ph-slot { width: 56px; height: 6px; }
+    .metric-card.wide-card .ph-list .ph-slot { width: 70px; }
     .table-panel,
     #kitsendused-info {
         --table-grid-pad-y: 5px;

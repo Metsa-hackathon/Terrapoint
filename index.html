@@ -66,7 +66,7 @@
     <script src="/static/js/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl033">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl069">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl070">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -552,13 +552,13 @@
                 <p class="section-desc">Katastritunnus, pindala, sihtotstarve, omand ja asukoht</p>
                 <div id="kataster-info">
                     <div class="card-placeholder">
-                        <div class="card-placeholder-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                            </svg>
-                        </div>
-                        <p class="card-placeholder-title">Otsi krunti, et näha andmeid</p>
-                        <p class="card-placeholder-hint">Katastritunnus, pindala, sihtotstarve, omand</p>
+                        <div class="ph-eyebrow">Kuvatakse pärast otsingut</div>
+                        <ul class="ph-list">
+                            <li><span class="ph-label">Pindala</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Sihtotstarve</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Omandivorm</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Aadress</span><span class="ph-slot"></span></li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -578,13 +578,13 @@
                 <p class="section-desc">Puuliik, vanus, tagavara, boniteet ja liikide koosseis</p>
                 <div id="mets-info">
                     <div class="card-placeholder">
-                        <div class="card-placeholder-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 22V10"/><path d="M12 10c0-4 4-7 8-7-1 5-4 7-8 7z"/><path d="M12 14c0-3-3-5-6-5 1 4 3 5 6 5z"/><line x1="6" y1="22" x2="18" y2="22"/>
-                            </svg>
-                        </div>
-                        <p class="card-placeholder-title">Otsi krunti, et näha eraldisi</p>
-                        <p class="card-placeholder-hint">Puuliik, vanus, tagavara, boniteet, liigid</p>
+                        <div class="ph-eyebrow">Kuvatakse pärast otsingut</div>
+                        <ul class="ph-list">
+                            <li><span class="ph-label">Peapuuliik</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Keskmine vanus</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Tagavara</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Eraldiste arv</span><span class="ph-slot"></span></li>
+                        </ul>
                     </div>
                 </div>
                 <div class="card-composition" id="composition-wrap" style="display:none">
@@ -607,13 +607,13 @@
                 <p class="section-desc">Metsa ümarmaterjali turuväärtus praeguste hindadega</p>
                 <div id="vaartus-info">
                     <div class="card-placeholder">
-                        <div class="card-placeholder-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                            </svg>
-                        </div>
-                        <p class="card-placeholder-title">Otsi krunti, et näha väärtust</p>
-                        <p class="card-placeholder-hint">Palk, paberipuit, ümarmaterjali turuhind</p>
+                        <div class="ph-eyebrow">Kuvatakse pärast otsingut</div>
+                        <ul class="ph-list">
+                            <li><span class="ph-label">Ühikhind</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Seisuhind</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Koguväärtus</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Pindala</span><span class="ph-slot"></span></li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -630,13 +630,13 @@
                 <p class="section-desc">Metsa süsinikuvaru ja CO2 sidumise potentsiaal</p>
                 <div id="sinik-info">
                     <div class="card-placeholder">
-                        <div class="card-placeholder-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-                            </svg>
-                        </div>
-                        <p class="card-placeholder-title">Otsi krunti, et näha süsinikuvaru</p>
-                        <p class="card-placeholder-hint">CO2 kogus, sidumise potentsiaal, biomass</p>
+                        <div class="ph-eyebrow">Kuvatakse pärast otsingut</div>
+                        <ul class="ph-list">
+                            <li><span class="ph-label">CO₂ kogus</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">CO₂ / ha</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Biomass / ha</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Sidumise potentsiaal</span><span class="ph-slot"></span></li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -653,13 +653,13 @@
                 <p class="section-desc">Kehtivad raie ja metsauuenduse teatised</p>
                 <div id="teatised-info">
                     <div class="card-placeholder">
-                        <div class="card-placeholder-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-                            </svg>
-                        </div>
-                        <p class="card-placeholder-title">Otsi krunti, et näha teatisi</p>
-                        <p class="card-placeholder-hint">Kehtivad raie- ja uuendusteatised</p>
+                        <div class="ph-eyebrow">Kuvatakse pärast otsingut</div>
+                        <ul class="ph-list">
+                            <li><span class="ph-label">Teatiste arv</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Tüübid</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Pindala kokku</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Kehtiv kuni</span><span class="ph-slot"></span></li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -676,13 +676,13 @@
                 <p class="section-desc">Ürask, kuivendamatus, raiesurve ja muud ohud</p>
                 <div id="riskid-info">
                     <div class="card-placeholder">
-                        <div class="card-placeholder-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                            </svg>
-                        </div>
-                        <p class="card-placeholder-title">Otsi krunti, et näha ohte</p>
-                        <p class="card-placeholder-hint">Ürask, kuivendus, raiesurve, kahjustused</p>
+                        <div class="ph-eyebrow">Kuvatakse pärast otsingut</div>
+                        <ul class="ph-list">
+                            <li><span class="ph-label">Üraski risk</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Terviseindeks</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Karuputk</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Lageraieala</span><span class="ph-slot"></span></li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -699,13 +699,13 @@
                 <p class="section-desc">EL määruse 2023/1115 nõuetele vastavuse kontrollimine</p>
                 <div id="eudr-info">
                     <div class="card-placeholder">
-                        <div class="card-placeholder-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                            </svg>
-                        </div>
-                        <p class="card-placeholder-title">Otsi krunti, et kontrollida</p>
-                        <p class="card-placeholder-hint">EL määruse 2023/1115 nõuetele vastavus</p>
+                        <div class="ph-eyebrow">Kuvatakse pärast otsingut</div>
+                        <ul class="ph-list">
+                            <li><span class="ph-label">Deklaratsiooni staatus</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Kinnistu pindala</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Maakond</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Kontrollitavad punktid</span><span class="ph-slot"></span></li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -722,13 +722,13 @@
                 <p class="section-desc">Toetused ja hüvitised metsaomanikule</p>
                 <div id="toetused-info">
                     <div class="card-placeholder">
-                        <div class="card-placeholder-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
-                            </svg>
-                        </div>
-                        <p class="card-placeholder-title">Otsi krunti, et näha toetusi</p>
-                        <p class="card-placeholder-hint">Metsauuendus, hooldusraie, Natura 2000, kaitsealade hüvitised</p>
+                        <div class="ph-eyebrow">Kuvatakse pärast otsingut</div>
+                        <ul class="ph-list">
+                            <li><span class="ph-label">Sobivad toetused</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Toetuse liigid</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Kogusumma</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Taotlusvoor</span><span class="ph-slot"></span></li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -745,13 +745,13 @@
                 <p class="section-desc">Kaitsealad, piiranguvööndid ja muinsuskaitse</p>
                 <div id="kitsendused-info">
                     <div class="card-placeholder">
-                        <div class="card-placeholder-icon">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/>
-                            </svg>
-                        </div>
-                        <p class="card-placeholder-title">Otsi krunti, et näha kitsendusi</p>
-                        <p class="card-placeholder-hint">Kaitsealad, piiranguvööndid, muinsuskaitse</p>
+                        <div class="ph-eyebrow">Kuvatakse pärast otsingut</div>
+                        <ul class="ph-list">
+                            <li><span class="ph-label">Kitsenduste arv</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Kaitsealad</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Piiranguvööndid</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Muinsuskaitse</span><span class="ph-slot"></span></li>
+                        </ul>
                     </div>
                 </div>
                 <div id="kitsendused-link" style="display:none;margin-top:8px">
