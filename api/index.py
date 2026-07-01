@@ -911,8 +911,32 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     TOO_NIMETUSED = {
         "TR": "Trassiraie", "HR": "Hooldusraie", "LR": "Lageraie",
         "UR": "Uuendusraie", "SR": "Sanitaarraie", "VR": "Valikraie",
-        "KR": "Kujundusraie", "PR": "Peenraie", "JR": "Järjekorraline raie",
+        "KR": "Kujundusraie", "PR": "Peenraie", "JR": "Järjekorraline rai e",
     }
+
+    # Metsaregistri WFS-i andmekvaliteedi viga: mõnede teatiste puhul
+    # on `eraldise_nr` väljas hoopis aasta (nt 2026, 2028) või otsuse
+    # number, mitte tegelik eraldise number. Tuvastame aasta-laadse
+    # väärtuse ja proovime leida õige eraldise eraldiste nimekirjast
+    # `pindala_ha` järgi.
+    def _is_year_like(value) -> bool:
+        if value is None or value == "":
+            return False
+        try:
+            n = int(value)
+            return 1900 <= n <= 2100
+        except (ValueError, TypeError):
+            return False
+
+    # Eraldiste pindala → eraldise_nr lookup (1:1) ja varukoopia
+    # kõigi eraldiste pindalatest järjestatuna.
+    eraldised_by_area = {}
+    for e in (eraldised or []):
+        area = e.get("pindala_ha")
+        nr = e.get("eraldis_nr")
+        if area is not None and nr is not None:
+            eraldised_by_area.setdefault(round(float(area), 2), []).append(nr)
+
     teatised = []
     for feat in teatised_features:
         p = feat.get("properties", {})
@@ -920,6 +944,16 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         otsus = p.get("otsus") or ""
         staatus = "KEHTIV" if p.get("kehtiv_kuni") else otsus
         kehtiv = p.get("kehtiv_kuni") or ""
+        raw_eraldis = p.get("eraldise_nr")
+        # Kui WFS-i eraldise_nr on aasta või puudub, otsime eraldiste
+        # nimekirjast sama pindala järgi. Kui unikaalne vaste leitakse,
+        # kasutame seda; muidu jätame None (frontend kuvab "—").
+        if _is_year_like(raw_eraldis) or raw_eraldis in (None, ""):
+            area = round(float(p.get("pindala") or 0), 2)
+            candidates = eraldised_by_area.get(area, [])
+            eraldis_nr = candidates[0] if len(candidates) == 1 else None
+        else:
+            eraldis_nr = raw_eraldis
         teatised.append({
             "tyyp": TOO_NIMETUSED.get(too_kood, too_kood),
             "tyyp_kood": too_kood,
@@ -930,7 +964,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             "maht": p.get("raiutav_maht"),
             "metskond": p.get("metskond") or "",
             "kvartal": p.get("kvartali_nr") or "",
-            "eraldis": p.get("eraldise_nr"),
+            "eraldis": eraldis_nr,
             "otsuse_pohjendus": (p.get("otsuse_pohjendus") or "")[:200],
             "active": bool(kehtiv),
         })
