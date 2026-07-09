@@ -347,8 +347,14 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         key: _filter_features_by_geometry(features, kataster_data.get("geometry"))
         for key, features in layers_data.items()
     }
+    # Reaalsed allikakatked (WFS viga/timeout) halvendavad analüüsi — need
+    # märgivad vastuse osaliseks. Kihid, mis jõudsid 100 feature piirini
+    # (truncated), EI halvenda analüüsi: _filter_features_by_geometry jätab
+    # alles ainult krundi poolt lõikuvad feature'd, nii et krundi enda
+    # andmed on olemas ka siis, kui ümbruskonnas on rohkem objekte, kui me
+    # tõmbasime. Piirangu ignoreerimine tooks vale-positiivse osalise
+    # staatuse ja blokeeriks AI analüüsi suurte metsade puhul.
     unavailable_sources.extend(f"layers.{key}" for key in unavailable_layers)
-    unavailable_sources.extend(f"layers.{key}" for key in truncated_layers)
     teatised_features = results[2] if not isinstance(results[2], Exception) else []
     if isinstance(results[2], Exception):
         unavailable_sources.append("metsaregister.teatised")
@@ -1098,6 +1104,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             "partial": bool(unavailable_sources),
             "details_skipped": skip_details,
             "unavailable_sources": sorted(set(unavailable_sources)),
+            "truncated_layers": sorted(set(truncated_layers)),
         },
     }
 

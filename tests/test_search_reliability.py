@@ -89,6 +89,59 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(result["kitsendused"], [])
 
+    async def test_layer_truncation_is_not_reported_as_partial(self):
+        # Suur mets → kihid jooksevad 100 feature piirile (truncated), kuid
+        # see ei halvenda analüüsi: _filter_features_by_geometry jätab krundi
+        # andmed alles. Osaline staatus blokeerib AI analüüsi ja näitab
+        # hirmusõnumit, seega truncation ei tohi partial=True pärida.
+        kataster = {
+            "number": "78404:409:0113",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+            },
+            "pindala_ha": 50,
+        }
+        truncated_layers = ["kaitsealad", "sood", "veekogud", "vooluveed", "natura_elupaik"]
+
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], truncated_layers))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", 0)
+
+        self.assertFalse(result["meta"]["partial"])
+        self.assertEqual(result["meta"]["truncated_layers"], sorted(truncated_layers))
+        self.assertEqual(result["meta"]["unavailable_sources"], [])
+
+    async def test_layer_failure_still_reports_partial(self):
+        # Reaalne WFS katke (vigane kiht) peab jääma osaliseks — see on
+        # andmete puudumine, mitte mahupiir.
+        kataster = {
+            "number": "78404:409:0113",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+            },
+            "pindala_ha": 1,
+        }
+
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({"kaitsealad": []}, ["kaitsealad"], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", 0)
+
+        self.assertTrue(result["meta"]["partial"])
+        self.assertIn("layers.kaitsealad", result["meta"]["unavailable_sources"])
+        self.assertEqual(result["meta"]["truncated_layers"], [])
+
     async def test_intentional_detail_skip_is_not_reported_as_source_failure(self):
         kataster = {
             "number": "78404:409:0113",
