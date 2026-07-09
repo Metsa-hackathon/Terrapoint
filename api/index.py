@@ -320,6 +320,45 @@ def _filter_features_by_geometry(features, parcel_geom):
 _search_cache_hits = 0
 _search_cache_misses = 0
 
+async def _gather_in_batches(tasks: list, batch_size: int = 20, overall_timeout: float = 12.0,
+                             fallback_per_task=None) -> list:
+    """Run coroutines in bounded batches — safe for hundreds of tasks.
+
+    Vaba asyncio.gather(*tasks) teeks kõik korraga (nt 654 üheaegset WFS
+    päringut), mis ületab serveri ja kliendi ühenduste piiri. See jaotab
+    töö batch-ideks (vaikimisi 20) ja jookseb batch-kaupa, nii et samaaegsete
+    ühenduste arv peab alla ~40 (20 element + 20 kahjustus). Üldine timeout
+    kaitseb aeglase WFS-i eest kogu bloki peale.
+
+    Tagastab tulemuste loendi (eraldiste järjekorras). Kui overall_timeout
+    saabub, tagastab senised tulemused ja ülejäänutele rakendatakse
+    fallback_per_task (vaikimisi []).
+    """
+    results: list = [None] * len(tasks)
+    if not tasks:
+        return results
+    try:
+        done_indices: list[int] = []
+        async def _run_with_timeout():
+            nonlocal done_indices
+            for batch_start in range(0, len(tasks), batch_size):
+                batch_slice = tasks[batch_start:batch_start + batch_size]
+                batch_indices = list(range(batch_start, min(batch_start + batch_size, len(tasks))))
+                batch_results = await asyncio.gather(*batch_slice, return_exceptions=True)
+                for idx, res in zip(batch_indices, batch_results):
+                    if isinstance(res, Exception):
+                        results[idx] = fallback_per_task() if callable(fallback_per_task) else (fallback_per_task or [])
+                    else:
+                        results[idx] = res
+                    done_indices.append(idx)
+        await asyncio.wait_for(_run_with_timeout(), timeout=overall_timeout)
+    except asyncio.TimeoutError:
+        for i in range(len(results)):
+            if results[i] is None:
+                results[i] = fallback_per_task() if callable(fallback_per_task) else (fallback_per_task or [])
+    return results
+
+
 async def _search_core(kataster_nr: str, start: float) -> dict:
     """Sisemine otsinguloogika — eraldatud, et saaks timeout-i panna."""
     kataster_data = await query_kataster(kataster_nr)
@@ -363,9 +402,20 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         unavailable_sources.append("metsaregister.natura_2000")
     natura_features = _filter_features_by_geometry(natura_features, kataster_data.get("geometry"))
 
-    # Skip per-eraldis API calls if too many eraldised or running low on time
+    # Element-and-kahjustused päringud iga eraldise jaoks on kallid (2 WFS
+    # päringut eraldise kohta). Vanem kood jooksis kõik korraga (asyncio.gather
+    # *tasks), mis ületas 30 eraldise puhul WFS serveri ühenduste piiri ja
+    # kukkus skip_details=True juhuga tagasi eraldise-tasandi peapuuliigile —
+    # see näitas suurtele metsadele alati ~100% ühte liiki ja liikide
+    # koosseis näis korduv. Nüüd kasutame _gather_in_batches (20 korraga)
+    # ja tõstame lävendi 200 eraldise peale. Üle 200 eraldise puhul sample'ime
+    # esimesed 200 (osaline, aga koosseis on sellegipoolest palju/mitmekesisem)
+    # ja märgime meta'as sampled_eraldised.
     elapsed = time.time() - start
-    skip_details = len(eraldised) > 30 or elapsed > 8.0
+    ELEMENT_FETCH_MAX = 200
+    ELEMENT_FETCH_TIME_BUDGET = 14.0
+    skip_details = len(eraldised) == 0 or elapsed > ELEMENT_FETCH_TIME_BUDGET
+    sampled_eraldised = False
     yrask_features = _filter_features_by_geometry(layers_data.get("yrask_eelis", []), kataster_data.get("geometry"))
 
     kitsendused = []
@@ -418,26 +468,42 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     }
 
     if eraldised:
-        # Fetch element data for all eraldised in parallel (skip if low on time)
+        # Fetch element + kahjustused data for all (or sampled) eraldised.
+        # Vana kood jooksis asyncio.gather(*tasks) — üle 30 eraldise tõttu see
+        # ületas WFS ühenduste piiri, skip_details=True läkss käiku ja suurte
+        # metsade liikide koosseis kippus näitama alati ~100% ühte liiki.
+        # Nüüd: _gather_in_batches jawab korraga batch = 20 päringut,
+        # lävend on 200 eraldise peale ja üle 200 eraldise sample'ime.
         if not skip_details:
+            fetch_eraldised = eraldised
+            if len(eraldised) > ELEMENT_FETCH_MAX:
+                fetch_eraldised = eraldised[:ELEMENT_FETCH_MAX]
+                sampled_eraldised = True
             try:
-                element_tasks = [query_eraldis_element(e.get("id")) for e in eraldised]
-                kahjustused_tasks = [query_kahjustused(e.get("id")) for e in eraldised]
-                inner_results = await asyncio.wait_for(
-                    asyncio.gather(
-                        asyncio.gather(*element_tasks, return_exceptions=True),
-                        asyncio.gather(*kahjustused_tasks, return_exceptions=True),
-                    ),
-                    timeout=8.0,
+                element_tasks = [query_eraldis_element(e.get("id")) for e in fetch_eraldised]
+                kahjustused_tasks = [query_kahjustused(e.get("id")) for e in fetch_eraldised]
+                # Element- ja kahjustuste batched fetch peab jooksma paralleelselt
+                # (vana kood jooksis need järjest, mis võttis 12+6=18s suurte
+                # metsade puhul ja ületas _search 20s üldise wait_for piiri).
+                # Now max ~10s kogu faasile (mõlemad jagavad event loop'i).
+                element_results, kahjustused_results = await asyncio.gather(
+                    _gather_in_batches(element_tasks, batch_size=20,
+                                       overall_timeout=10.0, fallback_per_task=list),
+                    _gather_in_batches(kahjustused_tasks, batch_size=20,
+                                       overall_timeout=10.0, fallback_per_task=list),
                 )
-                all_elements = [r if not isinstance(r, Exception) else [] for r in inner_results[0]]
-                all_kahjustused = [r if not isinstance(r, Exception) else [] for r in inner_results[1]]
-                if any(isinstance(r, Exception) for r in inner_results[0]):
+                all_elements = [r if isinstance(r, list) else [] for r in element_results]
+                all_kahjustused = [r if isinstance(r, list) else [] for r in kahjustused_results]
+                # extend with [] for sampled-out eraldised so zip() aligns
+                if sampled_eraldised:
+                    all_elements.extend([[]] * (len(eraldised) - len(fetch_eraldised)))
+                    all_kahjustused.extend([[]] * (len(eraldised) - len(fetch_eraldised)))
+                if any(not isinstance(r, list) for r in element_results):
                     unavailable_sources.append("metsaregister.eraldis_element")
-                if any(isinstance(r, Exception) for r in inner_results[1]):
+                if any(not isinstance(r, list) for r in kahjustused_results):
                     unavailable_sources.append("metsaregister.kahjustused")
-            except asyncio.TimeoutError:
-                # Element details slow — fall back to eraldis-level approximate data
+            except Exception:
+                # Catastrophic — fall back to eraldis-level data for all
                 all_elements = []
                 all_kahjustused = []
                 unavailable_sources.extend(["metsaregister.eraldis_element", "metsaregister.kahjustused"])
@@ -1103,6 +1169,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             "response_time_ms": elapsed,
             "partial": bool(unavailable_sources),
             "details_skipped": skip_details,
+            "sampled_eraldised": sampled_eraldised,
             "unavailable_sources": sorted(set(unavailable_sources)),
             "truncated_layers": sorted(set(truncated_layers)),
         },
