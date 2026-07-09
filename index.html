@@ -970,17 +970,21 @@
     // ═══ api.js ═══
     const API_BASE = window.location.origin + '/api';
     const AI_API_BASE = API_BASE;
+    var activeParcelSearch = null;
+    var parcelSearchSequence = 0;
+    var addressResolutionSequence = 0;
 
-    async function searchParcel(katasterNr) {
-        var controller = new AbortController();
+    async function searchParcel(katasterNr, controller) {
         var timer = setTimeout(function() { controller.abort(); }, 40000);
         try {
             var res = await fetch(API_BASE + '/search/' + encodeURIComponent(katasterNr), {signal: controller.signal});
             clearTimeout(timer);
+            var payload = await res.json().catch(function() { return {}; });
             if (!res.ok) {
-                throw new Error(res.status === 404 ? 'Katastri numbrit ei leitud.' : 'Serveri viga: ' + res.status);
+                throw new Error(payload.error || (res.status === 404 ? 'Katastri numbrit ei leitud.' : 'Serveri viga: ' + res.status));
             }
-            return await res.json();
+            if (payload.error) throw new Error(payload.error);
+            return payload;
         } catch(e) {
             clearTimeout(timer);
             if (e.name === 'AbortError') throw new Error('Otsing aegus (40s). Proovi uuesti.');
@@ -1289,8 +1293,10 @@
 
         aiStreaming = false;
         aiAbortController = null;
-        document.getElementById('ai-chat-send').disabled = false;
-        input.focus();
+        if (aiCurrentKataster) {
+            document.getElementById('ai-chat-send').disabled = false;
+            input.focus();
+        }
 
         // Send next queued message if any
         if (aiMessageQueue.length > 0) {
@@ -1303,6 +1309,7 @@
         // Always make sure the input area is visible when a kataster is loaded
         // (the `return` short-circuit below was leaving it hidden on re-visits).
         document.getElementById('ai-chat-input-area').style.display = '';
+        document.getElementById('ai-chat-input').disabled = false;
 
         // Already analyzed this exact parcel — don't re-prompt automatically.
         // (User can still send their own questions, or re-trigger via a hint button.)
@@ -1338,6 +1345,24 @@
 
         // Show the "Analyze with AI" button instead of auto-sending
         aiShowAnalyzeButton();
+    }
+
+    function aiShowUnavailableData() {
+        if (aiAbortController) aiAbortController.abort();
+        aiAbortController = null;
+        aiStreaming = false;
+        aiMessageQueue.length = 0;
+        aiCurrentKataster = null;
+        aiLastAnalyzedKataster = null;
+        aiChatHistory = [];
+        var input = document.getElementById('ai-chat-input');
+        var send = document.getElementById('ai-chat-send');
+        if (input) input.disabled = true;
+        if (send) send.disabled = true;
+        var messages = document.getElementById('ai-chat-messages');
+        if (messages) messages.innerHTML = '<div class="ai-welcome">AI analüüs on saadaval pärast täielike kinnistuandmete laadimist.</div>';
+        var subtitle = document.querySelector('.ai-chat-subtitle');
+        if (subtitle) subtitle.textContent = 'Osa andmeallikaid ei vastanud. Proovi otsingut uuesti.';
     }
 
     function aiShowAnalyzeButton() {
@@ -1510,17 +1535,24 @@
             '&bbox=' + bbox + '&srs=EPSG:4326' +
             '&width=101&height=101&x=50&y=50' +
             '&info_format=application/json&feature_count=1';
-        var ctrl = new AbortController();
-        var timer = setTimeout(function() { ctrl.abort(); }, 9000);
-        try {
-            var resp = await fetch(url, { signal: ctrl.signal });
-            if (!resp.ok) throw new Error('WMS ' + resp.status);
-            var data = await resp.json();
-            if (!data.features || data.features.length === 0) return null;
-            return data.features[0].properties && data.features[0].properties.tunnus || null;
-        } finally {
-            clearTimeout(timer);
+        var lastError;
+        for (var attempt = 0; attempt < 2; attempt++) {
+            var ctrl = new AbortController();
+            var timer = setTimeout(function() { ctrl.abort(); }, 7000);
+            try {
+                var resp = await fetch(url, { signal: ctrl.signal });
+                if (!resp.ok) throw new Error('WMS ' + resp.status);
+                var data = await resp.json();
+                if (!data.features || data.features.length === 0) return null;
+                return data.features[0].properties && data.features[0].properties.tunnus || null;
+            } catch (err) {
+                lastError = err;
+                if (attempt === 0) await new Promise(function(resolve) { setTimeout(resolve, 250); });
+            } finally {
+                clearTimeout(timer);
+            }
         }
+        throw lastError;
     }
 
     // Map click handler — finds parcel under cursor, asks user to confirm before
@@ -1891,6 +1923,7 @@
     function addEraldisedLayer(features) {
         if (typeof map === 'undefined' || !map) return;
         var geojson = { type: 'FeatureCollection', features: features };
+        var labels = L.layerGroup();
         var layer = L.geoJSON(geojson, {
             style: function(feature) {
                 var p = feature.properties || {};
@@ -1919,7 +1952,7 @@
                             iconSize: null,
                             iconAnchor: [0, 0],
                         });
-                        L.marker(centroid, { icon: labelIcon, interactive: false, keyboard: false }).addTo(map);
+                        L.marker(centroid, { icon: labelIcon, interactive: false, keyboard: false }).addTo(labels);
                     }
                 }
                 var rColor = p.color || 'var(--map-eraldis-hooldus)';
@@ -1949,8 +1982,8 @@
                 html += '</div>';
                 layer.bindPopup(html);
             },
-        }).addTo(map);
-        overlayLayers['eraldised'] = layer;
+        });
+        overlayLayers['eraldised'] = L.layerGroup([layer, labels]).addTo(map);
         updateMapLegend(features);
     }
 
@@ -2562,8 +2595,16 @@
         // Ühenda eksport nupu handler
         var btn = document.getElementById('eudr-btn');
         if (btn) {
-            btn.addEventListener('click', function() {
-                if (katasterNr) exportEUDR(katasterNr);
+            btn.addEventListener('click', async function() {
+                if (!katasterNr) return;
+                btn.disabled = true;
+                try {
+                    await exportEUDR(katasterNr);
+                } catch (err) {
+                    showError(err.message || 'EUDR eksport ebaõnnestus. Proovi uuesti.');
+                } finally {
+                    btn.disabled = false;
+                }
             });
         }
     }
@@ -3105,7 +3146,7 @@
         // Landing search button -> run doSearch using nav input
         // Smart submit (typed/entered): katastritunnus → direct search; address → auto-pick first match
         // Same as chip submit so Enter behaves consistently across landing and nav
-        var KATASTER_RE = /^\d{5}:\d{3}:\d{4}$/;
+        var KATASTER_RE = /^\d{5}:\d{3}:\d{4}(?::\d{1,4})?$/;
         // Kataster-sarnane: ainult numbrid, eraldajad ("-", " ", "." või ":") ja
         // vähemalt üks number. Lubame ":" et "78404:409:113" (vale pikkusega) saaks
         // samuti normaliseerida.
@@ -3115,15 +3156,16 @@
             if (KATASTER_LIKE_RE.test(value) && /\d/.test(value)) {
                 // Asenda kõik eraldajad kooloniteks; normaliseeri topeltkoolonid
                 var normalized = value.replace(/[\s.\-]+/g, ':').replace(/:+/g, ':').replace(/^:|:$/g, '');
-                var m = normalized.match(/^(\d{1,5}):(\d{1,4}):(\d{1,5})$/);
+                var m = normalized.match(/^(\d{1,5}):(\d{1,4}):(\d{1,5})(?::(\d{1,4}))?$/);
                 if (m) {
                     // Pad short groups: 7840:409:0113 → 78400:409:0113
-                    return m[1].padStart(5, '0') + ':' + m[2].padStart(3, '0') + ':' + m[3].padStart(4, '0');
+                    return m[1].padStart(5, '0') + ':' + m[2].padStart(3, '0') + ':' + m[3].padStart(4, '0') + (m[4] ? ':' + m[4].padStart(4, '0') : '');
                 }
             }
             return null;
         }
         function smartSubmit(value) {
+            var requestId = ++addressResolutionSequence;
             if (navInput) navInput.value = value;
             if (landInput) landInput.value = value;
             var normalizedKataster = _maybeKataster(value);
@@ -3137,6 +3179,7 @@
                 return;
             }
             fetchAddresses(value).then(function(results) {
+                if (requestId !== addressResolutionSequence) return;
                 if (results.length > 0) {
                     var first = results[0];
                     if (navInput) navInput.value = first.katastri_nr;
@@ -3146,6 +3189,7 @@
                     showError('Aadressi "' + value + '" ei leitud. Proovi katastritunnust või teist aadressi.');
                 }
             }).catch(function() {
+                if (requestId !== addressResolutionSequence) return;
                 // Fall back to dropdown
                 var dropdown = landDropdown || document.getElementById('address-dropdown');
                 var target = landInput || navInput;
@@ -3180,6 +3224,7 @@
         // Chip submit (one-click demo): kataster → direct; address/region → auto-pick first match and search
         // This way one click loads the dashboard, no dropdown interruption
         function chipSubmit(value) {
+            var requestId = ++addressResolutionSequence;
             if (navInput) navInput.value = value;
             if (landInput) landInput.value = value;
             if (KATASTER_RE.test(value)) {
@@ -3187,6 +3232,7 @@
                 return;
             }
             fetchAddresses(value).then(function(results) {
+                if (requestId !== addressResolutionSequence) return;
                 if (results.length > 0) {
                     var first = results[0];
                     if (navInput) navInput.value = first.katastri_nr;
@@ -3196,6 +3242,7 @@
                     showError('Aadressi "' + value + '" ei leitud. Proovi katastritunnust või teist aadressi.');
                 }
             }).catch(function() {
+                if (requestId !== addressResolutionSequence) return;
                 // Last resort — show the dropdown so user can pick even if backend is flaky
                 var dropdown = landDropdown || document.getElementById('address-dropdown');
                 var target = landInput || navInput;
@@ -3251,12 +3298,14 @@
         selectAddressItem(items[idx], landDropdown, landInput);
         return true;
     }
-    if (landInput && landDropdown) {
-        landInput.addEventListener('input', function() {
-            var val = landInput.value.trim();
+        if (landInput && landDropdown) {
+            landInput.addEventListener('input', function() {
+                var val = landInput.value.trim();
+                invalidateAddressDropdown(landDropdown);
+                addressResolutionSequence++;
             clearTimeout(landAddrTimer);
             if (val.length < 3) { landDropdown.style.display = 'none'; return; }
-            if (/^\d{5}:\d{3}:\d{4}$/.test(val)) { landDropdown.style.display = 'none'; return; }
+            if (KATASTER_RE.test(val)) { landDropdown.style.display = 'none'; return; }
             // show immediate loading feedback while we wait for debounce + fetch
             showDropdownLoading(landDropdown);
             landDropdown._activeIndex = -1;
@@ -3347,6 +3396,7 @@
 
         // Nav smart submit: katastritunnus → direct; address → pick first match
         function navSmartSubmit(value) {
+            var requestId = ++addressResolutionSequence;
             var normalizedKataster = _maybeKataster(value);
             if (normalizedKataster) {
                 if (normalizedKataster !== value) {
@@ -3358,6 +3408,7 @@
             }
             // Non-kataster query: fetch addresses and use the first match
             fetchAddresses(value).then(function(results) {
+                if (requestId !== addressResolutionSequence) return;
                 if (results.length > 0) {
                     var first = results[0];
                     document.getElementById('kataster-input').value = first.katastri_nr;
@@ -3367,6 +3418,7 @@
                     showError('Aadressi "' + value + '" ei leitud. Proovi katastritunnust või teist aadressi.');
                 }
             }).catch(function() {
+                if (requestId !== addressResolutionSequence) return;
                 // Fall back to dropdown so user can still pick
                 var dropdown = document.getElementById('address-dropdown');
                 searchAddresses(value, dropdown, document.getElementById('kataster-input'));
@@ -3465,10 +3517,12 @@
 
         input.addEventListener('input', function() {
             var val = input.value.trim();
+            invalidateAddressDropdown(dropdown);
+            addressResolutionSequence++;
             clearTimeout(addressTimer);
             if (val.length < 3) { dropdown.style.display = 'none'; return; }
             // If it looks like a kataster number, don't search addresses
-            if (/^\d{5}:\d{3}:\d{4}$/.test(val)) { dropdown.style.display = 'none'; return; }
+            if (KATASTER_RE.test(val)) { dropdown.style.display = 'none'; return; }
             showDropdownLoading(dropdown);
             dropdown._activeIndex = -1;
             addressTimer = setTimeout(function() { searchAddresses(val); }, 350);
@@ -3506,19 +3560,29 @@
     function selectAddressItem(item, dropdown, target) {
         var kataster = item.dataset.kataster;
         if (!kataster) return;
+        addressResolutionSequence++;
+        invalidateAddressDropdown(dropdown);
         target.value = kataster;
         var navInput = document.getElementById('kataster-input');
         if (target !== navInput) navInput.value = kataster;
         dropdown.style.display = 'none';
         doSearch();
     }
+    function invalidateAddressDropdown(dropdown) {
+        if (!dropdown) return;
+        dropdown._seq = (dropdown._seq || 0) + 1;
+        if (dropdown._controller) dropdown._controller.abort();
+    }
     async function searchAddresses(query, dropdownEl, targetInput) {
         var dropdown = dropdownEl || document.getElementById('address-dropdown');
         var target = targetInput || document.getElementById('kataster-input');
         var seq = (dropdown._seq || 0) + 1;
         dropdown._seq = seq;
+        if (dropdown._controller) dropdown._controller.abort();
+        var controller = new AbortController();
+        dropdown._controller = controller;
         try {
-            var resp = await fetch('/api/address/' + encodeURIComponent(query));
+            var resp = await fetch('/api/address/' + encodeURIComponent(query), { signal: controller.signal });
             var data = await resp.json();
             if (seq !== dropdown._seq) return; // a newer request superseded this one
             var results = (data && data.results) || [];
@@ -3561,6 +3625,10 @@
     async function doSearch() {
         var nr = document.getElementById('kataster-input').value.trim();
         if (!nr) { showError('Sisesta katastri number.'); return; }
+        var requestId = ++parcelSearchSequence;
+        if (activeParcelSearch) activeParcelSearch.abort();
+        var controller = new AbortController();
+        activeParcelSearch = controller;
 
         var btn = document.getElementById('search-btn');
         var landBtn = document.getElementById('search-btn-landing');
@@ -3575,7 +3643,8 @@
         showLoading();
 
         try {
-            var data = await searchParcel(nr);
+            var data = await searchParcel(nr, controller);
+            if (requestId !== parcelSearchSequence) return;
             currentData = data;
 
             window._timberValue = (data.vaartus && data.vaartus.total_value_eur) || 0;
@@ -3597,17 +3666,26 @@
 
             hideLoading();
             showDashboard();
+            if (data.meta && data.meta.partial) {
+                showError('Osa andmeallikaid jäi laadimata või oli liiga mahukas. Puuduvad andmed ei tähenda, et piiranguid või metsa ei ole. Proovi otsingut uuesti.');
+            }
 
             // Render composition chart AFTER browser lays out the now-visible canvas
             requestAnimationFrame(function() {
+                if (requestId !== parcelSearchSequence) return;
                 if (data.mets && data.mets.liikide_koosseis) renderCompositionChart(data.mets.liikide_koosseis);
             });
 
             // Trigger AI analysis
-            if (data.kataster) aiAnalyzeKataster(data.kataster.number, data.mets ? data.mets.eraldised : null);
+            if (data.kataster && !(data.meta && data.meta.partial)) {
+                aiAnalyzeKataster(data.kataster.number, data.mets ? data.mets.eraldised : null);
+            } else if (data.meta && data.meta.partial) {
+                aiShowUnavailableData();
+            }
 
             // Show parcel on the already-visible map
             setTimeout(function() {
+                if (requestId !== parcelSearchSequence) return;
                 map.invalidateSize();
                 if (data.kataster && data.kataster.geometry) {
                     showParcel(data.kataster.geometry);
@@ -3615,11 +3693,14 @@
                 }
             }, 200);
         } catch (err) {
+            if (requestId !== parcelSearchSequence) return;
             hideLoading();
             showDashboard();
             renderErrorState(err.message);
             showError(err.message);
         } finally {
+            if (requestId !== parcelSearchSequence) return;
+            activeParcelSearch = null;
             btn.disabled = false;
             btn.classList.remove('is-loading');
             searchBox.classList.remove('is-searching');

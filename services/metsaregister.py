@@ -5,12 +5,16 @@ from fastapi import HTTPException
 import config
 
 
+class MetsaregisterWFSError(Exception):
+    """Metsaregistri WFS-i ajutine või vigane vastus."""
+
+
 async def _wfs_get(url: str, timeout: float = 10.0, retries: int = 3) -> list[dict]:
     """Resilient WFS GET — retries on transient errors.
 
-    Returns [] only on successful response with 0 features OR after exhausting retries.
-    Caller cannot distinguish genuine empty from total failure (acceptable for
-    subordinate queries like eraldised/teatised; for kataster use services/kataster.py).
+    Returns [] only on a successful response with zero features. Raises when
+    retryable failures are exhausted so callers never mistake unavailable data
+    for a genuine empty result.
 
     Retries on 5xx, 408, 429, and 400 (Estonian WFS gives transient 400s).
     """
@@ -22,17 +26,19 @@ async def _wfs_get(url: str, timeout: float = 10.0, retries: int = 3) -> list[di
                     if attempt < retries:
                         await asyncio.sleep(0.3 * (2 ** attempt))
                         continue
-                    return []
+                    raise MetsaregisterWFSError(f"WFS {resp.status_code}")
                 resp.raise_for_status()
                 return resp.json().get("features", [])
         except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError):
             if attempt < retries:
                 await asyncio.sleep(0.3 * (2 ** attempt))
                 continue
-            return []
-        except Exception:
-            return []
-    return []
+            raise MetsaregisterWFSError("WFS timeout or connection failure")
+        except MetsaregisterWFSError:
+            raise
+        except Exception as exc:
+            raise MetsaregisterWFSError("WFS response could not be read") from exc
+    raise MetsaregisterWFSError("WFS failed without a response")
 
 _KATASTER_RE = re.compile(r'^\d{1,5}:\d{1,4}:\d{1,5}(:\d{1,4})?$')
 
@@ -51,6 +57,14 @@ SPECIES_NAMES = {
 }
 
 BONITEET_MAP = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
+
+
+def _first_present(*values):
+    """Return the first declared WFS value, preserving valid zeroes."""
+    for value in values:
+        if value is not None:
+            return value
+    return None
 
 # Tagavara hinnang (m³/ha) kõrguse ja boniteedi järgi — Eesti boniteeditabelid
 # Võti: (boniteet_kood, kõrgus_m) → m³/ha
@@ -108,12 +122,23 @@ async def query_eraldis(kataster_nr: str) -> list[dict]:
     for feat in features:
         props = feat.get("properties", {})
         kood = props.get("peapuuliik_kood", "MA")
+        tagavara = _first_present(
+            props.get("tagavara_1_ha"),
+            props.get("tagavara_l_ha"),
+            props.get("tagavara_y_ha"),
+        )
+        if tagavara is None:
+            tagavara = estimate_tagavara(
+                int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3,
+                props.get("korgus", 0),
+                props.get("keskm_vanus", 0),
+            )
         result.append({
             "id": props.get("id"),
             "puuliik": SPECIES_NAMES.get(kood, kood),
             "puuliik_kood": kood,
             "vanus": props.get("keskm_vanus", 0),
-            "tagavara_y_ha": props.get("tagavara_1_ha") or props.get("tagavara_l_ha") or props.get("tagavara_y_ha") or estimate_tagavara(int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3, props.get("korgus", 0), props.get("keskm_vanus", 0)),
+            "tagavara_y_ha": tagavara,
             "boniteet": BONITEET_MAP.get(int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3, "III"),
             "boniteedi_kood": int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3,
             "raievanus": props.get("keskm_raievanus"),
@@ -141,12 +166,15 @@ async def query_eraldis_element(eraldis_id: int) -> list[dict]:
     for feat in features:
         p = feat.get("properties", {})
         kood = p.get("puuliik_kood", "")
+        tagavara = _first_present(p.get("tagavara"), p.get("tagavara_y_ha"))
+        if tagavara is None:
+            tagavara = estimate_tagavara(3, 0, p.get("vanus", 0))
         result.append({
             "eraldis_id": eraldis_id,
             "puuliik": SPECIES_NAMES.get(kood, kood),
             "puuliik_kood": kood,
             "vanus": p.get("vanus", 0),
-            "tagavara_y_ha": p.get("tagavara") or p.get("tagavara_y_ha") or estimate_tagavara(3, 0, p.get("vanus", 0)),
+            "tagavara_y_ha": tagavara,
             "taius": p.get("taius", 0),
         })
     return result

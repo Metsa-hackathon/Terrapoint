@@ -24,6 +24,7 @@ LAYER_CONFIGS = [
     ("kma_kitsendused", "kitsendused", "kitsendused:kotkas_kitsendused"),
     ("katsealad", "metsaregister", "metsaregister:katsealad"),
 ]
+MAX_FEATURES_PER_LAYER = 100
 
 
 async def _fetch_layer(client, key, workspace, typename, bbox_str, attempts: int = 2):
@@ -31,7 +32,7 @@ async def _fetch_layer(client, key, workspace, typename, bbox_str, attempts: int
         f"{config.GEOBASE}/{workspace}/wfs?"
         f"service=WFS&request=GetFeature&typeName={typename}"
         f"&srsName=EPSG:4326&outputFormat=application/json"
-        f"&count=5"
+        f"&count={MAX_FEATURES_PER_LAYER}"
         f"&bbox={bbox_str},EPSG:4326"
     )
     for attempt in range(attempts):
@@ -43,21 +44,23 @@ async def _fetch_layer(client, key, workspace, typename, bbox_str, attempts: int
                 if attempt + 1 < attempts:
                     await asyncio.sleep(0.3 * (2 ** attempt))
                     continue
-                return key, []
+                return key, [], True, False
             if resp.status_code >= 400:
-                return key, []
-            return key, resp.json().get("features", [])
+                return key, [], True, False
+            features = resp.json().get("features", [])
+            return key, features, False, len(features) >= MAX_FEATURES_PER_LAYER
         except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError):
             if attempt + 1 < attempts:
                 await asyncio.sleep(0.3 * (2 ** attempt))
                 continue
-            return key, []
+            return key, [], True, False
         except Exception:
-            return key, []
-    return key, []
+            return key, [], True, False
+    return key, [], True, False
 
 
-async def query_all_layers(bbox_str: str) -> dict[str, list[dict]]:
+async def query_all_layers(bbox_str: str) -> tuple[dict[str, list[dict]], list[str], list[str]]:
+    """Return layer data, failed layer keys, and potentially truncated keys."""
     async with httpx.AsyncClient(timeout=15) as client:
         tasks = [
             _fetch_layer(client, key, ws, tn, bbox_str)
@@ -65,9 +68,15 @@ async def query_all_layers(bbox_str: str) -> dict[str, list[dict]]:
         ]
         results = await asyncio.gather(*tasks, return_exceptions=True)
     out = {}
+    unavailable = []
+    truncated = []
     for r in results:
         if isinstance(r, Exception):
             continue
-        key, features = r
+        key, features, failed, may_be_truncated = r
         out[key] = features
-    return out
+        if failed:
+            unavailable.append(key)
+        if may_be_truncated:
+            truncated.append(key)
+    return out, unavailable, truncated

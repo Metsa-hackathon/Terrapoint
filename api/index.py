@@ -27,9 +27,9 @@ PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from services.kataster import query_kataster
-from services.metsaregister import query_eraldis, query_eraldis_element, query_natura_2000, query_teatised, query_kahjustused
+from services.metsaregister import MetsaregisterWFSError, query_eraldis, query_eraldis_element, query_natura_2000, query_teatised, query_kahjustused
 from services.validation import _validate_kataster_nr_or_400
-from services.layers import query_all_layers
+from services.layers import LAYER_CONFIGS, query_all_layers
 from services.subsidies import check_subsidies
 from calculators.carbon import carbon_potential
 from calculators.cutting_age import cutting_age_indicator
@@ -332,19 +332,34 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     eraldis_task = query_eraldis(kataster_nr)
     layers_task = query_all_layers(bbox_str)
     teatised_task = query_teatised(kataster_nr)
+    natura_task = query_natura_2000(bbox_str)
 
     results = await asyncio.gather(
-        eraldis_task, layers_task, teatised_task,
+        eraldis_task, layers_task, teatised_task, natura_task,
         return_exceptions=True
     )
+    unavailable_sources = []
     eraldised = results[0] if not isinstance(results[0], Exception) else []
-    layers_data = results[1] if not isinstance(results[1], Exception) else {}
+    if isinstance(results[0], Exception):
+        unavailable_sources.append("metsaregister.eraldised")
+    layers_data, unavailable_layers, truncated_layers = results[1] if not isinstance(results[1], Exception) else ({}, [key for key, _, _ in LAYER_CONFIGS], [])
+    layers_data = {
+        key: _filter_features_by_geometry(features, kataster_data.get("geometry"))
+        for key, features in layers_data.items()
+    }
+    unavailable_sources.extend(f"layers.{key}" for key in unavailable_layers)
+    unavailable_sources.extend(f"layers.{key}" for key in truncated_layers)
     teatised_features = results[2] if not isinstance(results[2], Exception) else []
+    if isinstance(results[2], Exception):
+        unavailable_sources.append("metsaregister.teatised")
+    natura_features = results[3] if not isinstance(results[3], Exception) else []
+    if isinstance(results[3], Exception):
+        unavailable_sources.append("metsaregister.natura_2000")
+    natura_features = _filter_features_by_geometry(natura_features, kataster_data.get("geometry"))
 
     # Skip per-eraldis API calls if too many eraldised or running low on time
     elapsed = time.time() - start
     skip_details = len(eraldised) > 30 or elapsed > 8.0
-    natura_features = layers_data.get("natura_elupaik", [])
     yrask_features = _filter_features_by_geometry(layers_data.get("yrask_eelis", []), kataster_data.get("geometry"))
 
     kitsendused = []
@@ -411,10 +426,15 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
                 )
                 all_elements = [r if not isinstance(r, Exception) else [] for r in inner_results[0]]
                 all_kahjustused = [r if not isinstance(r, Exception) else [] for r in inner_results[1]]
+                if any(isinstance(r, Exception) for r in inner_results[0]):
+                    unavailable_sources.append("metsaregister.eraldis_element")
+                if any(isinstance(r, Exception) for r in inner_results[1]):
+                    unavailable_sources.append("metsaregister.kahjustused")
             except asyncio.TimeoutError:
                 # Element details slow — fall back to eraldis-level approximate data
                 all_elements = []
                 all_kahjustused = []
+                unavailable_sources.extend(["metsaregister.eraldis_element", "metsaregister.kahjustused"])
                 for e in eraldised:
                     kood = e.get("puuliik_kood")
                     if kood:
@@ -799,7 +819,9 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
 
     natura_2000 = bool(natura_features)
     kaitseala_features = layers_data.get("kaitsealad", [])
-    vaariselupaik = bool(kaitseala_features)
+    # A protected area is not necessarily a protected habitat. We do not have
+    # an authoritative VEP source in this response, so never infer one.
+    vaariselupaik = False
 
     # Additional data for subsidy eligibility
     has_kuusk = any(e.get("puuliik_kood") == "KU" for e in eraldised) if eraldised else False
@@ -1071,7 +1093,12 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         "teatised": teatised,
         "kahjustused": kahjustused,
         "map_layers": map_layers,
-        "meta": {"response_time_ms": elapsed, "partial": skip_details},
+        "meta": {
+            "response_time_ms": elapsed,
+            "partial": bool(unavailable_sources),
+            "details_skipped": skip_details,
+            "unavailable_sources": sorted(set(unavailable_sources)),
+        },
     }
 
 
@@ -1095,13 +1122,18 @@ async def _search(kataster_nr: str) -> Response:
         data = await asyncio.wait_for(_search_core(kataster_nr, start), timeout=20.0)
     except asyncio.TimeoutError:
         elapsed = round((time.time() - start) * 1000)
-        data = {"error": "Otsing aegus osaliselt", "meta": {"response_time_ms": elapsed, "timeout": True}}
+        return json_response({
+            "error": "Otsing aegus. Proovi uuesti.",
+            "code": "SEARCH_TIMEOUT",
+            "meta": {"response_time_ms": elapsed, "timeout": True},
+        }, 504)
 
     if data.get("error"):
         status = data.pop("_status", 404)
         return json_response(data, status)
 
-    search_cache.set(kataster_nr, data, ttl=300)
+    if not data.get("meta", {}).get("partial"):
+        search_cache.set(kataster_nr, data, ttl=300)
     return json_response(data)
 
 
@@ -1296,6 +1328,7 @@ async def chat(request: Request):
 
         if not kataster_nr or not user_message_raw:
             return json_response({"error": "Sisesta küsimus ja otsi kinnistu enne."}, 400)
+        _validate_kataster_nr_or_400(kataster_nr)
 
         if len(user_message_raw) > 600:
             return json_response({"error": "Küsimus on liiga pikk. Palun lühenda kuni 600 tähemärgini."}, 400)
@@ -1311,6 +1344,8 @@ async def chat(request: Request):
         data_kataster = str(data.get("kataster", {}).get("number", "")).strip()
         if data_kataster and data_kataster != kataster_nr:
             return json_response({"error": "Andmed ei vasta katastri numbrile. Otsi kinnistu uuesti."}, 400)
+        if data.get("meta", {}).get("partial"):
+            return json_response({"error": "AI analüüs vajab täielikke kinnistuandmeid. Otsi kinnistu uuesti."}, 409)
 
         sanitized_history = []
         for h in history[-MAX_CHAT_HISTORY_ITEMS:]:
@@ -1452,14 +1487,23 @@ async def export_eudr(kataster_nr: str, request: Request):
     except Exception:
         return json_response({"error": "Geomeetria viga: tsentroidit ei saa arvutada. EUDR-faili ei saa genereerida."}, 502)
 
-    # Get forest data
-    eraldised = await query_eraldis(kataster_nr)
-
-    # Get Natura/protected status
-    bbox = calculate_bbox(kataster_data["geometry"])
-    bbox_str = bbox_to_wfs_string(bbox) if bbox else None
-    natura_features = await query_natura_2000(bbox_str) if bbox_str else []
-    layers_data = await query_all_layers(bbox_str) if bbox_str else {}
+    # Get forest and conservation data. An incomplete result must never be
+    # exported as an EUDR declaration.
+    try:
+        eraldised = await query_eraldis(kataster_nr)
+        bbox = calculate_bbox(kataster_data["geometry"])
+        bbox_str = bbox_to_wfs_string(bbox) if bbox else None
+        natura_features = await query_natura_2000(bbox_str) if bbox_str else []
+        layers_data, unavailable_layers, truncated_layers = await query_all_layers(bbox_str) if bbox_str else ({}, [], [])
+    except MetsaregisterWFSError:
+        return json_response({"error": "EUDR eksport ei ole praegu täielike metsaandmeteta usaldusväärne. Proovi uuesti."}, 503)
+    if unavailable_layers or truncated_layers:
+        return json_response({"error": "EUDR eksport ei ole praegu täielike ruumiandmeteta usaldusväärne. Proovi uuesti."}, 503)
+    layers_data = {
+        key: _filter_features_by_geometry(features, kataster_data.get("geometry"))
+        for key, features in layers_data.items()
+    }
+    natura_features = _filter_features_by_geometry(natura_features, kataster_data.get("geometry"))
 
     # Determine deforestation risk
     kaitseala = bool(layers_data.get("kaitsealad"))
