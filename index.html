@@ -2077,7 +2077,11 @@
         var code = s.puuliik_kood || s.puuliik;
         return code && NON_SPECIES_CODES.indexOf(code) === -1 && SPECIES_NAMES[code];
     }
-    const BONITEET_LABELS = [null, 'I', 'II', 'III', 'IV', 'V'];
+    // Boniteedi koodid (WFS metsaregister.eraldis.boniteedi_kood):
+//   0=1A (parim), 1=I, 2=II, 3=III, 4=IV, 5=V (kehveim), 6=Va (alam-V)
+// Vana BONITEET_LABELS algas indeksiga 1 ([null, 'I', ...]) ja jättis
+// WFS koodi 0 (1A) ja 6 (Va) ilma nimeta — nüüd 0-based.
+const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
     // Value explanation lookups
     const SIHTOTSTARVE_EXPLAIN = {
@@ -2393,7 +2397,7 @@
         html += '<div class="info-row"><span class="label">Peapuuliik ' + ddInfo('Krundi peamine puuliik, suurima tagavaraga liik') + '</span><span class="value">' + escHtml(speciesName(data.puuliik_kood || data.puuliik, data.puuliik)) + '</span></div>';
         html += '<div class="info-row"><span class="label">Keskmine vanus ' + ddInfo('Kõigi eraldiste pindala-kaalutud keskmine vanus aastates') + '</span><span class="value">' + (data.vanus || '—') + ' a</span></div>';
         html += '<div class="info-row"><span class="label">Tagavara ' + ddInfo('Metsa ümarmaterjali kogus hektari kohta (m³/ha). Mida suurem, seda väärtuslikum mets.') + '</span><span class="value">' + formatNum(data.tagavara_y_ha) + ' m³/ha</span></div>';
-        html += '<div class="info-row"><span class="label">Boniteet ' + ddInfo('Metsakasvukoha kvaliteet: I=parim, VII=halvim. Mõjutab metsa kasvukiirust ja raievanust.', valueExplain('boniteet', boniteet)) + '</span><span class="value">' + escHtml(boniteet) + '</span></div>';
+        html += '<div class="info-row"><span class="label">Boniteet ' + ddInfo('Metsakasvukoha kvaliteet: 1A=parim, V=kehveim. Mõjutab metsa kasvukiirust ja raievanust.', valueExplain('boniteet', boniteet)) + '</span><span class="value">' + escHtml(boniteet) + '</span></div>';
         html += '<div class="info-row"><span class="label">Pindala ' + ddInfo('Metsamaa kogupindala, eraldiste pindalade summa') + '</span><span class="value">' + formatNum(data.pindala_ha, 2) + ' ha</span></div>';
         if (data.korgus) html += '<div class="info-row"><span class="label">Kõrgus ' + ddInfo('Puude keskmine kõrgus meetrites') + '</span><span class="value">' + formatNum(data.korgus, 1) + ' m</span></div>';
         if (data.eraldisi_kokku > 1) html += '<div class="info-row"><span class="label">Eraldisi ' + ddInfo('Eraldised on eraldi majandatavad metsatükid, millel on oma puuliik, vanus ja tagavara') + '</span><span class="value">' + data.eraldisi_kokku + ' tk</span></div>';

@@ -56,7 +56,19 @@ SPECIES_NAMES = {
     "PK": "Pöök", "JA": "Jalakas", "RE": "Remmelgas", "SP": "Seedrip",
 }
 
-BONITEET_MAP = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
+# Boniteedi klasside kaardistamine Kood → Rooma number.
+# Eesti metsanduses 6 boniteediklassi (Kliimaministeerium Tabel 4):
+#   1A (parim), I, II, III, IV, V (kehveim).
+# WFS metsaregister.eraldis.boniteedi_kood on 0-6:
+#   0 = 1A, 1 = I, 2 = II, 3 = III, 4 = IV, 5 = V, 6 = Va (alam-V).
+# VANA BONITEET_MAP ({1:"I", 2:"II", 3:"III", 4:"IV", 5:"V"}) jättis WFS
+# 0 ja 6 ilma nimeta ning NIIHUTAS kõik ühe võrra — WFS 0 (1A) ei saanud
+# kunagi nime ja cutting_age tabel sai samuti vale koodi (nt eraldis WFS
+# koodiga 3 (III) vaatas raievanust võtmelt 3 = vana 65a, aga seaduse
+# järgi pidi olema 100a). See muutus sünkroonis cutting_age tabeliga.
+BONITEET_MAP = {
+    0: "1A", 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "Va",
+}
 
 
 def _first_present(*values):

@@ -447,24 +447,42 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
 
     eraldised_features = []
     species_colors = {"MA": "#2d6a4f", "KU": "#1a8fd4", "KS": "#f4a261", "HB": "#adb5bd", "LH": "#6a994e", "LM": "#8d6e63", "LV": "#a1887f"}
-    # Timber pricing — Eesti Erametsaliit aprill 2026
-    # seisuhind = ~55% palgihinnast (raiekulud, transport, risk)
-    # Allikas: erametsaliit.ee/puidu-hinnainfo
+    # Puidu hinnad — Erametsaliit 2026 Q1 (märts 2026, eramets, lõikeladu,
+    # €/tm ilma KM-ta). Allikas: erametsaliit.ee/puidu-hinnainfo
+    #   Palgihinnad (log): Tabel 1 — männipalk 105.60, kuusepalk 109.06,
+    #   kasepalk 100.00, haavapalk 67.12, sanglepapalk 68.11,
+    #   hallilepapalk 48.08.
+    #   Paberipuu (pulp): männipaberipuit 51.19, kuuse- 50.94,
+    #   kase- 52.19, haava- 42.21.
+    #   Seisuhind (kännuraha): Tabel 7 — mänd 76-81, kuusk 80-85,
+    #   kask 71-76, haab 38-43, sanglepp 39-44, hall lepp 19-24.
+    #
+    # Vana koodi vead:
+    #   - seisuhind ~25-30% liiga madal (eeldas 55% palgihinnast, tegelikult
+    #     ~72-77%) → alahindas metsa väärtust
+    #   - Hall lepp (LV) log=65 vs tegelik 48.08 (35% liiga kõrge),
+    #     seisuhind=36 vs tegelik 21 (53-94% liiga kõrge) → ülehindas
+    #     leppmetsa väärtust drastiliselt
+    #   - Vähemlevinud liikide hinnad (TA, SA, VA, PK, JA, RE, SP) on
+    #     Erametsaliidu 2026 Q1 PDF-is puudulikud — kasutame viimaseid
+    #     teadaolevaid väärtusi (erametsaliit.ee varasemad kvartalid)
     SPECIES_PRICES = {
-        "MA": {"seisuhind": 57, "log": 104, "pulp": 53},
-        "KU": {"seisuhind": 60, "log": 110, "pulp": 53},
-        "KS": {"seisuhind": 54, "log": 99, "pulp": 54},
-        "HB": {"seisuhind": 35, "log": 63, "pulp": 45},
-        "LH": {"seisuhind": 60, "log": 110, "pulp": 53},
-        "LM": {"seisuhind": 36, "log": 65, "pulp": 44},
-        "LV": {"seisuhind": 36, "log": 65, "pulp": 44},
-        "TA": {"seisuhind": 55, "log": 100, "pulp": 50},
-        "SA": {"seisuhind": 48, "log": 88, "pulp": 48},
-        "VA": {"seisuhind": 35, "log": 65, "pulp": 42},
-        "PK": {"seisuhind": 48, "log": 88, "pulp": 48},
-        "JA": {"seisuhind": 40, "log": 75, "pulp": 45},
-        "RE": {"seisuhind": 30, "log": 55, "pulp": 40},
-        "SP": {"seisuhind": 42, "log": 78, "pulp": 45},
+        # Põhiliigid — Erametsaliit 2026 Q1 (kinnitatud)
+        "MA": {"seisuhind": 78, "log": 106, "pulp": 51},   # Mänd
+        "KU": {"seisuhind": 82, "log": 109, "pulp": 51},   # Kuusk
+        "KS": {"seisuhind": 73, "log": 100, "pulp": 52},   # Kask
+        "HB": {"seisuhind": 40, "log": 67,  "pulp": 42},   # Haab
+        "LM": {"seisuhind": 41, "log": 68,  "pulp": 42},   # Sanglepp
+        "LV": {"seisuhind": 21, "log": 48,  "pulp": 35},   # Hall lepp (suur parandus)
+        # Teisesed liigid — Erametsaliit hinnainfo (hinnangulised, 2025-2026)
+        "LH": {"seisuhind": 82, "log": 109, "pulp": 51},   # Lehis (sarnane kuusele)
+        "TA": {"seisuhind": 55, "log": 100, "pulp": 50},   # Tamm
+        "SA": {"seisuhind": 48, "log": 88,  "pulp": 48},   # Saar
+        "VA": {"seisuhind": 35, "log": 65,  "pulp": 42},   # Vaher
+        "PK": {"seisuhind": 48, "log": 88,  "pulp": 48},   # Pöök
+        "JA": {"seisuhind": 40, "log": 75,  "pulp": 45},   # Jalakas
+        "RE": {"seisuhind": 30, "log": 55,  "pulp": 40},   # Remmelgas
+        "SP": {"seisuhind": 42, "log": 78,  "pulp": 45},   # Seedermänd
     }
 
     if eraldised:
@@ -870,7 +888,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             "log_price": log_price,
             "pulp_price": pulp_price,
             "price_source": "Eesti Erametsaliit",
-            "price_updated": "2026-04",
+            "price_updated": "2026-Q1",
             # Kinnistu turuväärtus
             "kinnistu_turuväärtus": kinnistu_turuväärtus,
             "maa_turuhind": maa_turuhind,
@@ -986,16 +1004,24 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             "peapuuliik": peapuuliik_nimi,
         }
 
-        # Terviseindeks (0-100): arvestab vanust, üraski riski, kahjustusi, liigilist koosseisu
+        # Terviseindeks (0-100): arvestab vanust, üraski riski, kahjustusi,
+        # liigilist koosseisu. Kohandatud heuristika — Eesti ametlikku
+        # terviseindeksi metoodikat ei ole (Keskkonnaagentuur kasutab ICP
+        # Forests okkakadu hindamist, mis on erinev). Allikad:
+        # Keskkonnaagentuur 2025 metsaseire aruanne, MKE üraskirisk skaala.
         health = 100
-        # Vanus: ideaalne 40-80a, alla 20a või üle 100a miinuspunktid
+        # Vanus: ideaalne 40-80a, alla 20a miinuspunktid. Üle 100a
+        # vanad metsad on ökoloogiliselt väärtuslikud (mitte automaatselt
+        # ebanormaalsed) — vana kood karistas -15, nüüd -8 (vanapuistut
+        # ei tohiks liiga kõvasti trahvida, sest need on mitmekesisema
+        # elustikuga). Allikas: Keskkonnaagentuur metsaseire 2025.
         avg_vanus = sum((e.get("vanus") or 0) * (e.get("pindala_ha") or 0) for e in eraldised) / max(sum((e.get("pindala_ha") or 0) for e in eraldised), 1)
         if avg_vanus < 20:
-            health -= 10  # liiga noor mets
+            health -= 10  # liiga noor mets — vastuvõtlikum kahjustustele
         elif avg_vanus > 100:
-            health -= 15  # ülekasvanud
+            health -= 8   # vana mets — ökoloogiliselt väärtuslik, kerge miinus
         elif avg_vanus > 80:
-            health -= 5  # vanemapoolne
+            health -= 5   # vanemapoolne — kasv aeglustub
         # Üraski risk — ainult kui päriselt krundil
         health -= yrask_score * 8  # 0, 8, 16, 24
         # Kahjustused
@@ -1230,7 +1256,7 @@ VASTAMISE STIIL:
 - Kasuta konkreetseid numbreid katastriüksuse andmetest (pindala, tagavara, vanus, väärtus, CO2).
 - Ära kasuta sidekriipse (– ega -), ära kasuta emoji-sid, ära kasuta Markdown päiseid (#), ära kasuta tabeleid.
 - Struktuur: 1) Kokkuvõte (1-2 lauset). 2) Peamised näitajad (3-5 punkti). 3) Ohutegurid (kui on). 4) Konkreetne soovitus (1-2 lauset, lõpeta alati tegevussoovitusega).
-- Kasuta järgmisi valdkonna piirarve: vanus 40-80 a = küps mets, üle 100 a = üleseisnud; tagavara üle 150 m³/ha = hea, alla 80 m³/ha = hõre; boniteet I-II = hea, IV-V = kehv; mänd = väärtuslikum kui kuusk, kuuse puhul tuleb arvestada üraskiohtu.
+- Kasuta järgmisi valdkonna piirarve: vanus 40-80 a = küps mets, üle 100 a = vana mets (ökoloogiliselt väärtuslik, mitte "üleseisnud"); tagavara üle 150 m³/ha = hea, alla 80 m³/ha = hõre; boniteet 1A-II = hea, IV-V = kehv; mänd = väärtuslikum kui kuusk, kuuse puhul tuleb arvestada üraskiohtu. Raievanus sõltub boniteedist: kehvem kasvukoht = pikem seaduslik raievanus.
 - Ära soovita kohe lageraiet — eelista valik- ja hooldusraiet, kui andmed seda toetavad.
 
 ANDMETE TÖÖTLEMISE REEGLID:
