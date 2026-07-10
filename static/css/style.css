@@ -569,10 +569,10 @@ a { color: var(--blue-700); text-decoration: none; }
 }
 .callout-label {
     font-family: var(--ff-sans);
-    font-size: 12.5px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: -0.005em;
     color: var(--surface-callout-label);
     margin-bottom: var(--s-2);
 }
@@ -1728,15 +1728,15 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .metric-card {
     grid-column: span 1;
     background: var(--white);
-    border: 1px solid var(--hair);
-    border-radius: 8px;
-    padding: 24px 28px 22px;
+    border: none;
+    border-radius: 10px;
+    padding: 28px 28px 24px;
     box-shadow: var(--sh-1);
     display: flex;
     flex-direction: column;
     min-width: 0;
     position: relative;
-    transition: all var(--t-base) var(--ease);
+    transition: box-shadow var(--t-base) var(--ease);
     overflow: hidden;
     animation: cardIn 0.5s var(--ease-out) backwards;
     color: var(--ink-2);
@@ -1775,23 +1775,13 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     align-self: start;
 }
 
-.metric-card::before {
-    content: "";
-    position: absolute;
-    left: 0; right: 0; top: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--hair-2), transparent);
-    opacity: 0.6;
-}
+/* Eemaldatud ::before gradient joon — AI slop dekoratsioon */
 
 .metric-card:hover {
-    border-color: var(--blue-300);
     box-shadow: var(--sh-3);
-    transform: translateY(-2px);
 }
 .metric-card:focus-within {
-    border-color: var(--blue-500);
-    box-shadow: 0 0 0 3px var(--blue-100), var(--sh-3);
+    box-shadow: 0 0 0 2px var(--blue-100), var(--sh-3);
 }
 
 /* Wide hero cards (value, eudr) */
@@ -1803,7 +1793,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .highlight-card {
     background:
         linear-gradient(135deg, #fff 0%, var(--blue-50) 100%);
-    border-color: var(--blue-200);
     position: relative;
     color: var(--ink);
 }
@@ -1815,52 +1804,53 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     background: radial-gradient(circle at 100% 0%, rgba(96, 165, 250, 0.2), transparent 70%);
     pointer-events: none;
 }
-.highlight-card:hover { border-color: var(--blue-400); }
+.highlight-card:hover { box-shadow: var(--sh-4); }
 
-/* Card header */
+/* Card header — ikoonid minimaalsed, ilma värviliste kastideta */
 .card-header {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
-    margin-bottom: 14px;
+    gap: 8px;
+    margin-bottom: 12px;
 }
 .card-icon {
-    width: 44px; height: 44px;
-    border-radius: 10px;
+    width: 18px; height: 18px;
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    background: var(--paper-2);
-    color: var(--blue-700);
-    border: 1px solid var(--hair);
-    transition: all var(--t-base) var(--ease);
+    background: none;
+    color: var(--ink-5);
+    border: none;
+    transition: none;
+    margin-top: 2px;
 }
-.card-icon svg { width: 20px; height: 20px; }
+.card-icon svg { width: 16px; height: 16px; }
 .metric-card:hover .card-icon {
-    background: var(--blue-700);
-    color: var(--white);
-    border-color: var(--blue-700);
-    transform: scale(1.05) rotate(-3deg);
+    background: none;
+    color: var(--ink-4);
+    border: none;
+    transform: none;
 }
-.kataster-icon     { background: var(--blue-50); color: var(--blue-700); border-color: var(--blue-200); }
-.mets-icon         { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
-.vaartus-icon      { background: #fef3c7; color: #b45309; border-color: #fde68a; }
-.sinik-icon        { background: #ecfeff; color: #0e7490; border-color: #a5f3fc; }
-.risk-icon         { background: var(--danger-bg); color: var(--danger); border-color: #fecaca; }
-.eudr-icon         { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
-.teatised-icon     { background: var(--info-bg); color: var(--info); border-color: var(--blue-200); }
-.toetused-icon     { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
-.kitsendused-icon  { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+.kataster-icon     { background: none; color: var(--ink-5); border: none; }
+.mets-icon         { background: none; color: var(--ink-5); border: none; }
+.vaartus-icon      { background: none; color: var(--ink-5); border: none; }
+.sinik-icon        { background: none; color: var(--ink-5); border: none; }
+.risk-icon         { background: none; color: var(--ink-5); border: none; }
+.eudr-icon         { background: none; color: var(--ink-5); border: none; }
+.teatised-icon     { background: none; color: var(--ink-5); border: none; }
+.toetused-icon     { background: none; color: var(--ink-5); border: none; }
+.kitsendused-icon  { background: none; color: var(--ink-5); border: none; }
 
 .card-head-text { flex: 1; min-width: 0; }
 .card-header h3 {
     font-size: var(--tier-1-title);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--ink-2);
-    line-height: 1.2;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    line-height: 1.25;
     margin: 0;
     flex: 1;
     min-width: 0;
@@ -1871,12 +1861,11 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .metric-card.highlight-card .card-header h3 { color: var(--ink); }
 .section-desc {
     font-size: var(--tier-2-row);
-    color: var(--ink-3);
-    margin: 4px 0 0;
+    color: var(--ink-4);
+    margin: 3px 0 0;
     line-height: 1.5;
     letter-spacing: -0.005em;
-    border-bottom: 1px solid var(--paper-3);
-    padding-bottom: 12px;
+    padding-bottom: 14px;
 }
 
 @keyframes cardIn {
@@ -1898,12 +1887,10 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    padding: 9px 0;
+    padding: 7px 0;
     font-size: var(--tier-2-row);
-    border-bottom: 1px solid var(--paper-3);
     position: relative;
 }
-.info-row:last-child { border-bottom: none; }
 .info-row .label {
     color: var(--ink-4);
     font-weight: 400;
@@ -2719,26 +2706,19 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 
 /* ═══ CHARTS ════════════════════════════════════════════════════════════════ */
 .card-composition {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid var(--hair);
+    margin-top: 18px;
+    padding-top: 4px;
 }
 .card-composition-label {
-    font-size: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: -0.005em;
     color: var(--ink-3);
     margin-bottom: 12px;
     display: flex;
     align-items: center;
     gap: 6px;
-}
-.card-composition-label::before {
-    content: "";
-    width: 4px; height: 4px;
-    background: var(--blue-500);
-    border-radius: 50%;
 }
 .card-composition-chart {
     position: relative;
@@ -2752,7 +2732,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 /* ═══ TABLES ════════════════════════════════════════════════════════════════ */
 #card-mets details {
     margin-top: 12px;
-    border-top: 1px solid var(--paper-3);
     padding-top: 12px;
 }
 #card-mets details > summary {
@@ -2810,13 +2789,11 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     text-align: left;
     color: var(--ink-4);
     font-weight: 600;
-    border-bottom: 1px solid var(--paper-3);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-size: 10px;
+    text-transform: none;
+    letter-spacing: -0.005em;
+    font-size: 11px;
 }
 #card-mets details table td {
-    border-bottom: 1px solid var(--paper-3);
     font-family: var(--ff-mono);
     font-weight: 500;
     color: var(--ink-2);
@@ -3297,7 +3274,6 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
    tsentreeritud ikooni nagu varem. */
 .card-placeholder {
     padding: 14px 0 8px;
-    border-top: 1px dashed var(--hair);
     margin-top: 4px;
     color: var(--ink-3);
 }
@@ -3305,20 +3281,12 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 10.5px;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-transform: none;
     color: var(--ink-4);
     margin-bottom: 10px;
-}
-.ph-eyebrow::before {
-    content: '';
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--blue-300, #93c5fd);
-    box-shadow: 0 0 0 2px var(--blue-100, #dbeafe);
 }
 .ph-list {
     list-style: none;
@@ -3328,8 +3296,7 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
     flex-direction: column;
 }
 .ph-list li {
-    padding: 9px 0;
-    border-bottom: 1px solid var(--paper-3);
+    padding: 8px 0;
     font-size: 13.5px;
     color: var(--ink-3);
     display: flex;
@@ -3337,9 +3304,6 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
     align-items: center;
     gap: 12px;
     min-height: 36px;
-}
-.ph-list li:last-child {
-    border-bottom: none;
 }
 .ph-list .ph-label {
     font-weight: 500;
@@ -3560,13 +3524,12 @@ footer {
     align-items: center;
     gap: 8px;
     padding: 10px 16px;
-    font-weight: 700;
+    font-weight: 600;
     font-size: 0.85rem;
     color: var(--ink-2);
     cursor: pointer;
     list-style: none;
-    border-bottom: 1px solid var(--hair);
-    letter-spacing: 0;
+    letter-spacing: -0.005em;
 }
 .eraldised-panel > summary.table-panel-summary::before {
     content: "";
@@ -3604,10 +3567,10 @@ footer {
 }
 .eraldised-filters {
     display: flex; flex-wrap: wrap; gap: 12px; padding: 12px 16px;
-    background: var(--paper-2); border-bottom: 1px solid var(--hair);
+    background: var(--paper-2);
 }
 .eraldised-filter-group { display: flex; flex-direction: column; gap: 4px; min-width: 120px; }
-.eraldised-filter-label { font-size: 10px; text-transform: uppercase; color: var(--ink-4); letter-spacing: 0.06em; font-weight: 600; }
+.eraldised-filter-label { font-size: 11px; color: var(--ink-4); font-weight: 500; }
 .filter-chips { display: flex; flex-wrap: wrap; gap: 4px; }
 .filter-chip {
     padding: 3px 10px; border-radius: var(--r-full); font-size: 11px; cursor: pointer;
@@ -3640,16 +3603,14 @@ footer {
     display: grid;
     padding: var(--table-grid-pad-y, 6px) var(--table-grid-pad-x, 6px);
     font-size: var(--tier-3-table); color: var(--ink-4);
-    font-weight: 500; border-bottom: 1px solid var(--hair);
-    background: var(--paper-2);
+    font-weight: 500;
     align-items: center;
-    /* Tightened cell gap so 7 columns fit in ~450px card width */
     column-gap: 8px;
 }
 .table-grid-row {
     display: grid;
     padding: var(--table-grid-pad-y, 6px) var(--table-grid-pad-x, 6px);
-    border-bottom: 1px solid var(--hair); font-size: var(--tier-3-table);
+    font-size: var(--tier-3-table);
     align-items: center; transition: background 0.1s;
     min-height: var(--table-grid-row-min, 30px);
     column-gap: 8px;
