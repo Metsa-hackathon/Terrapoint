@@ -288,6 +288,15 @@ a { color: var(--blue-700); text-decoration: none; }
     display: none;
     align-items: center;
     justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: white;
+    flex-shrink: 0;
+    cursor: pointer;
 }
 
 .hamburger:hover { background: var(--paper-2); color: var(--ink-2); border-color: var(--hair-2); }
@@ -743,7 +752,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     border: none;
     cursor: pointer;
     padding: 0;
-    width: 30px; height: 30px;
+    width: 44px; height: 44px;
     border-radius: var(--r-sm);
     color: var(--ink-4);
     display: flex;
@@ -758,6 +767,36 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     flex: 1;
     overflow-y: auto;
     padding: var(--s-5);
+}
+.sidebar-nav {
+    display: grid;
+    gap: 4px;
+    padding-bottom: var(--s-5);
+    border-bottom: 1px solid var(--hair);
+}
+.sidebar-nav a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: var(--r-sm);
+    color: var(--ink-2);
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+}
+.sidebar-nav a:hover,
+.sidebar-nav a:focus-visible {
+    background: var(--paper-2);
+    color: var(--blue-700);
+}
+.sidebar-section-title {
+    margin-top: var(--s-5);
+    color: var(--ink-4);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
 }
 .sidebar-empty {
     display: flex;
@@ -957,6 +996,10 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .hero-tree--right-2 { bottom: 36vh; height: 50vh; --tilt: -57deg; }
 .hero-tree--right-3 { bottom: 56vh; height: 42vh; --tilt: -53deg; }
 
+.hero-tree picture {
+    display: block;
+    height: 100%;
+}
 .hero-tree img {
     display: block;
     height: 100%;
@@ -3364,9 +3407,9 @@ footer {
     color: var(--ink-4) !important;
     border: 1px solid var(--hair) !important;
     border-radius: var(--r) !important;
-    width: 32px !important;
-    height: 32px !important;
-    line-height: 32px !important;
+    width: 44px !important;
+    height: 44px !important;
+    line-height: 44px !important;
     font-size: 18px !important;
     display: flex !important;
     align-items: center;
@@ -3912,7 +3955,7 @@ footer {
     .brand-tag { display: none; }
     .search-box {
         flex: 1;
-        height: 44px;
+        height: 48px;
         padding: 2px 2px 2px 12px;
         border-radius: var(--r-full);
         min-width: 0;
@@ -3922,7 +3965,7 @@ footer {
     }
     .search-box input { font-size: 15px; padding: 0 8px; min-width: 0; }
     .search-icon { display: none; }
-    .hero .search-box button { width: 38px; height: 38px; border-radius: 50%; }
+    .hero .search-box button { border-radius: 50%; }
     .hero .search-box button svg { width: 16px; height: 16px; }
     .search-kbd { display: none !important; }
 
@@ -3947,7 +3990,7 @@ footer {
     .landing-search .search-box button { width: 44px; height: 44px; }
     .landing-search .search-box button svg { width: 16px; height: 16px; }
     .landing-hints { gap: 6px; margin-top: 10px; }
-    .landing-hint { font-size: 13.5px; padding: 6px 11px; gap: 4px; }
+    .landing-hint { min-height: 44px; font-size: 13.5px; padding: 6px 10px; gap: 4px; }
     .landing-hint .kbd { font-size: 10px; padding: 0px 5px; }
     .landing-search .search-icon { display: flex; }
     .landing-search .search-icon svg { width: 18px; height: 18px; }
@@ -4045,7 +4088,7 @@ footer {
         white-space: nowrap;
     }
     .map-hint svg { width: 10px; height: 10px; }
-    .map-hint-close { width: 14px; height: 14px; font-size: 11px; }
+    .map-hint-close { width: 32px; height: 32px; font-size: 15px; }
     .map-controls { top: 8px; bottom: auto; left: 8px; flex-direction: column; max-width: 140px; max-height: calc(100% - 16px); }
     .layer-toggle {
         font-size: 12px;
@@ -4130,14 +4173,12 @@ footer {
     .ai-chat-input-wrap button { width: 44px; height: 44px; }
     .search-box { min-height: 40px; }
     .search-box button { width: 44px; height: 44px; }
-    .hero .search-box button { width: 38px; height: 38px; }
     .landing-search .search-box { min-height: 48px; }
     .landing-search .search-box button { width: 44px; height: 44px; }
     .ai-hint { min-height: 36px; padding: 8px 12px; font-size: 12.5px; }
     .map-controls-toggle { min-height: 44px; padding: 8px 12px; }
     .toggle-item { min-height: 40px; padding: 8px 10px; }
     .toggle-item .toggle-label { font-size: 13px; }
-    .landing-hint { min-height: 32px; padding: 6px 10px; }
     .map-legend-toggle { width: 44px; height: 44px; font-size: 18px; }
     .map-kiht-legend { top: 60px; left: 8px; max-width: 200px; font-size: 12.5px; }
     .kiht-legend-row { font-size: 12.5px; }

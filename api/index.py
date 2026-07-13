@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import time
 import asyncio
+import inspect
 import math
 import os
 import httpx
@@ -67,7 +68,14 @@ MAX_CHAT_REASONING_CHARS = 2_000
 CHAT_MAX_TOKENS = int(os.environ.get("OPENCODE_ZEN_MAX_TOKENS", "8192"))
 CHAT_RATE_LIMIT = 8
 CHAT_RATE_WINDOW_SECONDS = 60
+SEARCH_TIMEOUT_SECONDS = 20.0
+KATASTER_TIMEOUT_SECONDS = 6.0
+PRIMARY_SOURCE_TIMEOUT_SECONDS = 8.0
+ADDRESS_UPSTREAM_TIMEOUT_SECONDS = 4.0
+ADDRESS_UPSTREAM_ATTEMPTS = 2
 _rate_limit_buckets: dict[tuple[str, str], list[float]] = {}
+_search_in_flight: dict[str, asyncio.Task] = {}
+_search_waiters: dict[str, int] = {}
 XGIS_ALLOWED_LAYERS = {"EESTIFOTO", "HYBRID", "nCHM2017"}
 XGIS_ALLOWED_SRS = {"EPSG:3301"}
 XGIS_ALLOWED_VERSIONS = {"1.1.1"}
@@ -218,13 +226,11 @@ async def address_search(q: str = "", request: Request = None):
             f"&srsName=EPSG:4326&outputFormat=application/json"
             f"&count=10&CQL_FILTER={cql}"
         )
-        # Eesti WFS on aeglane ja annab ~1/3 päringutest 5x timeouti, 500 või 400
-        # → kuni 3 katset, kõrvaldame transientseid vigu
+        # Hoia kogu upstream eelarve allpool brauseri 10s tähtaega.
         features = []
-        last_err = None
-        for attempt in range(3):
+        for attempt in range(ADDRESS_UPSTREAM_ATTEMPTS):
             try:
-                async with httpx.AsyncClient(timeout=8) as client:
+                async with httpx.AsyncClient(timeout=ADDRESS_UPSTREAM_TIMEOUT_SECONDS) as client:
                     resp = await client.get(url)
                     if resp.status_code in (400,) or resp.status_code >= 500:
                         raise httpx.HTTPStatusError("WFS transient", request=resp.request, response=resp)
@@ -232,9 +238,8 @@ async def address_search(q: str = "", request: Request = None):
                     features = resp.json().get("features", [])
                 break
             except (httpx.TimeoutException, httpx.HTTPStatusError, httpx.ConnectError, httpx.RemoteProtocolError) as exc:
-                last_err = exc
-                if attempt < 2:
-                    await asyncio.sleep(0.4 * (attempt + 1))
+                if attempt + 1 < ADDRESS_UPSTREAM_ATTEMPTS:
+                    await asyncio.sleep(0.35)
                     continue
                 raise
 
@@ -338,44 +343,39 @@ async def _gather_in_batches(tasks: list, batch_size: int = 20, overall_timeout:
     if not tasks:
         return results
     try:
-        done_indices: list[int] = []
         async def _run_with_timeout():
-            nonlocal done_indices
             for batch_start in range(0, len(tasks), batch_size):
                 batch_slice = tasks[batch_start:batch_start + batch_size]
-                batch_indices = list(range(batch_start, min(batch_start + batch_size, len(tasks))))
                 batch_results = await asyncio.gather(*batch_slice, return_exceptions=True)
-                for idx, res in zip(batch_indices, batch_results):
-                    if isinstance(res, Exception):
-                        results[idx] = fallback_per_task() if callable(fallback_per_task) else (fallback_per_task or [])
-                    else:
-                        results[idx] = res
-                    done_indices.append(idx)
+                for idx, result in enumerate(batch_results, batch_start):
+                    results[idx] = result
         await asyncio.wait_for(_run_with_timeout(), timeout=overall_timeout)
     except asyncio.TimeoutError:
         for i in range(len(results)):
             if results[i] is None:
                 results[i] = fallback_per_task() if callable(fallback_per_task) else (fallback_per_task or [])
+    finally:
+        for task in tasks:
+            if inspect.iscoroutine(task):
+                task.close()
     return results
 
 
 async def _search_core(kataster_nr: str, start: float) -> dict:
     """Sisemine otsinguloogika — eraldatud, et saaks timeout-i panna."""
-    kataster_data = await query_kataster(kataster_nr)
+    kataster_data = await asyncio.wait_for(query_kataster(kataster_nr), timeout=KATASTER_TIMEOUT_SECONDS)
     if not kataster_data:
         return {"error": "Krunti ei leitud", "_status": 404}
 
     bbox = calculate_bbox(kataster_data["geometry"])
     bbox_str = bbox_to_wfs_string(bbox)
 
-    eraldis_task = query_eraldis(kataster_nr)
-    layers_task = query_all_layers(bbox_str)
-    teatised_task = query_teatised(kataster_nr)
-    natura_task = query_natura_2000(bbox_str)
-
     results = await asyncio.gather(
-        eraldis_task, layers_task, teatised_task, natura_task,
-        return_exceptions=True
+        asyncio.wait_for(query_eraldis(kataster_nr), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS),
+        asyncio.wait_for(query_all_layers(bbox_str), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS),
+        asyncio.wait_for(query_teatised(kataster_nr), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS),
+        asyncio.wait_for(query_natura_2000(bbox_str), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS),
+        return_exceptions=True,
     )
     unavailable_sources = []
     eraldised = results[0] if not isinstance(results[0], Exception) else []
@@ -413,7 +413,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     # ja märgime meta'as sampled_eraldised.
     elapsed = time.time() - start
     ELEMENT_FETCH_MAX = 200
-    ELEMENT_FETCH_TIME_BUDGET = 14.0
+    ELEMENT_FETCH_TIME_BUDGET = 10.0
     skip_details = len(eraldised) == 0 or elapsed > ELEMENT_FETCH_TIME_BUDGET
     sampled_eraldised = False
     yrask_features = _filter_features_by_geometry(layers_data.get("yrask_eelis", []), kataster_data.get("geometry"))
@@ -503,12 +503,12 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
                 # Element- ja kahjustuste batched fetch peab jooksma paralleelselt
                 # (vana kood jooksis need järjest, mis võttis 12+6=18s suurte
                 # metsade puhul ja ületas _search 20s üldise wait_for piiri).
-                # Now max ~10s kogu faasile (mõlemad jagavad event loop'i).
+                # Maksimaalselt 7s kogu faasile (mõlemad jagavad event loop'i).
                 element_results, kahjustused_results = await asyncio.gather(
                     _gather_in_batches(element_tasks, batch_size=20,
-                                       overall_timeout=10.0, fallback_per_task=list),
+                                       overall_timeout=7.0, fallback_per_task=asyncio.TimeoutError),
                     _gather_in_batches(kahjustused_tasks, batch_size=20,
-                                       overall_timeout=10.0, fallback_per_task=list),
+                                       overall_timeout=7.0, fallback_per_task=asyncio.TimeoutError),
                 )
                 all_elements = [r if isinstance(r, list) else [] for r in element_results]
                 all_kahjustused = [r if isinstance(r, list) else [] for r in kahjustused_results]
@@ -1202,11 +1202,32 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     }
 
 
+async def _search_uncached(kataster_nr: str) -> tuple[dict, int]:
+    start = time.time()
+    try:
+        data = await asyncio.wait_for(_search_core(kataster_nr, start), timeout=SEARCH_TIMEOUT_SECONDS)
+    except asyncio.TimeoutError:
+        elapsed = round((time.time() - start) * 1000)
+        return {
+            "error": "Otsing aegus. Proovi uuesti.",
+            "code": "SEARCH_TIMEOUT",
+            "meta": {"response_time_ms": elapsed, "timeout": True},
+        }, 504
+
+    if data.get("error"):
+        return data, data.pop("_status", 404)
+
+    if not data.get("meta", {}).get("partial"):
+        search_cache.set(kataster_nr, data, ttl=300)
+    return data, 200
+
+
 async def _search(kataster_nr: str) -> Response:
     """Täielik kinnistu päring: kataster + eraldised + kihid + teatised.
 
     Kogub kõik andmed paralleelselt ja tagastab JSON-vastuse.
-    Kasutab 8-sekundilist timeout-i, et Vercel 10s piirist mitte üle minna.
+    Kasutab 20-sekundilist kogutähtaega; aeglased alamallikad degradeeruvad
+    enne seda osaliseks vastuseks.
     """
     global _search_cache_hits, _search_cache_misses
 
@@ -1215,26 +1236,34 @@ async def _search(kataster_nr: str) -> Response:
     if cached_data is not None:
         _search_cache_hits += 1
         return json_response(cached_data)
-    _search_cache_misses += 1
+    task = _search_in_flight.get(kataster_nr)
+    if task is None:
+        _search_cache_misses += 1
+        task = asyncio.create_task(_search_uncached(kataster_nr))
+        _search_in_flight[kataster_nr] = task
 
-    start = time.time()
+        def clear_in_flight(completed: asyncio.Task, key: str = kataster_nr) -> None:
+            if _search_in_flight.get(key) is completed:
+                _search_in_flight.pop(key, None)
+            if not completed.cancelled():
+                completed.exception()
+
+        task.add_done_callback(clear_in_flight)
+
+    _search_waiters[kataster_nr] = _search_waiters.get(kataster_nr, 0) + 1
     try:
-        data = await asyncio.wait_for(_search_core(kataster_nr, start), timeout=20.0)
-    except asyncio.TimeoutError:
-        elapsed = round((time.time() - start) * 1000)
-        return json_response({
-            "error": "Otsing aegus. Proovi uuesti.",
-            "code": "SEARCH_TIMEOUT",
-            "meta": {"response_time_ms": elapsed, "timeout": True},
-        }, 504)
-
-    if data.get("error"):
-        status = data.pop("_status", 404)
+        data, status = await asyncio.shield(task)
         return json_response(data, status)
-
-    if not data.get("meta", {}).get("partial"):
-        search_cache.set(kataster_nr, data, ttl=300)
-    return json_response(data)
+    finally:
+        remaining = _search_waiters.get(kataster_nr, 1) - 1
+        if remaining > 0:
+            _search_waiters[kataster_nr] = remaining
+        else:
+            _search_waiters.pop(kataster_nr, None)
+            if not task.done():
+                if _search_in_flight.get(kataster_nr) is task:
+                    _search_in_flight.pop(kataster_nr, None)
+                task.cancel()
 
 
 TERRAPOINT_SYSTEM_PROMPT_HEADER = """Oled Terrapoint AI — Eesti metsakinnistute andmestiku põhine nõustaja. Sinu ainus eesmärk on aidata Eesti metsaomanikul mõista oma katastriüksuse metsa seisundit, väärtust, riske ja majanduslikke võimalusi. Vastad ainult metsanduse, kinnistu andmete, raie, toetuste, kahjustuste ja süsinikuga seotud küsimustele.

@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import inspect
 import unittest
 from unittest.mock import AsyncMock, patch
 
@@ -11,6 +12,8 @@ from api import index as api
 class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         api.search_cache.clear()
+        api._search_in_flight.clear()
+        api._search_waiters.clear()
 
     async def test_timeout_is_a_retryable_gateway_timeout(self):
         with patch("api.index._search_core", new=AsyncMock(side_effect=asyncio.TimeoutError)):
@@ -37,6 +40,117 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(second.status_code, 200)
         self.assertEqual(search_core.await_count, 2)
 
+    async def test_concurrent_same_key_cold_searches_share_in_flight_result(self):
+        result = {
+            "kataster": {"number": "78404:409:0113"},
+            "meta": {"partial": False, "unavailable_sources": []},
+        }
+        started = asyncio.Event()
+        release = asyncio.Event()
+
+        async def slow_search_core(*args):
+            started.set()
+            await release.wait()
+            return copy.deepcopy(result)
+
+        search_core = AsyncMock(side_effect=slow_search_core)
+        with patch("api.index._search_core", new=search_core):
+            first_task = asyncio.create_task(api._search("78404:409:0113"))
+            await asyncio.wait_for(started.wait(), timeout=1)
+            second_task = asyncio.create_task(api._search("78404:409:0113"))
+            await asyncio.sleep(0)
+            release.set()
+            first, second = await asyncio.gather(first_task, second_task)
+
+        self.assertEqual(search_core.await_count, 1)
+        self.assertEqual(orjson.loads(first.body), result)
+        self.assertEqual(orjson.loads(second.body), result)
+
+    async def test_cancelling_one_waiter_does_not_cancel_shared_search(self):
+        result = {
+            "kataster": {"number": "78404:409:0113"},
+            "meta": {"partial": False, "unavailable_sources": []},
+        }
+        started = asyncio.Event()
+        release = asyncio.Event()
+
+        async def slow_search_core(*args):
+            started.set()
+            await release.wait()
+            return copy.deepcopy(result)
+
+        search_core = AsyncMock(side_effect=slow_search_core)
+        with patch("api.index._search_core", new=search_core):
+            first_task = asyncio.create_task(api._search("78404:409:0113"))
+            await asyncio.wait_for(started.wait(), timeout=1)
+            second_task = asyncio.create_task(api._search("78404:409:0113"))
+            await asyncio.sleep(0)
+            first_task.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await first_task
+            release.set()
+            second = await second_task
+
+        self.assertEqual(search_core.await_count, 1)
+        self.assertEqual(orjson.loads(second.body), result)
+
+    async def test_cancelling_final_waiter_cancels_underlying_search(self):
+        started = asyncio.Event()
+        cancelled = asyncio.Event()
+
+        async def slow_search_core(*args):
+            started.set()
+            try:
+                await asyncio.sleep(10)
+            finally:
+                cancelled.set()
+
+        with patch("api.index._search_core", new=AsyncMock(side_effect=slow_search_core)):
+            waiter = asyncio.create_task(api._search("78404:409:0113"))
+            await asyncio.wait_for(started.wait(), timeout=1)
+            waiter.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await waiter
+            self.assertNotIn("78404:409:0113", api._search_in_flight)
+            await asyncio.wait_for(cancelled.wait(), timeout=1)
+
+        self.assertNotIn("78404:409:0113", api._search_in_flight)
+
+    async def test_concurrent_different_keys_do_not_share_results(self):
+        async def search_core(kataster_nr, *args):
+            await asyncio.sleep(0)
+            return {
+                "kataster": {"number": kataster_nr},
+                "meta": {"partial": False, "unavailable_sources": []},
+            }
+
+        search_core_mock = AsyncMock(side_effect=search_core)
+        with patch("api.index._search_core", new=search_core_mock):
+            first, second = await asyncio.gather(
+                api._search("78404:409:0113"),
+                api._search("17501:002:0490"),
+            )
+
+        self.assertEqual(search_core_mock.await_count, 2)
+        self.assertEqual(orjson.loads(first.body)["kataster"]["number"], "78404:409:0113")
+        self.assertEqual(orjson.loads(second.body)["kataster"]["number"], "17501:002:0490")
+
+    async def test_failed_in_flight_search_is_removed_for_retry(self):
+        result = {
+            "kataster": {"number": "78404:409:0113"},
+            "meta": {"partial": False, "unavailable_sources": []},
+        }
+        search_core = AsyncMock(side_effect=[RuntimeError("unexpected"), copy.deepcopy(result)])
+
+        with patch("api.index._search_core", new=search_core):
+            with self.assertRaises(RuntimeError):
+                await api._search("78404:409:0113")
+            await asyncio.sleep(0)
+            response = await api._search("78404:409:0113")
+
+        self.assertEqual(search_core.await_count, 2)
+        self.assertEqual(orjson.loads(response.body), result)
+
     async def test_subordinate_source_failure_is_reported_as_partial_data(self):
         kataster = {
             "number": "78404:409:0113",
@@ -59,6 +173,39 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result["meta"]["partial"])
         self.assertIn("metsaregister.eraldised", result["meta"]["unavailable_sources"])
         self.assertIsNone(result["mets"])
+
+    async def test_slow_primary_source_degrades_to_partial_data_within_budget(self):
+        kataster = {
+            "number": "78404:409:0113",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+            },
+            "pindala_ha": 1,
+        }
+
+        cancelled = asyncio.Event()
+
+        async def slow_eraldis(*args):
+            try:
+                await asyncio.sleep(1)
+                return []
+            finally:
+                cancelled.set()
+
+        with (
+            patch("api.index.PRIMARY_SOURCE_TIMEOUT_SECONDS", 0.01),
+            patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+            patch("api.index.query_eraldis", new=AsyncMock(side_effect=slow_eraldis)),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        self.assertTrue(result["meta"]["partial"])
+        self.assertIn("metsaregister.eraldised", result["meta"]["unavailable_sources"])
+        self.assertTrue(cancelled.is_set())
 
     async def test_layer_features_outside_the_parcel_do_not_create_restrictions(self):
         kataster = {
@@ -224,10 +371,89 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             return i
 
         tasks = [slow_task(i) for i in range(10)]
-        results = await api._gather_in_batches(tasks, batch_size=5, overall_timeout=0.2,
-                                              fallback_per_task=list)
-        # Kõik peaksid saama fallback[] (esimene batch ei jõua kunagi valmida 10s sleepiga)
-        self.assertEqual(results, [[]] * 10)
+        try:
+            results = await api._gather_in_batches(tasks, batch_size=5, overall_timeout=0.2,
+                                                   fallback_per_task=list)
+            # Kõik peaksid saama fallback[] (esimene batch ei jõua kunagi valmida 10s sleepiga)
+            self.assertEqual(results, [[]] * 10)
+            states = [inspect.getcoroutinestate(task) for task in tasks]
+            self.assertEqual(states, [inspect.CORO_CLOSED] * len(tasks))
+        finally:
+            # Hoia katkine produktsioonikood testijooksus RuntimeWarning'ut tekitamast.
+            for task in tasks:
+                if inspect.getcoroutinestate(task) != inspect.CORO_CLOSED:
+                    task.close()
+
+    async def test_detail_task_failures_mark_both_sources_unavailable(self):
+        kataster = {
+            "number": "78404:409:0113",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+            },
+            "pindala_ha": 1,
+        }
+        eraldised = [{
+            "id": 1,
+            "pindala_ha": 1,
+            "puuliik_kood": "MA",
+            "puuliik": "Mänd",
+            "vanus": 60,
+            "tagavara_y_ha": 200,
+            "boniteedi_kood": 3,
+            "eraldis_nr": 1,
+        }]
+
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=eraldised)),
+            patch("api.index.query_eraldis_element", new=AsyncMock(side_effect=RuntimeError("element unavailable"))),
+            patch("api.index.query_kahjustused", new=AsyncMock(side_effect=RuntimeError("kahjustused unavailable"))),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        self.assertEqual(
+            result["meta"]["unavailable_sources"],
+            ["metsaregister.eraldis_element", "metsaregister.kahjustused"],
+        )
+        self.assertTrue(result["meta"]["partial"])
+
+    async def test_detail_failure_marks_only_the_failed_source(self):
+        kataster = {
+            "number": "78404:409:0113",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+            },
+            "pindala_ha": 1,
+        }
+        eraldised = [{
+            "id": 1,
+            "pindala_ha": 1,
+            "puuliik_kood": "MA",
+            "puuliik": "Mänd",
+            "vanus": 60,
+            "tagavara_y_ha": 200,
+            "boniteedi_kood": 3,
+            "eraldis_nr": 1,
+        }]
+
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=eraldised)),
+            patch("api.index.query_eraldis_element", new=AsyncMock(side_effect=RuntimeError("element unavailable"))),
+            patch("api.index.query_kahjustused", new=AsyncMock(return_value=[{"eraldis_id": 1}])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        self.assertEqual(result["meta"]["unavailable_sources"], ["metsaregister.eraldis_element"])
+        self.assertEqual(len(result["kahjustused"]), 1)
 
     async def test_intentional_detail_skip_is_not_reported_as_source_failure(self):
         kataster = {

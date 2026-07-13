@@ -62,11 +62,10 @@
     <link rel="preconnect" href="https://tiles.maaamet.ee">
     <link rel="dns-prefetch" href="https://tiles.maaamet.ee">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="/static/js/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl033">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl100">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl101">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -230,7 +229,7 @@
     <!-- Top Navigation Bar -->
     <header class="hero">
         <div class="nav-left">
-            <button class="hamburger" id="hamburger-btn" aria-label="Menüü" style="display:none">
+            <button class="hamburger" id="hamburger-btn" aria-label="Menüü" aria-controls="sidebar" aria-expanded="false" style="display:none">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
                 </svg>
@@ -269,7 +268,7 @@
                     <span class="btn-spinner" aria-hidden="true"></span>
                 </button>
             </div>
-            <div id="error-msg" class="error-msg hidden" style="display:none"></div>
+            <div id="error-msg" class="error-msg hidden" style="display:none" role="status" aria-live="polite"></div>
         </div>
     </header>
 
@@ -277,7 +276,7 @@
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h3>Teavitused</h3>
+            <h3>Menüü</h3>
             <button class="sidebar-close" id="sidebar-close" aria-label="Sulge">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -285,6 +284,13 @@
             </button>
         </div>
         <div class="sidebar-content">
+            <nav class="sidebar-nav" aria-label="Põhinavigatsioon">
+                <a href="#meist">Meist</a>
+                <a href="#allikad">Allikad</a>
+                <a href="#kontakt">Kontakt</a>
+                <a href="#tagasiside">Tagasiside</a>
+            </nav>
+            <div class="sidebar-section-title">Teavitused</div>
             <div class="sidebar-empty">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3;margin-bottom:0.5rem">
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
@@ -314,12 +320,12 @@
     <!-- Landing / Intro — angled forest hero (trees at an angle, disappear on scroll) -->
     <section class="landing hero-scene" id="landing" aria-label="Terrapoint sissejuhatus">
         <div class="hero-trees" aria-hidden="true">
-            <div class="hero-tree hero-tree--left hero-tree--left-1"><img src="/static/img/tree-barrier-left.png" alt="" loading="eager" decoding="async"></div>
-            <div class="hero-tree hero-tree--left hero-tree--left-2"><img src="/static/img/tree-barrier-left2.png" alt="" loading="eager" decoding="async"></div>
-            <div class="hero-tree hero-tree--left hero-tree--left-3"><img src="/static/img/tree-row-aspen.png" alt="" loading="eager" decoding="async"></div>
-            <div class="hero-tree hero-tree--right hero-tree--right-1"><img src="/static/img/tree-barrier-right.png" alt="" loading="eager" decoding="async"></div>
-            <div class="hero-tree hero-tree--right hero-tree--right-2"><img src="/static/img/tree-barrier-right2.png" alt="" loading="eager" decoding="async"></div>
-            <div class="hero-tree hero-tree--right hero-tree--right-3"><img src="/static/img/tree-row-larch.png" alt="" loading="eager" decoding="async"></div>
+            <div class="hero-tree hero-tree--left hero-tree--left-1"><picture><source media="(min-width: 769px)" srcset="/static/img/tree-barrier-left.png"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" decoding="async"></picture></div>
+            <div class="hero-tree hero-tree--left hero-tree--left-2"><picture><source media="(min-width: 769px)" srcset="/static/img/tree-barrier-left2.png"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" decoding="async"></picture></div>
+            <div class="hero-tree hero-tree--left hero-tree--left-3"><picture><source media="(min-width: 769px)" srcset="/static/img/tree-row-aspen.png"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" decoding="async"></picture></div>
+            <div class="hero-tree hero-tree--right hero-tree--right-1"><picture><source media="(min-width: 769px)" srcset="/static/img/tree-barrier-right.png"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" decoding="async"></picture></div>
+            <div class="hero-tree hero-tree--right hero-tree--right-2"><picture><source media="(min-width: 769px)" srcset="/static/img/tree-barrier-right2.png"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" decoding="async"></picture></div>
+            <div class="hero-tree hero-tree--right hero-tree--right-3"><picture><source media="(min-width: 769px)" srcset="/static/img/tree-row-larch.png"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" decoding="async"></picture></div>
         </div>
         <div class="hero-content">
             <div class="landing-eyebrow">
@@ -973,6 +979,42 @@
     var activeParcelSearch = null;
     var parcelSearchSequence = 0;
     var addressResolutionSequence = 0;
+    var addressFetches = new Map();
+    var activeAddressFetch = null;
+
+    function fetchAddressResults(value) {
+        var key = value.trim().toLocaleLowerCase('et-EE');
+        var existing = addressFetches.get(key);
+        if (existing) return existing;
+
+        if (activeAddressFetch && activeAddressFetch.key !== key) {
+            activeAddressFetch.controller.abort();
+        }
+
+        var url = '/api/address/' + encodeURIComponent(value);
+        var controller = new AbortController();
+        var timer = setTimeout(function() { controller.abort(); }, 10000);
+        var request = fetch(url, { signal: controller.signal }).then(function(response) {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+        }).then(function(data) {
+            return (data && data.results) || [];
+        });
+        addressFetches.set(key, request);
+        activeAddressFetch = { key: key, controller: controller, request: request };
+        request.then(function() {
+            clearTimeout(timer);
+            if (activeAddressFetch && activeAddressFetch.request === request) activeAddressFetch = null;
+            setTimeout(function() {
+                if (addressFetches.get(key) === request) addressFetches.delete(key);
+            }, 30000);
+        }, function() {
+            clearTimeout(timer);
+            if (activeAddressFetch && activeAddressFetch.request === request) activeAddressFetch = null;
+            if (addressFetches.get(key) === request) addressFetches.delete(key);
+        });
+        return request;
+    }
 
     async function searchParcel(katasterNr, controller) {
         var timer = setTimeout(function() { controller.abort(); }, 40000);
@@ -1710,7 +1752,21 @@
             opacity: 0.85,
             attribution: '&copy; Maa- ja Ruumiamet kataster',
             zIndex: 350,
-        }).addTo(map);
+        });
+
+        function enableKatasterWms() {
+            if (katasterWmsLayer && !map.hasLayer(katasterWmsLayer)) katasterWmsLayer.addTo(map);
+        }
+        if ('IntersectionObserver' in window) {
+            var mapObserver = new IntersectionObserver(function(entries, observer) {
+                if (!entries.some(function(entry) { return entry.isIntersecting; })) return;
+                enableKatasterWms();
+                observer.disconnect();
+            }, { rootMargin: '0px' });
+            mapObserver.observe(map.getContainer());
+        } else {
+            enableKatasterWms();
+        }
 
         // Click anywhere on map → reverse-lookup the cadastre at that point → run search
         map.on('click', handleMapClick);
@@ -3006,17 +3062,46 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
     };
 
     var compositionChart = null;
+    var compositionChartRenderSequence = 0;
+    var chartLibraryPromise = null;
 
-    if (typeof Chart !== 'undefined') {
+    function loadChartLibrary() {
+        if (typeof Chart !== 'undefined') return Promise.resolve(Chart);
+        if (chartLibraryPromise) return chartLibraryPromise;
+
+        chartLibraryPromise = new Promise(function(resolve, reject) {
+            var script = document.createElement('script');
+            script.src = '/static/js/chart.umd.min.js';
+            script.async = true;
+            script.onload = function() { resolve(Chart); };
+            script.onerror = function() {
+                chartLibraryPromise = null;
+                reject(new Error('Chart.js laadimine ebaõnnestus'));
+            };
+            document.head.appendChild(script);
+        });
+        return chartLibraryPromise;
+    }
+
+    async function renderCompositionChart(species, renderId) {
+        if (renderId == null) renderId = ++compositionChartRenderSequence;
+        var ctx = document.getElementById('chart-composition-eraldised');
+        var wrap = document.getElementById('composition-wrap');
+        if (!ctx || !species || species.length === 0) {
+            if (compositionChart) { compositionChart.destroy(); compositionChart = null; }
+            if (wrap) wrap.style.display = 'none';
+            return;
+        }
+        try {
+            await loadChartLibrary();
+        } catch (error) {
+            if (wrap) wrap.style.display = 'none';
+            return;
+        }
+        if (renderId !== compositionChartRenderSequence) return;
         Chart.defaults.font.family = "'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
         Chart.defaults.font.size = 13;
         Chart.defaults.color = '#64748b';
-    }
-
-    function renderCompositionChart(species) {
-        var ctx = document.getElementById('chart-composition-eraldised');
-        var wrap = document.getElementById('composition-wrap');
-        if (!ctx || !species || species.length === 0) { if (wrap) wrap.style.display = 'none'; return; }
         if (compositionChart) compositionChart.destroy();
 
         var names = SPECIES_NAMES;
@@ -3168,7 +3253,12 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             }
             return null;
         }
+        function cancelPendingAddressAutocomplete() {
+            clearTimeout(landAddrTimer);
+            clearTimeout(addressTimer);
+        }
         function smartSubmit(value) {
+            cancelPendingAddressAutocomplete();
             var requestId = ++addressResolutionSequence;
             if (navInput) navInput.value = value;
             if (landInput) landInput.value = value;
@@ -3194,40 +3284,21 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 }
             }).catch(function() {
                 if (requestId !== addressResolutionSequence) return;
-                // Fall back to dropdown
                 var dropdown = landDropdown || document.getElementById('address-dropdown');
-                var target = landInput || navInput;
-                searchAddresses(value, dropdown, target);
-                showError('Aadressi otsing aegus. Proovi uuesti või vali rippmenüüst.');
+                showDropdownEmpty(dropdown);
+                showError('Aadressiotsing ebaõnnestus. Proovi hetke pärast uuesti või sisesta katastritunnus.');
             });
         }
 
-        // Resilient address fetch: 3 attempts, response.ok check, fallback to dropdown
-        // Returns a Promise<results> that resolves to the results array, or empty
-        // On final failure, populates the dropdown so user can still see results
+        // Üks jagatud brauseripäring; retry ja upstream piirid kuuluvad backendile.
         function fetchAddresses(value) {
-            var url = '/api/address/' + encodeURIComponent(value);
-            function attempt(n) {
-                return fetch(url).then(function(r) {
-                    if (!r.ok) throw new Error('HTTP ' + r.status);
-                    return r.json();
-                }).then(function(data) {
-                    return (data && data.results) || [];
-                }).catch(function(err) {
-                    if (n > 0) {
-                        return new Promise(function(res) {
-                            setTimeout(function() { res(attempt(n - 1)); }, 350);
-                        });
-                    }
-                    throw err;
-                });
-            }
-            return attempt(2);
+            return fetchAddressResults(value);
         }
 
         // Chip submit (one-click demo): kataster → direct; address/region → auto-pick first match and search
         // This way one click loads the dashboard, no dropdown interruption
         function chipSubmit(value) {
+            cancelPendingAddressAutocomplete();
             var requestId = ++addressResolutionSequence;
             if (navInput) navInput.value = value;
             if (landInput) landInput.value = value;
@@ -3247,11 +3318,9 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 }
             }).catch(function() {
                 if (requestId !== addressResolutionSequence) return;
-                // Last resort — show the dropdown so user can pick even if backend is flaky
                 var dropdown = landDropdown || document.getElementById('address-dropdown');
-                var target = landInput || navInput;
-                searchAddresses(value, dropdown, target);
-                showError('Aadressi otsing aegus. Proovi uuesti või vali rippmenüüst.');
+                showDropdownEmpty(dropdown);
+                showError('Aadressiotsing ebaõnnestus. Proovi hetke pärast uuesti või sisesta katastritunnus.');
             });
         }
 
@@ -3261,15 +3330,6 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 if (v) smartSubmit(v);
             });
         }
-        if (landInput) {
-            landInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    var v = landInput.value.trim();
-                    if (v) smartSubmit(v);
-                }
-            });
-        }
-
         // Landing hints -> one-click demo: fill, auto-pick first address match, load dashboard
         document.querySelectorAll('.landing-hint').forEach(function(btn) {
             btn.addEventListener('click', function() {
@@ -3333,9 +3393,11 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         });
     }
 
-        // Focus the landing search initially (it's more prominent)
-        if (landInput) landInput.focus();
-        else if (navInput) navInput.focus();
+        // Avoid opening the software keyboard or stealing focus on touch devices.
+        if (window.matchMedia('(pointer: fine) and (min-width: 769px)').matches) {
+            if (landInput) landInput.focus();
+            else if (navInput) navInput.focus();
+        }
 
         // Map legend collapse toggle
         var legend = document.getElementById('map-legend');
@@ -3388,18 +3450,32 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         var sidebar = document.getElementById('sidebar');
         var sidebarOverlay = document.getElementById('sidebar-overlay');
         function toggleSidebar() {
-            sidebar.classList.toggle('open');
-            sidebarOverlay.classList.toggle('open');
+            var open = !sidebar.classList.contains('open');
+            sidebar.classList.toggle('open', open);
+            sidebarOverlay.classList.toggle('open', open);
+            document.getElementById('hamburger-btn').setAttribute('aria-expanded', String(open));
+        }
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('open');
+            document.getElementById('hamburger-btn').setAttribute('aria-expanded', 'false');
         }
         document.getElementById('hamburger-btn').addEventListener('click', toggleSidebar);
-        document.getElementById('sidebar-close').addEventListener('click', toggleSidebar);
-        sidebarOverlay.addEventListener('click', toggleSidebar);
+        document.getElementById('sidebar-close').addEventListener('click', closeSidebar);
+        sidebarOverlay.addEventListener('click', closeSidebar);
+        sidebar.querySelectorAll('.sidebar-nav a').forEach(function(link) {
+            link.addEventListener('click', closeSidebar);
+        });
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && sidebar.classList.contains('open')) toggleSidebar();
+            if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+                closeSidebar();
+                document.getElementById('hamburger-btn').focus();
+            }
         });
 
         // Nav smart submit: katastritunnus → direct; address → pick first match
         function navSmartSubmit(value) {
+            cancelPendingAddressAutocomplete();
             var requestId = ++addressResolutionSequence;
             var normalizedKataster = _maybeKataster(value);
             if (normalizedKataster) {
@@ -3423,10 +3499,9 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 }
             }).catch(function() {
                 if (requestId !== addressResolutionSequence) return;
-                // Fall back to dropdown so user can still pick
                 var dropdown = document.getElementById('address-dropdown');
-                searchAddresses(value, dropdown, document.getElementById('kataster-input'));
-                showError('Aadressi otsing aegus. Proovi uuesti või vali rippmenüüst.');
+                showDropdownEmpty(dropdown);
+                showError('Aadressiotsing ebaõnnestus. Proovi hetke pärast uuesti või sisesta katastritunnus.');
             });
         }
 
@@ -3575,21 +3650,15 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
     function invalidateAddressDropdown(dropdown) {
         if (!dropdown) return;
         dropdown._seq = (dropdown._seq || 0) + 1;
-        if (dropdown._controller) dropdown._controller.abort();
     }
     async function searchAddresses(query, dropdownEl, targetInput) {
         var dropdown = dropdownEl || document.getElementById('address-dropdown');
         var target = targetInput || document.getElementById('kataster-input');
         var seq = (dropdown._seq || 0) + 1;
         dropdown._seq = seq;
-        if (dropdown._controller) dropdown._controller.abort();
-        var controller = new AbortController();
-        dropdown._controller = controller;
         try {
-            var resp = await fetch('/api/address/' + encodeURIComponent(query), { signal: controller.signal });
-            var data = await resp.json();
+            var results = await fetchAddressResults(query);
             if (seq !== dropdown._seq) return; // a newer request superseded this one
-            var results = (data && data.results) || [];
             if (results.length === 0) {
                 showDropdownEmpty(dropdown);
                 dropdown._activeIndex = -1;
@@ -3630,6 +3699,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         var nr = document.getElementById('kataster-input').value.trim();
         if (!nr) { showError('Sisesta katastri number.'); return; }
         var requestId = ++parcelSearchSequence;
+        var chartRenderId = ++compositionChartRenderSequence;
         if (activeParcelSearch) activeParcelSearch.abort();
         var controller = new AbortController();
         activeParcelSearch = controller;
@@ -3672,12 +3742,14 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             showDashboard();
             if (data.meta && data.meta.partial) {
                 showError('Osa andmeallikaid jäi laadimata või oli liiga mahukas. Puuduvad andmed ei tähenda, et piiranguid või metsa ei ole. Proovi otsingut uuesti.');
+            } else if (data.mets && data.meta && (data.meta.details_skipped || data.meta.sampled_eraldised)) {
+                showError('Metsa detailandmete maht või laadimisaeg ületas turvalise piiri. Koosseisu ja väärtuse hinnang põhineb üldisematel registriandmetel.');
             }
 
             // Render composition chart AFTER browser lays out the now-visible canvas
             requestAnimationFrame(function() {
                 if (requestId !== parcelSearchSequence) return;
-                if (data.mets && data.mets.liikide_koosseis) renderCompositionChart(data.mets.liikide_koosseis);
+                renderCompositionChart(data.mets && data.mets.liikide_koosseis || [], chartRenderId);
             });
 
             // Trigger AI analysis
