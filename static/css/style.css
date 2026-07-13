@@ -1130,8 +1130,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     justify-content: center;
     gap: 8px;
     margin-top: 14px;
-    transform: scale(0.95);
-    transform-origin: center top;
 }
 .landing-hint {
     display: inline-flex;
@@ -4088,11 +4086,11 @@ footer {
         white-space: nowrap;
     }
     .map-hint svg { width: 10px; height: 10px; }
-    .map-hint-close { width: 32px; height: 32px; font-size: 15px; }
-    .map-controls { top: 8px; bottom: auto; left: 8px; flex-direction: column; max-width: 140px; max-height: calc(100% - 16px); }
+    .map-hint-close { width: 44px; height: 44px; font-size: 17px; }
+    .map-controls { top: 8px; bottom: auto; left: 8px; flex-direction: column; max-width: 180px; max-height: calc(100% - 16px); }
     .layer-toggle {
         font-size: 12px;
-        max-width: 140px;
+        max-width: 180px;
         grid-template-columns: 1fr;
         padding: 3px;
         gap: 0;
@@ -4175,10 +4173,11 @@ footer {
     .search-box button { width: 44px; height: 44px; }
     .landing-search .search-box { min-height: 48px; }
     .landing-search .search-box button { width: 44px; height: 44px; }
-    .ai-hint { min-height: 36px; padding: 8px 12px; font-size: 12.5px; }
+    .ai-hint { min-height: 44px; padding: 8px 12px; font-size: 12.5px; }
     .map-controls-toggle { min-height: 44px; padding: 8px 12px; }
-    .toggle-item { min-height: 40px; padding: 8px 10px; }
+    .toggle-item { min-height: 44px; padding: 8px 10px; }
     .toggle-item .toggle-label { font-size: 13px; }
+    .kiht-legend-close { width: 44px; height: 44px; font-size: 18px; }
     .map-legend-toggle { width: 44px; height: 44px; font-size: 18px; }
     .map-kiht-legend { top: 60px; left: 8px; max-width: 200px; font-size: 12.5px; }
     .kiht-legend-row { font-size: 12.5px; }

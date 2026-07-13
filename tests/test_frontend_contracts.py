@@ -48,6 +48,11 @@ class FrontendContractTests(unittest.TestCase):
     def test_mobile_header_search_target_is_at_least_44_pixels(self):
         self.assertIn(".search-box button { width: 44px; height: 44px;", STYLE_CSS)
         self.assertNotIn(".hero .search-box button { width: 38px; height: 38px;", STYLE_CSS)
+        self.assertIn(".map-hint-close { width: 44px; height: 44px;", STYLE_CSS)
+        self.assertIn(".ai-hint { min-height: 44px;", STYLE_CSS)
+        self.assertIn(".toggle-item { min-height: 44px;", STYLE_CSS)
+        self.assertIn(".kiht-legend-close { width: 44px; height: 44px;", STYLE_CSS)
+        self.assertNotIn("transform: scale(0.95)", STYLE_CSS)
 
     def test_unhashed_static_assets_are_revalidated(self):
         static_rule = next(rule for rule in VERCEL_CONFIG["headers"] if rule["source"] == "/static/(.*)")
@@ -56,8 +61,9 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("must-revalidate", cache_control)
 
     def test_changed_stylesheet_busts_the_previous_immutable_url(self):
-        self.assertIn('/static/css/style.css?r=jkl101', INDEX_HTML)
+        self.assertIn('/static/css/style.css?r=jkl102', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl100', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl101', INDEX_HTML)
 
     def test_chart_library_loads_only_when_results_need_it(self):
         head = INDEX_HTML.split("</head>", 1)[0]
