@@ -68,6 +68,14 @@ class CuttingAgeTests(unittest.TestCase):
         self.assertEqual(mature["status"], "yellow")
         self.assertEqual(ripe["status"], "red")
 
+    def test_classifier_codes_are_not_mistaken_for_other_species(self):
+        self.assertIn("SD", CUTTING_AGE)  # seedermänd
+        self.assertNotIn("SP", CUTTING_AGE)  # sarapuu
+        self.assertNotIn("PK", CUTTING_AGE)  # paakspuu
+        unsupported = cutting_age_indicator(40, "SP", 3)
+        self.assertIsNone(unsupported["raievanus"])
+        self.assertEqual(unsupported["status"], "unknown")
+
 
 class BoniteetMapTests(unittest.TestCase):
     """BONITEET_MAP — WFS kood → nimi (1A kuni V, 7 klassi)."""

@@ -32,6 +32,41 @@ class AreaDataTests(unittest.TestCase):
         self.assertIn("Metsamaa pindala: 20.17 ha", prompt)
         self.assertNotIn("Metsamaa pindala: 1.28 ha", prompt)
 
+    def test_ai_prompt_describes_freshness_and_historical_cutting_without_claiming_execution(self):
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 2},
+            "mets": {
+                "puuliik": "kask",
+                "elus_tagavara_ha": 120,
+                "inventuur": {
+                    "staatus": "hoiatus",
+                    "vanim_invent_kp": "2018-01-01",
+                    "inventuuri_vanus_max_a": 8,
+                    "inventuurijargsed_teatised": 1,
+                },
+            },
+            "riskid": {
+                "ajaloolised_lageraiealad": [{
+                    "periood_algus": 2013,
+                    "periood_lopp": 2015,
+                    "vanus_vahemalt_a": 10,
+                }],
+            },
+            "teatised": [{
+                "tyyp": "Lageraie",
+                "maht": 50,
+                "otsus_kinnitatud_kp": "2024-01-10",
+                "parast_inventuuri": True,
+                "active": False,
+            }],
+        })
+
+        self.assertIn("Elus puistutagavara: 120 m³/ha", prompt)
+        self.assertIn("Inventuuri andmekvaliteet: hoiatus", prompt)
+        self.assertIn("Ajalooline lageraie satelliidituvastus: 2013–2015", prompt)
+        self.assertIn("kavandatud maht 50 m³", prompt)
+        self.assertNotIn("Hiljutine lageraieala", prompt)
+
 
 if __name__ == "__main__":
     unittest.main()

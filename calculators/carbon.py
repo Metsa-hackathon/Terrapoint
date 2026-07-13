@@ -36,19 +36,19 @@ SPECIES_DATA = {
     "MA": {"density": 0.42, "bef": 1.34, "root_shoot": 0.24},  # Pinus sylvestris
     "KU": {"density": 0.40, "bef": 1.42, "root_shoot": 0.24},  # Picea abies — root_shoot parandatud 0.29→0.24
     "LH": {"density": 0.46, "bef": 1.25, "root_shoot": 0.24},  # Larix decidua — tihedus 0.59→0.46 (IPCC)
-    "SP": {"density": 0.40, "bef": 1.34, "root_shoot": 0.24},  # Cedrus (Abies proxy 0.40)
+    "SD": {"density": 0.40, "bef": 1.34, "root_shoot": 0.24},  # seedermänd, okaspuu vaikeväärtus
     # Lehtpuud — boreaalne/liigendatud, IPCC Table 3A.1.9-1
     "KS": {"density": 0.51, "bef": 1.30, "root_shoot": 0.24},  # Betula pendula
     "HB": {"density": 0.35, "bef": 1.40, "root_shoot": 0.24},  # Populus tremula — tihedus 0.45→0.35 (29% parandus)
     "LM": {"density": 0.45, "bef": 1.38, "root_shoot": 0.26},  # Alnus incana (perekond)
     "LV": {"density": 0.45, "bef": 1.38, "root_shoot": 0.26},  # Alnus glutinosa (perekond)
     "RE": {"density": 0.45, "bef": 1.38, "root_shoot": 0.26},  # Salix (parandatud 0.50→0.45)
-    # Võõrliigid ja haruldased — Eesti andmete puudusel IPCC perekonna
-    # vaikeväärtused
+    # Muud liigid — Eesti liigipõhiste andmete puudusel IPCC rühma vaikeväärtused
     "TA": {"density": 0.58, "bef": 1.30, "root_shoot": 0.24},  # Quercus
     "SA": {"density": 0.57, "bef": 1.32, "root_shoot": 0.24},  # Fraxinus
     "VA": {"density": 0.52, "bef": 1.35, "root_shoot": 0.24},  # Acer
-    "PK": {"density": 0.58, "bef": 1.30, "root_shoot": 0.24},  # Fagus sylvatica
+    "PK": {"density": 0.45, "bef": 1.38, "root_shoot": 0.26},  # paakspuu, lehtpuu vaikeväärtus
+    "SP": {"density": 0.45, "bef": 1.38, "root_shoot": 0.26},  # sarapuu, lehtpuu vaikeväärtus
     "JA": {"density": 0.52, "bef": 1.32, "root_shoot": 0.24},  # Ulmus (parandatud 0.55→0.52)
 }
 

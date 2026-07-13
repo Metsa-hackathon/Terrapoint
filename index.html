@@ -65,7 +65,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl033">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl102">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl103">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -1499,7 +1499,8 @@
             var vaartus = e.vaartus_eur ? fmtNum(e.vaartus_eur) + ' €' : '';
             var dot = (e.raie_liik === 'Lageraie') ? 'var(--map-eraldis-lageraie)'
                 : (e.raie_liik === 'Harvendusraie') ? 'var(--map-eraldis-harvendus)'
-                : (e.raie_liik === 'Hooldusraie') ? 'var(--map-eraldis-hooldus)' : 'var(--map-eraldis-noor)';
+                : (e.raie_liik === 'Hooldusraie') ? 'var(--map-eraldis-hooldus)'
+                : (e.raie_liik === 'Raievanus määramata') ? 'var(--ink-4)' : 'var(--map-eraldis-noor)';
             var card = document.createElement('button');
             card.type = 'button';
             card.className = 'eraldis-sheet-item';
@@ -1894,7 +1895,17 @@
                     fillOpacity: opts.fillOpacity != null ? opts.fillOpacity : 0.30,
                 };
                 if (opts.dash) style.dashArray = opts.dash;
-                overlayLayers[name] = L.geoJSON({ type: 'FeatureCollection', features }, { style: style }).addTo(map);
+                var layerOptions = { style: style };
+                if (name === 'lageraiealad') {
+                    layerOptions.onEachFeature = function(feature, layer) {
+                        var props = feature.properties || {};
+                        var start = props.periood_a;
+                        var end = props.periood_o;
+                        var period = start && end ? start + '–' + end : (end ? 'kuni ' + end : 'aeg teadmata');
+                        layer.bindPopup('<b>Ajalooline lageraie tuvastus</b><br>Satelliidivaatluse periood: ' + escapeHtml(period) + '<br><small>Kiht katab ainult aastaid 2011–2016. Mets peab üldjuhul olema uuenenud 5 aasta jooksul; seaduses loetletud kasvukohatüüpides 10 aasta jooksul.</small>');
+                    };
+                }
+                overlayLayers[name] = L.geoJSON({ type: 'FeatureCollection', features }, layerOptions).addTo(map);
             } else if (hasPoints) {
                 // Ainult punktid → kohandatud värviline ring-marker
                 const c = opts.color || color;
@@ -2122,16 +2133,17 @@
 
     // ═══ dashboard.js ═══
     const SPECIES_NAMES = {
-        MA: 'Harilik mänd', KU: 'Harilik kuusk', KS: 'Harilik kask', HB: 'Harilik haab',
-        LH: 'Harilik lehis', LM: 'Hall lepp', LV: 'Salu-lepp', TA: 'Harilik tamm',
-        SA: 'Harilik saar', VA: 'Harilik vaher', PK: 'Harilik pöök', JA: 'Harilik jalakas',
-        RE: 'Harilik remmelgas', SP: 'Siberi seedermänd',
+        MA: 'mänd', KU: 'kuusk', NU: 'nulg', LH: 'lehis', SD: 'seedermänd',
+        TS: 'ebatsuuga', TA: 'tamm', SA: 'saar', VA: 'vaher', JA: 'jalakas',
+        KS: 'kask', HB: 'haab', LM: 'sanglepp', LV: 'hall lepp', PN: 'pärn',
+        PP: 'pappel', RE: 'remmelgas', TM: 'toomingas', PI: 'pihlakas', KP: 'künnapuu',
+        TO: 'teised okaspuuliigid', TL: 'teised lehtpuuliigid', SP: 'sarapuu',
+        PK: 'paakspuu', TY: 'türnpuu', KL: 'kuslapuu', KD: 'kadakas',
+        TP: 'teised põõsaliigid', PA: 'paju', JP: 'jugapuu',
     };
-    // Non-species codes from metsaregister (forest types, not tree species)
-    const NON_SPECIES_CODES = ['TM', 'PI', 'PS', 'PA', 'LV2', 'MU'];
     function isValidSpecies(s) {
         var code = s.puuliik_kood || s.puuliik;
-        return code && NON_SPECIES_CODES.indexOf(code) === -1 && SPECIES_NAMES[code];
+        return code && SPECIES_NAMES[code];
     }
     // Boniteedi koodid (WFS metsaregister.eraldis.boniteedi_kood):
 //   0=1A (parim), 1=I, 2=II, 3=III, 4=IV, 5=V (kehveim), 6=Va (alam-V)
@@ -2198,6 +2210,56 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         if (n == null) return '—';
         if (decimals !== undefined) return n.toFixed(decimals).replace('.', ',');
         return Math.round(n).toLocaleString('et-EE').replace(/,/g, ' ');
+    }
+
+    function formatDateEt(value) {
+        if (!value) return '—';
+        var parts = String(value).slice(0, 10).split('-');
+        return parts.length === 3 ? parts[2] + '.' + parts[1] + '.' + parts[0] : String(value);
+    }
+
+    function inventoryQualityHtml(inventory) {
+        if (!inventory) return '';
+        var status = inventory.staatus || 'värske';
+        var postNotices = inventory.inventuurijargsed_teatised || 0;
+        var postCuts = inventory.inventuurist_hilisemaid_lageraieperioode || 0;
+        var missingDates = inventory.kuupaev_puudub_eraldisi || 0;
+        var missingRegistrationDates = inventory.registrikande_kuupaev_puudub_eraldisi || 0;
+        var unmatchedNotices = inventory.inventuuri_seos_teadmata_teatised || 0;
+        if (status === 'värske' && !postNotices && !postCuts && !missingDates && !missingRegistrationDates && !unmatchedNotices) return '';
+
+        var level = status === 'kriitiline' ? 'critical' : 'warning';
+        var title = status === 'kriitiline' ? 'Inventeerimisandmed vajavad uuendamist' : 'Kontrolli andmete värskust';
+        var messages = [];
+        if (status === 'kriitiline') {
+            if (inventory.oiguslikult_aegunud_eraldisi) {
+                messages.push('Vähemalt ühe eraldise registrikandest on üle 10 aasta. Metsaseaduse järgi kehtivad inventeerimisandmed 10 aastat registrisse kandmisest.');
+            } else {
+                messages.push('Vähemalt ühe eraldise inventeerimisandmed on üle 10 aasta vanad ega pruugi praegust metsa piisavalt täpselt kirjeldada.');
+            }
+        } else if (inventory.vanem_kui_5a_eraldisi) {
+            messages.push('Vähemalt ühe eraldise inventeerimisandmed on üle 5 aasta vanad. 5 aasta piir on Terrapointi värskushoiatuse lävend, mitte seadusest tulenev aegumistähtaeg.');
+        }
+        if (missingDates) {
+            messages.push(missingDates + ' eraldise inventeerimiskuupäev puudub, mistõttu nende andmete vanust ei saa hinnata.');
+        }
+        if (missingRegistrationDates) {
+            messages.push(missingRegistrationDates + ' eraldise registrikande kuupäev puudub, mistõttu 10 aasta õiguslikku kehtivust ei saa hinnata.');
+        }
+        if (postNotices) {
+            var plannedVolume = inventory.inventuurijargne_kavandatud_maht_m3 || 0;
+            var missingVolume = inventory.inventuurijargse_teatise_maht_puudub || 0;
+            var volumeText = 'teadaolev kavandatud maht ' + formatNum(plannedVolume) + ' m³';
+            if (missingVolume) volumeText += ', maht puudub ' + missingVolume + ' teatisel';
+            messages.push('Pärast inventuuri on heaks kiidetud ' + postNotices + ' metsateatist (' + volumeText + '). Metsateatis näitab kavandatud või lubatud raiet, mitte kinnitatud teostust; Terrapoint ei lahuta seda mahtu automaatselt.');
+        }
+        if (unmatchedNotices) {
+            messages.push(unmatchedNotices + ' heaks kiidetud teatise suhet inventuuriga ei saanud puuduva kuupäeva või ebakindla eraldise seose tõttu hinnata.');
+        }
+        if (postCuts) {
+            messages.push('Satelliidikiht sisaldab inventuurist hilisemat lageraie tuvastusperioodi. See suurendab registripõhise väärtuse ebakindlust.');
+        }
+        return '<div class="data-quality-alert ' + level + '"><strong>' + title + '</strong><span>' + messages.map(escHtml).join(' ') + '</span></div>';
     }
 
     function speciesName(code, fullName) {
@@ -2450,11 +2512,18 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             }
         }
         var html = '';
+        html += inventoryQualityHtml(data.inventuur);
         html += '<div class="info-row"><span class="label">Peapuuliik ' + ddInfo('Krundi peamine puuliik, suurima tagavaraga liik') + '</span><span class="value">' + escHtml(speciesName(data.puuliik_kood || data.puuliik, data.puuliik)) + '</span></div>';
         html += '<div class="info-row"><span class="label">Keskmine vanus ' + ddInfo('Kõigi eraldiste pindala-kaalutud keskmine vanus aastates') + '</span><span class="value">' + (data.vanus || '—') + ' a</span></div>';
-        html += '<div class="info-row"><span class="label">Tagavara ' + ddInfo('Metsa ümarmaterjali kogus hektari kohta (m³/ha). Mida suurem, seda väärtuslikum mets.') + '</span><span class="value">' + formatNum(data.tagavara_y_ha) + ' m³/ha</span></div>';
+        html += '<div class="info-row"><span class="label">Elus puistutagavara ' + ddInfo('Metsaregistri 1. rinde, 2. rinde ja üksikpuude rinde tagavarade summa hektari kohta. Surnud ja lamapuitu siia ei liideta.') + '</span><span class="value">' + formatNum(data.elus_tagavara_ha != null ? data.elus_tagavara_ha : data.tagavara_y_ha) + ' m³/ha</span></div>';
         html += '<div class="info-row"><span class="label">Boniteet ' + ddInfo('Metsakasvukoha kvaliteet: 1A=parim, V=kehveim. Mõjutab metsa kasvukiirust ja raievanust.', valueExplain('boniteet', boniteet)) + '</span><span class="value">' + escHtml(boniteet) + '</span></div>';
         html += '<div class="info-row"><span class="label">Pindala ' + ddInfo('Metsamaa kogupindala, eraldiste pindalade summa') + '</span><span class="value">' + formatNum(data.pindala_ha, 2) + ' ha</span></div>';
+        if (data.inventuur && data.inventuur.inventuuri_vanus_max_a != null) {
+            var ageSuffix = data.inventuur.vanem_kui_5a_eraldisi && data.inventuur.inventuuri_vanus_max_a === 5 ? '+' : '';
+            html += '<div class="info-row"><span class="label">Andmete vanus ' + ddInfo('Vanimast eraldise inventeerimiskuupäevast möödunud täisaastad') + '</span><span class="value">kuni ' + data.inventuur.inventuuri_vanus_max_a + ageSuffix + ' a</span></div>';
+            html += '<div class="info-row"><span class="label">Inventeeritud</span><span class="value">' + formatDateEt(data.inventuur.vanim_invent_kp) + (data.inventuur.uusim_invent_kp !== data.inventuur.vanim_invent_kp ? ' – ' + formatDateEt(data.inventuur.uusim_invent_kp) : '') + '</span></div>';
+        }
+        if (data.juurdekasv_m3_ha_a != null) html += '<div class="info-row"><span class="label">Registri juurdekasv ' + ddInfo('Inventeerimisel hinnatud aastane juurdekasv. Terrapoint ei kasvata selle põhjal automaatselt vana tagavara, sest vahepealsete raiete teostus pole registri teatisest kinnitatav.') + '</span><span class="value">' + formatNum(data.juurdekasv_m3_ha_a, 2) + ' m³/ha/a</span></div>';
         if (data.korgus) html += '<div class="info-row"><span class="label">Kõrgus ' + ddInfo('Puude keskmine kõrgus meetrites') + '</span><span class="value">' + formatNum(data.korgus, 1) + ' m</span></div>';
         if (data.eraldisi_kokku > 1) html += '<div class="info-row"><span class="label">Eraldisi ' + ddInfo('Eraldised on eraldi majandatavad metsatükid, millel on oma puuliik, vanus ja tagavara') + '</span><span class="value">' + data.eraldisi_kokku + ' tk</span></div>';
         html += compHtml;
@@ -2482,9 +2551,9 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 var v = e.vaartus_eur ? formatEur(e.vaartus_eur) : '—';
                 html += '<div class="table-grid-row eraldised-row">';
                 html += '<div class="er-nr">' + (i + 1) + '</div>';
-                html += '<div class="er-species">' + escHtml(sp) + '</div>';
+                html += '<div class="er-species">' + escHtml(sp) + (e.invent_kp ? '<span class="er-inventory">Invent. ' + formatDateEt(e.invent_kp) + '</span>' : '') + '</div>';
                 html += '<div>' + (e.vanus || '—') + '</div>';
-                html += '<div>' + formatNum(e.tagavara_y_ha) + '</div>';
+                html += '<div>' + formatNum(e.elus_tagavara_ha != null ? e.elus_tagavara_ha : e.tagavara_y_ha) + '</div>';
                 html += '<div>' + escHtml(b) + '</div>';
                 html += '<div>' + formatNum(e.pindala_ha, 2) + '</div>';
                 html += '<div class="er-value">' + v + '</div>';
@@ -2692,14 +2761,22 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         var karuputk = data.karuputk;
         html += '<div class="info-row"><span class="label">Karuputk ' + ddInfo('Mürgise umbrohu (Heracleum sosnowskyi) esinemine krundil. Kohustuslik tõrjuda, võib põletada nahka.') + '</span>';
         html += karuputk ? '<span style="color:var(--danger);font-weight:600">Leitud</span></div>' : '<span style="color:var(--success)">Puudub</span></div>';
-        // Lageraieala - alati näita
-        var lageraie = data.lageraieala;
-        html += '<div class="info-row"><span class="label">Lageraieala ' + ddInfo('Krundil on tuvastatud hiljutine lageraie (EELIS andmed). Mets on ära raiutud, mõjutab väärtust ja terviseindeksit.') + '</span>';
-        html += lageraie ? '<span style="color:var(--warn);font-weight:600">Tuvastatud</span></div>' : '<span style="color:var(--success)">Puudub</span></div>';
+        // Veeveebi kiht on ajalooline satelliidituvastus, mitte praegune ohutegur.
+        var clearcuts = data.ajaloolised_lageraiealad || [];
+        html += '<div class="info-row"><span class="label">Ajalooline lageraie tuvastus ' + ddInfo('Keskkonnaagentuuri Veeveebi satelliidikiht katab ainult perioodi 2011–2016. Periood näitab vaatlusvahemikku, mitte täpset raieaastat, ning seda ei arvestata tänase terviseindeksi ohutegurina. Metsaseaduse § 25 järgi peab mets üldjuhul olema uuenenud 5 aasta jooksul; loo, siirdesoo, madalsoo, raba, osja, tarna ja lodu kasvukohatüüpides 10 aasta jooksul, kui tähtaega pole pikendatud.') + '</span>';
+        if (clearcuts.length) {
+            var cutLabels = clearcuts.map(function(cut) {
+                var period = cut.periood_algus ? cut.periood_algus + '–' + cut.periood_lopp : 'kuni ' + cut.periood_lopp;
+                return period + ' (vähemalt ' + cut.vanus_vahemalt_a + ' a tagasi)';
+            });
+            html += '<span class="value clearcut-period">' + escHtml(cutLabels.join(', ')) + '</span></div>';
+        } else {
+            html += '<span class="value">Ei kattu kihiga</span></div>';
+        }
         el.innerHTML = html || '<p class="muted">Riskiandmeid pole</p>';
     }
 
-    function renderTeatised(data) {
+    function renderTeatised(data, meta) {
         var el = document.getElementById('teatised-info');
         if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Metsateatisi pole registreeritud</p>'; return; }
 
@@ -2722,7 +2799,12 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         }
 
         var html = '<details class="eraldised-panel table-panel teatised-panel" open>';
-        html += tablePanelSummary(data.length, 'Metsateatised');
+        var totalNotices = meta && meta.teatisi_kokku != null ? meta.teatisi_kokku : data.length;
+        var totalRows = meta && meta.ridu_kokku != null ? meta.ridu_kokku : data.length;
+        var shownRows = meta && meta.ridu_kuvatud != null ? meta.ridu_kuvatud : data.length;
+        var summaryLabel = totalNotices + ' teatist · ' + totalRows + ' eraldiseridu';
+        if (shownRows < totalRows) summaryLabel += ' · kuvatud ' + shownRows;
+        html += tablePanelSummary(totalNotices, summaryLabel);
 
         html += '<div class="table-grid-hscroll">';
         html += '<div class="table-grid-header teatised-table-header">';
@@ -2752,7 +2834,11 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                  ? '<span class="teatised-eraldis-nr" title="Eraldis ' + escHtml(eraldisNr) + '">' + escHtml(eraldisNr) + '</span>'
                  : '<span class="muted">—</span>';
             html += '<div class="table-grid-row teatised-row">';
-            html += '<div>' + escHtml(t.tyyp || '—') + '</div>';
+            var noticeMeta = [];
+            if (t.otsus_kinnitatud_kp) noticeMeta.push('otsus ' + formatDateEt(t.otsus_kinnitatud_kp));
+            if (t.maht != null) noticeMeta.push('kavandatud ' + formatNum(t.maht) + ' m³');
+            if (t.parast_inventuuri) noticeMeta.push('inventuurist hilisem');
+            html += '<div class="teatised-type">' + escHtml(t.tyyp || '—') + (noticeMeta.length ? '<span>' + escHtml(noticeMeta.join(' · ')) + '</span>' : '') + '</div>';
             html += '<div class="teatised-eraldis">' + eraldisCell + '</div>';
             html += '<div>' + teatisedStatusBadge(t.staatus, t.active) + '</div>';
             html += '<div>' + escHtml(t.kehtiv_kuni || '—') + '</div>';
@@ -3040,25 +3126,23 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
     }
 
     // ═══ charts.js ═══
-    // Kategooriline 14-värviline palett — iga puuliik saab unikaalse
-    // tooni, mis on ka kõrvuti segmentides eristatav (Okabe-Ito baasil
-    // laiendatud). Eelmine versioon kasutas liiga palju rohelisi/
-    // pruune — väiksemad sektorid kadusid segaste toonide sisse.
+    // 14 levinuma klassifikaatorikirje palett. Harvemad kirjed kasutavad
+    // neutraalset varuvärvi, kuni neile on eraldi toon määratud.
     var SPECIES_COLORS = {
-        MA: '#E69F00',  // Harilik mänd      — oranz (soe, hele)
-        KU: '#0072B2',  // Harilik kuusk     — sinine (külm, tume)
-        KS: '#F0E442',  // Harilik kask — ere kollane
-        HB: '#CC79A7',  // Harilik haab      — roosa
-        LH: '#D55E00',  // Harilik lehis     — vermillion (sügis)
-        LM: '#999999',  // Hall lepp         — neutraalne hall
-        LV: '#009E73',  // Salu-lepp         — teal (sinakasroheline)
-        TA: '#6F4E37',  // Harilik tamm      — tume pruun
-        SA: '#9370DB',  // Harilik saar      — lilla
-        VA: '#DC143C',  // Harilik vaher     — karmiinpunane
-        PK: '#BDB76B',  // Harilik pöök      — tume khaki (oliivikollane)
-        JA: '#556B2F',  // Harilik jalakas   — tume oliivroheline
-        RE: '#7B68EE',  // Harilik remmelgas — keskmine sinakas-lilla
-        SP: '#2F4F4F',  // Siberi seedermänd — tume tahvelhall
+        MA: '#E69F00',  // mänd — oranž
+        KU: '#0072B2',  // kuusk — sinine
+        KS: '#F0E442',  // kask — ere kollane
+        HB: '#CC79A7',  // haab — roosa
+        LH: '#D55E00',  // lehis — vermillion
+        LM: '#999999',  // sanglepp — neutraalne hall
+        LV: '#009E73',  // hall lepp — teal
+        TA: '#6F4E37',  // tamm — tume pruun
+        SA: '#9370DB',  // saar — lilla
+        VA: '#DC143C',  // vaher — karmiinpunane
+        PK: '#BDB76B',  // paakspuu — oliivikollane
+        JA: '#556B2F',  // jalakas — tume oliivroheline
+        RE: '#7B68EE',  // remmelgas — sinakas-lilla
+        SP: '#2F4F4F',  // sarapuu — tahvelhall
     };
 
     var compositionChart = null;
@@ -3105,8 +3189,8 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         if (compositionChart) compositionChart.destroy();
 
         var names = SPECIES_NAMES;
-        // Filter to actual tree species only, then merge duplicates
-        var validSpecies = species.filter(function(s) { return SPECIES_COLORS[s.puuliik_kood || s.puuliik]; });
+        // Metsaregistri ametliku klassifikaatori kirjed, seejärel duplikaatide liitmine.
+        var validSpecies = species.filter(function(s) { return SPECIES_NAMES[s.puuliik_kood || s.puuliik]; });
         if (validSpecies.length === 0) { if (wrap) wrap.style.display = 'none'; return; }
         var merged = {};
         validSpecies.forEach(function(s) {
@@ -3723,13 +3807,13 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
             window._timberValue = (data.vaartus && data.vaartus.total_value_eur) || 0;
             window._vaartusData = data.vaartus || {};
-            function safe(fn, arg, name) { try { fn(arg); } catch(e) { console.error('Render error:', name, e); } }
+            function safe(fn, arg, name, extra) { try { fn(arg, extra); } catch(e) { console.error('Render error:', name, e); } }
             if (data.kataster) safe(renderKataster, data.kataster, 'kataster');
             safe(renderMets, data.mets, 'mets');
             safe(renderVaartus, data.vaartus, 'vaartus');
             safe(renderSinik, data.sinik, 'sinik');
             safe(renderRiskid, data.riskid, 'riskid');
-            safe(renderTeatised, data.teatised, 'teatised');
+            safe(renderTeatised, data.teatised, 'teatised', data.teatised_meta);
             safe(renderKitsendused, data.kitsendused, 'kitsendused');
             safe(renderToetused, data.toetused, 'toetused');
             safe(renderEudr, data, 'eudr');

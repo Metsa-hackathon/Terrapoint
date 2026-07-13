@@ -61,8 +61,8 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("must-revalidate", cache_control)
 
     def test_changed_stylesheet_busts_the_previous_immutable_url(self):
-        self.assertIn('/static/css/style.css?r=jkl102', INDEX_HTML)
-        self.assertNotIn('/static/css/style.css?r=jkl100', INDEX_HTML)
+        self.assertIn('/static/css/style.css?r=jkl103', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl102', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl101', INDEX_HTML)
 
     def test_chart_library_loads_only_when_results_need_it(self):
@@ -76,6 +76,31 @@ class FrontendContractTests(unittest.TestCase):
             re.DOTALL,
         )
         self.assertIsNotNone(search_start)
+
+    def test_frontend_uses_official_metsaregister_species_labels(self):
+        for mapping in (
+            "KS: 'kask'", "LM: 'sanglepp'", "LV: 'hall lepp'",
+            "RE: 'remmelgas'", "SP: 'sarapuu'", "PK: 'paakspuu'",
+        ):
+            self.assertIn(mapping, INDEX_HTML)
+        for invented_name in ("Harilik kask", "Harilik remmelgas", "Salu-lepp"):
+            self.assertNotIn(invented_name, INDEX_HTML)
+
+    def test_forest_data_age_and_historical_clearcuts_are_explained(self):
+        self.assertIn("Terrapointi värskushoiatuse lävend", INDEX_HTML)
+        self.assertIn("Metsateatis näitab kavandatud või lubatud raiet", INDEX_HTML)
+        self.assertIn("Ajalooline lageraie tuvastus", INDEX_HTML)
+        self.assertIn("2011–2016", INDEX_HTML)
+        self.assertIn("üldjuhul olema uuenenud 5 aasta jooksul", INDEX_HTML)
+        self.assertIn("10 aasta jooksul", INDEX_HTML)
+        self.assertIn("safe(renderTeatised, data.teatised, 'teatised', data.teatised_meta)", INDEX_HTML)
+        self.assertIn("totalRows + ' eraldiseridu'", INDEX_HTML)
+        self.assertNotIn("Krundil on tuvastatud hiljutine lageraie", INDEX_HTML)
+
+    def test_no_forest_result_always_clears_the_previous_composition_chart(self):
+        self.assertIn("renderCompositionChart(data.mets && data.mets.liikide_koosseis || [], chartRenderId)", INDEX_HTML)
+        self.assertIn("compositionChart.destroy();", INDEX_HTML)
+        self.assertIn("wrap.style.display = 'none';", INDEX_HTML)
 
 
 if __name__ == "__main__":

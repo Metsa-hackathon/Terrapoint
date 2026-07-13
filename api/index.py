@@ -11,6 +11,7 @@ import asyncio
 import inspect
 import math
 import os
+from datetime import date, datetime
 import httpx
 import orjson
 from shapely.geometry import shape
@@ -28,7 +29,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from services.kataster import query_kataster
-from services.metsaregister import MetsaregisterWFSError, query_eraldis, query_eraldis_element, query_natura_2000, query_teatised, query_kahjustused
+from services.metsaregister import SPECIES_NAMES, MetsaregisterWFSError, query_eraldis, query_eraldis_element, query_natura_2000, query_teatised, query_kahjustused
 from services.validation import _validate_kataster_nr_or_400
 from services.layers import LAYER_CONFIGS, query_all_layers
 from services.subsidies import check_subsidies
@@ -79,6 +80,184 @@ _search_waiters: dict[str, int] = {}
 XGIS_ALLOWED_LAYERS = {"EESTIFOTO", "HYBRID", "nCHM2017"}
 XGIS_ALLOWED_SRS = {"EPSG:3301"}
 XGIS_ALLOWED_VERSIONS = {"1.1.1"}
+
+
+def _parse_source_date(value) -> date | None:
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(str(value)[:10])
+    except (TypeError, ValueError):
+        return None
+
+
+def _completed_years(value, today: date | None = None) -> int | None:
+    source_date = _parse_source_date(value)
+    if source_date is None:
+        return None
+    current = today or date.today()
+    return max(0, current.year - source_date.year - ((current.month, current.day) < (source_date.month, source_date.day)))
+
+
+def _is_after(candidate, reference) -> bool:
+    candidate_date = _parse_source_date(candidate)
+    reference_date = _parse_source_date(reference)
+    return bool(candidate_date and reference_date and candidate_date > reference_date)
+
+
+def _is_older_than_years(value, years: int, today: date) -> bool:
+    source_date = _parse_source_date(value)
+    if source_date is None:
+        return False
+    try:
+        anniversary = source_date.replace(year=source_date.year + years)
+    except ValueError:
+        anniversary = source_date.replace(year=source_date.year + years, day=28)
+    return anniversary < today
+
+
+def _resolve_notice_stand(raw_stand, notice_area, valid_stands: set, stands_by_area: dict):
+    valid_by_text = {str(value): value for value in valid_stands}
+    raw_text = str(raw_stand) if raw_stand is not None else ""
+    try:
+        raw_number = int(raw_stand)
+        year_like = 1900 <= raw_number <= 2100
+    except (TypeError, ValueError):
+        year_like = False
+    if raw_text in valid_by_text and not year_like:
+        return valid_by_text[raw_text]
+    candidates = stands_by_area.get(round(float(notice_area or 0), 2), [])
+    return candidates[0] if len(candidates) == 1 else None
+
+
+def _distinct_notice_count(notices: list[dict]) -> int:
+    keys = set()
+    for index, notice in enumerate(notices):
+        number = notice.get("number")
+        keys.add(("number", str(number)) if number else ("row", index))
+    return len(keys)
+
+
+def _inventory_summary(eraldised: list[dict], today: date | None = None) -> dict:
+    """Summarize source-data freshness without projecting stock into the future."""
+    current = today or date.today()
+    inventory_dates = [_parse_source_date(e.get("invent_kp")) for e in eraldised]
+    registration_dates = [_parse_source_date(e.get("registreerimise_kp")) for e in eraldised]
+    inventory_ages = [_completed_years(value, current) for value in inventory_dates]
+    registration_ages = [_completed_years(value, current) for value in registration_dates]
+
+    older_five = [value for value in inventory_dates if _is_older_than_years(value, 5, current)]
+    older_ten = [value for value in inventory_dates if _is_older_than_years(value, 10, current)]
+    legally_expired = [value for value in registration_dates if _is_older_than_years(value, 10, current)]
+    known_inventory_dates = [value for value in inventory_dates if value is not None]
+    known_registration_dates = [value for value in registration_dates if value is not None]
+
+    if older_ten or legally_expired:
+        status = "kriitiline"
+    elif older_five or any(value is None for value in inventory_dates) or any(value is None for value in registration_dates):
+        status = "hoiatus"
+    else:
+        status = "värske"
+
+    return {
+        "staatus": status,
+        "vanim_invent_kp": min(known_inventory_dates).isoformat() if known_inventory_dates else None,
+        "uusim_invent_kp": max(known_inventory_dates).isoformat() if known_inventory_dates else None,
+        "vanim_registreerimise_kp": min(known_registration_dates).isoformat() if known_registration_dates else None,
+        "uusim_registreerimise_kp": max(known_registration_dates).isoformat() if known_registration_dates else None,
+        "inventuuri_vanus_max_a": max((age for age in inventory_ages if age is not None), default=None),
+        "registrikande_vanus_max_a": max((age for age in registration_ages if age is not None), default=None),
+        "vanem_kui_5a_eraldisi": len(older_five),
+        "vanem_kui_10a_eraldisi": len(older_ten),
+        "oiguslikult_aegunud_eraldisi": len(legally_expired),
+        "kuupaev_puudub_eraldisi": sum(value is None for value in inventory_dates),
+        "registrikande_kuupaev_puudub_eraldisi": sum(value is None for value in registration_dates),
+        "inventuurijargsed_teatised": 0,
+        "inventuurijargsed_teatise_read": 0,
+        "inventuurijargne_kavandatud_maht_m3": 0,
+        "inventuurijargse_teatise_maht_puudub": 0,
+        "inventuurijargse_teatise_maht_puudub_read": 0,
+        "inventuuri_seos_teadmata_teatised": 0,
+    }
+
+
+def _historical_clearcut_periods(
+    features: list[dict],
+    eraldised: list[dict] | None = None,
+    today: date | None = None,
+) -> list[dict]:
+    current = today or date.today()
+    periods_by_key = {}
+    parsed_stands = []
+    for index, stand in enumerate(eraldised or []):
+        if not stand.get("geometry"):
+            continue
+        try:
+            stand_geometry = shape(stand["geometry"])
+        except (TypeError, ValueError):
+            continue
+        parsed_stands.append((index, stand, stand_geometry, stand_geometry.bounds))
+    for feature in features:
+        props = feature.get("properties", {})
+        start = props.get("periood_a")
+        end = props.get("periood_o")
+        try:
+            start = int(start) if start is not None else None
+            end = int(end) if end is not None else None
+        except (TypeError, ValueError):
+            continue
+        key = (start, end)
+        if end is None:
+            continue
+        if key not in periods_by_key:
+            periods_by_key[key] = {
+                "periood_algus": start,
+                "periood_lopp": end,
+                # Only the year is known. Assume the latest possible date in
+                # that year so "at least" never overstates elapsed full years.
+                "vanus_vahemalt_a": max(0, current.year - end - 1),
+            }
+            if eraldised is not None:
+                periods_by_key[key]["inventuurist_hilisem"] = False
+                periods_by_key[key]["_matched_stands"] = set()
+
+        if eraldised is None or not feature.get("geometry"):
+            continue
+        try:
+            cut_geometry = shape(feature["geometry"])
+        except (TypeError, ValueError):
+            continue
+        record = periods_by_key[key]
+        cut_bounds = cut_geometry.bounds
+        for index, stand, stand_geometry, stand_bounds in parsed_stands:
+            if (
+                cut_bounds[2] <= stand_bounds[0]
+                or stand_bounds[2] <= cut_bounds[0]
+                or cut_bounds[3] <= stand_bounds[1]
+                or stand_bounds[3] <= cut_bounds[1]
+            ):
+                continue
+            try:
+                overlap_area = cut_geometry.intersection(stand_geometry).area
+            except (TypeError, ValueError):
+                continue
+            if overlap_area <= 0:
+                continue
+            record["_matched_stands"].add(index)
+            inventory_date = _parse_source_date(stand.get("invent_kp"))
+            if inventory_date and end > inventory_date.year:
+                record["inventuurist_hilisem"] = True
+
+    periods = list(periods_by_key.values())
+    for period in periods:
+        matched_stands = period.pop("_matched_stands", None)
+        if matched_stands is not None:
+            period["kattuvaid_eraldisi"] = len(matched_stands)
+    return periods
 
 
 def _client_identifier(request: Request) -> str:
@@ -394,9 +573,18 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     # tõmbasime. Piirangu ignoreerimine tooks vale-positiivse osalise
     # staatuse ja blokeeriks AI analüüsi suurte metsade puhul.
     unavailable_sources.extend(f"layers.{key}" for key in unavailable_layers)
-    teatised_features = results[2] if not isinstance(results[2], Exception) else []
+    teatised_features = []
     if isinstance(results[2], Exception):
         unavailable_sources.append("metsaregister.teatised")
+    else:
+        notice_result = results[2]
+        if isinstance(notice_result, tuple):
+            teatised_features, notice_unavailable = notice_result
+            unavailable_sources.extend(notice_unavailable)
+        else:
+            # Tests and internal callers may provide an already-normalized list.
+            teatised_features = notice_result
+            unavailable_sources.extend(getattr(teatised_features, "unavailable_sources", []))
     natura_features = results[3] if not isinstance(results[3], Exception) else []
     if isinstance(results[3], Exception):
         unavailable_sources.append("metsaregister.natura_2000")
@@ -426,6 +614,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     carbon = {}
     raie = {}
     liikide_koosseis = []
+    inventory_summary = _inventory_summary(eraldised)
 
     # Process kitsendused from layers
     kitsendused_keys = [
@@ -479,10 +668,10 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         "TA": {"seisuhind": 55, "log": 100, "pulp": 50},   # Tamm
         "SA": {"seisuhind": 48, "log": 88,  "pulp": 48},   # Saar
         "VA": {"seisuhind": 35, "log": 65,  "pulp": 42},   # Vaher
-        "PK": {"seisuhind": 48, "log": 88,  "pulp": 48},   # Pöök
+        "PK": {"seisuhind": 48, "log": 88,  "pulp": 48},   # Paakspuu (hinnanguline)
         "JA": {"seisuhind": 40, "log": 75,  "pulp": 45},   # Jalakas
         "RE": {"seisuhind": 30, "log": 55,  "pulp": 40},   # Remmelgas
-        "SP": {"seisuhind": 42, "log": 78,  "pulp": 45},   # Seedermänd
+        "SP": {"seisuhind": 42, "log": 78,  "pulp": 45},   # Sarapuu (hinnanguline)
     }
 
     if eraldised:
@@ -611,9 +800,9 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
 
         koosseis_with_osakaal = []
         if liikide_koosseis:
-            # Filter out non-species codes (TM, PI, PS, PA, LV2, MU are forest type codes, not species)
-            NON_SPECIES = {"TM", "PI", "PS", "PA", "LV2", "MU", "TP", "KD"}
-            species_only = [e for e in liikide_koosseis if e.get("puuliik_kood") not in NON_SPECIES]
+            # Keep only codes from Metsaregistri official species classifier.
+            # Do not infer that named classifier entries are non-species.
+            species_only = [e for e in liikide_koosseis if e.get("puuliik_kood") in SPECIES_NAMES]
             if not species_only:
                 species_only = liikide_koosseis  # fallback to all if no valid species
 
@@ -706,7 +895,6 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         # Short names that match SPECIES_NAMES in services/metsaregister.py,
         # so the "Peapuuliik" label and the chart species legend show the
         # same name (previously they diverged: "harilik mänd" vs "Mänd").
-        from services.metsaregister import SPECIES_NAMES
         puuliik_nimi_map = SPECIES_NAMES
         eraldised_summary = []
         for e in eraldised:
@@ -729,7 +917,10 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             # Per-eraldis cutting age analysis
             e_raie = cutting_age_indicator(vanus, kood, boniteet_kood)
             raie_ratio = e_raie.get("ratio", 0)
-            if raie_ratio >= 1.0:
+            if e_raie.get("status") == "unknown":
+                raie_liik = "Raievanus määramata"
+                raie_color = "#6b7280"
+            elif raie_ratio >= 1.0:
                 raie_liik = "Lageraie"
                 raie_color = "#e63946"  # red
             elif raie_ratio >= 0.85:
@@ -766,6 +957,8 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
                 "puuliik_kood": kood,
                 "vanus": vanus,
                 "tagavara_y_ha": tagavara,
+                "elus_tagavara_ha": tagavara,
+                "tagavara_rinded": e.get("tagavara_rinded"),
                 "pindala_ha": e_pindala,
                 "boniteet": e.get("boniteet"),
                 "boniteet_kood": boniteet_kood,
@@ -780,6 +973,11 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
                 "vanuseruhm": vanuseruhm,
                 "vanuseruhm_label": vanuseruhm_label,
                 "vanuseruhm_desc": vanuseruhm_desc,
+                "invent_kp": e.get("invent_kp"),
+                "registreerimise_kp": e.get("registreerimise_kp"),
+                "inventuuri_vanus_a": _completed_years(e.get("invent_kp")),
+                "juurdekasv": e.get("juurdekasv"),
+                "kasvukoht_kood": e.get("kasvukoht_kood"),
             })
             if geom:
                 kood = e.get("puuliik_kood", "MA")
@@ -812,6 +1010,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             "puuliik_kood": puuliik,
             "vanus": int(avg_vanus),
             "tagavara_y_ha": round(avg_tagavara, 1),
+            "elus_tagavara_ha": round(avg_tagavara, 1),
             "boniteet": primary.get("boniteet"),
             "korgus": primary.get("korgus"),
             "pindala_ha": total_pindala,
@@ -823,7 +1022,15 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             "potential_income_eur": carbon.get("potential_income_eur"),
             "eraldised": eraldised_summary,
             "eraldisi_kokku": len(eraldised),
+            "inventuur": inventory_summary,
         }
+
+        growth_stands = [e for e in eraldised if e.get("juurdekasv") is not None]
+        growth_area = sum((e.get("pindala_ha") or 0) for e in growth_stands)
+        if growth_area > 0:
+            total_growth = sum(float(e.get("juurdekasv") or 0) * (e.get("pindala_ha") or 0) for e in growth_stands)
+            mets_result["juurdekasv_m3_ha_a"] = round(total_growth / growth_area, 2)
+            mets_result["juurdekasv_m3_a"] = round(total_growth, 1)
 
         # Timber value = sum of all eraldiste values (consistent calculation)
         timber_value = sum(e.get("vaartus_eur", 0) for e in eraldised_summary)
@@ -959,9 +1166,12 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     riskid = {}
     # Always check layer-based risks (even without forest data)
     has_karuputk = bool(layers_data.get("karuputk"))
-    has_lageraieala = bool(layers_data.get("lageraiealad"))
+    historical_clearcuts = _historical_clearcut_periods(
+        layers_data.get("lageraiealad", []),
+        eraldised,
+    )
     riskid["karuputk"] = has_karuputk
-    riskid["lageraieala"] = has_lageraieala
+    riskid["ajaloolised_lageraiealad"] = historical_clearcuts
 
     if eraldised:
         # Ürask risk scoring — kuusekooreürask ohustab ainult kuuske
@@ -972,7 +1182,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         kuusk_eradised = [e for e in eraldised if e.get("puuliik_kood") == "KU"]
         max_kuusk_v = max((e.get("vanus") or 0) for e in kuusk_eradised) if kuusk_eradised else 0
         # Peapuuliik — already calculated above by tagavara*area
-        peapuuliik_nimi = {"MA": "harilik mänd", "KU": "harilik kuusk", "KS": "harilik kask", "HB": "harilik haab", "LH": "harilik lehis", "LM": "hall lepp", "LV": "salu-lepp"}.get(puuliik, puuliik)
+        peapuuliik_nimi = SPECIES_NAMES.get(puuliik, puuliik)
 
         if yrask_features:
             yrask_score = 3
@@ -1030,9 +1240,8 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         # Karuputk
         if has_karuputk:
             health -= 10
-        # Lageraieala — mets on ära raiutud
-        if has_lageraieala:
-            health -= 20
+        # Veeveebi lageraiekiht kirjeldab ainult 2011–2016 satelliidivaatlusi,
+        # mitte praegust raiet või metsaseisundit, seega see ei vähenda indeksit.
         # Liigiline mitmekesisus: ainult üks liik = madalam
         unique_species = set(e.get("puuliik_kood") for e in eraldised if e.get("puuliik_kood"))
         if len(unique_species) == 1:
@@ -1050,59 +1259,63 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
 
     # Process metsateatised - show active ones prominently
     TOO_NIMETUSED = {
-        "TR": "Trassiraie", "HR": "Hooldusraie", "LR": "Lageraie",
-        "UR": "Uuendusraie", "SR": "Sanitaarraie", "VR": "Valikraie",
-        "KR": "Kujundusraie", "PR": "Peenraie", "JR": "Järjekorraline rai e",
+        "AR": "Aegjärkne raie", "HL": "Häilraie", "HR": "Harvendusraie",
+        "KR": "Kujundusraie", "LR": "Lageraie", "RD": "Raadamine",
+        "SR": "Sanitaarraie", "TR": "Trassiraie", "VE": "Veerraie",
+        "VR": "Valikraie",
     }
 
-    # Metsaregistri WFS-i andmekvaliteedi viga: mõnede teatiste puhul
-    # on `eraldise_nr` väljas hoopis aasta (nt 2026, 2028) või otsuse
-    # number, mitte tegelik eraldise number. Tuvastame aasta-laadse
-    # väärtuse ja proovime leida õige eraldise eraldiste nimekirjast
-    # `pindala_ha` järgi.
-    def _is_year_like(value) -> bool:
-        if value is None or value == "":
-            return False
-        try:
-            n = int(value)
-            return 1900 <= n <= 2100
-        except (ValueError, TypeError):
-            return False
-
-    # Eraldiste pindala → eraldise_nr lookup (1:1) ja varukoopia
-    # kõigi eraldiste pindalatest järjestatuna.
+    # Eraldise pindala → kandidaatnumbrid vigase teatise eraldise numbri taastamiseks.
     eraldised_by_area = {}
     valid_eraldis_nrs = set()
+    inventory_by_eraldis = {}
     for e in (eraldised or []):
         area = e.get("pindala_ha")
         nr = e.get("eraldis_nr")
         if area is not None and nr is not None:
             eraldised_by_area.setdefault(round(float(area), 2), []).append(nr)
             valid_eraldis_nrs.add(nr)
+            if _parse_source_date(e.get("invent_kp")):
+                inventory_by_eraldis[str(nr)] = e.get("invent_kp")
+    valid_eraldis_texts = {str(value) for value in valid_eraldis_nrs}
 
     teatised = []
     for feat in teatised_features:
         p = feat.get("properties", {})
         too_kood = (p.get("too_kood") or "").upper()
         otsus = p.get("otsus") or ""
-        staatus = "KEHTIV" if p.get("kehtiv_kuni") else otsus
         kehtiv = p.get("kehtiv_kuni") or ""
+        expiry_date = _parse_source_date(kehtiv)
+        active = bool(expiry_date and expiry_date >= date.today() and not p.get("arhiiv"))
         raw_eraldis = p.get("eraldise_nr")
         area = round(float(p.get("pindala") or 0), 2)
 
-        # 1) Proovime alati esmalt sobitada pindala järgi (kõige usaldusväärsem).
-        # Kui unikaalne vaste leitakse, kasutame seda — isegi kui WFS-i
-        # eraldise_nr on olemas (WFS andmed on vigased).
-        candidates = eraldised_by_area.get(area, [])
-        if len(candidates) == 1:
-            eraldis_nr = candidates[0]
-        # 2) Kui pindalaga ei sobi, aga WFS-i eraldise_nr on eraldiste
-        # nimekirjas, kasutame WFS-i väärtust.
-        elif raw_eraldis is not None and not _is_year_like(raw_eraldis) and raw_eraldis in valid_eraldis_nrs:
-            eraldis_nr = raw_eraldis
-        # 3) Muidu None (frontend kuvab "—").
+        # Kehtiv eraldise number on esmane seos. Pindala kasutatakse ainult
+        # vigase/aasta-laadse numbri taastamiseks ja üksnes unikaalse vastega.
+        eraldis_nr = _resolve_notice_stand(
+            raw_eraldis,
+            area,
+            valid_eraldis_nrs,
+            eraldised_by_area,
+        )
+        valid_raw_stand = str(raw_eraldis) in valid_eraldis_texts
+        association_method = "eraldise_nr" if valid_raw_stand and eraldis_nr is not None else ("pindala" if eraldis_nr is not None else None)
+        decision_date = p.get("otsus_kinnitatud_kp") or ""
+        reference_inventory = inventory_by_eraldis.get(str(eraldis_nr)) if eraldis_nr is not None else None
+        chronology_unknown_reason = None
+        if otsus.upper() != "JAH":
+            after_inventory = None
+        elif not decision_date:
+            after_inventory = None
+            chronology_unknown_reason = "otsuse_kuupaev_puudub"
+        elif association_method != "eraldise_nr":
+            after_inventory = None
+            chronology_unknown_reason = "eraldise_seos_ebakindel"
+        elif not reference_inventory:
+            after_inventory = None
+            chronology_unknown_reason = "inventuuri_kuupaev_puudub"
         else:
-            eraldis_nr = None
+            after_inventory = _is_after(decision_date, reference_inventory)
         teatised.append({
             "tyyp": TOO_NIMETUSED.get(too_kood, too_kood),
             "tyyp_kood": too_kood,
@@ -1114,9 +1327,40 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             "metskond": p.get("metskond") or "",
             "kvartal": p.get("kvartali_nr") or "",
             "eraldis": eraldis_nr,
-            "otsuse_pohjendus": (p.get("otsuse_pohjendus") or "")[:200],
-            "active": bool(kehtiv),
+            "otsuse_pohjendus": (p.get("otsuse_pohjendus") or p.get("otsuse_pojendus") or "")[:200],
+            "otsus_kinnitatud_kp": str(decision_date).replace("Z", "")[:10],
+            "active": active,
+            "arhiiv": bool(p.get("arhiiv")),
+            "parast_inventuuri": after_inventory,
+            "eraldise_seose_meetod": association_method,
+            "inventuuri_seose_pohjus": chronology_unknown_reason,
         })
+
+    if mets_result:
+        post_inventory_notices = [notice for notice in teatised if notice["parast_inventuuri"] is True]
+        unknown_chronology_notices = [
+            notice for notice in teatised
+            if notice.get("inventuuri_seose_pohjus")
+        ]
+        known_post_inventory_volumes = [
+            float(notice["maht"]) for notice in post_inventory_notices if notice.get("maht") is not None
+        ]
+        inventory_summary["inventuurijargsed_teatised"] = _distinct_notice_count(post_inventory_notices)
+        inventory_summary["inventuurijargsed_teatise_read"] = len(post_inventory_notices)
+        inventory_summary["inventuurijargne_kavandatud_maht_m3"] = round(sum(known_post_inventory_volumes), 1)
+        missing_volume_notices = [notice for notice in post_inventory_notices if notice.get("maht") is None]
+        inventory_summary["inventuurijargse_teatise_maht_puudub"] = _distinct_notice_count(missing_volume_notices)
+        inventory_summary["inventuurijargse_teatise_maht_puudub_read"] = len(missing_volume_notices)
+        inventory_summary["inventuuri_seos_teadmata_teatised"] = _distinct_notice_count(unknown_chronology_notices)
+        inventory_summary["inventuurist_hilisemaid_lageraieperioode"] = sum(
+            period["inventuurist_hilisem"] for period in historical_clearcuts
+        )
+        if inventory_summary["staatus"] == "värske" and (
+            post_inventory_notices
+            or unknown_chronology_notices
+            or inventory_summary["inventuurist_hilisemaid_lageraieperioode"]
+        ):
+            inventory_summary["staatus"] = "hoiatus"
 
     kahjustused = []
     for feat in kahjustused_features:
@@ -1178,6 +1422,17 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         }
 
     elapsed = round((time.time() - start) * 1000)
+    teatised_sorted = sorted(
+        teatised,
+        key=lambda notice: notice.get("otsus_kinnitatud_kp") or "",
+        reverse=True,
+    )
+    teatised_response = teatised_sorted[:100]
+    teatised_meta = {
+        "teatisi_kokku": _distinct_notice_count(teatised),
+        "ridu_kokku": len(teatised),
+        "ridu_kuvatud": len(teatised_response),
+    }
 
     return {
         "kataster": kataster_data,
@@ -1188,7 +1443,8 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         "kitsendused": kitsendused,
         "toetused": toetused,
         "riskid": riskid,
-        "teatised": teatised,
+        "teatised": teatised_response,
+        "teatised_meta": teatised_meta,
         "kahjustused": kahjustused,
         "map_layers": map_layers,
         "meta": {
@@ -1307,6 +1563,7 @@ def build_system_prompt(data: dict) -> str:
     toetused = data.get("toetused", [])
     riskid = data.get("riskid", {})
     teatised = data.get("teatised", [])
+    teatised_meta = data.get("teatised_meta", {})
     kahjustused = data.get("kahjustused", [])
 
     # Accept both backend names (pindala_ha, tagavara_y_ha) and simpler
@@ -1328,12 +1585,25 @@ def build_system_prompt(data: dict) -> str:
         lines.append("--- METSA ERALDISED ---")
         lines.append(f"Peapuuliik: {m.get('puuliik', 'N/A')}")
         lines.append(f"Keskmine vanus: {m.get('vanus', 0)} a")
-        tagavara = m.get('tagavara_y_ha') or m.get('tagavara') or 0
-        lines.append(f"Tagavara: {tagavara} m³/ha")
+        tagavara = m.get('elus_tagavara_ha') or m.get('tagavara_y_ha') or m.get('tagavara') or 0
+        lines.append(f"Elus puistutagavara: {tagavara} m³/ha")
         lines.append(f"Boniteet: {m.get('boniteet', 'N/A')}")
         lines.append(f"Keskmine kõrgus: {m.get('korgus', 'N/A')} m")
         lines.append(f"Eraldiste arv: {m.get('eraldiste_arv') or m.get('eraldisi_kokku') or 0}")
         lines.append(f"Kuivendatud: {'jah' if m.get('kuivendatud') else 'ei'}")
+        inventory = m.get("inventuur") or {}
+        if inventory:
+            lines.append(f"Inventuuri andmekvaliteet: {inventory.get('staatus', 'teadmata')}")
+            lines.append(
+                f"Inventeerimise kuupäevad: {inventory.get('vanim_invent_kp') or 'teadmata'}"
+                f" kuni {inventory.get('uusim_invent_kp') or 'teadmata'}"
+            )
+            lines.append(f"Inventuuri maksimaalne vanus: {inventory.get('inventuuri_vanus_max_a', 'teadmata')} a")
+            if inventory.get("inventuurijargsed_teatised"):
+                lines.append(
+                    "Inventuurijärgsed heakskiidetud metsateatised: "
+                    f"{inventory['inventuurijargsed_teatised']} (teatis ei tõenda raie teostamist)"
+                )
 
         koosseis = m.get("liikide_koosseis", [])
         if koosseis:
@@ -1404,20 +1674,41 @@ def build_system_prompt(data: dict) -> str:
                 lines.append(f"  {yrask['detail']}")
         if riskid.get("karuputk"):
             lines.append("Karuputk: leitud")
-        if riskid.get("lageraieala"):
-            lines.append("Hiljutine lageraieala: leitud")
+        for clearcut in riskid.get("ajaloolised_lageraiealad", []):
+            period = (
+                f"{clearcut.get('periood_algus')}–{clearcut.get('periood_lopp')}"
+                if clearcut.get("periood_algus")
+                else f"kuni {clearcut.get('periood_lopp')}"
+            )
+            lines.append(
+                f"Ajalooline lageraie satelliidituvastus: {period}; "
+                "Veeveebi kiht katab ainult aastaid 2011–2016 ega näita praegust ohutegurit"
+            )
 
     if teatised:
         lines.append("")
         lines.append("--- METSATEATISED ---")
-        for t in teatised:
+        if teatised_meta:
+            lines.append(
+                f"Kokku {teatised_meta.get('teatisi_kokku', len(teatised))} teatist, "
+                f"{teatised_meta.get('ridu_kokku', len(teatised))} eraldiseridu"
+            )
+        for t in teatised[:20]:
             aktiivne = "aktiivne" if t.get("active") else "mitteaktiivne"
             rida = f"  {t.get('tyyp', '?')}: {aktiivne}, kehtib kuni {t.get('kehtiv_kuni', 'N/A')}"
-            if t.get("maht"):
-                rida += f", maht {t['maht']} m³"
+            if t.get("otsus_kinnitatud_kp"):
+                rida += f", otsus {t['otsus_kinnitatud_kp']}"
+            if t.get("maht") is not None:
+                rida += f", kavandatud maht {t['maht']} m³"
+            if t.get("parast_inventuuri") is True:
+                rida += ", inventuurist hilisem"
+            elif t.get("parast_inventuuri") is None:
+                rida += ", seos inventuuriga teadmata"
             if t.get("number"):
                 rida += f", number {t['number']}"
             lines.append(rida)
+        if len(teatised) > 20:
+            lines.append(f"  ... ja veel {len(teatised) - 20} kuvatud eraldiseridu")
 
     if kahjustused:
         lines.append("")

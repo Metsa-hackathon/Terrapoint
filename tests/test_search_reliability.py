@@ -481,6 +481,115 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result["meta"]["partial"])
         self.assertTrue(result["meta"]["details_skipped"])
 
+    async def test_historical_clearcut_is_not_health_penalty_and_notice_does_not_reduce_stock(self):
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        kataster = {"number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1}
+        eraldised = [{
+            "id": 1,
+            "pindala_ha": 1,
+            "puuliik_kood": "MA",
+            "puuliik": "mänd",
+            "vanus": 60,
+            "tagavara_y_ha": 200,
+            "boniteedi_kood": 3,
+            "eraldis_nr": 1,
+            "invent_kp": "2020-01-01Z",
+            "registreerimise_kp": "2021-01-01T10:00:00Z",
+        }]
+        clearcut = {"geometry": geometry, "properties": {"periood_a": 2013, "periood_o": 2015}}
+        notice = {"properties": {
+            "teatise_nr": "A",
+            "too_kood": "LR",
+            "otsus": "JAH",
+            "otsus_kinnitatud_kp": "2024-02-10T10:00:00Z",
+            "kehtiv_kuni": "2027-02-09Z",
+            "raiutav_maht": 50,
+            "eraldise_nr": 1,
+            "pindala": 1,
+        }}
+        notice_without_volume = {"properties": {
+            "teatise_nr": "B",
+            "too_kood": "SR",
+            "otsus": "JAH",
+            "otsus_kinnitatud_kp": "2025-02-10T10:00:00Z",
+            "eraldise_nr": 1,
+            "pindala": 1,
+            "arhiiv": True,
+            "otsuse_pojendus": "Arhiivi põhjendus",
+        }}
+        notice_second_row = {"properties": {
+            "teatise_nr": "A",
+            "too_kood": "LR",
+            "otsus": "JAH",
+            "otsus_kinnitatud_kp": "2024-02-10T10:00:00Z",
+            "kehtiv_kuni": "2027-02-09Z",
+            "raiutav_maht": 20,
+            "eraldise_nr": 1,
+            "pindala": 0.5,
+        }}
+        unmatched_notice = {"properties": {
+            "teatise_nr": "C",
+            "too_kood": "LR",
+            "otsus": "JAH",
+            "otsus_kinnitatud_kp": "2025-03-10T10:00:00Z",
+            "raiutav_maht": 30,
+            "eraldise_nr": 2026,
+            "pindala": 0.4,
+        }}
+
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=eraldised)),
+            patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
+            patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({"lageraiealad": [clearcut]}, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[notice, notice_second_row, notice_without_volume, unmatched_notice])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        self.assertEqual(result["riskid"]["terviseindeks"], 98)
+        self.assertEqual(result["riskid"]["ajaloolised_lageraiealad"][0]["periood_lopp"], 2015)
+        self.assertEqual(result["vaartus"]["tagavara_m3"], 200)
+        notices = {notice["number"]: notice for notice in result["teatised"]}
+        self.assertTrue(notices["A"]["parast_inventuuri"])
+        self.assertIsNone(notices["C"]["parast_inventuuri"])
+        self.assertEqual(notices["B"]["otsuse_pohjendus"], "Arhiivi põhjendus")
+        self.assertEqual(result["mets"]["inventuur"]["inventuurijargsed_teatised"], 2)
+        self.assertEqual(result["mets"]["inventuur"]["inventuurijargsed_teatise_read"], 3)
+        self.assertEqual(result["mets"]["inventuur"]["inventuurijargne_kavandatud_maht_m3"], 70)
+        self.assertEqual(result["mets"]["inventuur"]["inventuurijargse_teatise_maht_puudub"], 1)
+        self.assertEqual(result["mets"]["inventuur"]["inventuuri_seos_teadmata_teatised"], 1)
+        self.assertEqual(result["teatised_meta"]["teatisi_kokku"], 3)
+        self.assertEqual(result["teatised_meta"]["ridu_kokku"], 4)
+
+    async def test_partial_notice_layers_preserve_rows_and_mark_search_partial(self):
+        class PartialNotices(list):
+            unavailable_sources = ["metsaregister.teatis_arhiiv"]
+
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        kataster = {"number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1}
+        notices = PartialNotices([{"properties": {"teatise_nr": "A", "too_kood": "LR"}}])
+
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=notices)),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        self.assertEqual(len(result["teatised"]), 1)
+        self.assertTrue(result["meta"]["partial"])
+        self.assertIn("metsaregister.teatis_arhiiv", result["meta"]["unavailable_sources"])
+
 
 if __name__ == "__main__":
     unittest.main()

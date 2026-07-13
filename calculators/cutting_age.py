@@ -25,12 +25,12 @@ seaduslikku raievanust.
 
 Liikide kaupa Tabel 4 väärtused (vastavalt kliimaministeeriumi dokumendi
 veergudele 1A, I, II, III, IV, V):
-  - Mänd (MA), Lehis (LH), Seedermänd (SP): okaspuud, pikk eluiga
+  - Mänd (MA), Lehis (LH), Seedermänd (SD): okaspuud, pikk eluiga
   - Kuusk (KU): okaspuu, tundlikum pinnasele (stab 60-90a)
   - Kask (KS), Vaher (VA): keskmised lehtpuud
   - Haab (HB), Sanglepp (LM), Hall lepp (LV), Remmelgas (RE): kiired
     kasvajad, lühike raievanus (30-60a)
-  - Tamm (TA), Saar (SA), Pöök (PK), Jalakas (JA): kõvad lehtpuud,
+  - Tamm (TA), Saar (SA), Jalakas (JA): kõvad lehtpuud,
     pikk raievanus (90-130a)
 """
 
@@ -39,16 +39,15 @@ veergudele 1A, I, II, III, IV, V):
 # (vastupidiselt vana koodi, mis vähendas). Allikas: Kliimaministeerium
 # uuendusraie dokumendi Tabel 4. WFS kood 6 (Va) = kasutab V väärtust.
 CUTTING_AGE = {
-    # Okaspuud — Mänd (MA), Lehis (LH), Seedermänd (SP) — pikk eluiga
+    # Okaspuud — Mänd (MA), Lehis (LH), Seedermänd (SD) — pikk eluiga
     "MA": {0: 90,  1: 90,  2: 90,  3: 100, 4: 110, 5: 120, 6: 120},
     "LH": {0: 90,  1: 90,  2: 90,  3: 100, 4: 110, 5: 120, 6: 120},
-    "SP": {0: 90,  1: 90,  2: 90,  3: 100, 4: 110, 5: 120, 6: 120},
+    "SD": {0: 90,  1: 90,  2: 90,  3: 100, 4: 110, 5: 120, 6: 120},
     # Kuusk (KU) — tundlikum pinnasele
     "KU": {0: 60,  1: 70,  2: 80,  3: 90,  4: 90,  5: 90,  6: 90},
-    # Kõvad lehtpuud — Tamm (TA), Saar (SA), Pöök (PK), Jalakas (JA)
+    # Kõvad lehtpuud — Tamm (TA), Saar (SA), Jalakas (JA)
     "TA": {0: 90,  1: 90,  2: 100, 3: 110, 4: 120, 5: 130, 6: 130},
     "SA": {0: 90,  1: 90,  2: 100, 3: 110, 4: 120, 5: 130, 6: 130},
-    "PK": {0: 90,  1: 90,  2: 100, 3: 110, 4: 120, 5: 130, 6: 130},
     "JA": {0: 90,  1: 90,  2: 100, 3: 110, 4: 120, 5: 130, 6: 130},
     # Keskmised lehtpuud — Kask (KS), Vaher (VA)
     "KS": {0: 60,  1: 60,  2: 70,  3: 70,  4: 70,  5: 70,  6: 70},
@@ -75,7 +74,14 @@ def cutting_age_indicator(vanus: int, puuliik_kood: str, boniteedi_kood: int) ->
       - status: green/yellow/red
       - label: inimloetav staatus eesti keeles
     """
-    species = CUTTING_AGE.get(puuliik_kood, CUTTING_AGE["MA"])
+    species = CUTTING_AGE.get(puuliik_kood)
+    if species is None:
+        return {
+            "raievanus": None,
+            "ratio": 0,
+            "status": "unknown",
+            "label": "Raievanus pole selle klassifikaatori kirje jaoks määratud",
+        }
     # Tagavara: kui boniteedi_kood on väljaspool 0-6 (nt None või >6),
     # kasutame keskmist boniteeti III (kood 3) — turvaline vaikeväärtus
     # (mitte 60a väärtus vana koodist).

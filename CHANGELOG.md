@@ -6,6 +6,30 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > domain). `terrapoint.vercel.app` on sama projekti alias — push master
 > branchi uuendab mõlemat korraga.
 
+## [Määramata] - 2026-07-13
+
+### Changed
+- **Metsaregistri ametlik puuliikide klassifikaator** — kõik 30 koodi kasutavad
+  nüüd registri üldnimetusi, sealhulgas `KS=kask`, `LM=sanglepp`, `LV=hall lepp`
+  ja `RE=remmelgas`. Varem valesti teise liigina tõlgendatud `SP` ja `PK` on
+  vastavalt sarapuu ja paakspuu.
+- **Inventuuri andmekvaliteet** — metsa juures kuvatakse inventeerimise ja
+  registrikande kuupäevad, 5 aasta värskushoiatus ning 10 aasta tugev hoiatus.
+  Viimane arvestab Metsaseaduse kohast kehtivust registrisse kandmisest.
+- **Metsateatised on ebakindluse signaal, mitte tehtud raie** — aktiivsed ja
+  arhiivsed teatiseread ühendatakse eraldisi kaotamata. Inventuurijärgse loa
+  kavandatud maht kuvatakse, kuid seda ei lahutata tagavarast, sest teatis ei
+  tõenda raie teostamist.
+- **Ajalooline lageraiekiht** — Veeveebi 2011–2016 satelliidituvastused näitavad
+  vaatlusperioodi ja konservatiivset vanust, kuid ei vähenda enam tänast
+  terviseindeksit. Lisatud metsa 5/10 aasta uuendamistähtaja selgitus.
+
+### Fixed
+- **Elus puistutagavara** summeerib Metsaregistri 1. rinde, 2. rinde ja
+  üksikpuude rinde väljad; surnud ja lamapuit jäetakse turumahust välja.
+- **Liikide diagrammi vana olek** eemaldatakse alati, kui järgmise maaüksuse
+  kohta metsaandmed puuduvad.
+
 ## [Määramata] - 2026-07-01
 
 ### Added

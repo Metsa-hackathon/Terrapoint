@@ -610,6 +610,22 @@ a { color: var(--blue-700); text-decoration: none; }
     margin-right: 4px;
 }
 
+.data-quality-alert {
+    display: grid;
+    gap: 5px;
+    margin: 0 0 var(--s-4);
+    padding: 12px 14px;
+    border-left: 3px solid var(--warn);
+    border-radius: var(--r-sm);
+    background: var(--warn-bg);
+    color: var(--ink-3);
+    font-size: 13px;
+    line-height: 1.5;
+}
+.data-quality-alert strong { color: var(--warn); font-size: 13.5px; }
+.data-quality-alert.critical { border-left-color: var(--danger); background: var(--danger-bg); }
+.data-quality-alert.critical strong { color: var(--danger); }
+
 /* Subtle inline links — secondary action with a hairline arrow */
 .muted-link {
     font-size: 14.5px;
@@ -3748,6 +3764,17 @@ footer {
 }
 .eraldised-row .er-nr { font-weight: 600; color: var(--ink-2); }
 .eraldised-row .er-species { font-weight: 500; }
+.eraldised-row .er-inventory,
+.teatised-type span {
+    display: block;
+    margin-top: 2px;
+    color: var(--ink-4);
+    font-size: 10px;
+    font-weight: 400;
+    line-height: 1.25;
+}
+.teatised-type { white-space: normal; line-height: 1.25; }
+.clearcut-period { max-width: 58%; text-align: right; white-space: normal; }
 .eraldised-row .er-value { font-weight: 700; color: var(--ink); font-family: var(--ff-mono); text-align: right; font-size: 0.92em; white-space: nowrap; }
 .teatised-eraldis {
     font-weight: 600;
