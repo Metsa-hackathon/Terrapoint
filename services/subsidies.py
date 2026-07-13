@@ -1,372 +1,628 @@
-from datetime import datetime, date
+import re
+from datetime import date
+
+
+VERIFIED_AT = "2026-07-13"
+CATALOG_VALID_THROUGH = date(2026, 12, 31)
+
+LIKELY = "Tõenäoliselt sobib"
+CHECK = "Vajab kontrolli"
+INELIGIBLE = "Ei sobi teadaolevate andmete põhjal"
 
 
 def _today() -> date:
-    """Dynaamiline kuupäev — uueneb iga kutsungiga, mitte fikseeritud laadimisel."""
     return date.today()
 
 
-def _parse_date(d: str) -> date:
-    """Parse 'DD.MM.YYYY' or 'DD.MM' (assumes current year) to date."""
-    parts = d.strip().split(".")
-    day, month = int(parts[0]), int(parts[1])
-    year = int(parts[2]) if len(parts) > 2 else _today().year
+def _parse_date(value: str) -> date:
+    """Parse only complete DD.MM.YYYY dates; incomplete dates are not evidence."""
+    match = re.fullmatch(r"(\d{2})\.(\d{2})\.(\d{4})", value.strip())
+    if not match:
+        raise ValueError("Taotluskuupäeval peab olema aasta")
+    day, month, year = (int(part) for part in match.groups())
     return date(year, month, day)
 
 
-def _voor_status(voor: str) -> str:
-    """Return 'open', 'closed', or 'upcoming' based on date ranges in voor string."""
-    if not voor or voor in ("Aastaringselt", "Täpsustamisel"):
-        return "open" if voor == "Aastaringselt" else "unknown"
-    import re
-    ranges = re.findall(r"(\d{2}\.\d{2}(?:\.\d{4})?)\s*[-–]\s*(\d{2}\.\d{2}(?:\.\d{4})?)", voor)
-    if not ranges:
-        return "unknown"
+def _application_status(application) -> str:
+    """Return open/upcoming/closed/year_round/awaiting_dates.
+
+    Legacy display strings are accepted only when every parsed date includes a
+    year. This prevents historical or yearless dates becoming a current round.
+    """
+    if isinstance(application, str):
+        value = application.strip()
+        if value == "Aastaringselt":
+            return "year_round"
+        if not value or "täpsustamisel" in value.lower():
+            return "awaiting_dates"
+        ranges = re.findall(
+            r"(\d{2}\.\d{2}(?:\.\d{4})?)\s*[–-]\s*(\d{2}\.\d{2}(?:\.\d{4})?)",
+            value,
+        )
+        if not ranges or any(len(start.split(".")) != 3 or len(end.split(".")) != 3 for start, end in ranges):
+            return "awaiting_dates"
+        periods = [{"start": start, "end": end} for start, end in ranges]
+    else:
+        kind = application.get("type")
+        if kind == "year_round":
+            return "year_round"
+        if kind == "awaiting_dates":
+            return "awaiting_dates"
+        periods = application.get("periods", [])
+
+    if not periods:
+        return "awaiting_dates"
+
     today = _today()
-    for start_s, end_s in ranges:
-        start = _parse_date(start_s)
-        end = _parse_date(end_s)
-        if start <= today <= end:
-            return "open"
-        if today < start:
-            return "upcoming"
+    parsed = [(_parse_date(period["start"]), _parse_date(period["end"])) for period in periods]
+    if any(start <= today <= end for start, end in parsed):
+        return "open"
+    if any(today < start for start, _ in parsed):
+        return "upcoming"
     return "closed"
 
 
-def _voor_badge(voor: str) -> str:
-    """Return a human-readable status badge for the application window."""
-    status = _voor_status(voor)
-    if status == "open":
-        return "Taotlusvoor avatud"
-    elif status == "upcoming":
-        return "Tulemas"
-    elif status == "closed":
-        return "Tähtaeg möödunud"
-    return ""
+def _application_badge(status: str) -> str:
+    return {
+        "open": "Taotlus avatud",
+        "upcoming": "Taotlusvoor tulemas",
+        "closed": "Taotlusvoor lõppenud",
+        "year_round": "Aastaringselt",
+        "awaiting_dates": "Kuupäevad selgumisel",
+    }[status]
+
+
+def _application_period_label(application: dict) -> str:
+    kind = application.get("type")
+    if kind == "year_round":
+        return "Aastaringselt"
+    if kind == "awaiting_dates":
+        return "2026. aasta kuupäevad avaldamata"
+
+    labels = []
+    periods = application.get("periods", [])
+    for index, period in enumerate(periods, start=1):
+        start = period["start"].rsplit(".", 1)[0]
+        end = period["end"]
+        label = f"{start}–{end}"
+        if len(periods) > 1:
+            label = f"{'I' * index} voor {label}"
+        labels.append(label)
+    return "; ".join(labels) if labels else "2026. aasta kuupäevad avaldamata"
+
+
+def _assessment(status, reason, matches=None, match_scope="none", limited=False):
+    return {
+        "status": status,
+        "reason": reason,
+        "matches": matches or [],
+        "match_scope": match_scope,
+        "limited": limited,
+    }
+
+
+def _match(stand, reason, *facts):
+    return {"stand": stand, "reason": reason, "facts": facts}
+
+
+def _number(value):
+    if isinstance(value, bool) or value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _forest_or_stand_data_missing(data):
+    return not data.get("forest_data_complete", False) or not data.get("stand_data_complete", False)
+
+
+def _assess_protection(data):
+    if data.get("natura_2000") or data.get("kaitseala"):
+        return _assessment(
+            LIKELY,
+            "Kinnistul on ametliku kihi järgi looduskaitse või Natura 2000 ruumiline kattuvus. Täpne toetusmäär sõltub piirangu liigist.",
+            match_scope="property",
+        )
+    if not data.get("protection_data_complete", False):
+        return _assessment(
+            CHECK,
+            "Looduskaitse- ja Natura ruumiandmed puuduvad või on osalised.",
+            match_scope="property",
+            limited=True,
+        )
+    return _assessment(
+        INELIGIBLE,
+        "Ametlikes ruumikihtides ei tuvastatud kinnistul selle meetme kaitseala kattuvust.",
+        match_scope="property",
+    )
+
+
+def _assess_vep(data):
+    if data.get("vaariselupaik"):
+        return _assessment(
+            LIKELY,
+            "Kinnistul on tuvastatud EELISesse kantud vääriselupaik; lepingu võimalikkuse kinnitab Keskkonnaamet.",
+            match_scope="property",
+        )
+    if data.get("vep_data_complete", False):
+        return _assessment(
+            INELIGIBLE,
+            "Kontrollitud EELIS andmetes ei tuvastatud kinnistul vääriselupaika.",
+            match_scope="property",
+        )
+    return _assessment(
+        CHECK,
+        "Terrapointi vastus ei sisalda autoriteetset vääriselupaiga kontrolli; küsi kinnitust Keskkonnaametilt.",
+        match_scope="property",
+        limited=True,
+    )
+
+
+def _assess_climate_shaping(data):
+    if _forest_or_stand_data_missing(data):
+        return _assessment(CHECK, "Metsaeraldiste vanuse- või pindalaandmed puuduvad või on osalised.", limited=True)
+    matches = []
+    partial_stands = False
+    for stand in data.get("eraldised", []):
+        age = _number(stand.get("vanus"))
+        area = _number(stand.get("pindala_ha"))
+        if stand.get("eraldis_nr") is None or age is None or area is None or area <= 0:
+            partial_stands = True
+            continue
+        if 11 <= age <= 30:
+            display_age = int(age) if age.is_integer() else age
+            matches.append(_match(
+                stand,
+                f"Eraldise vanus {display_age} a jääb toetuse 11–30 aasta vahemikku.",
+                "vanus",
+            ))
+    hectares = sum(_number(item["stand"].get("pindala_ha")) or 0 for item in matches)
+    if hectares >= 1:
+        return _assessment(
+            LIKELY,
+            f"Vanuse järgi sobivaid eraldisi on {hectares:.2f} ha; ametlik miinimum on 1 ha.",
+            matches,
+            "compartment",
+        )
+    if partial_stands:
+        return _assessment(
+            CHECK,
+            "Vähemalt ühe eraldise number, vanus või pindala puudub või on vigane; 1 ha ja vanuse tingimust ei saa kindlalt kontrollida.",
+            matches,
+            "compartment" if matches else "none",
+            limited=True,
+        )
+    if matches:
+        return _assessment(
+            INELIGIBLE,
+            f"11–30-aastaseid eraldisi on {hectares:.2f} ha, mis jääb alla 1 ha miinimumi.",
+            matches,
+            "compartment",
+        )
+    return _assessment(
+        INELIGIBLE,
+        "Teadaolevate eraldiste hulgas ei ole 11–30-aastast puistut.",
+        match_scope="compartment",
+    )
+
+
+def _assess_establishment(data):
+    if not data.get("forest_data_complete", False):
+        return _assessment(CHECK, "Metsamaa andmed puuduvad või on osalised.", limited=True)
+    return _assessment(
+        CHECK,
+        "Terrapoint ei tea tehtud uuendustöid, kasutatud taimi ega metsaühistu kaudu taotlemise võimalust.",
+    )
+
+
+def _assess_afforestation(data):
+    if not data.get("forest_data_complete", False) or not data.get("pindala_ha"):
+        return _assessment(CHECK, "Kinnistu pindala- või metsamaa andmed puuduvad või on osalised.", limited=True)
+    return _assessment(
+        CHECK,
+        "Sobivus sõltub ametlikust metsastatava maa kaardist ja metsaühistu kaudu taotlemisest; neid andmeid Terrapoint ei tuvasta.",
+    )
+
+
+def _assess_beetle(data):
+    if _forest_or_stand_data_missing(data) or not data.get("spruce_data_complete", False):
+        return _assessment(
+            CHECK,
+            "Kuuse osakaalu või vanuse detail on puudulik; üraskikahjustuse ennetamise vajadus tuleb kohapeal kontrollida.",
+            limited=True,
+        )
+    matches = []
+    partial_stands = False
+    for stand in data.get("eraldised", []):
+        raw_spruce_age = stand.get("kuuse_vanus_max") or (stand.get("vanus") if stand.get("puuliik_kood") == "KU" else 0)
+        spruce_age = _number(raw_spruce_age)
+        area = _number(stand.get("pindala_ha"))
+        if stand.get("eraldis_nr") is None or area is None or area <= 0 or spruce_age is None:
+            partial_stands = True
+            continue
+        if (stand.get("sisaldab_kuuske") or stand.get("puuliik_kood") == "KU") and spruce_age > 30:
+            display_age = int(spruce_age) if spruce_age.is_integer() else spruce_age
+            matches.append(_match(
+                stand,
+                f"Eraldis sisaldab kuuske, mille teadaolev suurim vanus on {display_age} a (>30 a).",
+                "puuliik",
+                "puuliik_kood",
+                "vanus",
+            ))
+    if matches:
+        return _assessment(
+            LIKELY,
+            "Leiti üle 30-aastast kuuske sisaldavaid eraldisi; toetatav töö ja kahjustuse värskus vajavad eraldi tõendamist.",
+            matches,
+            "compartment",
+        )
+    if partial_stands:
+        return _assessment(
+            CHECK,
+            "Vähemalt ühe eraldise kuuse-, vanuse- või pindalaandmed on puudulikud; toetatavaid tegevusi ei saa välistada.",
+            limited=True,
+        )
+    return _assessment(
+        CHECK,
+        "Üle 30-aastast kuuske ei leitud, kuid värske tormikahjustuse likvideerimise toetatavust ei saa nende andmete põhjal välistada.",
+        limited=True,
+    )
+
+
+def _assess_metsameede(data):
+    return _assessment(
+        CHECK,
+        "2026. aasta taotlusvooru kuupäevi ei ole ametlikult avaldatud ning sobivus sõltub kavandatud tegevusest.",
+    )
+
+
+def _assess_inventory(data):
+    if not data.get("forest_data_complete", False):
+        return _assessment(CHECK, "Metsaeraldiste andmed puuduvad või on osalised.", limited=True)
+    stands = [
+        _match(stand, "Metsaregistris olev eraldis võib kuuluda inventeeritava ala hulka.")
+        for stand in data.get("eraldised", [])
+    ]
+    if not stands:
+        return _assessment(
+            CHECK,
+            "Metsaregistris ei ole eraldisi, kuid metsamaa ja inventeerimise vajadus tuleb eraldi kontrollida.",
+            limited=True,
+        )
+    return _assessment(
+        CHECK,
+        "Metsaeraldised on olemas, kuid taotleda saab metsaühistu ning kontrollida tuleb seitsme aasta piirangut ja inventuuri kehtivust.",
+        stands,
+        "compartment",
+    )
+
+
+def _assess_heritage(data):
+    return _assessment(
+        CHECK,
+        "Terrapoint ei tuvasta toetuse ametlikku nimekirja kantud pärandkultuuri objekti ega kavandatud töid.",
+    )
+
+
+def _assess_drainage(data):
+    if _forest_or_stand_data_missing(data):
+        return _assessment(CHECK, "Metsaeraldiste andmed puuduvad või on osalised.", limited=True)
+    matches = [
+        _match(stand, "Eraldise andmetes on kuivenduse tunnus; süsteemi registrikanne ja tööde vajadus tuleb kontrollida.")
+        for stand in data.get("eraldised", [])
+        if stand.get("kuivendatud")
+    ]
+    return _assessment(
+        CHECK,
+        "2026. aasta taotluskuupäevi ei ole avaldatud; toetada saab üksnes registrisse kantud olemasoleva maaparandussüsteemi töid.",
+        matches,
+        "compartment" if matches else "none",
+    )
+
+
+def _assess_association(data):
+    return _assessment(
+        CHECK,
+        "Meede on mõeldud metsaühistule, mitte metsaomaniku otsetaotluseks; uuri oma ühistult, kas tegevus hõlmab sind.",
+    )
 
 
 SUBSIDY_PROGRAMS = [
-    # === Conservation (KIK) ===
     {
+        "id": "looduskaitse-piirangute-huvitis",
         "name": "Looduskaitseliste piirangute hüvitamine",
-        "condition": lambda d: d.get("kaitseala") or d.get("natura_2000"),
-        "reject_reason": lambda d: "Krundil puuduvad looduskaitselised piirangud (Natura 2000 või kaitseala)",
-        "amount": "60–160 €/ha",
-        "asutus": "KIK",
-        "voor": "04.04–30.04.2026",
-        "url": "https://www.eramets.ee/toetused/natura-metsa-toetus/",
-        "voor_url": "https://www.eramets.ee/toetuste_tahtajad/",
-        "description": "Natura 2000 alal kuni 160 €/ha, mujal kaitsealadel 60 €/ha. Hüvitab looduskaitseliste piirangute tõttu saamata jäänud tulu. Taotlus esitada igal aastal uuesti e-PRIAs. Min 0,3 ha.",
         "category": "looduskaitse",
-        # Hõlmab kõiki kinnistu eraldisi kaitsealal/Natura 2000 alal
-        "eraldised_filter": lambda d: d.get("eraldised", []) if (d.get("kaitseala") or d.get("natura_2000")) else [],
-        "eraldised_filter_label": "Kõik kinnistu eraldised kaitsealal või Natura 2000 alal",
+        "amount": "Natura sihtkaitsevööndis kuni 160 €/ha; muudes toetatavates piirangukategooriates kuni 60 €/ha",
+        "application": {"type": "fixed", "periods": [{"start": "04.04.2026", "end": "30.04.2026"}]},
+        "application_channel": "Vana e-PRIA (ligipääs e-PRIA kaudu)",
+        "applicant_scope": "Erametsa omanik või nõuetele vastav kasutusvaldaja",
+        "source_name": "PRIA: Natura 2000 erametsades elurikkuse soodustamise toetus 2026",
+        "source_url": "https://www.pria.ee/toetused/natura-2000-erametsades-elurikkuse-soodustamise-toetus-2026",
+        "source_as_of": "2026-04-04",
+        "description": "Iga-aastane hüvitis Natura 2000 ja muude nõuetele vastavate looduskaitseliste piirangutega erametsale.",
+        "verification_items": ["toetusõigusliku ala kaart ja piirangu kategooria", "vähemalt 0,3 ha nõue", "omandi- või kasutusvalduse õigus", "VEP lepingu puudumine samal alal"],
+        "assess": _assess_protection,
+        "match_label": "Kattuvus on teada kinnistu, mitte eraldise täpsusega",
     },
     {
-        "name": "Vääriselupaiga hooldus",
-        "condition": lambda d: d.get("vaariselupaik"),
-        "reject_reason": lambda d: "Krundil ei tuvastatud vääriselupaika (EELIS andmetel)",
-        "amount": "20a leping, hüvitis arvutatakse individuaalselt",
-        "asutus": "KIK",
-        "voor": "Aastaringselt",
-        "url": "https://www.eramets.ee/toetused/vaariselupaiga-kaitseks-lepingu-solmimine/",
-        "description": "Vääriselupaiga kaitseks 20-aastase lepingu sõlmimine. Sisaldab kaitse-eeskirja koostamist ja hoolduskava. Taotlemine aastaringselt.",
+        "id": "vep-kaitseleping",
+        "name": "Vääriselupaiga kaitseks lepingu sõlmimine",
         "category": "looduskaitse",
-        "eraldised_filter": lambda d: d.get("eraldised", []) if d.get("vaariselupaik") else [],
-        "eraldised_filter_label": "Vääriselupaiga eraldised (tuvastatakse EELIS andmetest)",
+        "amount": "Kasvava metsa väärtuse põhine hüvitis, makstakse 20 aasta jooksul võrdsete aastamaksetena",
+        "application": {"type": "year_round"},
+        "application_channel": "Esmalt Keskkonnaamet; lepingu ja maksed korraldab KIK",
+        "applicant_scope": "Erametsa omanik",
+        "source_name": "Keskkonnaamet: vääriselupaigad",
+        "source_url": "https://www.keskkonnaamet.ee/elusloodus-looduskaitse/metsandus/vaariselupaigad",
+        "source_as_of": "2025-02-17",
+        "description": "Vabatahtlik 20-aastane notariaalne leping väljaspool kaitstavat loodusobjekti asuva EELISesse kantud VEP kaitseks.",
+        "verification_items": ["VEP kanne EELISes", "ala paiknemine väljaspool kaitstavat loodusobjekti", "Keskkonnaameti hinnang", "notariaalse lepingu tingimused"],
+        "assess": _assess_vep,
+        "match_label": "VEP asukohta ei määrata Terrapointis eraldise täpsusega",
     },
     {
-        "name": "Metsakasutuse kitsendustest hüvitis",
-        "condition": lambda d: d.get("kaitseala") or d.get("natura_2000") or d.get("natura_elupaik"),
-        "reject_reason": lambda d: "Krundil puuduvad metsakasutuse kitsendused (kaitseala, Natura 2000 või Natura elupaik)",
-        "amount": "hüvitis arvutatakse kahjude ja kulude alusel",
-        "asutus": "KIK",
-        "voor": "Täpsustamisel",
-        "url": "https://www.kik.ee/et/toetatavad-tegevused",
-        "description": "Metsakasutuse kitsendustest põhjustatud kahjude ja kulude hüvitamine erametsaomanikele. Erinevalt looduskaitse hüvitisest (saamata jäänud tulu), kompenseerib tegelikud kahjud ja kulud.",
-        "category": "looduskaitse",
-        "eraldised_filter": lambda d: d.get("eraldised", []) if (d.get("kaitseala") or d.get("natura_2000") or d.get("natura_elupaik")) else [],
-        "eraldised_filter_label": "Kõik eraldised kitsendustega alal",
-    },
-
-    # === Metsameede (PRIA/KIK) ===
-    {
-        "name": "Metsameede",
-        "condition": lambda d: 10 <= d.get("keskm_vanus", 0) <= 60 and d.get("mets_pindala", 0) >= 0.1,
-        "reject_reason": lambda d: (
-            "Metsa vanus peab olema 10–60 aastat (praegu " + str(d.get("keskm_vanus", 0)) + "a)"
-            if not (10 <= d.get("keskm_vanus", 0) <= 60)
-            else "Metsa pindala peab olema vähemalt 0,1 ha (praegu " + str(round(d.get("mets_pindala", 0), 2)) + " ha)"
-        ),
-        "amount": "kuni 200 €/ha",
-        "asutus": "KIK",
-        "voor": "Täpsustamisel (2025: 16.09–07.10)",
-        "url": "https://www.eramets.ee/toetused/metsameede/",
-        "description": "Hooldusraie kuni 10a puistus, metsakahjustuste ennetamine (männikärsakas, juurepess), loodusõnnetuses kahjustada saanud metsa uuendamine. Elurikkuse nõuded: säilikpuud ja lamapuit.",
+        "id": "kliimakindla-metsa-kujundamine",
+        "name": "Mitmekesise ja kliimakindla metsa kujundamise toetus",
         "category": "metsahooldus",
-        "eraldised_filter": lambda d: [
-            e for e in d.get("eraldised", [])
-            if 10 <= (e.get("vanus") or 0) <= 60
-        ],
-        "eraldised_filter_label": "Eraldised vanusega 10–60 aastat",
+        "amount": "356 €/ha füüsilise isiku või FIE maal; 297 €/ha juriidilise isiku või metsaühistu maal",
+        "application": {"type": "fixed", "periods": [{"start": "07.04.2026", "end": "23.04.2026"}]},
+        "application_channel": "e-PRIA",
+        "applicant_scope": "Erametsa omanik või metsaühistu",
+        "source_name": "Erametsakeskus: metsa kujundamine",
+        "source_url": "https://www.eramets.ee/metsa-kujundamine/",
+        "source_as_of": "2026-04-07",
+        "description": "11–30-aastase puistu hooldusraie mitmeliigilise ja struktuuririkka metsa kujundamiseks.",
+        "verification_items": ["kehtivad inventeerimisandmed", "vähemalt 1 ha ja kuni 30 ha omaniku kohta", "säilikpuude ja lamapuidu nõuded", "töö tegemise ja kulude tõendid"],
+        "assess": _assess_climate_shaping,
+        "match_label": "Eraldised vanusega 11–30 aastat",
     },
     {
-        "name": "Kliimakindla metsa kujundamine",
-        "condition": lambda d: 11 <= d.get("keskm_vanus", 0) <= 30 and d.get("mets_pindala", 0) >= 0.1,
-        "reject_reason": lambda d: (
-            "Metsa vanus peab olema 11–30 aastat (praegu " + str(d.get("keskm_vanus", 0)) + "a)"
-            if not (11 <= d.get("keskm_vanus", 0) <= 30)
-            else "Metsa pindala peab olema vähemalt 0,1 ha"
-        ),
-        "amount": "356 €/ha (eraisik) / 297 €/ha (juriidiline)",
-        "asutus": "KIK",
-        "voor": "07.04–23.04.2026",
-        "url": "https://www.eramets.ee/metsa-kujundamine/",
-        "voor_url": "https://www.eramets.ee/toetuste_tahtajad/",
-        "description": "Hooldusraie 11–30a metsas. Mitmeliigilise ja struktuuririkka metsa kujundamine. Min 1 ha aastas, max 30 ha. Ainult e-PRIA kaudu. Eelarve 1,6M €.",
-        "category": "metsahooldus",
-        "eraldised_filter": lambda d: [
-            e for e in d.get("eraldised", [])
-            if 11 <= (e.get("vanus") or 0) <= 30
-        ],
-        "eraldised_filter_label": "Eraldised vanusega 11–30 aastat",
+        "id": "kliimakindla-metsa-rajamine",
+        "name": "Mitmekesise ja kliimakindla metsa rajamise toetus",
+        "category": "metsastamine",
+        "amount": "Maapinna ettevalmistus 96 €/ha; taimed ja istutamine 400 €/ha; uuenduse hooldus 150 €/ha",
+        "application": {"type": "fixed", "periods": [{"start": "16.06.2026", "end": "02.07.2026"}, {"start": "17.11.2026", "end": "01.12.2026"}]},
+        "application_channel": "Uus e-PRIA, taotlejaks metsaühistu",
+        "applicant_scope": "Metsaühistu oma liikme metsa kohta",
+        "source_name": "Erametsakeskus: mitmekesise ja kliimakindla metsa rajamise toetus",
+        "source_url": "https://www.eramets.ee/toetused/metsa-uuendamise-toetus/",
+        "source_as_of": "2026-06-16",
+        "description": "Metsa uuendamise tööde toetus, mida taotleb vähemalt 200 liikmega metsaühistu pärast tööde tegemist.",
+        "verification_items": ["metsaühistu liikmesus ja taotlemine ühistu kaudu", "töö tegemise aeg ja tõendid", "taimede päritolu ja istutustihedus", "omaniku ettevõtte suuruse piirang"],
+        "assess": _assess_establishment,
+        "match_label": "Tehtud uuendustöid ei saa eraldiseandmetest tuvastada",
     },
-
-    # === Metsastamine (KIK) ===
     {
+        "id": "metsastamine",
         "name": "Metsastamise toetus",
-        "condition": lambda d: d.get("mets_pindala", 0) == 0 and d.get("siht1") != "ELAMUMAA" and d.get("pindala_ha", 0) >= 0.3,
-        "reject_reason": lambda d: (
-            "Krundil on juba metsa (" + str(round(d.get("mets_pindala", 0), 1)) + " ha)"
-            if d.get("mets_pindala", 0) > 0
-            else "Krunt on elamumaa"
-            if d.get("siht1") == "ELAMUMAA"
-            else "Krundi pindala peab olema vähemalt 0,3 ha (praegu " + str(round(d.get("pindala_ha", 0), 2)) + " ha)"
-        ),
-        "amount": "1420 €/ha (rajamine) + 260 €/ha/aasta (hooldus)",
-        "asutus": "KIK",
-        "voor": "16.04–07.05.2026",
-        "url": "https://www.eramets.ee/metsastamine/",
-        "voor_url": "https://www.eramets.ee/toetuste_tahtajad/",
-        "description": "Uue metsa rajamine. Min 0,3 ha, laius vähemalt 15m, max 30 ha omaniku kohta. Ainult metsaühistu kaudu (min 200 liiget). Eelarve 840 000 €.",
         "category": "metsastamine",
-        # Metsastamise toetus: kinnistul ei tohi olla metsa, seega eraldisi pole
-        "eraldised_filter": lambda d: [],
-        "eraldised_filter_label": "Metsastatavale alale (eraldisi hetkel ei ole)",
+        "amount": "Uue metsa rajamine 1420 €/ha; taimede hooldus 260 €/ha aastas",
+        "application": {"type": "fixed", "periods": [{"start": "16.04.2026", "end": "07.05.2026"}]},
+        "application_channel": "e-PRIA, taotlejaks metsaühistu",
+        "applicant_scope": "Metsaühistu liikme maal või omaniku volituse alusel",
+        "source_name": "Riigi Teataja: metsastamise toetus",
+        "source_url": "https://www.riigiteataja.ee/akt/124032026004",
+        "source_as_of": "2026-03-24",
+        "description": "Ametlikule kaardile kantud kasutusest väljas vähemalt 0,3 ha suuruse mittemetsamaa metsastamine.",
+        "verification_items": ["ala kuulumine ametlikule toetatava maa kaardile", "vähemalt 0,3 ha ja 15 m laius", "kuni 30 ha omaniku kohta", "metsaühistu volitus"],
+        "assess": _assess_afforestation,
+        "match_label": "Meede puudutab mittemetsamaad, mitte olemasolevaid metsaeraldisi",
     },
-
-    # === Metsa uuendamine (KIK) ===
     {
-        "name": "Metsa uuendamise toetus",
-        "condition": lambda d: d.get("keskm_vanus", 0) >= d.get("keskm_raievanus", 999) and d.get("mets_pindala", 0) >= 0.1,
-        "reject_reason": lambda d: (
-            "Mets ei ole veel raievanuses (vanus " + str(d.get("keskm_vanus", 0)) + "a, raievanus " + str(d.get("keskm_raievanus", "?")) + "a)"
-            if d.get("keskm_vanus", 0) < d.get("keskm_raievanus", 999)
-            else "Metsa pindala peab olema vähemalt 0,1 ha"
-        ),
-        "amount": "kuni 646 €/ha",
-        "asutus": "KIK",
-        "voor": "I voor 16.06–02.07.2026, II voor 17.11–01.12.2026",
-        "url": "https://www.eramets.ee/toetused/metsa-uuendamise-toetus/",
-        "voor_url": "https://www.eramets.ee/toetuste_tahtajad/metsa-uuendamine/",
-        "description": "Metsa uuendamine pärast raievanust või metsa hukkumist. Ainult metsaühistu kaudu (min 200 liiget). Taimede soetamine, istutamine, maapinna ettevalmistus, hooldus. Eelarve 622 000 €.",
-        "category": "metsastamine",
-        "eraldised_filter": lambda d: [
-            e for e in d.get("eraldised", [])
-            if (e.get("vanus") or 0) >= (e.get("raievanus") or 999)
-        ],
-        "eraldised_filter_label": "Raieküpsed eraldised (vanus ≥ raievanus)",
-    },
-
-    # === Kooreürask (KIK) ===
-    {
-        "name": "Kooreüraski tõrje",
-        "condition": lambda d: d.get("has_kuusk") and d.get("max_kuusk_vanus", 0) > 30,
-        "reject_reason": lambda d: (
-            "Liigiline detail on osaline; teisese kuuse olemasolu vajab kontrolli"
-            if not d.get("spruce_data_complete", True)
-            else "Krundil ei ole üle 30a kuuski"
-        ),
-        "amount": "püünispuud 500 €/üksus, feromoonpüünised 40 €/komplekt, tormikahjustus 500 €/üksus",
-        "asutus": "KIK",
-        "voor": "01.09–15.09.2026",
-        "url": "https://www.eramets.ee/uraskikahjustuste-ennetamine/",
-        "voor_url": "https://www.eramets.ee/toetuste_tahtajad/uraskikahjustuste-ennetamise-toetus/",
-        "description": "Püünispuud, feromoonpüünised ja tormikahjustuste likvideerimine. Kehtivad inventeerimisandmed nõutud. Konsulendi kinnitus tööde kohta vajalik. Eelarve 30 000 €.",
+        "id": "uraskikahjustuste-ennetamine",
+        "name": "Üraskikahjustuste ennetamise toetus",
         "category": "kahjuritõrje",
-        "requires_spruce_details": True,
-        "eraldised_filter": lambda d: [
-            e for e in d.get("eraldised", [])
-            if (e.get("sisaldab_kuuske") or (e.get("puuliik_kood") or "") == "KU")
-            and (e.get("kuuse_vanus_max") or e.get("vanus") or 0) > 30
-        ],
-        "eraldised_filter_label": "Üle 30a vanused kuuse eraldised",
+        "amount": "Püünispuud kuni 500 €/katastriüksus; feromoonpüünise komplekt 40 €; värske tormikahjustuse likvideerimine kuni 500 €/katastriüksus",
+        "application": {"type": "fixed", "periods": [{"start": "01.09.2026", "end": "15.09.2026"}]},
+        "application_channel": "E-post või post KIKile; püünispuude puhul taotleb metsaühistu",
+        "applicant_scope": "Erametsa omanik või metsaühistu, tegevusest sõltuvalt",
+        "source_name": "Erametsakeskus: üraskikahjustuste ennetamine",
+        "source_url": "https://www.eramets.ee/uraskikahjustuste-ennetamine/",
+        "source_as_of": "2026-07-13",
+        "description": "Püünispuude, feromoonpüüniste ja värske tormikahjustuse likvideerimise toetus.",
+        "verification_items": ["kehtivad inventeerimisandmed", "toetatava töö liik ja tähtajaks tegemine", "konsulendi kinnitus", "tormikahjustuse värskus või püüniste nõuded"],
+        "assess": _assess_beetle,
+        "match_label": "Üle 30-aastast kuuske sisaldavad eraldised",
     },
-
-    # === KIK / Inventeerimine ===
     {
-        "name": "Metsa inventeerimise toetus",
-        "condition": lambda d: d.get("mets_pindala", 0) >= 0.1,
-        "reject_reason": lambda d: "Metsa pindala peab olema vähemalt 0,1 ha",
-        "amount": "kuni 10 €/ha",
-        "asutus": "KIK",
-        "voor": "Täpsustamisel",
-        "url": "https://www.eramets.ee/toetused/metsa-inventeerimise-toetus/",
-        "description": "Metsa inventeerimisandmete koostamise toetus. Makstakse üks kord 7 aasta jooksul. Sisaldab metsakava koostamist.",
+        "id": "metsameede-monitoring",
+        "name": "Erametsade kliimamuutustega kohanemise investeeringutoetus (Metsameede)",
+        "category": "metsahooldus",
+        "amount": "2026 määrad ja taotlusvoor vajavad ametlikku kinnitust",
+        "application": {"type": "awaiting_dates"},
+        "application_channel": "e-PRIA viimase ametliku vooru järgi",
+        "applicant_scope": "Metsaomanik, metsaühistu, FIE või nõuetele vastav mikroettevõtja",
+        "source_name": "KIK: Metsameede",
+        "source_url": "https://www.kik.ee/et/toetatavad-tegevused/metsameede",
+        "source_as_of": "2026-07-13",
+        "description": "Jälgimiskanne: ametlikud lehed näitavad viimati 2025. aasta vooru, mitte kinnitatud 2026. aasta taotlusperioodi.",
+        "verification_items": ["2026 taotlusvooru ametlik väljakuulutamine", "toetatav tegevus", "taotleja ja metsamaa nõuded", "tööde ajastus"],
+        "assess": _assess_metsameede,
+        "match_label": "Tegevus ja 2026 tingimused ei ole eraldise sobivuse määramiseks teada",
+    },
+    {
+        "id": "metsa-inventeerimine",
+        "name": "Metsa inventeerimise ja püsimetsanduse metsamajandamiskava koostamise toetus",
         "category": "inventeerimine",
-        "eraldised_filter": lambda d: d.get("eraldised", []),
-        "eraldised_filter_label": "Kõik kinnistu metsaeraldised",
+        "amount": "20 €/ha inventeerimine; 25 €/ha inventeerimine koos püsimetsakavaga",
+        "application": {"type": "fixed", "periods": [{"start": "01.12.2026", "end": "15.12.2026"}]},
+        "application_channel": "Uus e-PRIA, taotlejaks metsaühistu",
+        "applicant_scope": "Vähemalt 200 liikmega metsaühistu liikme metsa kohta",
+        "source_name": "Riigi Teataja: erametsanduse toetuse andmise alused",
+        "source_url": "https://www.riigiteataja.ee/akt/110032026007",
+        "source_as_of": "2026-03-10",
+        "description": "Inventeerimisandmete registrisse kandmise ning soovi korral lageraieta majandamist kirjeldava püsimetsakava toetus.",
+        "verification_items": ["taotlemine metsaühistu kaudu", "inventeerimisandmete registrisse kandmine", "seitsme aasta piirang", "püsimetsakava nõuded 25 €/ha määra jaoks"],
+        "assess": _assess_inventory,
+        "match_label": "Metsaregistris olevad eraldised; lõpliku inventeeritava ala määrab ühistu",
     },
-
-    # === KIK / Maaparandus ===
     {
-        "name": "Maaparandussüsteemi korrastamine",
-        "condition": lambda d: d.get("mets_pindala", 0) >= 0.1,
-        "reject_reason": lambda d: "Metsa pindala peab olema vähemalt 0,1 ha",
-        "amount": "kuni 10 000 €",
-        "asutus": "KIK",
-        "voor": "Täpsustamisel",
-        "url": "https://www.eramets.ee/toetused/metsamaaparandustoode-toetus/",
-        "description": "Drenaažisüsteemide korrastamine, truupide vahetus, kraavide puhastamine. Eesmärk on parandada metsamaa veerežiimi.",
-        "category": "maaparandus",
-        "eraldised_filter": lambda d: [e for e in d.get("eraldised", []) if e.get("kuivendatud")],
-        "eraldised_filter_label": "Kuivendatud eraldised",
-    },
-
-    # === KIK / Pärandkultuur ===
-    {
-        "name": "Pärandkultuuri säilitamine",
-        "condition": lambda d: d.get("mets_pindala", 0) >= 0.1,
-        "reject_reason": lambda d: "Metsa pindala peab olema vähemalt 0,1 ha",
-        "amount": "kuni 2000 €/objekt",
-        "asutus": "KIK",
-        "voor": "16.06–02.07.2026",
-        "url": "https://www.eramets.ee/toetused/parandkultuuri-sailitamise-toetus/",
-        "voor_url": "https://www.eramets.ee/toetuste_tahtajad/parandkultuuri-sailitamise-ja-eksponeerimise-toetus/",
-        "description": "Pärandkultuuri objektide (kiviaiad, vanad puud, ajaloolised paigad) taastamine, hooldamine ja avalikuks kasutamiseks kohandamine. Eelarve 10 000 €.",
+        "id": "parandkultuuri-sailitamine",
+        "name": "Pärandkultuuri säilitamise ja eksponeerimise toetus",
         "category": "kultuur",
-        "eraldised_filter": lambda d: d.get("eraldised", []),
-        "eraldised_filter_label": "Kõik metsaeraldised (pärandkultuuri objektid valitakse eraldi)",
+        "amount": "Kuni 80% abikõlblikust kulust, kuni 2000 €/objekt aastas",
+        "application": {"type": "fixed", "periods": [{"start": "16.06.2026", "end": "02.07.2026"}]},
+        "application_channel": "E-post või post KIKile",
+        "applicant_scope": "Erametsa omanik või metsaühistu",
+        "source_name": "Erametsakeskus: pärandkultuuri säilitamise toetus",
+        "source_url": "https://www.eramets.ee/toetused/parandkultuuri-sailitamise-toetus/",
+        "source_as_of": "2026-06-16",
+        "description": "Erametsamaal asuva ametlikku nimekirja kantud pärandkultuuri objekti säilitamine ja eksponeerimine.",
+        "verification_items": ["objekti kanne ametlikus nimekirjas", "objekti paiknemine erametsamaal", "kavandatud tööde abikõlblikkus", "kuludokumendid ja oma töö arvestus"],
+        "assess": _assess_heritage,
+        "match_label": "Pärandkultuuri objekti asukohta ei saa metsaeraldiste põhjal määrata",
     },
-
-    # === PRIA / Metsaühistu ===
     {
-        "name": "Metsaühistu toetus",
-        "condition": lambda d: d.get("mets_pindala", 0) >= 0.1,
-        "reject_reason": lambda d: "Metsa pindala peab olema vähemalt 0,1 ha",
-        "amount": "kuni 30 000 €",
-        "asutus": "PRIA",
-        "voor": "Täpsustamisel",
-        "url": "https://www.eramets.ee/toetused/uhistutoetus/",
-        "description": "Metsaühistute tegevuse toetamine. Sisaldab liikmetele teenuste osutamist, koolituste korraldamist ja ühiseid metsamajandamise tegevusi.",
+        "id": "maaparandussusteemi-korrastamine",
+        "name": "Maaparandussüsteemi korrastamise toetus",
+        "category": "maaparandus",
+        "amount": "Kuni 10 000 € omaniku kohta; tegevustel ametlikud ühikumäärad",
+        "application": {"type": "awaiting_dates"},
+        "application_channel": "E-post, post või KIKi kontor viimase ametliku vooru järgi",
+        "applicant_scope": "Erametsa omanik või metsaühistu",
+        "source_name": "Erametsakeskus: metsamaaparandustööde toetus",
+        "source_url": "https://www.eramets.ee/toetused/metsamaaparandustoode-toetus/",
+        "source_as_of": "2025-11-03",
+        "description": "Registrisse kantud olemasoleva metsakuivendussüsteemi kraavide, voolunõvade ja truupide korrastamine.",
+        "verification_items": ["maaparandussüsteemi registrikanne", "tööde vastavus toetatavatele tegevustele", "omaniku nõusolekud ja projekt", "2026 taotlusvooru väljakuulutamine"],
+        "assess": _assess_drainage,
+        "match_label": "Kuivenduse tunnusega eraldised; registrikanne vajab kontrolli",
+    },
+    {
+        "id": "vastutustundliku-metsanduse-edendamine",
+        "name": "Vastutustundliku metsanduse edendamise toetus",
         "category": "ühistu",
-        "eraldised_filter": lambda d: d.get("eraldised", []),
-        "eraldised_filter_label": "Kõik metsaühistu liikme metsaeraldised",
+        "amount": "Kuni 100 € nõustatud füüsilisest isikust või FIEst metsaomaniku kohta",
+        "application": {"type": "fixed", "periods": [{"start": "03.03.2026", "end": "17.03.2026"}]},
+        "application_channel": "Uus e-PRIA, taotlejaks metsaühistu",
+        "applicant_scope": "Vähemalt 400 liikmega metsaühistu",
+        "source_name": "Erametsakeskus: ühistutoetus",
+        "source_url": "https://www.eramets.ee/toetused/uhistutoetus/",
+        "source_as_of": "2026-03-03",
+        "description": "Metsaühistu nõustamistegevuse toetus; metsaomanik ei esita otsetaotlust.",
+        "verification_items": ["metsaühistu osalemine meetmes", "omaniku liikmesus või nõustamise tingimused", "nõustamistegevuse dokumenteerimine"],
+        "assess": _assess_association,
+        "match_label": "Ühistu tegevus ei ole seotud ühe konkreetse eraldisega",
     },
-
-    # === KIK / Metssigad ===
     {
-        "name": "Metssigade küttimise toetus",
-        "condition": lambda d: False,  # Only for hunting area holders
-        "reject_reason": lambda d: "Ainult jahipiirkonna kasutusõigust omavatele isikutele (andmed puuduvad)",
-        "amount": "65 €/metssiga",
-        "asutus": "KIK",
-        "voor": "27.10–31.10.2026",
-        "url": "https://www.eramets.ee/metssigade-kuttimise-toetus/",
-        "description": "Aafrika seakatku tõkestamiseks metssigade küttimise toetus. Ainult jahipiirkonna kasutajatele.",
-        "category": "kahjuritõrje",
-        "eraldised_filter": lambda d: [],
-        "eraldised_filter_label": "Metssigade küttimise toetus ei ole seotud eraldistega",
+        "id": "metsauhistu-toetus",
+        "name": "Metsaühistu toetus",
+        "category": "ühistu",
+        "amount": "Kuni 30 € metsaühistu liikme kohta",
+        "application": {"type": "fixed", "periods": [{"start": "03.03.2026", "end": "17.03.2026"}]},
+        "application_channel": "E-post või post KIKile, taotlejaks metsaühistu",
+        "applicant_scope": "Vähemalt 400 liikmega metsaühistu",
+        "source_name": "Erametsakeskus: ühistutoetus",
+        "source_url": "https://www.eramets.ee/toetused/uhistutoetus/",
+        "source_as_of": "2026-03-03",
+        "description": "Metsaühistu tegevuskulude toetus; metsaomanik ei esita otsetaotlust.",
+        "verification_items": ["metsaühistu vastavus liikmete arvu nõudele", "omaniku liikmesus", "ühistu toetatavad tegevused"],
+        "assess": _assess_association,
+        "match_label": "Ühistu tegevus ei ole seotud ühe konkreetse eraldisega",
     },
 ]
 
 
-def _eraldised_to_summary(eraldised: list[dict]) -> list[dict]:
-    """Convert full eraldis records to lightweight summaries for the API response.
-
-    Each summary has: eraldis_nr, puuliik, puuliik_kood, vanus, pindala_ha.
-    Tulemus sorditakse eraldis_nr järgi numbriliselt (tõusev), et UI-s
-    kuvatakse eraldiste numbrid alati järjest: 1, 2, 5, 6, ... mitte 1, 10, 11, 2.
-    Toetab nii int/float kui ka string-kujul numbreid (nt "901").
-    """
-    out = []
-    for e in eraldised or []:
-        nr = e.get("eraldis_nr")
-        if nr is None:
+def _eraldised_to_summary(matches):
+    summaries = []
+    for item in matches:
+        stand = item["stand"]
+        number = stand.get("eraldis_nr")
+        if number is None:
             continue
-        out.append({
-            "eraldis_nr": nr,
-            "puuliik": e.get("puuliik") or e.get("puuliik_kood") or "?",
-            "puuliik_kood": e.get("puuliik_kood") or "",
-            "vanus": e.get("vanus") or 0,
-            "pindala_ha": e.get("pindala_ha") or 0,
-        })
+        summary = {
+            "eraldis_nr": number,
+            "pindala_ha": _number(stand.get("pindala_ha")) or 0,
+            "match_reason": item["reason"],
+        }
+        for fact in item.get("facts", ()):
+            if stand.get(fact) is not None:
+                summary[fact] = stand.get(fact)
+        summaries.append(summary)
 
-    def _sort_key(item: dict):
-        n = item["eraldis_nr"]
-        if isinstance(n, (int, float)):
-            return (0, float(n))
-        # String, mis on parsitav numbrina — käsitle numbrina
+    def sort_key(summary):
         try:
-            return (0, float(str(n)))
-        except (ValueError, TypeError):
-            return (1, str(n))
+            return (0, float(summary["eraldis_nr"]))
+        except (TypeError, ValueError):
+            return (1, str(summary["eraldis_nr"]))
 
-    out.sort(key=_sort_key)
-    return out
+    summaries.sort(key=sort_key)
+    return summaries
 
 
 def check_subsidies(data: dict) -> list[dict]:
     results = []
-    for prog in SUBSIDY_PROGRAMS:
+    catalog_expired = _today() > CATALOG_VALID_THROUGH
+    for program in SUBSIDY_PROGRAMS:
         try:
-            eligible = prog["condition"](data)
-        except Exception:
-            eligible = False
-
-        pohjus = None
-        if not eligible and "reject_reason" in prog:
-            try:
-                pohjus = prog["reject_reason"](data)
-            except Exception:
-                pohjus = "Tingimuste kontroll ebaõnnestus"
-
-        # Eraldistega seotus: millistele konkreetsetele eraldistele toetus
-        # kohaldub (või oleks kohaldatav, kui üldtingimused on täidetud).
-        matched_eraldised = []
-        if "eraldised_filter" in prog:
-            try:
-                matched_eraldised = prog["eraldised_filter"](data) or []
-            except Exception:
-                matched_eraldised = []
-        matched_summary = _eraldised_to_summary(matched_eraldised)
-        matched_ha = round(sum(e.get("pindala_ha", 0) for e in matched_summary), 2)
-
-        voor = prog.get("voor", "")
-        results.append({
-            "nimi": prog["name"],
-            "sobib": eligible,
-            "summa": prog["amount"],
-            "asutus": prog["asutus"],
-            "taotlusvoor": voor,
-            "voor_status": _voor_status(voor),
-            "voor_badge": _voor_badge(voor),
-            "url": prog.get("url"),
-            "voor_url": prog.get("voor_url"),
-            "kirjeldus": prog.get("description"),
-            "pohjus": pohjus,
-            "category": prog.get("category", ""),
-            "eraldised_match": matched_summary,
-            "eraldised_match_count": len(matched_summary),
+            assessment = program["assess"](data)
+        except (TypeError, ValueError, KeyError):
+            assessment = _assessment(
+                CHECK,
+                "Sisendandmete kuju ei võimaldanud tingimusi usaldusväärselt kontrollida.",
+                limited=True,
+            )
+        if catalog_expired:
+            assessment = _assessment(
+                CHECK,
+                "2026. aasta toetuste kataloogi kehtivusaeg on möödunud; tingimused, määrad ja kuupäevad vajavad uut ametlikku kontrolli.",
+                limited=True,
+            )
+        matches = _eraldised_to_summary(assessment["matches"])
+        matched_ha = round(sum(item["pindala_ha"] for item in matches), 2)
+        application_status = "awaiting_dates" if catalog_expired else _application_status(program["application"])
+        application_period = _application_period_label(program["application"])
+        periods = program["application"].get("periods", [])
+        authority = "PRIA" if program["id"] == "looduskaitse-piirangute-huvitis" else "KIK / Keskkonnaamet" if program["id"] == "vep-kaitseleping" else "KIK"
+        result = {
+            "id": program["id"],
+            "name": program["name"],
+            "nimi": program["name"],
+            "eligibility_status": assessment["status"],
+            "eligibility_reason": assessment["reason"],
+            "verification_items": program["verification_items"],
+            "application_status": application_status,
+            "application_period": application_period,
+            "application_periods": periods,
+            "application_channel": program["application_channel"],
+            "amount": program["amount"],
+            "applicant_scope": program["applicant_scope"],
+            "source_name": program["source_name"],
+            "source_url": program["source_url"],
+            "source_as_of": program["source_as_of"],
+            "verified_at": VERIFIED_AT,
+            "authority": authority,
+            "catalog_valid_through": CATALOG_VALID_THROUGH.isoformat(),
+            "disclaimer": "Terrapointi hinnang on esmane sõelumine. Lõpliku otsuse teeb toetuse andja.",
+            "description": program["description"],
+            "category": program["category"],
+            "match_scope": assessment["match_scope"],
+            "eraldised_match": matches,
+            "eraldised_match_count": len(matches),
             "eraldised_match_ha": matched_ha,
-            "eraldised_filter_label": prog.get("eraldised_filter_label", ""),
-            "andmed_piiratud": bool(prog.get("requires_spruce_details") and not data.get("spruce_data_complete", True)),
-        })
+            "eraldised_filter_label": program["match_label"],
+            "andmed_piiratud": assessment["limited"],
+            # Legacy keys retained for the current API consumer.
+            "sobib": assessment["status"] == LIKELY,
+            "pohjus": assessment["reason"],
+            "summa": program["amount"],
+            "asutus": authority,
+            "taotlusvoor": application_period,
+            "voor_status": {"year_round": "open", "awaiting_dates": "unknown"}.get(application_status, application_status),
+            "voor_badge": _application_badge(application_status),
+            "url": program["source_url"],
+            "voor_url": program["source_url"],
+            "kirjeldus": program["description"],
+        }
+        results.append(result)
 
-    # Sort: eligible first (by voor_status: open > upcoming > other), then ineligible
-    status_order = {"open": 0, "upcoming": 1, "unknown": 2, "closed": 3}
-    results.sort(key=lambda r: (
-        0 if r["sobib"] else 1,
-        status_order.get(r["voor_status"], 2),
+    eligibility_order = {LIKELY: 0, CHECK: 1, INELIGIBLE: 2}
+    application_order = {"open": 0, "year_round": 1, "upcoming": 2, "awaiting_dates": 3, "closed": 4}
+    results.sort(key=lambda item: (
+        eligibility_order[item["eligibility_status"]],
+        application_order[item["application_status"]],
+        item["name"],
     ))
     return results

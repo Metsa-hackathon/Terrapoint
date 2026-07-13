@@ -173,6 +173,8 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result["meta"]["partial"])
         self.assertIn("metsaregister.eraldised", result["meta"]["unavailable_sources"])
         self.assertIsNone(result["mets"])
+        climate = next(item for item in result["toetused"] if item["id"] == "kliimakindla-metsa-kujundamine")
+        self.assertEqual(climate["eligibility_status"], "Vajab kontrolli")
 
     async def test_slow_primary_source_degrades_to_partial_data_within_budget(self):
         kataster = {
@@ -263,6 +265,8 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result["meta"]["partial"])
         self.assertEqual(result["meta"]["truncated_layers"], sorted(truncated_layers))
         self.assertEqual(result["meta"]["unavailable_sources"], [])
+        protection = next(item for item in result["toetused"] if item["id"] == "looduskaitse-piirangute-huvitis")
+        self.assertEqual(protection["eligibility_status"], "Vajab kontrolli")
 
     async def test_layer_failure_still_reports_partial(self):
         # Reaalne WFS katke (vigane kiht) peab jääma osaliseks — see on
@@ -288,6 +292,8 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result["meta"]["partial"])
         self.assertIn("layers.kaitsealad", result["meta"]["unavailable_sources"])
         self.assertEqual(result["meta"]["truncated_layers"], [])
+        protection = next(item for item in result["toetused"] if item["id"] == "looduskaitse-piirangute-huvitis")
+        self.assertEqual(protection["eligibility_status"], "Vajab kontrolli")
 
     async def test_large_forest_fetches_element_data_not_just_peapuuliik(self):
         # Suure metsaga (>30 eraldist) peab liikide koosseis baseeruma

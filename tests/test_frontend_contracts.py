@@ -62,7 +62,8 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("must-revalidate", cache_control)
 
     def test_changed_stylesheet_busts_the_previous_immutable_url(self):
-        self.assertIn('/static/css/style.css?r=jkl105', INDEX_HTML)
+        self.assertIn('/static/css/style.css?r=jkl106', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl105', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl104', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl103', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl102', INDEX_HTML)
@@ -151,6 +152,51 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("https://erametsaliit.ee/wp-content/uploads/2026/05/puiduhinnad-2026-i-kv.pdf", API_PY)
         self.assertIn("https://maaruum.ee/maakataster-ja-maa-hindamine/kinnisvaratehingud/kinnisvaratehingute-statistika", API_PY)
         self.assertIn("https://keskkonnaagentuur.ee/node/2695", API_PY)
+
+    def test_subsidies_render_auditable_status_source_and_compartment_reasons(self):
+        render = re.search(r'function renderToetused\(data\).*?\n    }', INDEX_HTML, re.DOTALL)
+        self.assertIsNotNone(render)
+        rendered = render.group(0)
+
+        for contract in (
+            "eligibility_status",
+            "eligibility_reason",
+            "application_status",
+            "application_channel",
+            "verification_items",
+            "source_name",
+            "source_url",
+            "verified_at",
+            "match_reason",
+        ):
+            self.assertIn(contract, rendered)
+        for label in (
+            "Tõenäoliselt sobib",
+            "Vajab kontrolli",
+            "Ei sobi teadaolevate andmete põhjal",
+            "Lõpliku otsuse teeb toetuse andja",
+        ):
+            self.assertIn(label, rendered)
+        self.assertIn('target="_blank" rel="noopener"', rendered)
+        self.assertIn("toetus-eligibility-badge", STYLE_CSS)
+        self.assertIn("toetus-verification-list", STYLE_CSS)
+        self.assertIn("t.disclaimer", rendered)
+        self.assertIn("toetus-more-matches", rendered)
+        self.assertIn("t.eligibility_status || (t.sobib", rendered)
+        self.assertIn("t.application_status || legacyApplicationStatus", rendered)
+
+    def test_subsidy_counts_have_explicit_contrast_and_mobile_avoids_nested_scroll(self):
+        self.assertIn(".toetus-group-heading > span { background: var(--success); color: #fff; }", STYLE_CSS)
+        self.assertIn(".toetus-group-check > span { background: var(--warn); color: #fff; }", STYLE_CSS)
+        self.assertIn(".toetus-details-count { background: var(--ink-5); color: #fff; }", STYLE_CSS)
+        self.assertIn(".toetus-list-scroll { max-height: none; overflow-y: visible; }", STYLE_CSS)
+
+    def test_subsidy_inputs_preserve_source_completeness(self):
+        self.assertIn('"forest_data_complete": "metsaregister.eraldised" not in unavailable_sources', API_PY)
+        self.assertIn('"stand_data_complete": stand_data_complete', API_PY)
+        self.assertIn('"protection_data_complete": protection_data_complete', API_PY)
+        self.assertIn('"vep_data_complete": False', API_PY)
+        self.assertIn('layers_data.get("katsealad", [])', API_PY)
 
     def test_registry_dates_are_validated_before_formatting(self):
         self.assertIn("if (!match) return '—';", INDEX_HTML)

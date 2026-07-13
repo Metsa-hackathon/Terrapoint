@@ -1185,7 +1185,16 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     kataster_data["mets_pindala_ha"] = mets_pindala_ha
 
     natura_2000 = bool(natura_features)
-    kaitseala_features = layers_data.get("kaitsealad", [])
+    kaitseala_features = layers_data.get("kaitsealad", []) + layers_data.get("katsealad", [])
+    protection_sources = {
+        "metsaregister.natura_2000",
+        "layers.kaitsealad",
+        "layers.katsealad",
+    }
+    protection_data_complete = (
+        not any(source in protection_sources for source in unavailable_sources)
+        and not any(layer in {"kaitsealad", "katsealad"} for layer in truncated_layers)
+    )
     # A protected area is not necessarily a protected habitat. We do not have
     # an authoritative VEP source in this response, so never infer one.
     vaariselupaik = False
@@ -1200,9 +1209,8 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             "eraldis_nr": stand.get("eraldis_nr"),
             "puuliik": stand.get("puuliik"),
             "puuliik_kood": stand.get("puuliik_kood"),
-            "vanus": stand.get("vanus") or 0,
-            "pindala_ha": stand.get("pindala_ha") or 0,
-            "raievanus": stand.get("raievanus"),
+            "vanus": stand.get("vanus"),
+            "pindala_ha": stand.get("pindala_ha"),
             "kuivendatud": bool(stand.get("kuivendatud", False)),
         }
         stand_spruce = spruce_context(
@@ -1213,35 +1221,29 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         stand_copy["kuuse_vanus_max"] = stand_spruce["max_spruce_age"]
         if stand_copy["eraldis_nr"] is not None:
             subsidy_stands.append(stand_copy)
-    _raievanus_area = sum((e.get("pindala_ha") or 0) for e in eraldised)
-    keskm_raievanus = int(round(sum((e.get("raievanus") or 0) * (e.get("pindala_ha") or 0) for e in eraldised) / _raievanus_area)) if _raievanus_area else None
-
+    stand_data_complete = (
+        "metsaregister.eraldised" not in unavailable_sources
+        and all(
+            stand.get("eraldis_nr") is not None
+            and stand.get("vanus") is not None
+            and stand.get("pindala_ha") is not None
+            for stand in eraldised
+        )
+    )
     subsidy_data = {
+        "forest_data_complete": "metsaregister.eraldised" not in unavailable_sources,
+        "stand_data_complete": stand_data_complete,
+        "protection_data_complete": protection_data_complete,
+        "vep_data_complete": False,
         "natura_2000": natura_2000,
         "vaariselupaik": vaariselupaik,
-        "keskm_vanus": int(avg_vanus) if eraldised else 0,
-        "peapuuliik_kood": puuliik if eraldised else None,
-        "keskm_raievanus": keskm_raievanus,
-        "mets_pindala": mets_pindala_ha,
-        "siht1": kataster_data.get("sihtotstarve", ""),
         "kaitseala": bool(kaitseala_features),
         "pindala_ha": kataster_data.get("pindala_ha", 0),
-        "has_kuusk": has_kuusk,
-        "max_kuusk_vanus": max_kuusk_vanus,
         "spruce_data_complete": (
             not skip_details
             and not sampled_eraldised
             and "metsaregister.eraldis_element" not in unavailable_sources
         ),
-        "sood": bool(layers_data.get("sood")),
-        "natura_elupaik": bool(layers_data.get("natura_elupaik")),
-        "karuputk": bool(layers_data.get("karuputk")),
-        "yrask_tsoon": bool(yrask_features),
-        # Eraldiste nimekiri: subsidies.py kasutab seda, et näidata
-        # iga toetuse juures, millistele konkreetsetele eraldistele toetus
-        # kohaldub. Edastame ainult vajalikud väljad (eraldis_nr, puuliik,
-        # puuliik_kood, vanus, pindala_ha, raievanus, kuivendatud), et
-        # vastuse maht püsiks väike.
         "eraldised": subsidy_stands,
     }
     toetused = check_subsidies(subsidy_data)
@@ -1762,13 +1764,46 @@ def build_system_prompt(data: dict) -> str:
             lines.append(f"  {kit.get('tyyp','?')}")
 
     if toetused:
-        sobivad = [t for t in toetused if t.get("sobib")]
-        if sobivad:
-            lines.append("")
-            lines.append("--- SOBIVAD TOETUSED ---")
-            for t in sobivad[:5]:
-                summa_str = f", {t.get('summa','')} EUR" if t.get('summa') else ""
-                lines.append(f"  {t.get('nimi','?')}{summa_str}")
+        lines.append("")
+        lines.append("--- METSATOETUSTE HINNANG ---")
+        for t in toetused:
+            lines.append(f"  {t.get('name', t.get('nimi', '?'))}: {t.get('eligibility_status', 'Vajab kontrolli')}")
+            if t.get("eligibility_reason"):
+                lines.append(f"    Põhjus: {t['eligibility_reason']}")
+            lines.append(
+                f"    Taotlus: {t.get('application_status', 'teadmata')}; "
+                f"{t.get('application_period', 'kuupäevad teadmata')}; "
+                f"kanal {t.get('application_channel', 'teadmata')}"
+            )
+            if t.get("amount"):
+                lines.append(f"    Määr: {t['amount']}")
+            verification_items = t.get("verification_items") or []
+            if verification_items:
+                lines.append(f"    Kontrollida: {'; '.join(str(item) for item in verification_items)}")
+            matches = t.get("eraldised_match") or []
+            if matches:
+                match_count = t.get("eraldised_match_count", len(matches))
+                lines.append(
+                    f"    Eraldised: {match_count} tk, {t.get('eraldised_match_ha', 0)} ha, "
+                    f"ulatus {t.get('match_scope', 'teadmata')}"
+                )
+                match_text = "; ".join(
+                    f"eraldis {match.get('eraldis_nr', '?')} ({match.get('pindala_ha', 0)} ha): {match.get('match_reason', '')}"
+                    for match in matches[:5]
+                )
+                lines.append(f"    Seotud eraldised: {match_text}")
+                if match_count > 5:
+                    lines.append(f"    Näidatud 5/{match_count} eraldist; täielik nimekiri on API vastuses.")
+            if t.get("source_url"):
+                lines.append(
+                    f"    Allikas: {t.get('source_name', 'ametlik allikas')} "
+                    f"{t['source_url']} (allika seis {t.get('source_as_of', 'teadmata')}; "
+                    f"kontrollitud {t.get('verified_at', 'teadmata')}; "
+                    f"kataloog kehtib kuni {t.get('catalog_valid_through', 'teadmata')})"
+                )
+        disclaimer = toetused[0].get("disclaimer")
+        if disclaimer:
+            lines.append(disclaimer)
 
     raie = data.get("raie", {})
     if raie:

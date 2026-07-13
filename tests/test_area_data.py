@@ -129,6 +129,63 @@ class AreaDataTests(unittest.TestCase):
         self.assertIn("Keskmine hind: 13.1 EUR/m³", prompt)
         self.assertNotIn("väärtus 7800 EUR", prompt)
 
+    def test_ai_prompt_includes_all_subsidy_states_and_audit_fields(self):
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 2},
+            "toetused": [
+                {
+                    "name": "Inventeerimise toetus",
+                    "eligibility_status": "Vajab kontrolli",
+                    "eligibility_reason": "Seitsme aasta piirang vajab kontrolli.",
+                    "application_status": "upcoming",
+                    "application_period": "01.12–15.12.2026",
+                    "application_channel": "e-PRIA",
+                    "amount": "20 €/ha",
+                    "verification_items": ["metsaühistu liikmesus"],
+                    "source_name": "Riigi Teataja",
+                    "source_url": "https://www.riigiteataja.ee/akt/110032026007",
+                    "verified_at": "2026-07-13",
+                    "source_as_of": "2026-03-10",
+                    "catalog_valid_through": "2026-12-31",
+                    "disclaimer": "Lõpliku otsuse teeb toetuse andja.",
+                    "match_scope": "compartment",
+                    "eraldised_match_count": 6,
+                    "eraldised_match_ha": 4.2,
+                    "eraldised_match": [
+                        {"eraldis_nr": nr, "pindala_ha": 0.7, "match_reason": "Metsaregistri eraldis."}
+                        for nr in range(1, 7)
+                    ],
+                },
+                {
+                    "name": "Looduskaitse hüvitis",
+                    "eligibility_status": "Ei sobi teadaolevate andmete põhjal",
+                    "eligibility_reason": "Kattuvust ei leitud.",
+                    "application_status": "closed",
+                    "application_period": "04.04–30.04.2026",
+                    "application_channel": "e-PRIA",
+                    "amount": "kuni 160 €/ha",
+                    "verification_items": ["ametlik kaart"],
+                    "source_name": "PRIA",
+                    "source_url": "https://www.pria.ee/toetused/example",
+                    "verified_at": "2026-07-13",
+                    "disclaimer": "Lõpliku otsuse teeb toetuse andja.",
+                },
+            ],
+        })
+
+        self.assertIn("--- METSATOETUSTE HINNANG ---", prompt)
+        self.assertIn("Inventeerimise toetus: Vajab kontrolli", prompt)
+        self.assertIn("Looduskaitse hüvitis: Ei sobi teadaolevate andmete põhjal", prompt)
+        self.assertIn("Seitsme aasta piirang vajab kontrolli.", prompt)
+        self.assertIn("01.12–15.12.2026", prompt)
+        self.assertIn("metsaühistu liikmesus", prompt)
+        self.assertIn("https://www.riigiteataja.ee/akt/110032026007", prompt)
+        self.assertIn("Eraldised: 6 tk, 4.2 ha, ulatus compartment", prompt)
+        self.assertIn("Näidatud 5/6 eraldist", prompt)
+        self.assertIn("allika seis 2026-03-10", prompt)
+        self.assertIn("kataloog kehtib kuni 2026-12-31", prompt)
+        self.assertIn("Lõpliku otsuse teeb toetuse andja.", prompt)
+
 
 if __name__ == "__main__":
     unittest.main()

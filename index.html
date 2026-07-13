@@ -64,7 +64,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl033">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl105">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl106">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -2949,8 +2949,31 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         var el = document.getElementById('toetused-info');
         if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Toetusi ei leitud</p>'; return; }
 
-        var eligible = data.filter(function(t) { return t.sobib; });
-        var ineligible = data.filter(function(t) { return !t.sobib; });
+        // Frontend and VPS backend may deploy at different times. Normalize the
+        // previous payload so subsidies remain visible during a rolling deploy.
+        data = data.map(function(t) {
+            var eligibilityStatus = t.eligibility_status || (t.sobib
+                ? 'Tõenäoliselt sobib'
+                : (t.andmed_piiratud ? 'Vajab kontrolli' : 'Ei sobi teadaolevate andmete põhjal'));
+            var legacyApplicationStatus = t.voor_status === 'unknown'
+                ? 'awaiting_dates'
+                : t.voor_status;
+            return Object.assign({}, t, {
+                eligibility_status: eligibilityStatus,
+                eligibility_reason: t.eligibility_reason || t.pohjus || 'Ametlikud tingimused vajavad kontrolli.',
+                application_status: t.application_status || legacyApplicationStatus || 'awaiting_dates',
+                application_period: t.application_period || t.taotlusvoor || 'Kuupäevad selgumisel',
+                application_channel: t.application_channel || 'Vaata ametlikku allikat',
+                source_name: t.source_name || t.asutus || 'Ametlik allikas',
+                source_url: t.source_url || t.url,
+                verification_items: t.verification_items || ['Kontrolli meetme kehtivaid tingimusi ametlikust allikast.'],
+                disclaimer: t.disclaimer || 'Terrapointi hinnang on esmane sõelumine. Lõpliku otsuse teeb toetuse andja.'
+            });
+        });
+
+        var likely = data.filter(function(t) { return t.eligibility_status === 'Tõenäoliselt sobib'; });
+        var check = data.filter(function(t) { return t.eligibility_status === 'Vajab kontrolli'; });
+        var ineligible = data.filter(function(t) { return t.eligibility_status === 'Ei sobi teadaolevate andmete põhjal'; });
 
         var categoryNames = {
             'looduskaitse': 'Looduskaitse', 'metsahooldus': 'Metsahooldus', 'metsastamine': 'Metsastamine',
@@ -2958,119 +2981,123 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             'kultuur': 'Pärandkultuur', 'ühistu': 'Ühistu'
         };
 
-        function badgeClass(status) {
+        function applicationBadgeClass(status) {
             if (status === 'open') return 'toetus-badge toetus-badge-open';
             if (status === 'upcoming') return 'toetus-badge toetus-badge-upcoming';
+            if (status === 'year_round') return 'toetus-badge toetus-badge-year-round';
+            if (status === 'awaiting_dates') return 'toetus-badge toetus-badge-awaiting';
             if (status === 'closed') return 'toetus-badge toetus-badge-closed';
-            return 'toetus-badge toetus-badge-closed';
+            return 'toetus-badge toetus-badge-awaiting';
         }
-        function badgeLabel(t) {
+        function applicationBadgeLabel(t) {
             if (t.voor_badge) return t.voor_badge;
-            if (t.voor_status === 'open') return 'Avatud';
-            if (t.voor_status === 'upcoming') return 'Tulemas';
-            if (t.voor_status === 'closed') return 'Lõppenud';
-            return '';
+            if (t.application_status === 'open') return 'Taotlus avatud';
+            if (t.application_status === 'upcoming') return 'Taotlusvoor tulemas';
+            if (t.application_status === 'closed') return 'Taotlusvoor lõppenud';
+            if (t.application_status === 'year_round') return 'Aastaringselt';
+            return 'Kuupäevad selgumisel';
         }
-        function amountItems(summa) {
-            if (!summa) return [];
-            if (summa.indexOf(',') > -1) {
-                return summa.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
-            }
-            return [summa];
+        function eligibilityClass(status) {
+            if (status === 'Tõenäoliselt sobib') return 'likely';
+            if (status === 'Vajab kontrolli') return 'check';
+            return 'ineligible';
         }
-        function renderCard(t, isEligible) {
-            var link = t.url || 'https://www.eramets.ee/toetused/';
-            var badge = badgeLabel(t);
+        function renderMatchRow(e) {
+            var html = '<div class="toetus-eraldis-row">';
+            html += '<div class="toetus-eraldis-heading">Eraldis ' + escHtml(String(e.eraldis_nr));
+            if (e.pindala_ha) html += ' · ' + formatNum(e.pindala_ha, 2) + ' ha';
+            html += '</div><div class="toetus-eraldis-reason">' + escHtml(e.match_reason) + '</div></div>';
+            return html;
+        }
+        function renderCard(t) {
+            var state = eligibilityClass(t.eligibility_status);
+            var link = t.source_url || t.url || 'https://www.eramets.ee/toetused/';
+            var applicationBadge = applicationBadgeLabel(t);
             var catName = categoryNames[t.category] || t.category;
-            var cls = isEligible ? 'toetus-card toetus-eligible' : 'toetus-card toetus-ineligible';
-            var items = amountItems(t.summa);
+            var cls = 'toetus-card toetus-' + state;
             var matchedEraldised = t.eraldised_match || [];
-            var matchedCount = t.eraldised_match_count || 0;
             var matchedHa = t.eraldised_match_ha || 0;
             var filterLabel = t.eraldised_filter_label || '';
+            var verificationItems = t.verification_items || [];
 
-            var html = '<div class="' + cls + '">';
-            // Top row: title (left) + status badge (right)
+            var html = '<article class="' + cls + '">';
             html += '<div class="toetus-top">';
-            html += '<div class="toetus-title">' + escHtml(t.nimi) + '</div>';
-            if (badge) html += '<span class="' + badgeClass(t.voor_status) + '">' + escHtml(badge) + '</span>';
+            html += '<div><div class="toetus-title">' + escHtml(t.name || t.nimi) + '</div>';
+            html += '<div class="toetus-cat">' + escHtml(catName) + (t.applicant_scope ? ' · ' + escHtml(t.applicant_scope) : '') + '</div></div>';
+            html += '<div class="toetus-badges">';
+            html += '<span class="toetus-eligibility-badge toetus-eligibility-' + state + '">' + escHtml(t.eligibility_status) + '</span>';
+            html += '<span class="' + applicationBadgeClass(t.application_status) + '">' + escHtml(applicationBadge) + '</span>';
             html += '</div>';
-            // Category meta
-            html += '<div class="toetus-cat">' + escHtml(catName) + (t.asutus ? ' · ' + escHtml(t.asutus) : '') + '</div>';
-            // Description
-            if (t.kirjeldus) html += '<p class="toetus-desc">' + escHtml(t.kirjeldus) + '</p>';
-            // Amount pill block
-            if (items.length) {
-                html += '<div class="toetus-amount-block">';
-                html += '<div class="toetus-amount-label">Toetuse suurus</div>';
-                html += '<div class="toetus-amount-pills">';
-                items.forEach(function(s) {
-                    html += '<span class="toetus-amount-pill' + (isEligible ? ' eligible' : '') + '">' + escHtml(s) + '</span>';
-                });
-                html += '</div></div>';
-            }
-            // Sobivate eraldiste plokk — näitab, millistele konkreetsetele
-            // eraldistele toetust saab taotleda. Kuvatakse ainult siis kui
-            // toetus üldtingimustele vastab ja vähemalt üks eraldis sobib.
-            if (isEligible && matchedEraldised.length > 0) {
+            html += '</div>';
+            if (t.description || t.kirjeldus) html += '<p class="toetus-desc">' + escHtml(t.description || t.kirjeldus) + '</p>';
+            html += '<div class="toetus-reason"><strong>Hinnangu põhjus</strong><span>' + escHtml(t.eligibility_reason) + '</span></div>';
+
+            html += '<dl class="toetus-facts">';
+            html += '<div><dt>Toetuse määr</dt><dd>' + escHtml(t.amount || t.summa || 'Vaata ametlikke tingimusi') + '</dd></div>';
+            html += '<div><dt>Taotlusperiood</dt><dd>' + escHtml(t.application_period || t.taotlusvoor || 'Kuupäevad selgumisel') + '</dd></div>';
+            html += '<div><dt>Taotluskanal</dt><dd>' + escHtml(t.application_channel || 'Vaata ametlikku allikat') + '</dd></div>';
+            html += '</dl>';
+
+            if (matchedEraldised.length > 0) {
                 html += '<div class="toetus-eraldised-block">';
-                html += '<div class="toetus-eraldised-label">Sobib eraldistele</div>';
+                html += '<div class="toetus-eraldised-label">Andmetega sobituvad eraldised</div>';
                 html += '<div class="toetus-eraldised-list">';
-                matchedEraldised.forEach(function(e) {
-                    var nr = e.eraldis_nr;
-                    var sp = e.puuliik || '';
-                    var tooltip = 'Eraldis ' + nr + (sp ? ' · ' + sp : '');
-                    if (e.vanus) tooltip += ' · ' + e.vanus + ' a';
-                    if (e.pindala_ha) tooltip += ' · ' + formatNum(e.pindala_ha, 2) + ' ha';
-                    html += '<span class="toetus-eraldised-chip" title="' + escHtml(tooltip) + '">'
-                          + escHtml(String(nr))
-                          + '</span>';
-                });
+                matchedEraldised.slice(0, 5).forEach(function(e) { html += renderMatchRow(e); });
                 html += '</div>';
+                if (matchedEraldised.length > 5) {
+                    html += '<details class="toetus-more-matches"><summary>Näita veel ' + (matchedEraldised.length - 5) + ' eraldist</summary><div class="toetus-eraldised-list">';
+                    matchedEraldised.slice(5).forEach(function(e) { html += renderMatchRow(e); });
+                    html += '</div></details>';
+                }
                 html += '<div class="toetus-eraldised-meta">';
-                if (matchedHa > 0) {
-                    html += '<span class="toetus-eraldised-ha">' + formatNum(matchedHa, 2) + ' ha kokku</span>';
-                }
-                if (filterLabel) {
-                    html += '<span class="toetus-eraldised-filter"> · ' + escHtml(filterLabel) + '</span>';
-                }
+                if (matchedHa > 0) html += '<span class="toetus-eraldised-ha">' + formatNum(matchedHa, 2) + ' ha kokku</span>';
+                if (filterLabel) html += '<span class="toetus-eraldised-filter">' + escHtml(filterLabel) + '</span>';
                 html += '</div>';
                 html += '</div>';
+            } else if (t.match_scope === 'property' && filterLabel) {
+                html += '<p class="toetus-match-note">' + escHtml(filterLabel) + '</p>';
             }
-            // Ineligible reason box
-            if (!isEligible && t.pohjus) {
-                html += '<div class="toetus-reason"><span class="toetus-reason-icon">' + (t.andmed_piiratud ? '!' : '✗') + '</span><div><strong>' + (t.andmed_piiratud ? 'Andmed vajavad kontrolli' : 'Ei vasta tingimustele') + '</strong><br>' + escHtml(t.pohjus) + '</div></div>';
+
+            if (verificationItems.length) {
+                html += '<details class="toetus-verification"><summary>Kontrolli enne taotlemist</summary><ul class="toetus-verification-list">';
+                verificationItems.forEach(function(item) { html += '<li>' + escHtml(item) + '</li>'; });
+                html += '</ul></details>';
             }
-            // Footer: taotlusvoor + CTA
+
             html += '<div class="toetus-footer">';
-            if (t.taotlusvoor) html += '<div class="toetus-voor"><span class="toetus-voor-label">Taotlusvoor</span><span class="toetus-voor-val">' + escHtml(t.taotlusvoor) + '</span></div>';
-            html += '<a href="' + link + '" target="_blank" rel="noopener" class="toetus-cta">'
-                  + (isEligible ? 'Kandideeri eramets.ee lehel' : 'Vaata tingimusi')
-                  + ' <span class="toetus-cta-arrow">→</span></a>';
-            html += '</div></div>';
+            html += '<div class="toetus-source-meta"><span>Allika seis: ' + escHtml(t.source_as_of || 'teadmata') + '</span><span>Kontrollitud: ' + escHtml(t.verified_at || 'teadmata') + '</span></div>';
+            html += '<a href="' + escHtml(link) + '" target="_blank" rel="noopener" class="toetus-cta">' + escHtml(t.source_name || 'Ametlik allikas') + ' <span aria-hidden="true">↗</span></a>';
+            html += '</div>';
+            html += '<p class="toetus-disclaimer">' + escHtml(t.disclaimer || 'Terrapointi hinnang on esmane sõelumine. Lõpliku otsuse teeb toetuse andja.') + '</p>';
+            html += '</article>';
             return html;
         }
 
         var html = '';
-        if (eligible.length > 0) {
-            html += '<div class="eligible-banner"><strong>Sobivad toetused</strong><span class="eligible-banner-count">' + eligible.length + '</span></div>';
+        if (likely.length > 0) {
+            html += '<div class="toetus-group-heading"><strong>Tõenäoliselt sobivad</strong><span>' + likely.length + '</span></div>';
             html += '<div class="toetus-list-scroll"><div class="toetus-list">';
-            eligible.forEach(function(t) { html += renderCard(t, true); });
+            likely.forEach(function(t) { html += renderCard(t); });
             html += '</div></div>';
         }
 
+        if (check.length > 0) {
+            html += '<div class="toetus-group-heading toetus-group-check"><strong>Vajavad kontrolli</strong><span>' + check.length + '</span></div>';
+            html += '<div class="toetus-list">';
+            check.forEach(function(t) { html += renderCard(t); });
+            html += '</div>';
+        }
+
         if (ineligible.length > 0) {
-            html += '<details class="toetus-details"' + (eligible.length === 0 ? ' open' : '') + '>';
+            html += '<details class="toetus-details"' + (likely.length === 0 && check.length === 0 ? ' open' : '') + '>';
             html += '<summary class="muted-summary">';
-            html += '<span class="toetus-details-label">Muud toetused, ei vasta tingimustele</span>';
+            html += '<span class="toetus-details-label">Ei sobi teadaolevate andmete põhjal</span>';
             html += '<span class="toetus-details-count">' + ineligible.length + '</span>';
             html += '</summary>';
             html += '<div class="toetus-list toetus-list-ineligible">';
-            ineligible.forEach(function(t) { html += renderCard(t, false); });
+            ineligible.forEach(function(t) { html += renderCard(t); });
             html += '</div></details>';
         }
-
-        html += '<div class="toetus-source">Allikas: <a href="https://www.eramets.ee/toetused/" target="_blank" rel="noopener">eramets.ee</a></div>';
 
         el.innerHTML = html;
     }
