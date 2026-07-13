@@ -46,15 +46,6 @@
     --info:       #1d4ed8;
     --info-bg:    #eff6ff;
 
-    /* Data category palette — legacy blue scale, pole kasutusel (Chart.js
-       võtab värvid otse JS-st SPECIES_COLORS kaardist). */
-    --data-cat-1: #dbeafe;   /* blue-100 — smallest share */
-    --data-cat-2: #93c5fd;   /* blue-300 */
-    --data-cat-3: #3b82f6;   /* blue-500 */
-    --data-cat-4: #1d4ed8;   /* blue-600 */
-    --data-cat-5: #0a3d9e;   /* blue-900 — largest share */
-    --data-cat-6: #07153d;   /* ink — fallback */
-
     /* Semantic data state — used only when a value is truly a state, not a category */
     --data-state-danger: #b91c1c;
     --data-state-warn:   #b45309;
@@ -1768,10 +1759,12 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .kiht-legend-label { color: var(--ink-2); }
 
 /* ═══ METRIC GRID ═══════════════════════════════════════════════════════════ */
+#dashboard { scroll-margin-top: calc(var(--nav-h) + 16px); }
 .metrics-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
+    align-items: start;
 }
 @media (max-width: 1100px) {
     .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -1798,7 +1791,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     animation: cardIn 0.5s var(--ease-out) backwards;
     color: var(--ink-2);
 }
-/* Tighter padding on cards that hold the eraldised table — the 7-column
+/* Tighter padding on cards that hold the eraldised table — the 6-column
    table needs more horizontal room than the 28px default gives it. The
    table panel itself has padding:0, so reducing the card padding
    directly widens the available space. */
@@ -1807,12 +1800,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     padding-right: 14px;
 }
 
-/* ═══ METRICS GRID STATES ═══════════════════════════════════════════════════
-   Algseis (placeholder): 3x3 grid — kõik 9 kaarti võrdse laiusega (1/3).
-   Pärast otsingut (.metrics-grid--loaded): 3x2 (6 kaarti üleval 3-veerus) +
-   1x3 (3 kaarti all, igaüks full-width, stäkitud). Kolm "laiemat" kaarti
-   (Kitsendused, Metsateatised, Toetused) saavad rohkem ruumi kuvamaks
-   tabelit / pikka nimekirja. */
 .metric-card:nth-child(1) { animation-delay: 0.02s; }
 .metric-card:nth-child(2) { animation-delay: 0.06s; }
 .metric-card:nth-child(3) { animation-delay: 0.10s; }
@@ -1822,7 +1809,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .metric-card:nth-child(7) { animation-delay: 0.26s; }
 .metric-card:nth-child(8) { animation-delay: 0.30s; }
 .metric-card:nth-child(9) { animation-delay: 0.34s; }
-.metric-card:nth-child(10) { animation-delay: 0.38s; }
 
 /* Alumise rea kaardid (Kitsendused, Metsateatised, Toetused) ei veni
    grid rea kõrgusele — muidu tekib tühi valge kast, kui sisu on lühike
@@ -1840,11 +1826,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .metric-card:focus-within {
     box-shadow: 0 0 0 2px var(--blue-100), var(--sh-3);
 }
-
-/* Wide hero cards (value, eudr) */
-.metric-card.span-6 { grid-column: span 6; }
-.metric-card.span-8 { grid-column: span 8; }
-.metric-card.span-12 { grid-column: span 12; }
 
 /* Highlight card — the value card gets a refined treatment */
 .highlight-card {
@@ -2761,31 +2742,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     }
 }
 
-/* ═══ CHARTS ════════════════════════════════════════════════════════════════ */
-.card-composition {
-    margin-top: 18px;
-    padding-top: 4px;
-}
-.card-composition-label {
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: none;
-    letter-spacing: -0.005em;
-    color: var(--ink-3);
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.card-composition-chart {
-    position: relative;
-    height: 180px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.card-composition-chart canvas { max-height: 100% !important; max-width: 100% !important; }
-
 /* ═══ TABLES ════════════════════════════════════════════════════════════════ */
 #card-mets details {
     margin-top: 12px;
@@ -3279,14 +3235,20 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    margin-left: 4px;
-    width: 14px; height: 14px;
+    margin: 0 -10px 0 0;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
     color: var(--ink-5);
-    transition: all var(--t-fast) var(--ease);
+    transition: color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
     vertical-align: middle;
     user-select: none;
 }
 .info-dd:hover { color: var(--blue-700); }
+.info-dd:focus-visible { outline: 2px solid var(--blue-500); outline-offset: -8px; border-radius: 50%; }
 .info-dd.open { transform: rotate(180deg); color: var(--blue-700); }
 .info-dd svg { width: 10px; height: 10px; }
 .info-dd-text {
@@ -3415,25 +3377,6 @@ footer {
 .leaflet-control-zoom a:first-child { border-radius: var(--r) var(--r) 0 0 !important; border-bottom: 1px solid var(--hair) !important; }
 .leaflet-control-zoom a:last-child { border-radius: 0 0 var(--r) var(--r) !important; }
 .leaflet-control-zoom a:hover { background: var(--blue-50) !important; color: var(--blue-700) !important; }
-.center-control { margin-top: 6px !important; border-radius: var(--r) !important; box-shadow: var(--sh-2) !important; }
-.center-control a {
-    background: var(--white) !important;
-    color: var(--ink-4) !important;
-    border: 1px solid var(--hair) !important;
-    border-radius: var(--r) !important;
-    width: 44px !important;
-    height: 44px !important;
-    line-height: 44px !important;
-    font-size: 18px !important;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    transition: all var(--t-fast) var(--ease);
-}
-.center-control a:hover { background: var(--blue-50) !important; color: var(--blue-700) !important; }
-.center-control a svg { opacity: 0.9; transition: opacity var(--t-fast) var(--ease); }
-.center-control a:hover svg { opacity: 1; }
-
 /* ═══ ATTRIBUTION: collapse by default ═══
    Esri ja Maa-ameti atribuudid on juriidiliselt nõutavad (Esri ToS +
    CC-BY 4.0). Kuvame nad kokkupanduna — väike "i" ikoon, hover/klõpsuga
@@ -3534,31 +3477,6 @@ footer {
 }
 .leaflet-tooltip::before { border-top-color: var(--ink) !important; }
 
-/* Püsiv eraldise numbri label kaardil — väike, poolläbipaistev,
-   valge teksti ja tumeda taustaga, ei blokeeri klõpsu */
-.eraldis-label-wrap {
-    background: transparent !important;
-    border: none !important;
-    pointer-events: none;
-}
-.eraldis-label {
-    background: rgba(15, 23, 42, 0.78);
-    color: var(--white);
-    border: none;
-    border-radius: 4px;
-    padding: 1px 6px;
-    font-size: 11px;
-    font-weight: 600;
-    font-family: var(--ff-sans);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.35);
-    text-shadow: none;
-    pointer-events: none;
-    white-space: nowrap;
-    display: inline-block;
-    line-height: 1.4;
-}
-.eraldis-label::before { display: none !important; }
-
 /* Custom map markers */
 .custom-marker { cursor: pointer; }
 
@@ -3606,7 +3524,6 @@ footer {
     font-size: 0.75rem;
     line-height: 1.35;
 }
-.table-panel-total { color: var(--ink); }
 .table-panel > .eraldised-controls {
     padding: 8px 16px 10px;
     border-bottom: 1px solid var(--hair);
@@ -3677,7 +3594,7 @@ footer {
     /* Column widths tuned to fit inside the eraldised-panel which is
        ~300px wide on Mac 3-col layout. Puuliik min 0 lets it shrink,
        Väärtus min 72px fits "12 074 €" with NBSP thousand separator. */
-    grid-template-columns: 18px minmax(0, 1fr) 30px 38px 32px 40px 72px;
+    grid-template-columns: minmax(0, 1fr) 32px 48px 42px 46px 72px;
 }
 .teatised-table-header,
 .teatised-row {
@@ -3694,56 +3611,8 @@ footer {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.table-grid-header > .table-header-tooltip-cell {
-    overflow: visible;
-}
-.table-header-tooltip {
-    position: relative;
-    display: inline-block;
-    cursor: default;
-}
-.table-header-tooltip::before,
-.table-header-tooltip::after {
-    position: absolute;
-    left: 50%;
-    pointer-events: none;
-    opacity: 0;
-    visibility: hidden;
-    z-index: 30;
-    transition: opacity 0.12s var(--ease) 0.45s, transform 0.12s var(--ease) 0.45s, visibility 0s linear 0.57s;
-}
-.table-header-tooltip::before {
-    content: "";
-    top: calc(100% + 2px);
-    transform: translate(-50%, -2px);
-    border: 5px solid transparent;
-    border-bottom-color: var(--ink);
-}
-.table-header-tooltip::after {
-    content: attr(data-full-label);
-    top: calc(100% + 12px);
-    transform: translate(-50%, -2px);
-    padding: 5px 8px;
-    border-radius: 6px;
-    background: var(--ink);
-    color: var(--white);
-    box-shadow: var(--sh-2);
-    font-size: 11px;
-    font-weight: 600;
-    line-height: 1.15;
-    white-space: nowrap;
-}
-.table-header-tooltip:hover::before,
-.table-header-tooltip:hover::after,
-.table-header-tooltip:focus-visible::before,
-.table-header-tooltip:focus-visible::after {
-    opacity: 1;
-    visibility: visible;
-    transform: translate(-50%, 0);
-    transition-delay: 0.35s, 0.35s, 0s;
-}
-.eraldised-table-header > *:nth-child(n+3):nth-child(-n+6),
-.eraldised-row > *:nth-child(n+3):nth-child(-n+6) {
+.eraldised-table-header > *:nth-child(n+2):nth-child(-n+5),
+.eraldised-row > *:nth-child(n+2):nth-child(-n+5) {
     text-align: right;
 }
 .table-grid-row:hover { background: var(--paper-2); }
@@ -3762,7 +3631,6 @@ footer {
     background-size: 100% 24px, 100% 24px, 100% 10px, 100% 10px;
     background-attachment: local, local, scroll, scroll;
 }
-.eraldised-row .er-nr { font-weight: 600; color: var(--ink-2); }
 .eraldised-row .er-species { font-weight: 500; }
 .eraldised-row .er-inventory,
 .teatised-type span {
@@ -3932,9 +3800,6 @@ footer {
 /* Tablet */
 @media (max-width: 1024px) {
     .facts-strip { grid-template-columns: repeat(2, 1fr); }
-    .metric-card { grid-column: span 6; }
-    .metric-card.span-8 { grid-column: span 12; }
-    .metric-card.span-6 { grid-column: span 6; }
     /* Trees: medium on tablets, pushed further outside than desktop. */
     .hero-tree--left-1  { left: 0;    bottom: 0;   height: 44vh; }
     .hero-tree--left-2  { left: -6vw; bottom: 28vh; height: 36vh; }
@@ -3959,7 +3824,6 @@ footer {
     .hamburger { display: inline-flex !important; }
     .dashboard { padding: 16px 14px 80px; gap: 18px; }
     #map { height: 420px; }
-    .card-composition-chart { height: 200px; }
     .layer-toggle {
         max-width: 240px;
         grid-template-columns: 1fr 1fr;
@@ -4036,7 +3900,6 @@ footer {
 
     .metrics-grid { grid-template-columns: 1fr; gap: 12px; }
     .metric-card { grid-column: span 1 !important; padding: 16px 16px 14px; border-radius: var(--r-sm); }
-    .metric-card.span-6, .metric-card.span-8, .metric-card.span-12 { grid-column: span 1 !important; }
     .card-header h3 { letter-spacing: 0.08em; }
     .card-icon { width: 30px; height: 30px; border-radius: 7px; }
     .card-icon svg { width: 14px; height: 14px; }
@@ -4045,7 +3908,6 @@ footer {
     .ph-eyebrow { font-size: 10px; margin-bottom: 8px; }
     .ph-list li { padding: 8px 0; min-height: 32px; font-size: 13px; }
     .ph-list .ph-slot { width: 56px; height: 6px; }
-    .metric-card.wide-card .ph-list .ph-slot { width: 70px; }
     .table-panel,
     #kitsendused-info {
         --table-grid-pad-y: 5px;
@@ -4078,12 +3940,46 @@ footer {
 
     .eraldised-table-header,
     .eraldised-row {
-        grid-template-columns: 22px minmax(60px, 1fr) 32px 42px 36px 42px 58px;
+        grid-template-columns: minmax(80px, 1fr) 32px 46px 40px 46px 64px;
     }
     .teatised-table-header,
     .teatised-row {
         grid-template-columns: minmax(64px, 1fr) 44px minmax(70px, 0.95fr) minmax(68px, 0.95fr) 48px;
     }
+    .teatised-table-header { display: none; }
+    .teatised-panel .table-grid-hscroll { overflow-x: visible; }
+    .teatised-panel .table-grid-scroll {
+        width: 100%;
+        min-width: 0;
+        max-height: 520px;
+        background: none;
+    }
+    .teatised-row {
+        width: 100%;
+        min-width: 0;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 7px;
+        padding: 12px 8px;
+        border-bottom: 1px solid var(--hair);
+        align-items: start;
+    }
+    .teatised-row > div {
+        display: grid;
+        grid-template-columns: 88px minmax(0, 1fr);
+        gap: 8px;
+        align-items: start;
+        overflow: visible;
+        white-space: normal;
+        text-align: left !important;
+    }
+    .teatised-row > div::before {
+        content: attr(data-label);
+        color: var(--ink-4);
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .teatised-row .teatised-type-value { grid-column: 2; }
+    .teatised-row .teatised-type span { margin-top: 0; }
     .kitsendused-table-header,
     .kitsendused-row {
         grid-template-columns: minmax(120px, 1fr) 72px;
@@ -4145,8 +4041,6 @@ footer {
     .ai-bubble { font-size: 13.5px; padding: 8px 12px; }
     .ai-hint { font-size: 12.5px; padding: 5px 11px; }
     .ai-chat-input-area { padding: 10px 12px 12px; }
-
-    .card-composition-chart { height: 240px; }
 
     .error-msg {
         top: calc(var(--nav-h) + 8px);

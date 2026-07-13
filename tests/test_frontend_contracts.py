@@ -61,21 +61,17 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("must-revalidate", cache_control)
 
     def test_changed_stylesheet_busts_the_previous_immutable_url(self):
-        self.assertIn('/static/css/style.css?r=jkl103', INDEX_HTML)
+        self.assertIn('/static/css/style.css?r=jkl104', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl103', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl102', INDEX_HTML)
-        self.assertNotIn('/static/css/style.css?r=jkl101', INDEX_HTML)
 
-    def test_chart_library_loads_only_when_results_need_it(self):
-        head = INDEX_HTML.split("</head>", 1)[0]
-        self.assertNotIn('/static/js/chart.umd.min.js', head)
-        self.assertIn("script.src = '/static/js/chart.umd.min.js'", INDEX_HTML)
-        self.assertIn("renderId !== compositionChartRenderSequence", INDEX_HTML)
-        search_start = re.search(
-            r'async function doSearch\(\).*?var requestId = \+\+parcelSearchSequence;\s*var chartRenderId = \+\+compositionChartRenderSequence;',
-            INDEX_HTML,
-            re.DOTALL,
-        )
-        self.assertIsNotNone(search_start)
+    def test_redundant_composition_chart_is_removed(self):
+        self.assertNotIn('id="composition-wrap"', INDEX_HTML)
+        self.assertNotIn('id="chart-composition-eraldised"', INDEX_HTML)
+        self.assertNotIn('/static/js/chart.umd.min.js', INDEX_HTML)
+        self.assertNotIn('renderCompositionChart', INDEX_HTML)
+        self.assertNotIn('compositionChartRenderSequence', INDEX_HTML)
+        self.assertNotIn('.card-composition-chart', STYLE_CSS)
 
     def test_frontend_uses_official_metsaregister_species_labels(self):
         for mapping in (
@@ -97,10 +93,63 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("totalRows + ' eraldiseridu'", INDEX_HTML)
         self.assertNotIn("Krundil on tuvastatud hiljutine lageraie", INDEX_HTML)
 
-    def test_no_forest_result_always_clears_the_previous_composition_chart(self):
-        self.assertIn("renderCompositionChart(data.mets && data.mets.liikide_koosseis || [], chartRenderId)", INDEX_HTML)
-        self.assertIn("compositionChart.destroy();", INDEX_HTML)
-        self.assertIn("wrap.style.display = 'none';", INDEX_HTML)
+    def test_dashboard_removes_contextless_stand_numbers_but_keeps_details(self):
+        self.assertNotIn("'<div>#</div>", INDEX_HTML)
+        self.assertNotIn('class="er-nr"', INDEX_HTML)
+        self.assertNotIn('eraldis-label', INDEX_HTML)
+        self.assertIn('Eraldiste andmed', INDEX_HTML)
+        self.assertIn('grid-template-columns: minmax(0, 1fr) 32px 48px 42px 46px 72px;', STYLE_CSS)
+
+    def test_results_start_at_dashboard_and_cards_keep_natural_height(self):
+        self.assertNotIn("document.getElementById('card-vaartus')", INDEX_HTML)
+        self.assertIn("dashboard.scrollIntoView({ behavior: scrollBehavior, block: 'start' })", INDEX_HTML)
+        self.assertIn(".metrics-grid {", STYLE_CSS)
+        self.assertIn("align-items: start;", STYLE_CSS)
+        self.assertIn("#dashboard { scroll-margin-top:", STYLE_CSS)
+
+    def test_mobile_notices_use_stacked_labeled_rows(self):
+        for label in ('Tüüp', 'Eraldis', 'Staatus', 'Kehtiv kuni', 'Pindala'):
+            self.assertIn(f'data-label="{label}"', INDEX_HTML)
+        self.assertIn('.teatised-table-header { display: none; }', STYLE_CSS)
+        self.assertIn("content: attr(data-label);", STYLE_CSS)
+        self.assertIn("formatDateEt(t.kehtiv_kuni)", INDEX_HTML)
+        self.assertIn("teatisedStatusBadge(t.staatus, t.active, t.arhiiv)", INDEX_HTML)
+        self.assertIn('class="teatised-type-value"', INDEX_HTML)
+        self.assertIn(".teatised-row .teatised-type-value { grid-column: 2; }", STYLE_CSS)
+
+    def test_inline_explanations_are_keyboard_accessible_buttons(self):
+        helper = re.search(r'function ddInfo\(text, valueText\).*?\n    }', INDEX_HTML, re.DOTALL)
+        self.assertIsNotNone(helper)
+        self.assertIn('<button type="button" class="info-dd"', helper.group(0))
+        self.assertIn('aria-expanded="false"', helper.group(0))
+        self.assertIn('aria-controls="', helper.group(0))
+        self.assertIn("el.setAttribute('aria-expanded'", INDEX_HTML)
+        self.assertNotIn("margin: -15px -10px -15px 0", STYLE_CSS)
+
+    def test_registry_dates_are_validated_before_formatting(self):
+        self.assertIn("if (!match) return '—';", INDEX_HTML)
+        self.assertIn("date.getUTCFullYear() !== year", INDEX_HTML)
+        self.assertIn("Andmete kuvamine ebaõnnestus", INDEX_HTML)
+
+    def test_redundant_center_map_button_is_removed(self):
+        self.assertNotIn("CenterControl", INDEX_HTML)
+        self.assertNotIn('aria-label="Center map"', INDEX_HTML)
+
+    def test_successful_search_hides_stale_map_hint(self):
+        self.assertIn("mapHint.classList.add('hidden')", INDEX_HTML)
+        self.assertLess(
+            INDEX_HTML.index("function dismissMapHint()"),
+            INDEX_HTML.index("document.addEventListener('DOMContentLoaded'"),
+        )
+        self.assertLess(
+            INDEX_HTML.index("function collapseMapLegendOnMobile()"),
+            INDEX_HTML.index("document.addEventListener('DOMContentLoaded'"),
+        )
+        self.assertIn("collapseMapLegendOnMobile();", INDEX_HTML)
+
+    def test_primary_timber_value_uses_grouped_number_format(self):
+        self.assertIn("animateNumber(animEl, data.total_value_eur, '');", INDEX_HTML)
+        self.assertNotIn("animateNumber(animEl, data.total_value_eur, '', 0);", INDEX_HTML)
 
 
 if __name__ == "__main__":
