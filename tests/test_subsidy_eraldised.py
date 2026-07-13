@@ -95,6 +95,34 @@ class SubsidyEraldisedMatchingTests(unittest.TestCase):
         self.assertTrue(result["sobib"])
         self.assertEqual(_nrs(result), [3])
 
+    def test_kooreyraski_accepts_mature_secondary_spruce(self):
+        data = {
+            "has_kuusk": True,
+            "max_kuusk_vanus": 70,
+            "eraldised": [{
+                **_mk_eraldis(1, "MA", vanus=80),
+                "sisaldab_kuuske": True,
+                "kuuse_vanus_max": 70,
+            }],
+        }
+        result = next(r for r in check_subsidies(data) if r["nimi"] == "Kooreüraski tõrje")
+
+        self.assertTrue(result["sobib"])
+        self.assertEqual(_nrs(result), [1])
+
+    def test_kooreyraski_reports_incomplete_species_details(self):
+        data = {
+            "has_kuusk": False,
+            "max_kuusk_vanus": 0,
+            "spruce_data_complete": False,
+            "eraldised": [_mk_eraldis(1, "MA", vanus=80)],
+        }
+        result = next(r for r in check_subsidies(data) if r["nimi"] == "Kooreüraski tõrje")
+
+        self.assertFalse(result["sobib"])
+        self.assertTrue(result["andmed_piiratud"])
+        self.assertIn("osaline", result["pohjus"])
+
     def test_maaparandus_filters_drained_eraldised(self):
         # Maaparandussüsteemi: ainult kuivendatud eraldised
         data = {

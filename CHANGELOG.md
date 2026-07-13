@@ -8,7 +8,23 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 
 ## [Määramata] - 2026-07-13
 
+### Added
+- **Auditeeritav kinnistu- ja puiduhinnang** — ühe eksitavalt täpse numbri
+  asemel kuvatakse maa referents, kasvava puidu min–max vahemik, keskpunkt,
+  andmeusaldus, inventuuri vanus, eeldused ja lingid algallikatele. Puidu
+  hinnad kasutavad Erametsaliidu 2026 I kvartali avaldatud kännuraha vahemikke;
+  segapuistud arvestatakse võimalusel Metsaregistri elementandmete järgi.
+- **Selgitatav terviseskoor** — kaug- ja registriandmete skoor näitab nüüd iga
+  tuvastatud riskikomponendi mõju, eraldi andmeusaldust, metoodika piirangut ja
+  Keskkonnaagentuuri ning Keskkonnaportaali allikalinke.
+
 ### Changed
+- **Maa väärtuse metoodika** — eemaldatud dokumenteerimata maksustamishinna
+  kordajad. Kinnistu automaathinnang eristab nüüd ametliku maa
+  maksustamishinna referentsi puidu väärtusest ja märgib selgelt, et avalikke
+  võrreldavaid tehinguid mudel veel ei kasuta.
+- **Infopaneelid avanevad dokumendivoos** — selgitused ei ole enam absoluutselt
+  positsioneeritud ega kata järgmisi ridu, progressiribasid või kaardi sisu.
 - **Metsaregistri ametlik puuliikide klassifikaator** — kõik 30 koodi kasutavad
   nüüd registri üldnimetusi, sealhulgas `KS=kask`, `LM=sanglepp`, `LV=hall lepp`
   ja `RE=remmelgas`. Varem valesti teise liigina tõlgendatud `SP` ja `PK` on

@@ -67,6 +67,68 @@ class AreaDataTests(unittest.TestCase):
         self.assertIn("kavandatud maht 50 m³", prompt)
         self.assertNotIn("Hiljutine lageraieala", prompt)
 
+    def test_ai_prompt_preserves_valuation_range_and_health_caveat(self):
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 2},
+            "vaartus": {
+                "total_value_eur": 80_000,
+                "range_low_eur": 70_000,
+                "range_high_eur": 90_000,
+                "property_estimate": {"low_eur": 140_000, "base_eur": 180_000, "high_eur": 220_000},
+                "reliability": {"score": 55, "level": "keskmine"},
+            },
+            "riskid": {
+                "terviseindeks": 84,
+                "terviseindeks_selgitus": {
+                    "methodology": "Terrapoint remote risk signal v2",
+                    "confidence": {"score": 60, "level": "keskmine"},
+                    "components": [{"label": "Üraskirisk", "delta": -16}],
+                },
+            },
+        })
+
+        self.assertIn("Kinnistu automaatne vahemik: 140000–220000 EUR", prompt)
+        self.assertIn("Puidu hinnavahemik: 70000–90000 EUR", prompt)
+        self.assertIn("Hinnangu usaldus: 55/100 (keskmine)", prompt)
+        self.assertIn("Kaugandmete terviseskoor: 84/100", prompt)
+        self.assertIn("ei ole ametlik terviseindeks", prompt)
+
+    def test_ai_prompt_prefers_corrected_beetle_assessment(self):
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 2},
+            "riskid": {
+                "yrask": {"score": 3, "label": "Kriitiline — MKE tsoonis"},
+                "yrask_hinnang": {"score": 0, "label": "Madal — kuuske ei tuvastatud"},
+            },
+        })
+
+        self.assertIn("Üraski risk: Madal — kuuske ei tuvastatud", prompt)
+        self.assertNotIn("Üraski risk: Kriitiline — MKE tsoonis", prompt)
+
+    def test_ai_prompt_prefers_new_stand_and_unit_values(self):
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 1},
+            "mets": {"eraldised": [{
+                "eraldis_nr": 1,
+                "puuliik": "mänd",
+                "vaartus_eur": 7_800,
+                "vaartus_hinnang_eur": 1_310,
+            }]},
+            "vaartus": {
+                "total_value_eur": 7_800,
+                "base_value_eur": 1_310,
+                "value_per_ha": 7_800,
+                "base_value_per_ha": 1_310,
+                "price_per_m3": 78,
+                "base_price_per_m3": 13.1,
+            },
+        })
+
+        self.assertIn("väärtus 1310 EUR", prompt)
+        self.assertIn("Väärtus ha kohta: 1310 EUR/ha", prompt)
+        self.assertIn("Keskmine hind: 13.1 EUR/m³", prompt)
+        self.assertNotIn("väärtus 7800 EUR", prompt)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -182,7 +182,11 @@ SUBSIDY_PROGRAMS = [
     {
         "name": "Kooreüraski tõrje",
         "condition": lambda d: d.get("has_kuusk") and d.get("max_kuusk_vanus", 0) > 30,
-        "reject_reason": lambda d: "Krundil ei ole üle 30a kuuski",
+        "reject_reason": lambda d: (
+            "Liigiline detail on osaline; teisese kuuse olemasolu vajab kontrolli"
+            if not d.get("spruce_data_complete", True)
+            else "Krundil ei ole üle 30a kuuski"
+        ),
         "amount": "püünispuud 500 €/üksus, feromoonpüünised 40 €/komplekt, tormikahjustus 500 €/üksus",
         "asutus": "KIK",
         "voor": "01.09–15.09.2026",
@@ -190,9 +194,11 @@ SUBSIDY_PROGRAMS = [
         "voor_url": "https://www.eramets.ee/toetuste_tahtajad/uraskikahjustuste-ennetamise-toetus/",
         "description": "Püünispuud, feromoonpüünised ja tormikahjustuste likvideerimine. Kehtivad inventeerimisandmed nõutud. Konsulendi kinnitus tööde kohta vajalik. Eelarve 30 000 €.",
         "category": "kahjuritõrje",
+        "requires_spruce_details": True,
         "eraldised_filter": lambda d: [
             e for e in d.get("eraldised", [])
-            if (e.get("puuliik_kood") or "") == "KU" and (e.get("vanus") or 0) > 30
+            if (e.get("sisaldab_kuuske") or (e.get("puuliik_kood") or "") == "KU")
+            and (e.get("kuuse_vanus_max") or e.get("vanus") or 0) > 30
         ],
         "eraldised_filter_label": "Üle 30a vanused kuuse eraldised",
     },
@@ -354,6 +360,7 @@ def check_subsidies(data: dict) -> list[dict]:
             "eraldised_match_count": len(matched_summary),
             "eraldised_match_ha": matched_ha,
             "eraldised_filter_label": prog.get("eraldised_filter_label", ""),
+            "andmed_piiratud": bool(prog.get("requires_spruce_details") and not data.get("spruce_data_complete", True)),
         })
 
     # Sort: eligible first (by voor_status: open > upcoming > other), then ineligible

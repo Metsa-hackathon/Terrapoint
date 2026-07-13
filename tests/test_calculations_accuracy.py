@@ -168,7 +168,8 @@ class TimberPriceTests(unittest.TestCase):
         }
         eraldised = [{"id": 1, "pindala_ha": 5, "puuliik_kood": "MA",
                        "puuliik": "Mänd", "vanus": 80, "tagavara_y_ha": 200,
-                       "boniteedi_kood": 2, "eraldis_nr": 1}]
+                       "boniteedi_kood": 2, "eraldis_nr": 1,
+                       "kuivendatud": True}]
 
         async def main():
             with (
@@ -188,10 +189,54 @@ class TimberPriceTests(unittest.TestCase):
         v = result.get("vaartus", {})
         # Mänd 200 m³/ha × 5 ha = 1000 m³ × 78 €/tm = 78000 €
         # vana kood: 1000 × 57 = 57000 € (27% vähem)
-        total = v.get("total_value_eur", 0)
-        self.assertGreater(total, 70000,
-            f"Mänd väärtus {total} € < 70000 € — seisuhind ilmselt "
-            f"tagasi vana liiga madalale väärtusele (57)")
+        self.assertEqual(v["total_value_eur"], 85800)
+        self.assertEqual(v["base_value_eur"], 78600)
+        self.assertLess(v["range_low_eur"], v["base_value_eur"])
+        self.assertGreater(v["range_high_eur"], v["base_value_eur"])
+        self.assertEqual(v["price_per_m3"], 78)
+        self.assertEqual(v["base_price_per_m3"], 78.6)
+        self.assertEqual(v["methodology"], "Terrapoint standing timber range v2")
+        self.assertEqual(v["price_updated"], "2026-Q1")
+        self.assertEqual(v["price_as_of"], "2026-03")
+        self.assertTrue(v["sources"])
+        self.assertFalse(v["property_estimate"]["has_transaction_comparables"])
+        self.assertFalse(v["property_estimate"]["land_reference_available"])
+        self.assertEqual(v["maa_turuhind"], 15000)
+        self.assertEqual(v["kinnistu_turuväärtus"], 100800)
+
+    def test_each_stand_uses_its_own_species_elements(self):
+        from api.index import _search_core
+        import asyncio
+        from unittest.mock import AsyncMock, patch
+
+        geometry = {"type": "Polygon", "coordinates": [[[24, 59], [24.1, 59], [24.1, 59.1], [24, 59]]]}
+        kataster = {"number": "78404:409:0113", "geometry": geometry, "pindala_ha": 2, "maks_hind": 10_000}
+        stands = [
+            {"id": 1, "pindala_ha": 1, "puuliik_kood": "MA", "puuliik": "mänd", "vanus": 60, "tagavara_y_ha": 100, "boniteedi_kood": 2, "eraldis_nr": 1},
+            {"id": 2, "pindala_ha": 1, "puuliik_kood": "LV", "puuliik": "hall lepp", "vanus": 40, "tagavara_y_ha": 100, "boniteedi_kood": 2, "eraldis_nr": 2},
+        ]
+        elements = [
+            [{"puuliik_kood": "MA", "tagavara_y_ha": 100, "vanus": 60}],
+            [{"puuliik_kood": "LV", "tagavara_y_ha": 100, "vanus": 40}],
+        ]
+
+        async def main():
+            with (
+                patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+                patch("api.index.query_eraldis", new=AsyncMock(return_value=stands)),
+                patch("api.index.query_eraldis_element", new=AsyncMock(side_effect=elements)),
+                patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+                patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+                patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+                patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+            ):
+                return await _search_core("78404:409:0113", 0)
+
+        result = asyncio.run(main())
+        values = result["mets"]["eraldised"]
+        self.assertEqual(values[0]["vaartus_hinnang_eur"], 7860)
+        self.assertEqual(values[1]["vaartus_hinnang_eur"], 2110)
+        self.assertEqual(result["vaartus"]["base_value_eur"], 9970)
 
 
 if __name__ == "__main__":

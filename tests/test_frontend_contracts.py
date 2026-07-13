@@ -7,6 +7,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 INDEX_HTML = (PROJECT_ROOT / "index.html").read_text(encoding="utf-8")
 STYLE_CSS = (PROJECT_ROOT / "static/css/style.css").read_text(encoding="utf-8")
+API_PY = (PROJECT_ROOT / "api/index.py").read_text(encoding="utf-8")
 VERCEL_CONFIG = json.loads((PROJECT_ROOT / "vercel.json").read_text(encoding="utf-8"))
 
 
@@ -61,7 +62,8 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("must-revalidate", cache_control)
 
     def test_changed_stylesheet_busts_the_previous_immutable_url(self):
-        self.assertIn('/static/css/style.css?r=jkl104', INDEX_HTML)
+        self.assertIn('/static/css/style.css?r=jkl105', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl104', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl103', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl102', INDEX_HTML)
 
@@ -125,6 +127,30 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn('aria-controls="', helper.group(0))
         self.assertIn("el.setAttribute('aria-expanded'", INDEX_HTML)
         self.assertNotIn("margin: -15px -10px -15px 0", STYLE_CSS)
+        disclosure_css = re.search(r'\.info-dd-text \{.*?\n\}', STYLE_CSS, re.DOTALL)
+        self.assertIsNotNone(disclosure_css)
+        self.assertIn("position: static;", disclosure_css.group(0))
+        self.assertNotIn("position: absolute;", disclosure_css.group(0))
+
+    def test_valuation_and_health_show_method_confidence_and_sources(self):
+        self.assertIn("Kinnistu ja puidu hinnang", INDEX_HTML)
+        self.assertIn("Hinnangu usaldus", INDEX_HTML)
+        self.assertIn("Kuidas hinnang kujuneb", INDEX_HTML)
+        self.assertIn("terviseindeks_selgitus", INDEX_HTML)
+        self.assertIn("Terrapointi kaugandmete terviseskoor", INDEX_HTML)
+        self.assertIn("data.terviseskoor != null", INDEX_HTML)
+        self.assertIn("data.yrask_hinnang || data.yrask", INDEX_HTML)
+        self.assertIn("Maa maksustamishind puudub; kinnistu koguhinnangut ei kuvata", INDEX_HTML)
+        self.assertIn("e.vaartus_hinnang_eur != null ? e.vaartus_hinnang_eur : e.vaartus_eur", INDEX_HTML)
+        self.assertIn("p.vaartus_hinnang_eur != null ? p.vaartus_hinnang_eur : p.vaartus_eur", INDEX_HTML)
+        self.assertIn("and not sampled_eraldised", API_PY)
+        self.assertIn("t >= 90 ? 'var(--data-state-ok)'", INDEX_HTML)
+        self.assertNotIn('class="evidence-details" open', INDEX_HTML)
+        self.assertIn("min-height: 44px;\n    display: flex;", STYLE_CSS)
+        self.assertIn("sourceLinksHtml", INDEX_HTML)
+        self.assertIn("https://erametsaliit.ee/wp-content/uploads/2026/05/puiduhinnad-2026-i-kv.pdf", API_PY)
+        self.assertIn("https://maaruum.ee/maakataster-ja-maa-hindamine/kinnisvaratehingud/kinnisvaratehingute-statistika", API_PY)
+        self.assertIn("https://keskkonnaagentuur.ee/node/2695", API_PY)
 
     def test_registry_dates_are_validated_before_formatting(self):
         self.assertIn("if (!match) return '—';", INDEX_HTML)
@@ -148,7 +174,7 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("collapseMapLegendOnMobile();", INDEX_HTML)
 
     def test_primary_timber_value_uses_grouped_number_format(self):
-        self.assertIn("animateNumber(animEl, data.total_value_eur, '');", INDEX_HTML)
+        self.assertIn("formatEur(data.base_value_eur != null ? data.base_value_eur : data.total_value_eur)", INDEX_HTML)
         self.assertNotIn("animateNumber(animEl, data.total_value_eur, '', 0);", INDEX_HTML)
 
 

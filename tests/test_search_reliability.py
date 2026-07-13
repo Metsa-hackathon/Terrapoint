@@ -552,6 +552,11 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             result = await api._search_core("78404:409:0113", api.time.time())
 
         self.assertEqual(result["riskid"]["terviseindeks"], 98)
+        self.assertEqual(result["riskid"]["terviseskoor"], 100)
+        self.assertEqual(result["riskid"]["terviseskoor_selgitus"]["components"], [])
+        self.assertEqual(result["riskid"]["terviseskoor_selgitus"]["confidence"]["level"], "keskmine")
+        self.assertEqual(result["vaartus"]["reliability"]["level"], "madal")
+        self.assertTrue(any("teatist" in reason for reason in result["vaartus"]["reliability"]["reasons"]))
         self.assertEqual(result["riskid"]["ajaloolised_lageraiealad"][0]["periood_lopp"], 2015)
         self.assertEqual(result["vaartus"]["tagavara_m3"], 200)
         notices = {notice["number"]: notice for notice in result["teatised"]}
