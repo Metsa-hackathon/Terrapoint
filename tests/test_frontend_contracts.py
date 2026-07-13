@@ -198,6 +198,14 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn('"vep_data_complete": False', API_PY)
         self.assertIn('layers_data.get("katsealad", [])', API_PY)
 
+    def test_archive_notice_outage_does_not_show_broad_data_warning(self):
+        helper = re.search(r'function shouldShowBroadPartialWarning\(meta\).*?\n    }', INDEX_HTML, re.DOTALL)
+        self.assertIsNotNone(helper)
+        self.assertIn("if (!meta || !meta.partial) return false;", helper.group(0))
+        self.assertIn("source !== 'metsaregister.teatis_arhiiv'", helper.group(0))
+        self.assertIn("return sources.length === 0 ||", helper.group(0))
+        self.assertIn("if (shouldShowBroadPartialWarning(data.meta))", INDEX_HTML)
+
     def test_registry_dates_are_validated_before_formatting(self):
         self.assertIn("if (!match) return '—';", INDEX_HTML)
         self.assertIn("date.getUTCFullYear() !== year", INDEX_HTML)

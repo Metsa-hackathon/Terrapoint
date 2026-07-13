@@ -578,21 +578,18 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["teatised_meta"]["ridu_kokku"], 4)
 
     async def test_partial_notice_layers_preserve_rows_and_mark_search_partial(self):
-        class PartialNotices(list):
-            unavailable_sources = ["metsaregister.teatis_arhiiv"]
-
         geometry = {
             "type": "Polygon",
             "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
         }
         kataster = {"number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1}
-        notices = PartialNotices([{"properties": {"teatise_nr": "A", "too_kood": "LR"}}])
+        notices = [{"properties": {"teatise_nr": "A", "too_kood": "LR"}}]
 
         with (
             patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
             patch("api.index.query_eraldis", new=AsyncMock(return_value=[])),
             patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
-            patch("api.index.query_teatised", new=AsyncMock(return_value=notices)),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=(notices, ["metsaregister.teatis_arhiiv"]))),
             patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
         ):
             result = await api._search_core("78404:409:0113", api.time.time())
