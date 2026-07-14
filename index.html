@@ -63,8 +63,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl033">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl106">
+    <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl034">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl107">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -2148,6 +2148,8 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
     function toggleDD(el, id) {
         var txt = document.getElementById(id);
         if (!txt) return;
+        var row = el.closest('.info-row');
+        if (row && txt.parentNode !== row) row.appendChild(txt);
         el.classList.toggle('open');
         txt.classList.toggle('show');
         el.setAttribute('aria-expanded', txt.classList.contains('show') ? 'true' : 'false');

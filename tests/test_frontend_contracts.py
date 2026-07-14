@@ -7,6 +7,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 INDEX_HTML = (PROJECT_ROOT / "index.html").read_text(encoding="utf-8")
 STYLE_CSS = (PROJECT_ROOT / "static/css/style.css").read_text(encoding="utf-8")
+FONT_SIZES_CSS = (PROJECT_ROOT / "static/css/font-sizes.css").read_text(encoding="utf-8")
 API_PY = (PROJECT_ROOT / "api/index.py").read_text(encoding="utf-8")
 VERCEL_CONFIG = json.loads((PROJECT_ROOT / "vercel.json").read_text(encoding="utf-8"))
 
@@ -62,11 +63,78 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("must-revalidate", cache_control)
 
     def test_changed_stylesheet_busts_the_previous_immutable_url(self):
-        self.assertIn('/static/css/style.css?r=jkl106', INDEX_HTML)
+        self.assertIn('/static/css/style.css?r=jkl107', INDEX_HTML)
+        self.assertIn('/static/css/font-sizes.css?r=jkl034', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl106', INDEX_HTML)
+        self.assertNotIn('/static/css/font-sizes.css?r=jkl033', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl105', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl104', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl103', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl102', INDEX_HTML)
+
+    def test_dashboard_uses_desktop_space_without_widening_prose_sections(self):
+        self.assertIn("--dashboard-max-w: min(calc(100vw - 48px), 1600px);", STYLE_CSS)
+        self.assertRegex(
+            STYLE_CSS,
+            r"@media \(min-width: 769px\) \{\s*\.dashboard > \* \{[^}]*max-width: var\(--dashboard-max-w\);",
+        )
+        self.assertRegex(
+            STYLE_CSS,
+            r"(?m)^\.metrics-grid \{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);",
+        )
+        self.assertRegex(
+            STYLE_CSS,
+            r"@media \(max-width: 1180px\) \{\s*\.metrics-grid \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}",
+        )
+        self.assertRegex(
+            STYLE_CSS,
+            r"@media \(max-width: 768px\) \{\s*\.metrics-grid \{ grid-template-columns: minmax\(0, 1fr\);",
+        )
+        self.assertRegex(STYLE_CSS, r"\.about-inner\s*\{\s*max-width:\s*980px;")
+        self.assertRegex(STYLE_CSS, r"\.contact-inner\s*\{\s*max-width:\s*760px;")
+
+    def test_dashboard_typography_has_readable_hierarchy_without_scale_hacks(self):
+        desktop = re.search(r"(?m)^:root \{([^}]*)\}", FONT_SIZES_CSS)
+        tablet = re.search(r"@media \(max-width: 1180px\) \{\s*:root \{([^}]*)\}", FONT_SIZES_CSS)
+        mobile = re.search(r"@media \(max-width: 768px\) \{\s*:root \{([^}]*)\}", FONT_SIZES_CSS)
+        self.assertIsNotNone(desktop)
+        self.assertIsNotNone(tablet)
+        self.assertIsNotNone(mobile)
+        self.assertIn("--tier-1-title:  17px;", desktop.group(1))
+        self.assertIn("--tier-2-row:    16px;", desktop.group(1))
+        self.assertIn("--tier-3-table:  13px;", desktop.group(1))
+        self.assertIn("--tier-1-title:  16px;", tablet.group(1))
+        self.assertIn("--tier-2-row:    15.5px;", tablet.group(1))
+        self.assertIn("--tier-2-row:    15px;", mobile.group(1))
+
+        heading = re.search(r"(?m)^\.card-header h3 \{([^}]*)\}", STYLE_CSS)
+        card = re.search(r"(?m)^\.metric-card \{([^}]*)\}", STYLE_CSS)
+        self.assertIsNotNone(heading)
+        self.assertIsNotNone(card)
+        self.assertIn("font-size: var(--tier-1-title);", heading.group(1))
+        self.assertIn("font-weight: 700;", heading.group(1))
+        self.assertNotRegex(heading.group(1), r"transform\s*:\s*scale\s*\(")
+        self.assertNotRegex(STYLE_CSS, r"(?s)\.metric-card\s*>\s*\.card-header\s*\{[^}]*transform\s*:\s*scale\s*\(")
+        self.assertIn("border: 1px solid var(--hair);", card.group(1))
+
+    def test_expanded_explanations_use_full_width_and_preserve_value_formatting(self):
+        toggle = re.search(r'function toggleDD\(el, id\).*?\n    }', INDEX_HTML, re.DOTALL)
+        explanation = re.search(r"(?m)^\.info-dd-text \{([^}]*)\}", STYLE_CSS)
+        field = re.search(r"(?m)^\.info-dd-text \.dd-field \{([^}]*)\}", STYLE_CSS)
+        value = re.search(r"(?m)^\.info-dd-text \.dd-value \{([^}]*)\}", STYLE_CSS)
+        self.assertIsNotNone(toggle)
+        self.assertIsNotNone(explanation)
+        self.assertIsNotNone(field)
+        self.assertIsNotNone(value)
+        self.assertIn("row.appendChild(txt)", toggle.group(0))
+        self.assertIn("txt.classList.toggle('show')", toggle.group(0))
+        self.assertIn("el.setAttribute('aria-expanded'", toggle.group(0))
+        self.assertIn(".info-row:has(.info-dd-text.show) { flex-wrap: wrap;", STYLE_CSS)
+        self.assertIn("flex: 1 0 100%;", explanation.group(1))
+        self.assertIn("width: 100%;", explanation.group(1))
+        self.assertIn("font-size: 14px;", field.group(1))
+        self.assertIn("font-size: 13.5px;", value.group(1))
+        self.assertIn("word-break: normal;", value.group(1))
 
     def test_redundant_composition_chart_is_removed(self):
         self.assertNotIn('id="composition-wrap"', INDEX_HTML)
