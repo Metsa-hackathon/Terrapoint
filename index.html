@@ -3130,10 +3130,19 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
     function shouldShowBroadPartialWarning(meta) {
         if (!meta || !meta.partial) return false;
+        if (meta.ai_analysis_available === true) return false;
         var sources = Array.isArray(meta.unavailable_sources) ? meta.unavailable_sources : [];
         return sources.length === 0 || sources.some(function(source) {
             return source !== 'metsaregister.teatis_arhiiv';
         });
+    }
+
+    function shouldShowDetailLimitWarning(meta) {
+        return Boolean(
+            meta
+            && meta.ai_analysis_available !== true
+            && (meta.details_skipped || meta.sampled_eraldised)
+        );
     }
 
     function renderErrorState(msg) {
@@ -3781,7 +3790,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             showDashboard();
             if (shouldShowBroadPartialWarning(data.meta)) {
                 showError('Osa andmeallikaid jäi laadimata või oli liiga mahukas. Puuduvad andmed ei tähenda, et piiranguid või metsa ei ole. Proovi otsingut uuesti.');
-            } else if (data.mets && data.meta && (data.meta.details_skipped || data.meta.sampled_eraldised)) {
+            } else if (data.mets && shouldShowDetailLimitWarning(data.meta)) {
                 showError('Metsa detailandmete maht või laadimisaeg ületas turvalise piiri. Koosseisu ja väärtuse hinnang põhineb üldisematel registriandmetel.');
             }
 

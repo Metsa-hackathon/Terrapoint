@@ -1,5 +1,6 @@
 import json
 import re
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -270,9 +271,40 @@ class FrontendContractTests(unittest.TestCase):
         helper = re.search(r'function shouldShowBroadPartialWarning\(meta\).*?\n    }', INDEX_HTML, re.DOTALL)
         self.assertIsNotNone(helper)
         self.assertIn("if (!meta || !meta.partial) return false;", helper.group(0))
+        self.assertIn("if (meta.ai_analysis_available === true) return false;", helper.group(0))
         self.assertIn("source !== 'metsaregister.teatis_arhiiv'", helper.group(0))
         self.assertIn("return sources.length === 0 ||", helper.group(0))
         self.assertIn("if (shouldShowBroadPartialWarning(data.meta))", INDEX_HTML)
+        self.assertIn("meta.ai_analysis_available !== true", INDEX_HTML)
+
+    def test_partial_warning_policy_executes_for_ai_ready_and_blocking_states(self):
+        broad = re.search(r'function shouldShowBroadPartialWarning\(meta\).*?\n    }', INDEX_HTML, re.DOTALL)
+        detail = re.search(r'function shouldShowDetailLimitWarning\(meta\).*?\n    }', INDEX_HTML, re.DOTALL)
+        self.assertIsNotNone(broad)
+        self.assertIsNotNone(detail)
+        script = f"""
+{broad.group(0)}
+{detail.group(0)}
+const states = {json.dumps([
+    {"partial": False, "ai_analysis_available": True, "unavailable_sources": []},
+    {"partial": True, "ai_analysis_available": True, "unavailable_sources": ["metsaregister.teatised"]},
+    {"partial": False, "ai_analysis_available": True, "details_skipped": True, "unavailable_sources": []},
+    {"partial": True, "ai_analysis_available": False, "unavailable_sources": ["metsaregister.eraldised"]},
+])};
+console.log(JSON.stringify(states.map(meta => [
+    shouldShowBroadPartialWarning(meta),
+    shouldShowDetailLimitWarning(meta),
+])));
+"""
+
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+
+        self.assertEqual(json.loads(result.stdout), [
+            [False, False],
+            [False, False],
+            [False, False],
+            [True, False],
+        ])
 
     def test_ai_uses_dedicated_readiness_instead_of_general_partial_state(self):
         self.assertIn("data.meta.ai_analysis_available === true", INDEX_HTML)
