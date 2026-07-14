@@ -511,6 +511,82 @@ class AreaDataTests(unittest.TestCase):
 
         self.assertIn("kavandatud maht kokku 500 m³", prompt)
 
+    def test_ai_prompt_prefers_canonical_compartment_number_for_notice(self):
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 20},
+            "teatised": [{
+                "number": "ACTIVE",
+                "active": True,
+                "tyyp": "Lageraie",
+                "eraldis_nr": "16.0",
+                "eraldis": 9543691,
+                "teatise_eraldis_nr": 11108251,
+                "kehtiv_kuni": "2027-01-01",
+            }],
+        })
+
+        self.assertIn(", eraldis 16, seos", prompt)
+        self.assertNotIn("eraldis 16.0", prompt)
+        self.assertNotIn("eraldis 9543691", prompt)
+        self.assertNotIn("eraldis 11108251", prompt)
+
+    def test_ai_prompt_falls_back_to_legacy_compartment_number_for_notice(self):
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 20},
+            "teatised": [{
+                "number": "LEGACY",
+                "active": True,
+                "tyyp": "Harvendusraie",
+                "eraldis": "5.0",
+                "kehtiv_kuni": "2027-01-01",
+            }],
+        })
+
+        self.assertIn(", eraldis 5, seos", prompt)
+        self.assertNotIn("eraldis 5.0", prompt)
+
+    def test_ai_prompt_preserves_zero_legacy_compartment_number_for_notice(self):
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 20},
+            "teatised": [{
+                "number": "LEGACY-ZERO",
+                "active": True,
+                "tyyp": "Harvendusraie",
+                "eraldis": "0.0",
+                "kehtiv_kuni": "2027-01-01",
+            }],
+        })
+
+        self.assertIn(", eraldis 0, seos", prompt)
+
+    def test_ai_prompt_suppresses_year_like_legacy_compartment_number_for_notice(self):
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 20},
+            "teatised": [{
+                "number": "LEGACY-YEAR",
+                "active": True,
+                "tyyp": "Lageraie",
+                "eraldis": "2026.0",
+                "kehtiv_kuni": "2027-01-01",
+            }],
+        })
+
+        self.assertNotIn("eraldis 2026", prompt)
+
+    def test_ai_prompt_does_not_use_raw_notice_value_as_compartment_number(self):
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 20},
+            "teatised": [{
+                "number": "RAW-ONLY",
+                "active": True,
+                "tyyp": "Lageraie",
+                "teatise_eraldis_nr": 11108251,
+                "kehtiv_kuni": "2027-01-01",
+            }],
+        })
+
+        self.assertNotIn("eraldis 11108251", prompt)
+
     def test_ai_prompt_indexes_stands_after_the_first_five(self):
         prompt = build_system_prompt({
             "kataster": {"number": "78404:409:0113", "pindala_ha": 20},

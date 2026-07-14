@@ -16,6 +16,7 @@ import math
 import os
 import re
 from datetime import date, datetime
+from decimal import Decimal, InvalidOperation
 import httpx
 import orjson
 from shapely.geometry import shape
@@ -108,6 +109,7 @@ _search_waiters: dict[str, int] = {}
 XGIS_ALLOWED_LAYERS = {"EESTIFOTO", "HYBRID", "nCHM2017"}
 XGIS_ALLOWED_SRS = {"EPSG:3301"}
 XGIS_ALLOWED_VERSIONS = {"1.1.1"}
+JS_SAFE_INTEGER_MAX = 9_007_199_254_740_991
 
 
 def _parse_source_date(value) -> date | None:
@@ -148,16 +150,51 @@ def _is_older_than_years(value, years: int, today: date) -> bool:
     return anniversary < today
 
 
-def _resolve_notice_stand(raw_stand, notice_area, valid_stands: set, stands_by_area: dict):
-    valid_by_text = {str(value): value for value in valid_stands}
-    raw_text = str(raw_stand) if raw_stand is not None else ""
+def _normalize_eraldis_nr(value) -> int | None:
+    """Return a non-negative JS-safe compartment integer without using IDs."""
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if 0 <= value <= JS_SAFE_INTEGER_MAX else None
+    if isinstance(value, float):
+        if not math.isfinite(value) or not value.is_integer() or not 0 <= value <= JS_SAFE_INTEGER_MAX:
+            return None
+        return int(value)
+    if not isinstance(value, str) or not value.strip():
+        return None
     try:
-        raw_number = int(raw_stand)
-        year_like = 1900 <= raw_number <= 2100
-    except (TypeError, ValueError):
-        year_like = False
-    if raw_text in valid_by_text and not year_like:
-        return valid_by_text[raw_text]
+        number = Decimal(value.strip())
+    except (InvalidOperation, ValueError):
+        return None
+    if (
+        not number.is_finite()
+        or number != number.to_integral_value()
+        or not 0 <= number <= JS_SAFE_INTEGER_MAX
+    ):
+        return None
+    return int(number)
+
+
+def _geometry_label_point(geometry) -> list[float] | None:
+    """Return an interior map-label point in GeoJSON [lon, lat] order."""
+    if not isinstance(geometry, dict):
+        return None
+    try:
+        geometry_shape = shape(geometry)
+        if geometry_shape.is_empty or not geometry_shape.is_valid:
+            return None
+        point = geometry_shape.representative_point()
+        coordinates = [float(point.x), float(point.y)]
+        return coordinates if all(math.isfinite(value) for value in coordinates) else None
+    except Exception:
+        return None
+
+
+def _resolve_notice_stand(raw_stand, notice_area, valid_stands: set, stands_by_area: dict):
+    raw_number = _normalize_eraldis_nr(raw_stand)
+    year_like = raw_number is not None and 1900 <= raw_number <= 2100
+    if raw_number in valid_stands and not year_like:
+        return raw_number
     candidates = stands_by_area.get(round(float(notice_area or 0), 2), [])
     return candidates[0] if len(candidates) == 1 else None
 
@@ -398,6 +435,22 @@ def _prioritize_notice_rows(notices: list[dict], limit: int) -> list[dict]:
             seen_notice_keys.add(notice_key)
             first_rows.append(notice)
     return (first_rows + additional_rows)[:limit]
+
+
+def _notice_eraldis_nr(notice: dict):
+    canonical = notice.get("eraldis_nr")
+    if canonical is not None:
+        return _normalize_eraldis_nr(canonical)
+    legacy = _normalize_eraldis_nr(notice.get("eraldis"))
+    if legacy is None or 1900 <= legacy <= 2100:
+        return None
+    return legacy
+
+
+def _eraldis_sort_key(value) -> tuple[int, int]:
+    """Sort official compartment numbers numerically, with missing values last."""
+    number = _normalize_eraldis_nr(value)
+    return (0, number) if number is not None else (1, 0)
 
 
 def _inventory_summary(eraldised: list[dict], today: date | None = None) -> dict:
@@ -972,6 +1025,11 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     eraldised = results[0] if not isinstance(results[0], Exception) else []
     if isinstance(results[0], Exception):
         unavailable_sources.append("metsaregister.eraldised")
+    else:
+        eraldised = [
+            {**stand, "eraldis_nr": _normalize_eraldis_nr(stand.get("eraldis_nr"))}
+            for stand in eraldised
+        ]
     layers_data, unavailable_layers, truncated_layers = results[1] if not isinstance(results[1], Exception) else ({}, [key for key, _, _ in LAYER_CONFIGS], [])
     filtered_layers = {}
     for key, features in layers_data.items():
@@ -1425,6 +1483,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
                     "geometry": geom,
                     "properties": {
                         "eraldis_nr": e.get("eraldis_nr"),
+                        "label_point": _geometry_label_point(geom),
                         "puuliik": puuliik_nimi_map.get(kood, e.get("puuliik")),
                         "puuliik_kood": kood,
                         "vanus": e.get("vanus") or 0,
@@ -1446,6 +1505,14 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
                     }
                 })
 
+        sorted_eraldised_summary = sorted(
+            eraldised_summary,
+            key=lambda item: _eraldis_sort_key(item.get("eraldis_nr")),
+        )
+        eraldised_features.sort(
+            key=lambda feature: _eraldis_sort_key(feature.get("properties", {}).get("eraldis_nr"))
+        )
+
         mets_result = {
             "puuliik": puuliik_nimi_map.get(puuliik, primary.get("puuliik", puuliik)),
             "puuliik_kood": puuliik,
@@ -1461,7 +1528,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             "co2_tons_ha": carbon.get("co2_tons_ha"),
             "co2_tons_total": carbon.get("co2_tons_total"),
             "potential_income_eur": carbon.get("potential_income_eur"),
-            "eraldised": eraldised_summary,
+            "eraldised": sorted_eraldised_summary,
             "eraldisi_kokku": len(eraldised),
             "inventuur": inventory_summary,
         }
@@ -1746,13 +1813,12 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     for e in (eraldised or []):
         area = e.get("pindala_ha")
         nr = e.get("eraldis_nr")
-        if area is not None and nr is not None:
-            eraldised_by_area.setdefault(round(float(area), 2), []).append(nr)
+        if nr is not None:
             valid_eraldis_nrs.add(nr)
             if _parse_source_date(e.get("invent_kp")):
                 inventory_by_eraldis[str(nr)] = e.get("invent_kp")
-    valid_eraldis_texts = {str(value) for value in valid_eraldis_nrs}
-
+        if area is not None and nr is not None:
+            eraldised_by_area.setdefault(round(float(area), 2), []).append(nr)
     teatised = []
     for feat in teatised_features:
         p = feat.get("properties", {})
@@ -1762,6 +1828,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         expiry_date = _parse_source_date(kehtiv)
         active = bool(expiry_date and expiry_date >= date.today() and not p.get("arhiiv"))
         raw_eraldis = p.get("eraldise_nr")
+        normalized_raw_eraldis = _normalize_eraldis_nr(raw_eraldis)
         area = round(float(p.get("pindala") or 0), 2)
 
         # Kehtiv eraldise number on esmane seos. Pindala kasutatakse ainult
@@ -1772,7 +1839,10 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             valid_eraldis_nrs,
             eraldised_by_area,
         )
-        valid_raw_stand = str(raw_eraldis) in valid_eraldis_texts
+        valid_raw_stand = (
+            normalized_raw_eraldis in valid_eraldis_nrs
+            and not 1900 <= normalized_raw_eraldis <= 2100
+        ) if normalized_raw_eraldis is not None else False
         association_method = "eraldise_nr" if valid_raw_stand and eraldis_nr is not None else ("pindala" if eraldis_nr is not None else None)
         decision_date = p.get("otsus_kinnitatud_kp") or ""
         reference_inventory = inventory_by_eraldis.get(str(eraldis_nr)) if eraldis_nr is not None else None
@@ -1800,6 +1870,9 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             "maht": p.get("raiutav_maht"),
             "metskond": p.get("metskond") or "",
             "kvartal": p.get("kvartali_nr") or "",
+            "eraldis_nr": eraldis_nr,
+            "teatise_eraldis_nr": raw_eraldis,
+            # Public compatibility alias; new consumers use eraldis_nr.
             "eraldis": eraldis_nr,
             "otsuse_pohjendus": (p.get("otsuse_pohjendus") or p.get("otsuse_pojendus") or "")[:200],
             "otsus_kinnitatud_kp": str(decision_date).replace("Z", "")[:10],
@@ -2423,6 +2496,9 @@ def build_system_prompt(data: dict) -> str:
                 rida += f", otsus {_prompt_text(t['otsus_kinnitatud_kp'], 40)}"
             if t.get("maht") is not None:
                 rida += f", kavandatud maht {_prompt_number(t['maht'])} m³"
+            notice_eraldis_nr = _notice_eraldis_nr(t)
+            if notice_eraldis_nr is not None:
+                rida += f", eraldis {notice_eraldis_nr}"
             if t.get("parast_inventuuri") is True:
                 rida += ", inventuurist hilisem"
             elif t.get("parast_inventuuri") is None:

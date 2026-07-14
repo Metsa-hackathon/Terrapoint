@@ -1877,7 +1877,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     animation: cardIn 0.5s var(--ease-out) backwards;
     color: var(--ink-2);
 }
-/* Tighter padding on cards that hold the eraldised table — the 6-column
+/* Tighter padding on cards that hold the eraldised table — the 7-column
    table needs more horizontal room than the 28px default gives it. The
    table panel itself has padding:0, so reducing the card padding
    directly widens the available space. */
@@ -3582,6 +3582,28 @@ footer {
 }
 .leaflet-tooltip::before { border-top-color: var(--ink) !important; }
 
+.eraldis-label-wrap {
+    background: transparent !important;
+    border: none !important;
+    pointer-events: none;
+}
+.eraldis-label {
+    transform: translate(-50%, -50%);
+    min-width: 24px;
+    padding: 2px 6px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.84);
+    color: var(--white);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.35;
+    text-align: center;
+    white-space: nowrap;
+}
+
 /* Custom map markers */
 .custom-marker { cursor: pointer; }
 
@@ -3696,14 +3718,11 @@ footer {
 }
 .eraldised-table-header,
 .eraldised-row {
-    /* Column widths tuned to fit inside the eraldised-panel which is
-       ~300px wide on Mac 3-col layout. Puuliik min 0 lets it shrink,
-       Väärtus min 72px fits "12 074 €" with NBSP thousand separator. */
-    grid-template-columns: minmax(0, 1fr) 32px 48px 42px 46px 72px;
+    grid-template-columns: 72px minmax(80px, 1fr) 32px 48px 42px 46px 72px;
 }
 .teatised-table-header,
 .teatised-row {
-    grid-template-columns: minmax(72px, 1.05fr) 58px minmax(80px, 0.95fr) minmax(80px, 0.95fr) 60px;
+    grid-template-columns: minmax(72px, 1.05fr) 84px minmax(80px, 0.95fr) minmax(80px, 0.95fr) 60px;
 }
 .kitsendused-table-header,
 .kitsendused-row {
@@ -3716,8 +3735,8 @@ footer {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.eraldised-table-header > *:nth-child(n+2):nth-child(-n+5),
-.eraldised-row > *:nth-child(n+2):nth-child(-n+5) {
+.eraldised-table-header > *:nth-child(n+3):nth-child(-n+6),
+.eraldised-row > *:nth-child(n+3):nth-child(-n+6) {
     text-align: right;
 }
 .table-grid-row:hover { background: var(--paper-2); }
@@ -3736,6 +3755,7 @@ footer {
     background-size: 100% 24px, 100% 24px, 100% 10px, 100% 10px;
     background-attachment: local, local, scroll, scroll;
 }
+.eraldised-row .er-number { color: var(--ink-2); font-weight: 650; }
 .eraldised-row .er-species { font-weight: 500; }
 .eraldised-row .er-inventory,
 .teatised-type span {
@@ -4043,7 +4063,7 @@ footer {
 
     .eraldised-table-header,
     .eraldised-row {
-        grid-template-columns: minmax(80px, 1fr) 32px 46px 40px 46px 64px;
+        grid-template-columns: 72px minmax(80px, 1fr) 32px 46px 40px 46px 64px;
     }
     .teatised-table-header,
     .teatised-row {
@@ -4083,6 +4103,7 @@ footer {
     }
     .teatised-row .teatised-type-value { grid-column: 2; }
     .teatised-row .teatised-type span { margin-top: 0; }
+    .teatised-row .teatised-eraldis-prefix { display: none; }
     .kitsendused-table-header,
     .kitsendused-row {
         grid-template-columns: minmax(120px, 1fr) 72px;

@@ -64,7 +64,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl034">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl107">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl108">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -1545,8 +1545,9 @@
 
         var list = document.createElement('div');
         list.className = 'eraldis-sheet-list';
-        eraldised.forEach(function(e) {
-            var nr = e.eraldis_nr || '?';
+        sortEraldisedForDisplay(eraldised).forEach(function(e) {
+            var nr = canonicalEraldisNumber(e.eraldis_nr);
+            var displayLabel = eraldisLabel(e.eraldis_nr);
             var liik = e.puuliik || '';
             var vanus = e.vanus != null ? e.vanus + 'a' : '';
             var pind = e.pindala_ha != null ? formatNum(e.pindala_ha, 2) + ' ha' : '';
@@ -1563,16 +1564,20 @@
             card.innerHTML =
                 '<span class="eraldis-sheet-dot" style="background:' + dot + '"></span>' +
                 '<span class="eraldis-sheet-body">' +
-                  '<span class="eraldis-sheet-nr">#' + escHtml(nr) + '</span>' +
+                  '<span class="eraldis-sheet-nr">' + escHtml(displayLabel) + '</span>' +
                   '<span class="eraldis-sheet-meta">' + escHtml(liik) + (vanus ? ' · ' + escHtml(vanus) : '') + (pind ? ' · ' + escHtml(pind) : '') + '</span>' +
                   '<span class="eraldis-sheet-sub">' + escHtml(ruhi) + (vaartus ? ' · ' + escHtml(vaartus) : '') + '</span>' +
                 '</span>' +
                 '<span class="eraldis-sheet-arrow">›</span>';
-            card.addEventListener('click', function() {
-                var q = 'Analüüsi eraldist ' + nr + ': anna hinnang selle eraldise seisukorrale, väärtusele ja soovitus (müüa, hoida, hooldusraie). Too välja kõik numbrid. Ära tee midagi drastilist, anna tasakaalustatud hinnang.';
-                aiSendMessage(q);
-                closeEraldisSheet();
-            });
+            if (nr === null) {
+                card.disabled = true;
+            } else {
+                card.addEventListener('click', function() {
+                    var q = 'Analüüsi eraldist ' + nr + ': anna hinnang selle eraldise seisukorrale, väärtusele ja soovitus (müüa, hoida, hooldusraie). Too välja kõik numbrid. Ära tee midagi drastilist, anna tasakaalustatud hinnang.';
+                    aiSendMessage(q);
+                    closeEraldisSheet();
+                });
+            }
             list.appendChild(card);
         });
         sheet.appendChild(list);
@@ -2050,6 +2055,7 @@
     function addEraldisedLayer(features) {
         if (typeof map === 'undefined' || !map) return;
         var geojson = { type: 'FeatureCollection', features: features };
+        var labels = L.layerGroup();
         var layer = L.geoJSON(geojson, {
             style: function(feature) {
                 var p = feature.properties || {};
@@ -2063,6 +2069,32 @@
             },
             onEachFeature: function(feature, layer) {
                 var p = feature.properties || {};
+                var eraldisNr = canonicalEraldisNumber(p.eraldis_nr);
+                if (eraldisNr !== null) {
+                    var center = null;
+                    var hasLabelPoint = Object.prototype.hasOwnProperty.call(p, 'label_point');
+                    if (
+                        Array.isArray(p.label_point)
+                        && p.label_point.length === 2
+                        && Number.isFinite(p.label_point[0])
+                        && Number.isFinite(p.label_point[1])
+                    ) {
+                        center = [p.label_point[1], p.label_point[0]];
+                    } else if (!hasLabelPoint) {
+                        try { center = layer.getBounds().getCenter(); } catch (_) {}
+                    }
+                    if (center) {
+                        L.marker(center, {
+                            icon: L.divIcon({
+                                className: 'eraldis-label-wrap',
+                                html: '<div class="eraldis-label">' + escHtml(eraldisNr) + '</div>',
+                                iconSize: null,
+                            }),
+                            interactive: false,
+                            keyboard: false,
+                        }).addTo(labels);
+                    }
+                }
                 var popupValue = p.vaartus_hinnang_eur != null ? p.vaartus_hinnang_eur : p.vaartus_eur;
                 var popupValueHa = p.vaartus_hinnang_per_ha != null ? p.vaartus_hinnang_per_ha : p.vaartus_per_ha;
                 var val = popupValue ? Math.round(popupValue).toLocaleString('et-EE').replace(/,/g, ' ') + ' €' : '—';
@@ -2072,7 +2104,7 @@
                 var vrColors = {noormets:'var(--blue-500)',keskmine:'var(--blue-700)',kups:'var(--blue-900)',vanamets:'var(--danger)'};
                 var vrColor = vrColors[p.vanuseruhm] || 'var(--ink-5)';
                 var html = '<div style="font-size:13px;min-width:200px">';
-                html += '<div style="font-weight:700;font-size:14px;margin-bottom:6px;color:var(--ink)">Eraldis ' + escHtml(p.eraldis_nr || '?') + '</div>';
+                html += '<div style="font-weight:700;font-size:14px;margin-bottom:6px;color:var(--ink)">' + escHtml(eraldisLabel(p.eraldis_nr)) + '</div>';
                 if (rLabel) html += '<div style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;color:white;background:' + rColor + ';margin-bottom:6px">' + escHtml(rLabel) + '</div>';
                 if (p.vanuseruhm_label) html += '<div style="display:inline-flex;align-items:center;gap:4px;margin-bottom:6px;margin-left:4px"><span style="width:8px;height:8px;border-radius:50%;background:' + vrColor + '"></span><strong style="font-size:12px">' + escHtml(p.vanuseruhm_label) + '</strong></div>';
                 html += '<div style="display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:12px">';
@@ -2095,7 +2127,7 @@
                 layer.bindPopup(html);
             },
         });
-        overlayLayers['eraldised'] = layer.addTo(map);
+        overlayLayers['eraldised'] = L.layerGroup([layer, labels]).addTo(map);
         updateMapLegend(features);
     }
 
@@ -2252,6 +2284,40 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
     const EUR_FORMATTER = new Intl.NumberFormat('et-EE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
     const DATE_FORMATTER = new Intl.DateTimeFormat('et-EE', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
     const NUMBER_FORMATTERS = {};
+
+    function canonicalEraldisNumber(value) {
+        if (typeof value !== 'number' && typeof value !== 'string') return null;
+        var text = String(value).trim();
+        if (!text) return null;
+        var number = Number(text);
+        if (!Number.isSafeInteger(number) || number < 0) return null;
+        return String(number);
+    }
+
+    function eraldisLabel(value) {
+        var number = canonicalEraldisNumber(value);
+        return number === null ? 'Eraldise number puudub' : 'Eraldis ' + number;
+    }
+
+    function noticeEraldisNumber(notice) {
+        if (!notice) return null;
+        var hasCanonical = notice.eraldis_nr !== null && notice.eraldis_nr !== undefined;
+        var value = hasCanonical ? notice.eraldis_nr : notice.eraldis;
+        var number = canonicalEraldisNumber(value);
+        if (number === null) return null;
+        if (!hasCanonical && Number(number) >= 1900 && Number(number) <= 2100) return null;
+        return number;
+    }
+
+    function sortEraldisedForDisplay(items) {
+        return (Array.isArray(items) ? items : []).slice().sort(function(a, b) {
+            var left = canonicalEraldisNumber(a && a.eraldis_nr);
+            var right = canonicalEraldisNumber(b && b.eraldis_nr);
+            if (left === null) return right === null ? 0 : 1;
+            if (right === null) return -1;
+            return left.localeCompare(right, 'et-EE', { numeric: true, sensitivity: 'base' });
+        });
+    }
 
     function formatEur(n) {
         if (n == null) return '—';
@@ -2619,16 +2685,18 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             // Table
             html += '<div class="table-grid-hscroll">';
             html += '<div class="table-grid-header eraldised-table-header">';
-            html += '<div>Puuliik</div><div>Vanus</div><div>Tagavara</div><div>Boniteet</div><div>Pindala</div><div style="text-align:right">Väärtus</div>';
+            html += '<div>Eraldis</div><div>Puuliik</div><div>Vanus</div><div>Tagavara</div><div>Boniteet</div><div>Pindala</div><div style="text-align:right">Väärtus</div>';
             html += '</div>';
 
             html += '<div class="table-grid-scroll">';
-            data.eraldised.forEach(function(e) {
+            sortEraldisedForDisplay(data.eraldised).forEach(function(e) {
                 var sp = speciesName(e.puuliik_kood || e.puuliik, e.puuliik);
                 var b = e.boniteet || BONITEET_LABELS[e.boniteedi_kood] || '—';
                 var standEstimate = e.vaartus_hinnang_eur != null ? e.vaartus_hinnang_eur : e.vaartus_eur;
                 var v = standEstimate ? formatEur(standEstimate) : '—';
+                var standLabel = eraldisLabel(e.eraldis_nr);
                 html += '<div class="table-grid-row eraldised-row">';
+                html += '<div class="er-number" title="' + escHtml(standLabel) + '" aria-label="' + escHtml(standLabel) + '">' + escHtml(standLabel) + '</div>';
                 html += '<div class="er-species">' + escHtml(sp) + (e.invent_kp ? '<span class="er-inventory">Invent. ' + formatDateEt(e.invent_kp) + '</span>' : '') + '</div>';
                 html += '<div>' + (e.vanus || '—') + '</div>';
                 html += '<div>' + formatNum(e.elus_tagavara_ha != null ? e.elus_tagavara_ha : e.tagavara_y_ha) + '</div>';
@@ -2994,25 +3062,10 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
          html += '<div class="table-grid-scroll">';
          data.forEach(function(t) {
-             // Metsaregistri WFS-i andmekvaliteedi viga: mõnede teatiste puhul
-             // on `eraldise_nr` väljas hoopis aasta (nt 2026, 2028) või
-             // otsuse number, mitte tegelik eraldise number. Tuvastame
-             // aasta-laadse väärtuse (täisarv 1900–2100) ja kuvame "—",
-             // et vältida segadust Kehtiv kuni veerus oleva aastaga.
-             var raw = t.eraldis;
-             var eraldisNr = '';
-             if (raw !== null && raw !== undefined && raw !== '') {
-                 var n = Number(raw);
-                 if (Number.isFinite(n) && Number.isInteger(n) && n >= 1900 && n <= 2100) {
-                     eraldisNr = ''; // aasta — ära kuva
-                 } else {
-                     eraldisNr = String(raw);
-                 }
-             }
-             // Veerg "Eraldis" näitab ainult numbrit (nt 901), et mobiilis
-             // ei läheks kärbitud. Täistekst "Eraldis 901" on tooltip-is.
-             var eraldisCell = eraldisNr !== ''
-                 ? '<span class="teatised-eraldis-nr" title="Eraldis ' + escHtml(eraldisNr) + '">' + escHtml(eraldisNr) + '</span>'
+             var eraldisNr = noticeEraldisNumber(t);
+             var eraldisText = eraldisNr === null ? null : eraldisLabel(eraldisNr);
+             var eraldisCell = eraldisNr !== null
+                 ? '<span class="teatised-eraldis-nr" title="' + escHtml(eraldisText) + '" aria-label="' + escHtml(eraldisText) + '"><span class="teatised-eraldis-prefix">Eraldis </span>' + escHtml(eraldisNr) + '</span>'
                  : '<span class="muted">—</span>';
             html += '<div class="table-grid-row teatised-row">';
             var noticeMeta = [];
@@ -3179,7 +3232,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         }
         function renderMatchRow(e) {
             var html = '<div class="toetus-eraldis-row">';
-            html += '<div class="toetus-eraldis-heading">Eraldis ' + escHtml(String(e.eraldis_nr));
+            html += '<div class="toetus-eraldis-heading">' + escHtml(eraldisLabel(e.eraldis_nr));
             if (e.pindala_ha) html += ' · ' + formatNum(e.pindala_ha, 2) + ' ha';
             html += '</div><div class="toetus-eraldis-reason">' + escHtml(e.match_reason) + '</div></div>';
             return html;

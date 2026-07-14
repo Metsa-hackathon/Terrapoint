@@ -88,6 +88,27 @@ class MetsaregisterDataTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(eraldised[0]["tagavara_y_ha"], 0)
 
+    async def test_stand_keeps_internal_id_separate_from_official_compartment_number(self):
+        features = [{
+            "id": "eraldis.122861",
+            "properties": {
+                "sys_id": 20206585,
+                "id": 11108251,
+                "eraldise_nr": 16,
+                "peapuuliik_kood": "MA",
+                "tagavara_1_ha": 100,
+                "boniteedi_kood": 2,
+                "pindala": 1.5,
+            },
+        }]
+
+        with patch("services.metsaregister._wfs_get", new=AsyncMock(return_value=features)):
+            stands = await query_eraldis("78404:409:0113")
+
+        self.assertEqual(stands[0]["id"], 11108251)
+        self.assertEqual(stands[0]["eraldis_nr"], 16)
+        self.assertNotEqual(stands[0]["id"], stands[0]["eraldis_nr"])
+
     async def test_live_stand_stock_sums_first_second_and_individual_tree_storeys(self):
         features = [{
             "properties": {

@@ -64,8 +64,9 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("must-revalidate", cache_control)
 
     def test_changed_stylesheet_busts_the_previous_immutable_url(self):
-        self.assertIn('/static/css/style.css?r=jkl107', INDEX_HTML)
+        self.assertIn('/static/css/style.css?r=jkl108', INDEX_HTML)
         self.assertIn('/static/css/font-sizes.css?r=jkl034', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl107', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl106', INDEX_HTML)
         self.assertNotIn('/static/css/font-sizes.css?r=jkl033', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl105', INDEX_HTML)
@@ -165,12 +166,151 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("totalRows + ' eraldiseridu'", INDEX_HTML)
         self.assertNotIn("Krundil on tuvastatud hiljutine lageraie", INDEX_HTML)
 
-    def test_dashboard_removes_contextless_stand_numbers_but_keeps_details(self):
-        self.assertNotIn("'<div>#</div>", INDEX_HTML)
-        self.assertNotIn('class="er-nr"', INDEX_HTML)
-        self.assertNotIn('eraldis-label', INDEX_HTML)
-        self.assertIn('Eraldiste andmed', INDEX_HTML)
-        self.assertIn('grid-template-columns: minmax(0, 1fr) 32px 48px 42px 46px 72px;', STYLE_CSS)
+    def test_dashboard_uses_one_official_compartment_number_everywhere(self):
+        number_helper = re.search(r'function canonicalEraldisNumber\(value\).*?\n    }', INDEX_HTML, re.DOTALL)
+        label_helper = re.search(r'function eraldisLabel\(value\).*?\n    }', INDEX_HTML, re.DOTALL)
+        sort_helper = re.search(r'function sortEraldisedForDisplay\(items\).*?\n    }', INDEX_HTML, re.DOTALL)
+        self.assertIsNotNone(number_helper)
+        self.assertIsNotNone(label_helper)
+        self.assertIsNotNone(sort_helper)
+
+        script = f"""
+{number_helper.group(0)}
+{label_helper.group(0)}
+{sort_helper.group(0)}
+const stands = [
+  {{id: 11108251, eraldis_nr: 16}},
+  {{id: 9543691, eraldis_nr: 1}},
+  {{id: 9397257, eraldis_nr: 5}},
+  {{id: 12345678, eraldis_nr: null}},
+];
+const acceptedValues = [
+  0, 16, 16.0, '16', ' 16.0 ', '1e2',
+  Number.MAX_SAFE_INTEGER, String(Number.MAX_SAFE_INTEGER),
+];
+const rejectedValues = [
+  null, undefined, true, false, '', '   ', 'not-a-number',
+  -1, -1.0, '-1', 16.5, '16.5', NaN, Infinity, -Infinity, 'Infinity',
+  [], {{}}, Number.MAX_SAFE_INTEGER + 1, String(Number.MAX_SAFE_INTEGER + 1),
+];
+const sorted = sortEraldisedForDisplay(stands);
+console.log(JSON.stringify({{
+  numbers: sorted.map(item => canonicalEraldisNumber(item.eraldis_nr)),
+  labels: sorted.map(item => eraldisLabel(item.eraldis_nr)),
+  internalIds: sorted.map(item => item.id),
+  acceptedNumbers: acceptedValues.map(canonicalEraldisNumber),
+  rejectedNumbers: rejectedValues.map(canonicalEraldisNumber),
+}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertEqual(state["numbers"], ["1", "5", "16", None])
+        self.assertEqual(state["labels"], ["Eraldis 1", "Eraldis 5", "Eraldis 16", "Eraldise number puudub"])
+        self.assertEqual(state["internalIds"], [9543691, 9397257, 11108251, 12345678])
+        self.assertEqual(state["acceptedNumbers"], [
+            "0", "16", "16", "16", "16", "100",
+            "9007199254740991", "9007199254740991",
+        ])
+        self.assertEqual(state["rejectedNumbers"], [None] * 20)
+        self.assertIn("sortEraldisedForDisplay(data.eraldised).forEach", INDEX_HTML)
+        self.assertIn("sortEraldisedForDisplay(eraldised).forEach", INDEX_HTML)
+        self.assertIn('class="er-number"', INDEX_HTML)
+        self.assertIn("eraldisLabel(e.eraldis_nr)", INDEX_HTML)
+        self.assertIn("var labels = L.layerGroup();", INDEX_HTML)
+        self.assertIn("canonicalEraldisNumber(p.eraldis_nr)", INDEX_HTML)
+        self.assertIn("eraldisLabel(e.eraldis_nr)", INDEX_HTML)
+        self.assertIn(".eraldis-label", STYLE_CSS)
+
+        forest_render = re.search(r'function renderMets\(data\).*?\n    }', INDEX_HTML, re.DOTALL)
+        picker_render = re.search(r'function openEraldisSheet\(eraldised, triggerBtn\).*?\n    }', INDEX_HTML, re.DOTALL)
+        self.assertIsNotNone(forest_render)
+        self.assertIsNotNone(picker_render)
+        self.assertIn("canonicalEraldisNumber(e.eraldis_nr)", picker_render.group(0))
+        self.assertIn("sortEraldisedForDisplay(data.eraldised).forEach(function(e)", forest_render.group(0))
+        self.assertIn("var standLabel = eraldisLabel(e.eraldis_nr);", forest_render.group(0))
+        self.assertIn(
+            "'<div class=\"er-number\" title=\"' + escHtml(standLabel) + '\" aria-label=\"' + escHtml(standLabel) + '\">'",
+            forest_render.group(0),
+        )
+        self.assertNotIn("(i + 1)", forest_render.group(0))
+
+    def test_map_labels_prefer_server_point_with_old_backend_fallback(self):
+        map_render = re.search(r'function addEraldisedLayer\(features\).*?\n    }', INDEX_HTML, re.DOTALL)
+        label_css = re.search(r'(?m)^\.eraldis-label \{([^}]*)\}', STYLE_CSS)
+        self.assertIsNotNone(map_render)
+        self.assertIsNotNone(label_css)
+
+        source = map_render.group(0)
+        self.assertIn("canonicalEraldisNumber(p.eraldis_nr)", source)
+        self.assertIn("Object.prototype.hasOwnProperty.call(p, 'label_point')", source)
+        self.assertIn("[p.label_point[1], p.label_point[0]]", source)
+        self.assertIn("layer.getBounds().getCenter()", source)
+        self.assertNotIn("iconAnchor: [0, 0]", source)
+        self.assertIn("transform: translate(-50%, -50%);", label_css.group(1))
+
+    def test_notice_compartment_number_prefers_canonical_and_supports_legacy_responses(self):
+        number_helper = re.search(r'function canonicalEraldisNumber\(value\).*?\n    }', INDEX_HTML, re.DOTALL)
+        notice_helper = re.search(r'function noticeEraldisNumber\(notice\).*?\n    }', INDEX_HTML, re.DOTALL)
+        render = re.search(r'function renderTeatised\(data, meta\).*?\n    }', INDEX_HTML, re.DOTALL)
+        self.assertIsNotNone(number_helper)
+        self.assertIsNotNone(notice_helper)
+        self.assertIsNotNone(render)
+
+        script = f"""
+{number_helper.group(0)}
+{notice_helper.group(0)}
+console.log(JSON.stringify({{
+  canonical: noticeEraldisNumber({{eraldis_nr: 16, eraldis: 9543691, teatise_eraldis_nr: 11108251}}),
+  legacyMissing: noticeEraldisNumber({{eraldis: 5}}),
+  legacyNull: noticeEraldisNumber({{eraldis_nr: null, eraldis: 7}}),
+  canonicalNumeric: noticeEraldisNumber({{eraldis_nr: '16.0', eraldis: 5}}),
+  legacyNumeric: noticeEraldisNumber({{eraldis: '5.0'}}),
+  legacyZero: noticeEraldisNumber({{eraldis: '0.0'}}),
+  legacyInvalid: noticeEraldisNumber({{eraldis: '5.5'}}),
+  legacyYear: noticeEraldisNumber({{eraldis: '2026.0'}}),
+  rawOnly: noticeEraldisNumber({{teatise_eraldis_nr: 11108251}}),
+}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertEqual(state["canonical"], "16")
+        self.assertEqual(state["legacyMissing"], "5")
+        self.assertEqual(state["legacyNull"], "7")
+        self.assertEqual(state["canonicalNumeric"], "16")
+        self.assertEqual(state["legacyNumeric"], "5")
+        self.assertEqual(state["legacyZero"], "0")
+        self.assertIsNone(state["legacyInvalid"])
+        self.assertIsNone(state["legacyYear"])
+        self.assertIsNone(state["rawOnly"])
+        self.assertIn("var eraldisNr = noticeEraldisNumber(t);", render.group(0))
+        self.assertIn("eraldisLabel(eraldisNr)", render.group(0))
+        self.assertNotIn("t.eraldis", render.group(0))
+        self.assertNotIn("teatise_eraldis_nr", render.group(0))
+
+    def test_notice_compartment_column_preserves_full_ellipsized_label(self):
+        render = re.search(r'function renderTeatised\(data, meta\).*?\n    }', INDEX_HTML, re.DOTALL)
+        desktop_columns = re.search(
+            r"(?m)^\.teatised-table-header,\s*\n\.teatised-row \{\s*\n\s*grid-template-columns: ([^;]+);",
+            STYLE_CSS,
+        )
+        self.assertIsNotNone(render)
+        self.assertIsNotNone(desktop_columns)
+        self.assertIn("84px", desktop_columns.group(1))
+        self.assertIn('<span class="teatised-eraldis-prefix">Eraldis </span>', render.group(0))
+        self.assertNotIn("eraldisText.slice", render.group(0))
+        self.assertIn("escHtml(eraldisNr)", render.group(0))
+        self.assertIn("title=\"' + escHtml(eraldisText) + '\"", render.group(0))
+        self.assertIn("aria-label=\"' + escHtml(eraldisText) + '\"", render.group(0))
+        mobile_prefix_rule = ".teatised-row .teatised-eraldis-prefix { display: none; }"
+        self.assertIn(mobile_prefix_rule, STYLE_CSS)
+        prefix_rule_index = STYLE_CSS.index(mobile_prefix_rule)
+        mobile_breakpoint_index = STYLE_CSS.rfind("@media (max-width: 640px) {", 0, prefix_rule_index)
+        next_breakpoint_index = STYLE_CSS.find("@media (", prefix_rule_index)
+        self.assertGreater(mobile_breakpoint_index, -1)
+        self.assertLess(prefix_rule_index, next_breakpoint_index)
+        self.assertIn("grid-template-columns: minmax(0, 1fr);", STYLE_CSS)
 
     def test_results_start_at_dashboard_and_cards_keep_natural_height(self):
         self.assertNotIn("document.getElementById('card-vaartus')", INDEX_HTML)

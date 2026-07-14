@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import AsyncMock, patch
 
 import orjson
+from shapely.geometry import Point, shape
 
 from api import index as api
 
@@ -14,6 +15,239 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         api.search_cache.clear()
         api._search_in_flight.clear()
         api._search_waiters.clear()
+
+    def test_compartment_display_sort_uses_official_number_not_internal_id(self):
+        stands = [
+            {"id": 11108251, "eraldis_nr": 16},
+            {"id": 9543691, "eraldis_nr": 1},
+            {"id": 9397257, "eraldis_nr": 5},
+            {"id": 12345678, "eraldis_nr": None},
+        ]
+
+        ordered = sorted(stands, key=lambda stand: api._eraldis_sort_key(stand["eraldis_nr"]))
+
+        self.assertEqual([stand["eraldis_nr"] for stand in ordered], [1, 5, 16, None])
+        self.assertEqual([stand["id"] for stand in ordered], [9543691, 9397257, 11108251, 12345678])
+
+    def test_official_compartment_number_normalization_accepts_only_javascript_safe_integers(self):
+        javascript_safe_max = 9_007_199_254_740_991
+        accepted = [
+            (0, 0),
+            (16, 16),
+            (16.0, 16),
+            ("16", 16),
+            (" 16.0 ", 16),
+            ("1e2", 100),
+            (javascript_safe_max, javascript_safe_max),
+            (float(javascript_safe_max), javascript_safe_max),
+            (str(javascript_safe_max), javascript_safe_max),
+        ]
+        for value, expected in accepted:
+            with self.subTest(value=value):
+                self.assertEqual(api._normalize_eraldis_nr(value), expected)
+
+        rejected = [
+            None,
+            True,
+            False,
+            "",
+            "   ",
+            "not-a-number",
+            -1,
+            -1.0,
+            "-1",
+            16.5,
+            "16.5",
+            float("inf"),
+            float("-inf"),
+            float("nan"),
+            "inf",
+            "NaN",
+            javascript_safe_max + 1,
+            float(javascript_safe_max + 1),
+            str(javascript_safe_max + 1),
+            "1e20",
+            [16],
+            {"number": 16},
+        ]
+        for value in rejected:
+            with self.subTest(value=value):
+                self.assertIsNone(api._normalize_eraldis_nr(value))
+
+    def test_geometry_label_point_is_covered_by_concave_polygon(self):
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[
+                [20, 58], [24, 58], [24, 59], [21, 59],
+                [21, 62], [20, 62], [20, 58],
+            ]],
+        }
+
+        label_point = api._geometry_label_point(geometry)
+
+        self.assertIsNotNone(label_point)
+        self.assertTrue(shape(geometry).covers(Point(*label_point)))
+        self.assertFalse(shape(geometry).covers(Point(22, 60)))
+
+    def test_geometry_label_point_is_covered_by_multipolygon(self):
+        geometry = {
+            "type": "MultiPolygon",
+            "coordinates": [
+                [[[20, 58], [21, 58], [21, 59], [20, 59], [20, 58]]],
+                [[[30, 60], [34, 60], [34, 64], [30, 64], [30, 60]]],
+            ],
+        }
+
+        label_point = api._geometry_label_point(geometry)
+
+        self.assertIsNotNone(label_point)
+        self.assertTrue(shape(geometry).covers(Point(*label_point)))
+        self.assertFalse(shape(geometry).covers(Point(27, 61)))
+
+    def test_geometry_label_point_rejects_invalid_or_empty_geometry(self):
+        invalid_geometries = [
+            None,
+            {},
+            {"type": "Polygon", "coordinates": []},
+            {"type": "Polygon", "coordinates": "invalid"},
+            {
+                "type": "Polygon",
+                "coordinates": [[[0, 0], [2, 2], [0, 2], [2, 0], [0, 0]]],
+            },
+        ]
+
+        for geometry in invalid_geometries:
+            with self.subTest(geometry=geometry):
+                self.assertIsNone(api._geometry_label_point(geometry))
+
+    async def test_search_sorts_official_numbers_without_mispairing_calculated_prices(self):
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        kataster = {
+            "number": "78404:409:0113",
+            "geometry": geometry,
+            "pindala_ha": 6,
+        }
+        stands = [
+            {
+                "id": 11108251,
+                "eraldis_nr": 16,
+                "geometry": geometry,
+                "pindala_ha": 1,
+                "puuliik_kood": "MA",
+                "puuliik": "mänd",
+                "vanus": 60,
+                "tagavara_y_ha": 10,
+                "boniteedi_kood": 2,
+            },
+            {
+                "id": 9543691,
+                "eraldis_nr": 1,
+                "geometry": geometry,
+                "pindala_ha": 2,
+                "puuliik_kood": "LV",
+                "puuliik": "hall lepp",
+                "vanus": 40,
+                "tagavara_y_ha": 100,
+                "boniteedi_kood": 3,
+            },
+            {
+                "id": 9397257,
+                "eraldis_nr": 5,
+                "geometry": geometry,
+                "pindala_ha": 3,
+                "puuliik_kood": "KU",
+                "puuliik": "kuusk",
+                "vanus": 80,
+                "tagavara_y_ha": 50,
+                "boniteedi_kood": 1,
+            },
+        ]
+
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=stands)),
+            patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
+            patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        summaries = result["mets"]["eraldised"]
+        map_features = result["map_layers"]["eraldised"]["features"]
+        self.assertEqual([stand["eraldis_nr"] for stand in summaries], [1, 5, 16])
+        self.assertEqual([stand["hinnang_seisuhind"] for stand in summaries], [21.1, 82.1, 78.6])
+        self.assertEqual([feature["properties"]["eraldis_nr"] for feature in map_features], [1, 5, 16])
+        for feature in map_features:
+            label_point = feature["properties"]["label_point"]
+            self.assertTrue(shape(feature["geometry"]).covers(Point(*label_point)))
+        expected_weighted_price = round((78.6 * 10 + 21.1 * 200 + 82.1 * 150) / 360, 2)
+        self.assertEqual(result["vaartus"]["base_price_per_m3"], expected_weighted_price)
+
+    async def test_search_normalizes_invalid_official_numbers_and_serializes_without_internal_ids(self):
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        kataster = {
+            "number": "78404:409:0113",
+            "geometry": geometry,
+            "pindala_ha": 1,
+        }
+        stands = [
+            {
+                "id": 11108251,
+                "eraldis_nr": [16],
+                "geometry": geometry,
+                "pindala_ha": 1,
+                "puuliik_kood": "MA",
+                "puuliik": "mänd",
+                "vanus": 60,
+                "tagavara_y_ha": 100,
+                "boniteedi_kood": 2,
+            },
+            {
+                "id": 9543691,
+                "eraldis_nr": "1e20",
+                "geometry": geometry,
+                "pindala_ha": 1,
+                "puuliik_kood": "LV",
+                "puuliik": "hall lepp",
+                "vanus": 40,
+                "tagavara_y_ha": 50,
+                "boniteedi_kood": 3,
+            },
+        ]
+        element_query = AsyncMock(return_value=[])
+
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=stands)),
+            patch("api.index.query_eraldis_element", new=element_query),
+            patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        response = api.json_response(result)
+        serialized = orjson.loads(response.body)
+        self.assertEqual([stand["eraldis_nr"] for stand in serialized["mets"]["eraldised"]], [None, None])
+        self.assertEqual(
+            [feature["properties"]["eraldis_nr"] for feature in serialized["map_layers"]["eraldised"]["features"]],
+            [None, None],
+        )
+        self.assertNotIn(b"11108251", response.body)
+        self.assertNotIn(b"9543691", response.body)
+        self.assertEqual(
+            [awaited.args[0] for awaited in element_query.await_args_list],
+            [11108251, 9543691],
+        )
 
     async def test_timeout_is_a_retryable_gateway_timeout(self):
         with patch("api.index._search_core", new=AsyncMock(side_effect=asyncio.TimeoutError)):
@@ -644,13 +878,22 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             "eraldise_nr": 1,
             "pindala": 0.5,
         }}
-        unmatched_notice = {"properties": {
+        recovered_notice = {"properties": {
             "teatise_nr": "C",
             "too_kood": "LR",
             "otsus": "JAH",
             "otsus_kinnitatud_kp": "2025-03-10T10:00:00Z",
             "raiutav_maht": 30,
             "eraldise_nr": 2026,
+            "pindala": 1,
+        }}
+        unmatched_notice = {"properties": {
+            "teatise_nr": "D",
+            "too_kood": "LR",
+            "otsus": "JAH",
+            "otsus_kinnitatud_kp": "2025-04-10T10:00:00Z",
+            "raiutav_maht": 40,
+            "eraldise_nr": 2028,
             "pindala": 0.4,
         }}
 
@@ -660,7 +903,7 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
             patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
             patch("api.index.query_all_layers", new=AsyncMock(return_value=({"lageraiealad": [clearcut]}, [], []))),
-            patch("api.index.query_teatised", new=AsyncMock(return_value=[notice, notice_second_row, notice_without_volume, unmatched_notice])),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[notice, notice_second_row, notice_without_volume, recovered_notice, unmatched_notice])),
             patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
         ):
             result = await api._search_core("78404:409:0113", api.time.time())
@@ -676,14 +919,24 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         notices = {notice["number"]: notice for notice in result["teatised"]}
         self.assertTrue(notices["A"]["parast_inventuuri"])
         self.assertIsNone(notices["C"]["parast_inventuuri"])
+        self.assertIsNone(notices["D"]["parast_inventuuri"])
+        self.assertEqual(notices["A"]["eraldis_nr"], 1)
+        self.assertEqual(notices["A"]["eraldis"], 1)
+        self.assertEqual(notices["A"]["teatise_eraldis_nr"], 1)
+        self.assertEqual(notices["C"]["eraldis_nr"], 1)
+        self.assertEqual(notices["C"]["eraldis"], 1)
+        self.assertEqual(notices["C"]["teatise_eraldis_nr"], 2026)
+        self.assertIsNone(notices["D"]["eraldis_nr"])
+        self.assertIsNone(notices["D"]["eraldis"])
+        self.assertEqual(notices["D"]["teatise_eraldis_nr"], 2028)
         self.assertEqual(notices["B"]["otsuse_pohjendus"], "Arhiivi põhjendus")
         self.assertEqual(result["mets"]["inventuur"]["inventuurijargsed_teatised"], 2)
         self.assertEqual(result["mets"]["inventuur"]["inventuurijargsed_teatise_read"], 3)
         self.assertEqual(result["mets"]["inventuur"]["inventuurijargne_kavandatud_maht_m3"], 70)
         self.assertEqual(result["mets"]["inventuur"]["inventuurijargse_teatise_maht_puudub"], 1)
-        self.assertEqual(result["mets"]["inventuur"]["inventuuri_seos_teadmata_teatised"], 1)
-        self.assertEqual(result["teatised_meta"]["teatisi_kokku"], 3)
-        self.assertEqual(result["teatised_meta"]["ridu_kokku"], 4)
+        self.assertEqual(result["mets"]["inventuur"]["inventuuri_seos_teadmata_teatised"], 2)
+        self.assertEqual(result["teatised_meta"]["teatisi_kokku"], 4)
+        self.assertEqual(result["teatised_meta"]["ridu_kokku"], 5)
 
     async def test_partial_notice_layers_preserve_rows_and_mark_search_partial(self):
         geometry = {
