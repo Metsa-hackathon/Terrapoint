@@ -154,6 +154,37 @@ def _distinct_notice_count(notices: list[dict]) -> int:
     return len(keys)
 
 
+AI_OPTIONAL_UNAVAILABLE_SOURCES = {
+    "metsaregister.eraldis_element",
+    "metsaregister.kahjustused",
+    "metsaregister.teatis",
+    "metsaregister.teatis_arhiiv",
+    "metsaregister.teatised",
+    "metsaregister.natura_2000",
+} | {f"layers.{config[0]}" for config in LAYER_CONFIGS}
+
+
+def _ai_analysis_available(data: dict) -> bool:
+    """Allow degraded analysis only when parcel and core forest data exist."""
+    kataster = data.get("kataster") or {}
+    if not kataster.get("number") or not data.get("mets"):
+        return False
+
+    meta = data.get("meta")
+    if not isinstance(meta, dict) or not isinstance(meta.get("partial"), bool):
+        return False
+    if "unavailable_sources" not in meta:
+        return False
+    unavailable_sources = meta.get("unavailable_sources", [])
+    if not isinstance(unavailable_sources, list):
+        return False
+    if any(not isinstance(source, str) for source in unavailable_sources):
+        return False
+    if meta.get("partial") and not unavailable_sources:
+        return False
+    return all(source in AI_OPTIONAL_UNAVAILABLE_SOURCES for source in unavailable_sources)
+
+
 def _prioritize_notice_rows(notices: list[dict], limit: int) -> list[dict]:
     """Keep active and distinct notices visible before repeated stand rows."""
     sorted_notices = sorted(
@@ -1551,7 +1582,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         "ridu_kuvatud": len(teatised_response),
     }
 
-    return {
+    result = {
         "kataster": kataster_data,
         "mets": mets_result,
         "vaartus": vaartus_result,
@@ -1573,6 +1604,8 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             "truncated_layers": sorted(set(truncated_layers)),
         },
     }
+    result["meta"]["ai_analysis_available"] = _ai_analysis_available(result)
+    return result
 
 
 async def _search_uncached(kataster_nr: str) -> tuple[dict, int]:
@@ -1732,6 +1765,7 @@ def build_system_prompt(data: dict) -> str:
     teatised = data.get("teatised", [])
     teatised_meta = data.get("teatised_meta", {})
     kahjustused = data.get("kahjustused", [])
+    meta = data.get("meta") or {}
 
     # Accept both backend names (pindala_ha, tagavara_y_ha) and simpler
     # frontend names (pindala, tagavara). The frontend sends the latter.
@@ -1751,6 +1785,35 @@ def build_system_prompt(data: dict) -> str:
     lines.append(f"Omandivorm: {_prompt_text(k.get('omvorm', 'N/A'), 100)}")
     lines.append(f"Maksustamishind: {_prompt_number(k.get('maks_hind'), 'N/A')} EUR")
     lines.append(f"Metsamaa pindala: {mets_pindala} ha")
+
+    unavailable_sources = meta.get("unavailable_sources") or []
+    truncated_layers = meta.get("truncated_layers") or []
+    has_data_limitations = bool(
+        meta.get("partial")
+        or unavailable_sources
+        or meta.get("details_skipped")
+        or meta.get("sampled_eraldised")
+        or truncated_layers
+    )
+    if has_data_limitations:
+        lines.append("")
+        lines.append("--- ANDMEPIIRANGUD ---")
+        if unavailable_sources:
+            lines.append(
+                "Laadimata allikad: "
+                + ", ".join(_prompt_text(source, 100) for source in unavailable_sources[:20])
+            )
+        if meta.get("details_skipped") or meta.get("sampled_eraldised"):
+            lines.append("Metsa detailandmed jäid osaliselt laadimata või põhinevad valimil.")
+        if truncated_layers:
+            lines.append(
+                "Mahupiiri tõttu kärbitud kaardikihid: "
+                + ", ".join(_prompt_text(layer, 80) for layer in truncated_layers[:20])
+            )
+        lines.append(
+            "Ära järelda puuduvast allikast, et vastavat piirangut, teatist, kahjustust või muud nähtust ei ole. "
+            "Nimeta vastuses analüüsi mõjutav andmepiirang."
+        )
 
     if m:
         lines.append("")
@@ -2060,8 +2123,8 @@ async def chat(request: Request):
         data_kataster = str(data.get("kataster", {}).get("number", "")).strip()
         if data_kataster and data_kataster != kataster_nr:
             return json_response({"error": "Andmed ei vasta katastri numbrile. Otsi kinnistu uuesti."}, 400)
-        if data.get("meta", {}).get("partial"):
-            return json_response({"error": "AI analüüs vajab täielikke kinnistuandmeid. Otsi kinnistu uuesti."}, 409)
+        if not _ai_analysis_available(data):
+            return json_response({"error": "AI analüüs vajab katastri ja metsa põhiandmeid. Otsi kinnistu uuesti."}, 409)
 
         sanitized_history = _sanitize_chat_history(history)
 

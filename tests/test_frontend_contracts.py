@@ -274,6 +274,12 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("return sources.length === 0 ||", helper.group(0))
         self.assertIn("if (shouldShowBroadPartialWarning(data.meta))", INDEX_HTML)
 
+    def test_ai_uses_dedicated_readiness_instead_of_general_partial_state(self):
+        self.assertIn("data.meta.ai_analysis_available === true", INDEX_HTML)
+        self.assertNotIn("data.kataster && !(data.meta && data.meta.partial)", INDEX_HTML)
+        self.assertIn("AI analüüs vajab katastri ja metsa põhiandmeid", API_PY)
+        self.assertNotIn("AI analüüs vajab täielikke kinnistuandmeid", API_PY)
+
     def test_registry_dates_are_validated_before_formatting(self):
         self.assertIn("if (!match) return '—';", INDEX_HTML)
         self.assertIn("date.getUTCFullYear() !== year", INDEX_HTML)

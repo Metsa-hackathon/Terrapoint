@@ -172,6 +172,7 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result["meta"]["partial"])
         self.assertIn("metsaregister.eraldised", result["meta"]["unavailable_sources"])
+        self.assertFalse(result["meta"]["ai_analysis_available"])
         self.assertIsNone(result["mets"])
         climate = next(item for item in result["toetused"] if item["id"] == "kliimakindla-metsa-kujundamine")
         self.assertEqual(climate["eligibility_status"], "Vajab kontrolli")
@@ -426,6 +427,7 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             ["metsaregister.eraldis_element", "metsaregister.kahjustused"],
         )
         self.assertTrue(result["meta"]["partial"])
+        self.assertTrue(result["meta"]["ai_analysis_available"])
 
     async def test_detail_failure_marks_only_the_failed_source(self):
         kataster = {
@@ -459,6 +461,7 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             result = await api._search_core("78404:409:0113", api.time.time())
 
         self.assertEqual(result["meta"]["unavailable_sources"], ["metsaregister.eraldis_element"])
+        self.assertTrue(result["meta"]["ai_analysis_available"])
         self.assertEqual(len(result["kahjustused"]), 1)
 
     async def test_intentional_detail_skip_is_not_reported_as_source_failure(self):

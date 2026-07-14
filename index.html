@@ -1395,9 +1395,9 @@
         if (input) input.disabled = true;
         if (send) send.disabled = true;
         var messages = document.getElementById('ai-chat-messages');
-        if (messages) messages.innerHTML = '<div class="ai-welcome">AI analüüs on saadaval pärast täielike kinnistuandmete laadimist.</div>';
+        if (messages) messages.innerHTML = '<div class="ai-welcome">AI analüüs vajab katastri ja metsa põhiandmeid.</div>';
         var subtitle = document.querySelector('.ai-chat-subtitle');
-        if (subtitle) subtitle.textContent = 'Osa andmeallikaid ei vastanud. Proovi otsingut uuesti.';
+        if (subtitle) subtitle.textContent = 'Metsa põhiandmeid ei õnnestunud laadida. Proovi otsingut uuesti.';
     }
 
     function aiShowAnalyzeButton() {
@@ -3786,9 +3786,9 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             }
 
             // Trigger AI analysis
-            if (data.kataster && !(data.meta && data.meta.partial)) {
+            if (data.kataster && data.meta && data.meta.ai_analysis_available === true) {
                 aiAnalyzeKataster(data.kataster.number, data.mets ? data.mets.eraldised : null);
-            } else if (data.meta && data.meta.partial) {
+            } else {
                 aiShowUnavailableData();
             }
 
