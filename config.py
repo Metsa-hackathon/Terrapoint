@@ -21,7 +21,16 @@ def _parse_cors_origins() -> list[str]:
     raw = os.getenv("CORS_ORIGINS", "")
     origins = [origin.strip().rstrip("/") for origin in raw.split(",") if origin.strip()]
     if not origins or "*" in origins:
-        return DEFAULT_CORS_ORIGINS
+        origins = list(DEFAULT_CORS_ORIGINS)
+    for environment_name in ("VERCEL_URL", "VERCEL_BRANCH_URL"):
+        preview_host = os.getenv(environment_name, "").strip().lower()
+        if (
+            preview_host.endswith(".vercel.app")
+            and all(char.isalnum() or char in ".-" for char in preview_host)
+        ):
+            preview_origin = f"https://{preview_host}"
+            if preview_origin not in origins:
+                origins.append(preview_origin)
     return origins
 
 

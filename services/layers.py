@@ -47,7 +47,10 @@ async def _fetch_layer(client, key, workspace, typename, bbox_str, attempts: int
                 return key, [], True, False
             if resp.status_code >= 400:
                 return key, [], True, False
-            features = resp.json().get("features", [])
+            payload = resp.json()
+            features = payload.get("features") if isinstance(payload, dict) else None
+            if not isinstance(features, list) or any(not isinstance(feature, dict) for feature in features):
+                return key, [], True, False
             return key, features, False, len(features) >= MAX_FEATURES_PER_LAYER
         except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError):
             if attempt + 1 < attempts:
@@ -70,8 +73,11 @@ async def query_all_layers(bbox_str: str) -> tuple[dict[str, list[dict]], list[s
     out = {}
     unavailable = []
     truncated = []
-    for r in results:
+    for config_item, r in zip(LAYER_CONFIGS, results):
         if isinstance(r, Exception):
+            key = config_item[0]
+            out[key] = []
+            unavailable.append(key)
             continue
         key, features, failed, may_be_truncated = r
         out[key] = features

@@ -265,7 +265,8 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn('"stand_data_complete": stand_data_complete', API_PY)
         self.assertIn('"protection_data_complete": protection_data_complete', API_PY)
         self.assertIn('"vep_data_complete": False', API_PY)
-        self.assertIn('layers_data.get("katsealad", [])', API_PY)
+        self.assertIn('spatial_status = _build_spatial_status(', API_PY)
+        self.assertIn('spatial_status["kaitseala"]["intersects"] is True', API_PY)
 
     def test_archive_notice_outage_does_not_show_broad_data_warning(self):
         helper = re.search(r'function shouldShowBroadPartialWarning\(meta\).*?\n    }', INDEX_HTML, re.DOTALL)
@@ -308,9 +309,369 @@ console.log(JSON.stringify(states.map(meta => [
 
     def test_ai_uses_dedicated_readiness_instead_of_general_partial_state(self):
         self.assertIn("data.meta.ai_analysis_available === true", INDEX_HTML)
+        self.assertIn("data.chat_snapshot", INDEX_HTML)
+        self.assertIn("snapshot: currentData.chat_snapshot", INDEX_HTML)
+        self.assertIn("delete trimmed.chat_snapshot", INDEX_HTML)
         self.assertNotIn("data.kataster && !(data.meta && data.meta.partial)", INDEX_HTML)
         self.assertIn("AI analüüs vajab katastri ja metsa põhiandmeid", API_PY)
         self.assertNotIn("AI analüüs vajab täielikke kinnistuandmeid", API_PY)
+
+    def test_eudr_protection_policy_is_tri_state_and_requires_complete_sources(self):
+        helper = re.search(r'function eudrProtectionState\(spatialStatus\).*?\n    }', INDEX_HTML, re.DOTALL)
+        self.assertIsNotNone(helper)
+        script = f"""
+{helper.group(0)}
+const states = [
+  {{
+    natura_2000: {{intersects: false, sources_complete: true}},
+    kaitseala: {{intersects: false, sources_complete: true}},
+    sood: {{intersects: false, sources_complete: true}},
+  }},
+  {{
+    natura_2000: {{intersects: null, sources_complete: false}},
+    kaitseala: {{intersects: false, sources_complete: true}},
+    sood: {{intersects: false, sources_complete: true}},
+  }},
+  {{
+    natura_2000: {{intersects: false, sources_complete: true}},
+    kaitseala: {{intersects: true, sources_complete: false}},
+    sood: {{intersects: false, sources_complete: true}},
+  }},
+  undefined,
+];
+console.log(JSON.stringify(states.map(eudrProtectionState)));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        states = json.loads(result.stdout)
+
+        self.assertEqual(states[0]["riskLevel"], "Madal risk — kaitseala ei ole")
+        self.assertTrue(states[0]["sourcesComplete"])
+        self.assertEqual(states[1]["riskLevel"], "Staatus teadmata — osa ruumiandmeid puudub")
+        self.assertFalse(states[1]["sourcesComplete"])
+        self.assertEqual(states[2]["riskLevel"], "Kõrge risk — kaitseala piirangud")
+        self.assertTrue(states[2]["kaitseala"])
+        self.assertFalse(states[2]["sourcesComplete"])
+        self.assertIsNone(states[3]["natura"])
+        self.assertFalse(states[3]["sourcesComplete"])
+
+    def test_reset_parcel_result_clears_previous_map_ai_and_value_state(self):
+        clear_helper = re.search(r'function clearParcelPanels\(\).*?\n    }', INDEX_HTML, re.DOTALL)
+        helper = re.search(r'function resetParcelResult\(requestId\).*?\n    }', INDEX_HTML, re.DOTALL)
+        self.assertIsNotNone(clear_helper)
+        self.assertIsNotNone(helper)
+        script = f"""
+var parcelSearchSequence = 4;
+var currentData = {{kataster: {{number: '78404:409:0113'}}}};
+var window = {{_timberValue: 100, _vaartusData: {{total: 100}}, _mapLayersData: {{eraldised: {{}}}}}};
+var parcelLayer = {{id: 'old'}};
+var overlayLayers = {{eraldised: {{}}, kaitsealad: {{}}}};
+var removedParcel = false;
+var popupClosed = false;
+var aiUnavailable = false;
+var hints = null;
+var restrictionsLink = {{style: {{display: 'block'}}}};
+var inputArea = {{style: {{display: ''}}}};
+var sheet = {{removed: false, remove() {{ this.removed = true; }}}};
+var katasterPanel = {{innerHTML: '78404:409:0113'}};
+var eudrPanel = {{innerHTML: 'EUDR eksport'}};
+var map = {{
+  hasLayer() {{ return true; }},
+  removeLayer() {{ removedParcel = true; }},
+  closePopup() {{ popupClosed = true; }},
+}};
+var document = {{getElementById(id) {{
+  return {{
+    'kitsendused-link': restrictionsLink,
+    'ai-chat-input-area': inputArea,
+    'eraldis-sheet': sheet,
+    'kataster-info': katasterPanel,
+    'eudr-info': eudrPanel,
+  }}[id] || null;
+}}}};
+function removeOverlayLayer(name) {{ delete overlayLayers[name]; }}
+function updateMapLegend() {{}}
+function updateKihtLegend() {{}}
+function aiShowUnavailableData() {{ aiUnavailable = true; }}
+function aiRenderEraldisHints(value) {{ hints = value; }}
+function cancelMapSelection() {{}}
+function closeEraldisSheet() {{ sheet.remove(); }}
+var _aiUserScrolledUp = true;
+{clear_helper.group(0)}
+{helper.group(0)}
+const staleResult = resetParcelResult(3);
+const currentResult = resetParcelResult(4);
+console.log(JSON.stringify({{
+  staleResult,
+  currentResult,
+  currentData,
+  timber: window._timberValue,
+  valuation: window._vaartusData,
+  mapData: window._mapLayersData,
+  parcelLayer,
+  overlays: Object.keys(overlayLayers),
+  removedParcel,
+  popupClosed,
+  aiUnavailable,
+  hints,
+  restrictionsDisplay: restrictionsLink.style.display,
+  inputDisplay: inputArea.style.display,
+  sheetRemoved: sheet.removed,
+  katasterPanel: katasterPanel.innerHTML,
+  eudrPanel: eudrPanel.innerHTML,
+}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertFalse(state["staleResult"])
+        self.assertTrue(state["currentResult"])
+        self.assertIsNone(state["currentData"])
+        self.assertEqual(state["timber"], 0)
+        self.assertEqual(state["valuation"], {})
+        self.assertEqual(state["mapData"], {})
+        self.assertIsNone(state["parcelLayer"])
+        self.assertEqual(state["overlays"], [])
+        self.assertTrue(state["removedParcel"])
+        self.assertTrue(state["popupClosed"])
+        self.assertTrue(state["aiUnavailable"])
+        self.assertEqual(state["hints"], [])
+        self.assertEqual(state["restrictionsDisplay"], "none")
+        self.assertEqual(state["inputDisplay"], "none")
+        self.assertTrue(state["sheetRemoved"])
+        self.assertNotIn("78404:409:0113", state["katasterPanel"])
+        self.assertNotIn("EUDR eksport", state["eudrPanel"])
+
+        do_search = INDEX_HTML.index("async function doSearch()")
+        loading_call = INDEX_HTML.index("showLoading();", do_search)
+        replacement_call = INDEX_HTML.index("var requestId = beginParcelReplacement();", do_search)
+        self.assertLess(replacement_call, loading_call)
+
+        catch_guard = INDEX_HTML.index("if (requestId !== parcelSearchSequence) return;", INDEX_HTML.index("} catch (err)"))
+        reset_call = INDEX_HTML.index("resetParcelResult(requestId);", catch_guard)
+        self.assertGreater(reset_call, catch_guard)
+
+    def test_restriction_policy_never_calls_unknown_sources_empty(self):
+        protection_helper = re.search(r'function eudrProtectionState\(spatialStatus\).*?\n    }', INDEX_HTML, re.DOTALL)
+        helper = re.search(r'function restrictionDataState\(spatialStatus, meta\).*?\n    }', INDEX_HTML, re.DOTALL)
+        self.assertIsNotNone(protection_helper)
+        self.assertIsNotNone(helper)
+        script = f"""
+{protection_helper.group(0)}
+{helper.group(0)}
+const complete = restrictionDataState({{
+  natura_2000: {{intersects: false, sources_complete: true}},
+  kaitseala: {{intersects: false, sources_complete: true}},
+  sood: {{intersects: false, sources_complete: true}},
+}}, {{unavailable_sources: [], truncated_layers: []}});
+const protectedState = restrictionDataState({{
+  natura_2000: {{intersects: true, sources_complete: true}},
+  kaitseala: {{intersects: false, sources_complete: true}},
+  sood: {{intersects: false, sources_complete: true}},
+}}, {{unavailable_sources: [], truncated_layers: []}});
+const unknown = restrictionDataState(undefined, {{unavailable_sources: ['layers.piirang'], truncated_layers: []}});
+const unrelated = restrictionDataState({{
+  natura_2000: {{intersects: false, sources_complete: true}},
+  kaitseala: {{intersects: false, sources_complete: true}},
+  sood: {{intersects: false, sources_complete: true}},
+}}, {{unavailable_sources: ['layers.yrask_eelis'], truncated_layers: ['veekogud']}});
+console.log(JSON.stringify({{complete, protectedState, unknown, unrelated}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        states = json.loads(result.stdout)
+
+        self.assertTrue(states["complete"]["canClaimEmpty"])
+        self.assertFalse(states["protectedState"]["canClaimEmpty"])
+        self.assertIn("Natura 2000", states["protectedState"]["detected"])
+        self.assertFalse(states["unknown"]["canClaimEmpty"])
+        self.assertFalse(states["unknown"]["sourcesComplete"])
+        self.assertTrue(states["unrelated"]["canClaimEmpty"])
+        self.assertTrue(states["unrelated"]["sourcesComplete"])
+
+    def test_ai_stream_and_snapshot_freshness_use_explicit_ownership(self):
+        owns = re.search(r'function aiOwnsStream\(generation, controller, katasterNr\).*?\n    }', INDEX_HTML, re.DOTALL)
+        record = re.search(r'function recordChatSnapshotReceipt\(data, nowMs\).*?\n    }', INDEX_HTML, re.DOTALL)
+        fresh = re.search(r'function hasFreshChatSnapshot\(data, nowMs\).*?\n    }', INDEX_HTML, re.DOTALL)
+        self.assertIsNotNone(owns)
+        self.assertIsNotNone(record)
+        self.assertIsNotNone(fresh)
+        script = f"""
+var aiStreamGeneration = 4;
+var aiAbortController = {{id: 1}};
+var aiCurrentKataster = '78404:409:0113';
+var aiSnapshotReceipt = null;
+{owns.group(0)}
+{record.group(0)}
+{fresh.group(0)}
+const snapshot = {{chat_snapshot: 'x', chat_snapshot_expires_at: 1, chat_snapshot_ttl_seconds: 1800}};
+recordChatSnapshotReceipt(snapshot, 1000);
+console.log(JSON.stringify({{
+  owner: aiOwnsStream(4, aiAbortController, '78404:409:0113'),
+  staleGeneration: aiOwnsStream(3, aiAbortController, '78404:409:0113'),
+  staleParcel: aiOwnsStream(4, aiAbortController, '17501:002:0490'),
+  fresh: hasFreshChatSnapshot(snapshot, 1000000),
+  expiring: hasFreshChatSnapshot(snapshot, 1780000),
+  missing: hasFreshChatSnapshot({{}}, 100000),
+}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertTrue(state["owner"])
+        self.assertFalse(state["staleGeneration"])
+        self.assertFalse(state["staleParcel"])
+        self.assertTrue(state["fresh"])
+        self.assertFalse(state["expiring"])
+        self.assertFalse(state["missing"])
+        self.assertIn("CHAT_SNAPSHOT_EXPIRED", INDEX_HTML)
+        self.assertIn("chatError.code = j.code", INDEX_HTML)
+
+    def test_address_submissions_begin_parcel_replacement_before_resolution(self):
+        self.assertIn("function beginParcelReplacement()", INDEX_HTML)
+        for function_name in ("smartSubmit", "chipSubmit", "navSmartSubmit"):
+            function = re.search(rf'function {function_name}\(value\).*?\n        }}', INDEX_HTML, re.DOTALL)
+            self.assertIsNotNone(function)
+            normalized_branch = function.group(0).find("if (normalizedKataster)")
+            if normalized_branch < 0:
+                normalized_branch = function.group(0).find("if (KATASTER_RE.test(value))")
+            replacement = function.group(0).find("beginParcelReplacement();")
+            fetch_call = function.group(0).find("fetchAddresses(value)")
+            self.assertGreater(replacement, normalized_branch)
+            self.assertLess(replacement, fetch_call)
+
+    def test_address_resolution_requires_address_and_parcel_ownership(self):
+        helper = re.search(
+            r'function addressResolutionOwns\(addressRequestId, parcelRequestId\).*?\n    }',
+            INDEX_HTML,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(helper)
+        script = f"""
+var addressResolutionSequence = 4;
+var parcelSearchSequence = 8;
+{helper.group(0)}
+console.log(JSON.stringify({{
+  current: addressResolutionOwns(4, 8),
+  staleAddress: addressResolutionOwns(3, 8),
+  staleParcel: addressResolutionOwns(4, 7),
+}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertTrue(state["current"])
+        self.assertFalse(state["staleAddress"])
+        self.assertFalse(state["staleParcel"])
+
+        for function_name in ("smartSubmit", "chipSubmit", "navSmartSubmit"):
+            function = re.search(rf'function {function_name}\(value\).*?\n        }}', INDEX_HTML, re.DOTALL)
+            self.assertIsNotNone(function)
+            source = function.group(0)
+            self.assertIn("var parcelRequestId = beginParcelReplacement();", source)
+            self.assertGreaterEqual(
+                source.count("addressResolutionOwns(requestId, parcelRequestId)"),
+                2,
+            )
+            self.assertLess(source.find("showLoading();"), source.find("fetchAddresses(value)"))
+
+    def test_parcel_replacement_releases_aborted_search_busy_state(self):
+        helper = re.search(r'function clearSearchBusyState\(\).*?\n    }', INDEX_HTML, re.DOTALL)
+        begin = re.search(r'function beginParcelReplacement\(\).*?\n    }', INDEX_HTML, re.DOTALL)
+        self.assertIsNotNone(helper)
+        self.assertIsNotNone(begin)
+        script = f"""
+function classList(initial) {{
+  const values = new Set(initial);
+  return {{
+    remove(value) {{ values.delete(value); }},
+    values() {{ return Array.from(values); }},
+  }};
+}}
+const navBox = {{classList: classList(['is-searching'])}};
+const landBox = {{classList: classList(['is-searching'])}};
+const nav = {{disabled: true, classList: classList(['is-loading']), closest() {{ return navBox; }}}};
+const land = {{disabled: true, classList: classList(['is-loading']), closest() {{ return landBox; }}}};
+const document = {{getElementById(id) {{ return id === 'search-btn' ? nav : id === 'search-btn-landing' ? land : null; }}}};
+{helper.group(0)}
+clearSearchBusyState();
+console.log(JSON.stringify({{
+  navDisabled: nav.disabled,
+  landDisabled: land.disabled,
+  navClasses: nav.classList.values(),
+  landClasses: land.classList.values(),
+  navBoxClasses: navBox.classList.values(),
+  landBoxClasses: landBox.classList.values(),
+}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertFalse(state["navDisabled"])
+        self.assertFalse(state["landDisabled"])
+        self.assertEqual(state["navClasses"], [])
+        self.assertEqual(state["landClasses"], [])
+        self.assertEqual(state["navBoxClasses"], [])
+        self.assertEqual(state["landBoxClasses"], [])
+        self.assertIn("clearSearchBusyState();", begin.group(0))
+
+    def test_editing_input_cancels_owned_address_loading_state(self):
+        helper = re.search(r'function cancelActiveAddressResolution\(\).*?\n    }', INDEX_HTML, re.DOTALL)
+        self.assertIsNotNone(helper)
+        script = f"""
+var addressResolutionSequence = 4;
+var parcelSearchSequence = 8;
+var activeAddressResolution = {{addressRequestId: 4, parcelRequestId: 8}};
+var hidden = false;
+function hideLoading() {{ hidden = true; }}
+{helper.group(0)}
+cancelActiveAddressResolution();
+console.log(JSON.stringify({{
+  addressResolutionSequence,
+  activeAddressResolution,
+  hidden,
+}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertEqual(state["addressResolutionSequence"], 5)
+        self.assertIsNone(state["activeAddressResolution"])
+        self.assertTrue(state["hidden"])
+        self.assertGreaterEqual(INDEX_HTML.count("cancelPendingInputOperations();"), 2)
+
+    def test_editing_input_cancels_active_parcel_search(self):
+        helper = re.search(r'function cancelPendingInputOperations\(\).*?\n    }', INDEX_HTML, re.DOTALL)
+        self.assertIsNotNone(helper)
+        script = f"""
+var parcelSearchSequence = 7;
+var aborted = false;
+var activeParcelSearch = {{abort() {{ aborted = true; }}}};
+var resetId = null;
+var busyCleared = false;
+var loadingHidden = false;
+function cancelActiveAddressResolution() {{}}
+function clearSearchBusyState() {{ busyCleared = true; }}
+function resetParcelResult(requestId) {{ resetId = requestId; }}
+function hideLoading() {{ loadingHidden = true; }}
+{helper.group(0)}
+cancelPendingInputOperations();
+console.log(JSON.stringify({{
+  parcelSearchSequence,
+  aborted,
+  activeParcelSearch,
+  resetId,
+  busyCleared,
+  loadingHidden,
+}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertEqual(state["parcelSearchSequence"], 8)
+        self.assertTrue(state["aborted"])
+        self.assertIsNone(state["activeParcelSearch"])
+        self.assertEqual(state["resetId"], 8)
+        self.assertTrue(state["busyCleared"])
+        self.assertTrue(state["loadingHidden"])
 
     def test_registry_dates_are_validated_before_formatting(self):
         self.assertIn("if (!match) return '—';", INDEX_HTML)

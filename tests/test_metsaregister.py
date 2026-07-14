@@ -56,6 +56,20 @@ class MetsaregisterDataTests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(MetsaregisterWFSError):
                 await metsaregister._wfs_get("https://example.test/wfs", retries=0)
 
+    async def test_wfs_get_rejects_malformed_features_value(self):
+        response = FakeResponse(payload={"features": None})
+
+        with patch("services.metsaregister.httpx.AsyncClient", return_value=FakeAsyncClient(response)):
+            with self.assertRaises(MetsaregisterWFSError):
+                await metsaregister._wfs_get("https://example.test/wfs", retries=0)
+
+    async def test_wfs_get_rejects_non_object_feature(self):
+        response = FakeResponse(payload={"features": [None]})
+
+        with patch("services.metsaregister.httpx.AsyncClient", return_value=FakeAsyncClient(response)):
+            with self.assertRaises(MetsaregisterWFSError):
+                await metsaregister._wfs_get("https://example.test/wfs", retries=0)
+
     async def test_explicit_zero_stock_is_not_replaced_with_an_estimate(self):
         features = [{
             "properties": {

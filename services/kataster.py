@@ -49,7 +49,11 @@ async def _wfs_get(url: str, timeout: float = 6.0, retries: int = 5) -> list[dic
                         continue
                     raise KatasterWFSError(f"WFS {resp.status_code}") from last_exc
                 resp.raise_for_status()
-                return resp.json().get("features", [])
+                payload = resp.json()
+                features = payload.get("features") if isinstance(payload, dict) else None
+                if not isinstance(features, list) or any(not isinstance(feature, dict) for feature in features):
+                    raise KatasterWFSError("WFS response has invalid features")
+                return features
         except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError) as e:
             last_exc = e
             if attempt < retries:

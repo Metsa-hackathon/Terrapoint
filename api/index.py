@@ -8,9 +8,13 @@ from __future__ import annotations
 
 import time
 import asyncio
+import base64
+import hashlib
+import hmac
 import inspect
 import math
 import os
+import re
 from datetime import date, datetime
 import httpx
 import orjson
@@ -60,6 +64,7 @@ class ChatRequest(BaseModel):
     kataster_nr: str = Field(..., min_length=1, description="Katastritunnus (nt 78404:409:0113)")
     message: str = Field(..., min_length=1, max_length=600, description="Kasutaja sõnum")
     history: list[dict] = Field(default_factory=list, max_length=20, description="Vestluse ajalugu")
+    snapshot: str | None = Field(default=None, description="Serveri allkirjastatud kinnistuandmete tõend")
     data: dict | None = Field(default=None, description="Eelnevalt laetud kinnistuandmed")
 
 
@@ -67,6 +72,14 @@ class ErrorResponse(BaseModel):
     """Standardne veavastus."""
     error: str = Field(..., description="Inimloetav veateade")
     code: str | None = Field(default=None, description="Veakood (nt NOT_FOUND, VALIDATION_ERROR)")
+
+
+class ChatSnapshotError(ValueError):
+    def __init__(self, code: str, status_code: int, message: str):
+        super().__init__(message)
+        self.code = code
+        self.status_code = status_code
+        self.message = message
 
 
 # ── Application setup ─────────────────────────────────────────────
@@ -78,6 +91,9 @@ MAX_CHAT_HISTORY_CHARS = 500
 MAX_CHAT_PROMPT_CHARS = 16_000
 MAX_CHAT_NUMERIC_ABS = 1_000_000_000_000_000
 MAX_CHAT_REASONING_CHARS = 2_000
+CHAT_SNAPSHOT_TTL_SECONDS = 30 * 60
+CHAT_SNAPSHOT_CLOCK_SKEW_SECONDS = 60
+CHAT_SNAPSHOT_MAX_CHARS = 2048
 CHAT_MAX_TOKENS = int(os.environ.get("OPENCODE_ZEN_MAX_TOKENS", "8192"))
 CHAT_RATE_LIMIT = 8
 CHAT_RATE_WINDOW_SECONDS = 60
@@ -183,6 +199,184 @@ def _ai_analysis_available(data: dict) -> bool:
     if meta.get("partial") and not unavailable_sources:
         return False
     return all(source in AI_OPTIONAL_UNAVAILABLE_SOURCES for source in unavailable_sources)
+
+
+def _chat_snapshot_signing_key() -> bytes | None:
+    configured = os.environ.get("TERRAPOINT_CHAT_SNAPSHOT_KEY_B64", "").strip()
+    if configured:
+        try:
+            padding = "=" * (-len(configured) % 4)
+            key = base64.b64decode(configured + padding, altchars=b"-_", validate=True)
+        except (ValueError, TypeError):
+            return None
+        return key if len(key) == 32 else None
+
+    # Vercel is the public search/chat trust boundary and must use a dedicated
+    # key rather than extending a third-party provider credential's authority.
+    if os.environ.get("VERCEL"):
+        return None
+
+    # Keep direct non-Vercel deployments operational during key rollout.
+    provider_key = os.environ.get("OPENCODE_ZEN_API_KEY", "")
+    if not provider_key:
+        return None
+    return hmac.new(
+        b"terrapoint/chat-snapshot/signing-key/v1",
+        provider_key.encode("utf-8"),
+        hashlib.sha256,
+    ).digest()
+
+
+def _chat_data_projection(data: dict) -> dict:
+    projected = {
+        key: value
+        for key, value in data.items()
+        if key not in {
+            "map_layers",
+            "chat_snapshot",
+            "chat_snapshot_expires_at",
+            "chat_snapshot_ttl_seconds",
+        }
+    }
+    kataster = projected.get("kataster")
+    if isinstance(kataster, dict):
+        projected["kataster"] = {
+            key: value for key, value in kataster.items() if key != "geometry"
+        }
+    return projected
+
+
+def _canonical_json_value(value):
+    if isinstance(value, dict):
+        return {key: _canonical_json_value(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_canonical_json_value(item) for item in value]
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    return value
+
+
+def _chat_evidence_digest(data: dict) -> str:
+    evidence = orjson.dumps(
+        _canonical_json_value(_chat_data_projection(data)),
+        option=orjson.OPT_SORT_KEYS,
+    )
+    return hashlib.sha256(evidence).hexdigest()
+
+
+def _encode_snapshot_segment(value: bytes) -> str:
+    return base64.urlsafe_b64encode(value).rstrip(b"=").decode("ascii")
+
+
+def _issue_chat_snapshot(data: dict, now: float | None = None) -> tuple[str | None, int | None]:
+    key = _chat_snapshot_signing_key()
+    if key is None or not _ai_analysis_available(data):
+        return None, None
+
+    issued_at = int(time.time() if now is None else now)
+    expires_at = issued_at + CHAT_SNAPSHOT_TTL_SECONDS
+    payload = {
+        "v": 1,
+        "iss": "terrapoint-search",
+        "aud": "terrapoint-chat",
+        "iat": issued_at,
+        "exp": expires_at,
+        "kataster_nr": str(data.get("kataster", {}).get("number", "")),
+        "evidence_sha256": _chat_evidence_digest(data),
+    }
+    payload_segment = _encode_snapshot_segment(orjson.dumps(payload, option=orjson.OPT_SORT_KEYS))
+    key_id = hashlib.sha256(key).hexdigest()[:12]
+    signed = f"tp1.{key_id}.{payload_segment}"
+    signature = _encode_snapshot_segment(hmac.new(key, signed.encode("ascii"), hashlib.sha256).digest())
+    return f"{signed}.{signature}", expires_at
+
+
+def _verify_chat_snapshot(token: str | None, now: float | None = None) -> dict:
+    key = _chat_snapshot_signing_key()
+    if key is None:
+        raise ChatSnapshotError(
+            "CHAT_SNAPSHOT_UNAVAILABLE",
+            503,
+            "AI analüüsi turvakontroll ei ole hetkel saadaval. Proovi uuesti.",
+        )
+    if not token or len(token) > CHAT_SNAPSHOT_MAX_CHARS:
+        raise ChatSnapshotError("CHAT_SNAPSHOT_INVALID", 400, "Kinnistu AI-andmed ei ole kehtivad. Otsi kinnistu uuesti.")
+
+    parts = token.split(".")
+    if len(parts) != 4 or parts[0] != "tp1":
+        raise ChatSnapshotError("CHAT_SNAPSHOT_INVALID", 400, "Kinnistu AI-andmed ei ole kehtivad. Otsi kinnistu uuesti.")
+    _, key_id, payload_segment, signature = parts
+    if (
+        re.fullmatch(r"[0-9a-f]{12}", key_id) is None
+        or re.fullmatch(r"[A-Za-z0-9_-]+", payload_segment) is None
+        or re.fullmatch(r"[A-Za-z0-9_-]+", signature) is None
+    ):
+        raise ChatSnapshotError("CHAT_SNAPSHOT_INVALID", 400, "Kinnistu AI-andmed ei ole kehtivad. Otsi kinnistu uuesti.")
+    if key_id != hashlib.sha256(key).hexdigest()[:12]:
+        raise ChatSnapshotError("CHAT_SNAPSHOT_INVALID", 400, "Kinnistu AI-andmed ei ole kehtivad. Otsi kinnistu uuesti.")
+    signed = f"tp1.{key_id}.{payload_segment}"
+    expected = _encode_snapshot_segment(hmac.new(key, signed.encode("ascii"), hashlib.sha256).digest())
+    if not hmac.compare_digest(signature, expected):
+        raise ChatSnapshotError("CHAT_SNAPSHOT_INVALID", 400, "Kinnistu AI-andmed ei ole kehtivad. Otsi kinnistu uuesti.")
+
+    try:
+        padding = "=" * (-len(payload_segment) % 4)
+        payload_bytes = base64.b64decode(payload_segment + padding, altchars=b"-_", validate=True)
+        payload = orjson.loads(payload_bytes)
+    except (ValueError, TypeError, orjson.JSONDecodeError):
+        raise ChatSnapshotError("CHAT_SNAPSHOT_INVALID", 400, "Kinnistu AI-andmed ei ole kehtivad. Otsi kinnistu uuesti.") from None
+
+    current_time = int(time.time() if now is None else now)
+    required = {"v", "iss", "aud", "iat", "exp", "kataster_nr", "evidence_sha256"}
+    if not isinstance(payload, dict) or not required.issubset(payload):
+        raise ChatSnapshotError("CHAT_SNAPSHOT_INVALID", 400, "Kinnistu AI-andmed ei ole kehtivad. Otsi kinnistu uuesti.")
+    if payload["v"] != 1 or payload["iss"] != "terrapoint-search" or payload["aud"] != "terrapoint-chat":
+        raise ChatSnapshotError("CHAT_SNAPSHOT_INVALID", 400, "Kinnistu AI-andmed ei ole kehtivad. Otsi kinnistu uuesti.")
+    if not isinstance(payload["iat"], int) or not isinstance(payload["exp"], int):
+        raise ChatSnapshotError("CHAT_SNAPSHOT_INVALID", 400, "Kinnistu AI-andmed ei ole kehtivad. Otsi kinnistu uuesti.")
+    if payload["iat"] > current_time + CHAT_SNAPSHOT_CLOCK_SKEW_SECONDS:
+        raise ChatSnapshotError("CHAT_SNAPSHOT_INVALID", 400, "Kinnistu AI-andmed ei ole kehtivad. Otsi kinnistu uuesti.")
+    if payload["exp"] <= payload["iat"] or payload["exp"] - payload["iat"] > CHAT_SNAPSHOT_TTL_SECONDS:
+        raise ChatSnapshotError("CHAT_SNAPSHOT_INVALID", 400, "Kinnistu AI-andmed ei ole kehtivad. Otsi kinnistu uuesti.")
+    if current_time > payload["exp"]:
+        raise ChatSnapshotError("CHAT_SNAPSHOT_EXPIRED", 409, "Kinnistu AI-andmed aegusid. Otsi kinnistu uuesti.")
+    return payload
+
+
+def _verify_chat_snapshot_for_data(
+    token: str | None,
+    data: dict,
+    kataster_nr: str,
+    now: float | None = None,
+) -> dict:
+    payload = _verify_chat_snapshot(token, now=now)
+    if payload.get("kataster_nr") != kataster_nr:
+        raise ChatSnapshotError("CHAT_SNAPSHOT_INVALID", 400, "Kinnistu AI-andmed ei ole kehtivad. Otsi kinnistu uuesti.")
+    try:
+        digest = _chat_evidence_digest(data) if isinstance(data, dict) else ""
+    except (AttributeError, KeyError, TypeError, ValueError):
+        digest = ""
+    if not digest or not hmac.compare_digest(str(payload.get("evidence_sha256", "")), digest):
+        raise ChatSnapshotError("CHAT_SNAPSHOT_INVALID", 400, "Kinnistu AI-andmed ei ole kehtivad. Otsi kinnistu uuesti.")
+    return payload
+
+
+def _attach_chat_snapshot(data: dict, now: float | None = None) -> dict:
+    response_data = {
+        key: value
+        for key, value in data.items()
+        if key not in {
+            "chat_snapshot",
+            "chat_snapshot_expires_at",
+            "chat_snapshot_ttl_seconds",
+        }
+    }
+    token, expires_at = _issue_chat_snapshot(data, now=now)
+    if token is not None:
+        response_data["chat_snapshot"] = token
+        response_data["chat_snapshot_expires_at"] = expires_at
+        response_data["chat_snapshot_ttl_seconds"] = CHAT_SNAPSHOT_TTL_SECONDS
+    return response_data
 
 
 def _prioritize_notice_rows(notices: list[dict], limit: int) -> list[dict]:
@@ -406,6 +600,27 @@ def json_response(data: dict, status: int = 200, headers: dict[str, str] | None 
     return Response(content=orjson.dumps(data), media_type="application/json", status_code=status, headers=headers)
 
 
+def _chat_boundary_error(request: Request) -> Response | None:
+    content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    if content_type != "application/json":
+        return json_response(
+            {"error": "Päring peab olema JSON-vormingus.", "code": "UNSUPPORTED_MEDIA_TYPE"},
+            415,
+        )
+    origin = request.headers.get("origin")
+    if origin and origin.rstrip("/") not in config.CORS_ORIGINS:
+        return json_response(
+            {"error": "Päringu päritolu ei ole lubatud.", "code": "ORIGIN_FORBIDDEN"},
+            403,
+        )
+    if request.headers.get("sec-fetch-site", "").lower() == "cross-site":
+        return json_response(
+            {"error": "Päringu päritolu ei ole lubatud.", "code": "ORIGIN_FORBIDDEN"},
+            403,
+        )
+    return None
+
+
 @app.get("/api/health")
 async def health():
     """API tervisekontroll.
@@ -509,6 +724,85 @@ async def address_search(q: str = "", request: Request = None):
 
 VPS_API = "https://terrapoint.46-62-230-110.sslip.io/api"
 
+
+def _has_canonical_spatial_status(data: dict) -> bool:
+    spatial_status = data.get("spatial_status")
+    if not isinstance(spatial_status, dict):
+        return False
+    for key in ("natura_2000", "kaitseala", "sood"):
+        item = spatial_status.get(key)
+        if not isinstance(item, dict) or type(item.get("sources_complete")) is not bool:
+            return False
+        intersects = item.get("intersects")
+        if intersects is not None and type(intersects) is not bool:
+            return False
+        if item["sources_complete"] and type(intersects) is not bool:
+            return False
+        if not item["sources_complete"] and intersects is False:
+            return False
+    return True
+
+
+def _unsigned_search_data(data: dict, reason: str) -> dict:
+    response_data = {
+        key: value
+        for key, value in data.items()
+        if key not in {
+            "chat_snapshot",
+            "chat_snapshot_expires_at",
+            "chat_snapshot_ttl_seconds",
+        }
+    }
+    meta = response_data.get("meta")
+    response_data["meta"] = {
+        **(meta if isinstance(meta, dict) else {}),
+        "ai_analysis_available": False,
+        "ai_unavailable_reason": reason,
+    }
+    return response_data
+
+
+def _search_proxy_response(response: httpx.Response, expected_kataster_nr: str) -> Response:
+    headers = {"Cache-Control": "private, no-store"}
+    retry_after = getattr(response, "headers", {}).get("retry-after")
+    if retry_after:
+        headers["Retry-After"] = retry_after
+    if response.status_code != 200:
+        return Response(
+            content=response.content,
+            status_code=response.status_code,
+            media_type="application/json",
+            headers=headers,
+        )
+    try:
+        data = orjson.loads(response.content)
+    except orjson.JSONDecodeError:
+        return json_response(
+            {"error": "Otsinguteenus tagastas vigased andmed. Proovi uuesti.", "code": "UPSTREAM_SCHEMA"},
+            502,
+            headers,
+        )
+    if (
+        not isinstance(data, dict)
+        or not isinstance(data.get("kataster"), dict)
+        or data["kataster"].get("number") != expected_kataster_nr
+    ):
+        return json_response(
+            {"error": "Otsinguteenus tagastas puudulikud andmed. Proovi uuesti.", "code": "UPSTREAM_SCHEMA"},
+            502,
+            headers,
+        )
+    if not _has_canonical_spatial_status(data):
+        return json_response(
+            _unsigned_search_data(data, "spatial_status_unavailable"),
+            headers=headers,
+        )
+    signed_data = _attach_chat_snapshot(data)
+    if "chat_snapshot" not in signed_data:
+        signed_data = _unsigned_search_data(signed_data, "chat_snapshot_unavailable")
+    return json_response(signed_data, headers=headers)
+
+
 @app.get("/api/search/{kataster_nr:path}")
 async def search(kataster_nr: str, request: Request):
     # Kõigepealt valideeri formaat — kaitseb path-traversal SSRF-i eest
@@ -523,7 +817,7 @@ async def search(kataster_nr: str, request: Request):
         try:
             async with httpx.AsyncClient(timeout=25.0) as client:
                 resp = await client.get(f"{VPS_API}/search/{kataster_nr}")
-                return Response(content=resp.content, status_code=resp.status_code, media_type="application/json")
+                return _search_proxy_response(resp, kataster_nr)
         except Exception as exc:
             print(f"[search] VPS proxy error: {type(exc).__name__}", flush=True)
             return json_response({"error": "Otsinguteenusega ei õnnestu hetkel ühendust saada. Proovi uuesti."}, 502)
@@ -537,30 +831,84 @@ async def search(kataster_nr: str, request: Request):
         return json_response({"error": "Otsing ebaõnnestus. Proovi uuesti."}, 500)
 
 
-def _filter_features_by_geometry(features, parcel_geom):
-    """Filter WFS features to only those that actually intersect the parcel geometry.
-
-    NB: kui geomeetriat ei õnnestu parsida, JÄTAME FEATURE'I VÄLJA — ohutus-tagajärg
-    vale-andmete kaasamisest (nt "kinnistu on kaitsealal" või "kriitiline üraskioht")
-    on palju hullem kui false-negative.
-    """
-    if not features or not parcel_geom:
-        return features
+def _filter_features_by_geometry_with_status(features, parcel_geom) -> tuple[list, bool]:
+    """Filter parcel intersections and report when any geometry was unreadable."""
+    if not isinstance(features, list):
+        return [], True
+    if not parcel_geom:
+        return [], True
     try:
         parcel_shape = shape(parcel_geom)
         if not parcel_shape.is_valid:
-            parcel_shape = parcel_shape.buffer(0)
+            return [], True
+        if parcel_shape.is_empty:
+            return [], True
+        if not features:
+            return [], False
         filtered = []
+        incomplete = False
         for f in features:
             try:
                 feat_shape = shape(f.get("geometry", {}))
+                if not feat_shape.is_valid:
+                    incomplete = True
+                    continue
+                if feat_shape.is_empty:
+                    incomplete = True
+                    continue
                 if feat_shape.intersects(parcel_shape):
                     filtered.append(f)
             except Exception:
+                incomplete = True
                 continue
-        return filtered
+        return filtered, incomplete
     except Exception:
-        return features
+        return [], True
+
+
+def _filter_features_by_geometry(features, parcel_geom):
+    return _filter_features_by_geometry_with_status(features, parcel_geom)[0]
+
+
+def _build_spatial_status(
+    layers_data: dict,
+    natura_features: list,
+    unavailable_sources: list[str],
+    truncated_layers: list[str],
+) -> dict:
+    """Return parcel intersections without conflating unknown with absent."""
+    unavailable = set(unavailable_sources)
+    truncated = set(truncated_layers)
+    present_layers = set(layers_data)
+
+    def status(detected: bool, required_sources: set[str], required_layers: set[str]) -> dict:
+        complete = (
+            not (required_sources & unavailable)
+            and not (required_layers & truncated)
+            and required_layers.issubset(present_layers)
+        )
+        return {
+            "intersects": True if detected else (False if complete else None),
+            "sources_complete": complete,
+        }
+
+    return {
+        "natura_2000": status(
+            bool(natura_features),
+            {"metsaregister.natura_2000"},
+            set(),
+        ),
+        "kaitseala": status(
+            bool(layers_data.get("kaitsealad") or layers_data.get("katsealad")),
+            {"layers.kaitsealad", "layers.katsealad"},
+            {"kaitsealad", "katsealad"},
+        ),
+        "sood": status(
+            bool(layers_data.get("sood")),
+            {"layers.sood"},
+            {"sood"},
+        ),
+    }
 
 
 # Simple in-memory search cache (TTL 5 min) to avoid re-fetching on chat
@@ -625,10 +973,16 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     if isinstance(results[0], Exception):
         unavailable_sources.append("metsaregister.eraldised")
     layers_data, unavailable_layers, truncated_layers = results[1] if not isinstance(results[1], Exception) else ({}, [key for key, _, _ in LAYER_CONFIGS], [])
-    layers_data = {
-        key: _filter_features_by_geometry(features, kataster_data.get("geometry"))
-        for key, features in layers_data.items()
-    }
+    filtered_layers = {}
+    for key, features in layers_data.items():
+        filtered, geometry_incomplete = _filter_features_by_geometry_with_status(
+            features,
+            kataster_data.get("geometry"),
+        )
+        filtered_layers[key] = filtered
+        if geometry_incomplete:
+            unavailable_layers.append(key)
+    layers_data = filtered_layers
     # Reaalsed allikakatked (WFS viga/timeout) halvendavad analüüsi — need
     # märgivad vastuse osaliseks. Kihid, mis jõudsid 100 feature piirini
     # (truncated), EI halvenda analüüsi: _filter_features_by_geometry jätab
@@ -652,7 +1006,12 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     natura_features = results[3] if not isinstance(results[3], Exception) else []
     if isinstance(results[3], Exception):
         unavailable_sources.append("metsaregister.natura_2000")
-    natura_features = _filter_features_by_geometry(natura_features, kataster_data.get("geometry"))
+    natura_features, natura_geometry_incomplete = _filter_features_by_geometry_with_status(
+        natura_features,
+        kataster_data.get("geometry"),
+    )
+    if natura_geometry_incomplete:
+        unavailable_sources.append("metsaregister.natura_2000")
 
     # Element-and-kahjustused päringud iga eraldise jaoks on kallid (2 WFS
     # päringut eraldise kohta). Vanem kood jooksis kõik korraga (asyncio.gather
@@ -1237,16 +1596,17 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     mets_pindala_ha = _forest_area_ha(eraldised) if eraldised else 0
     kataster_data["mets_pindala_ha"] = mets_pindala_ha
 
-    natura_2000 = bool(natura_features)
-    kaitseala_features = layers_data.get("kaitsealad", []) + layers_data.get("katsealad", [])
-    protection_sources = {
-        "metsaregister.natura_2000",
-        "layers.kaitsealad",
-        "layers.katsealad",
-    }
+    spatial_status = _build_spatial_status(
+        layers_data,
+        natura_features,
+        unavailable_sources,
+        truncated_layers,
+    )
+    natura_2000 = spatial_status["natura_2000"]["intersects"] is True
+    kaitseala = spatial_status["kaitseala"]["intersects"] is True
     protection_data_complete = (
-        not any(source in protection_sources for source in unavailable_sources)
-        and not any(layer in {"kaitsealad", "katsealad"} for layer in truncated_layers)
+        spatial_status["natura_2000"]["sources_complete"]
+        and spatial_status["kaitseala"]["sources_complete"]
     )
     # A protected area is not necessarily a protected habitat. We do not have
     # an authoritative VEP source in this response, so never infer one.
@@ -1290,7 +1650,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         "vep_data_complete": False,
         "natura_2000": natura_2000,
         "vaariselupaik": vaariselupaik,
-        "kaitseala": bool(kaitseala_features),
+        "kaitseala": kaitseala,
         "pindala_ha": kataster_data.get("pindala_ha", 0),
         "spruce_data_complete": (
             not skip_details
@@ -1594,6 +1954,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         "teatised": teatised_response,
         "teatised_meta": teatised_meta,
         "kahjustused": kahjustused,
+        "spatial_status": spatial_status,
         "map_layers": map_layers,
         "meta": {
             "response_time_ms": elapsed,
@@ -1641,7 +2002,10 @@ async def _search(kataster_nr: str) -> Response:
     cached_data = search_cache.get(kataster_nr)
     if cached_data is not None:
         _search_cache_hits += 1
-        return json_response(cached_data)
+        return json_response(
+            _attach_chat_snapshot(cached_data),
+            headers={"Cache-Control": "private, no-store"},
+        )
     task = _search_in_flight.get(kataster_nr)
     if task is None:
         _search_cache_misses += 1
@@ -1659,7 +2023,11 @@ async def _search(kataster_nr: str) -> Response:
     _search_waiters[kataster_nr] = _search_waiters.get(kataster_nr, 0) + 1
     try:
         data, status = await asyncio.shield(task)
-        return json_response(data, status)
+        return json_response(
+            _attach_chat_snapshot(data) if status == 200 else data,
+            status,
+            {"Cache-Control": "private, no-store"},
+        )
     finally:
         remaining = _search_waiters.get(kataster_nr, 1) - 1
         if remaining > 0:
@@ -1766,6 +2134,7 @@ def build_system_prompt(data: dict) -> str:
     teatised_meta = data.get("teatised_meta", {})
     kahjustused = data.get("kahjustused", [])
     meta = data.get("meta") or {}
+    spatial_status = data.get("spatial_status") or {}
 
     # Accept both backend names (pindala_ha, tagavara_y_ha) and simpler
     # frontend names (pindala, tagavara). The frontend sends the latter.
@@ -1814,6 +2183,23 @@ def build_system_prompt(data: dict) -> str:
             "Ära järelda puuduvast allikast, et vastavat piirangut, teatist, kahjustust või muud nähtust ei ole. "
             "Nimeta vastuses analüüsi mõjutav andmepiirang."
         )
+
+    if spatial_status:
+        lines.append("")
+        lines.append("--- RUUMILINE LOODUSKAITSESTAATUS ---")
+        for key, label in (
+            ("natura_2000", "Natura 2000"),
+            ("kaitseala", "Kaitseala"),
+            ("sood", "Soo"),
+        ):
+            item = spatial_status.get(key) if isinstance(spatial_status, dict) else None
+            if isinstance(item, dict) and item.get("intersects") is True:
+                value = "leitud"
+            elif isinstance(item, dict) and item.get("sources_complete") is True and item.get("intersects") is False:
+                value = "ei tuvastatud"
+            else:
+                value = "teadmata (allikad puudulikud)"
+            lines.append(f"{label}: {value}")
 
     if m:
         lines.append("")
@@ -2094,10 +2480,13 @@ async def chat(request: Request):
     """AI metsanduse nõustaja.
 
     Kasutab OpenCode Zen (DeepSeek V4 Flash Free) AI-d, et vastata küsimustele
-    kinnistu andmete põhjal. Edastab eelnevalt laaditud
-    andmed (data) koos süsteemi promptiga AI-le.
+    kinnistu andmete põhjal. Brauseri saadetud andmed peavad vastama otsingu
+    käigus serveri allkirjastatud tõendile.
     """
     try:
+        boundary_error = _chat_boundary_error(request)
+        if boundary_error is not None:
+            return boundary_error
         allowed, retry_after = _check_rate_limit(_client_identifier(request), "chat", CHAT_RATE_LIMIT, CHAT_RATE_WINDOW_SECONDS)
         if not allowed:
             return json_response({"error": "Liiga palju AI päringuid. Oota hetk ja proovi uuesti."}, 429, headers={"Retry-After": str(retry_after)})
@@ -2120,11 +2509,26 @@ async def chat(request: Request):
         if not data or not isinstance(data, dict):
             return json_response({"error": "Otsi kinnistu esimesena, seejärel küsi AI-lt."}, 400)
 
-        data_kataster = str(data.get("kataster", {}).get("number", "")).strip()
+        kataster_data = data.get("kataster")
+        if not isinstance(kataster_data, dict):
+            return json_response({"error": "Päringu andmed ei sobi. Kontrolli küsimust ja proovi uuesti."}, 400)
+        data_kataster = str(kataster_data.get("number", "")).strip()
         if data_kataster and data_kataster != kataster_nr:
             return json_response({"error": "Andmed ei vasta katastri numbrile. Otsi kinnistu uuesti."}, 400)
         if not _ai_analysis_available(data):
             return json_response({"error": "AI analüüs vajab katastri ja metsa põhiandmeid. Otsi kinnistu uuesti."}, 409)
+
+        snapshot = chat_request.snapshot
+        if not snapshot and isinstance(data.get("chat_snapshot"), str):
+            snapshot = data["chat_snapshot"]
+        try:
+            _verify_chat_snapshot_for_data(
+                snapshot,
+                data,
+                kataster_nr,
+            )
+        except ChatSnapshotError as exc:
+            return json_response({"error": exc.message, "code": exc.code}, exc.status_code)
 
         sanitized_history = _sanitize_chat_history(history)
 
@@ -2264,18 +2668,36 @@ async def export_eudr(kataster_nr: str, request: Request):
         layers_data, unavailable_layers, truncated_layers = await query_all_layers(bbox_str) if bbox_str else ({}, [], [])
     except MetsaregisterWFSError:
         return json_response({"error": "EUDR eksport ei ole praegu täielike metsaandmeteta usaldusväärne. Proovi uuesti."}, 503)
-    if unavailable_layers or truncated_layers:
+    filtered_layers = {}
+    for key, features in layers_data.items():
+        filtered, geometry_incomplete = _filter_features_by_geometry_with_status(
+            features,
+            kataster_data.get("geometry"),
+        )
+        filtered_layers[key] = filtered
+        if geometry_incomplete:
+            unavailable_layers.append(key)
+    layers_data = filtered_layers
+    natura_features, natura_geometry_incomplete = _filter_features_by_geometry_with_status(
+        natura_features,
+        kataster_data.get("geometry"),
+    )
+    if natura_geometry_incomplete:
         return json_response({"error": "EUDR eksport ei ole praegu täielike ruumiandmeteta usaldusväärne. Proovi uuesti."}, 503)
-    layers_data = {
-        key: _filter_features_by_geometry(features, kataster_data.get("geometry"))
-        for key, features in layers_data.items()
-    }
-    natura_features = _filter_features_by_geometry(natura_features, kataster_data.get("geometry"))
 
-    # Determine deforestation risk
-    kaitseala = bool(layers_data.get("kaitsealad"))
-    natura_2000 = bool(natura_features)
-    sood = bool(layers_data.get("sood"))
+    spatial_status = _build_spatial_status(
+        layers_data,
+        natura_features,
+        [f"layers.{key}" for key in unavailable_layers],
+        truncated_layers,
+    )
+    if not all(item["sources_complete"] for item in spatial_status.values()):
+        return json_response({"error": "EUDR eksport ei ole praegu täielike ruumiandmeteta usaldusväärne. Proovi uuesti."}, 503)
+
+    # Use the same protected-area union and completeness contract as search/UI.
+    kaitseala = spatial_status["kaitseala"]["intersects"] is True
+    natura_2000 = spatial_status["natura_2000"]["intersects"] is True
+    sood = spatial_status["sood"]["intersects"] is True
 
     geojson = {
         "type": "FeatureCollection",
@@ -2304,6 +2726,7 @@ async def export_eudr(kataster_nr: str, request: Request):
                 "natura_2000": natura_2000,
                 "kaitseala": kaitseala,
                 "soode_ala": sood,
+                "spatial_status": spatial_status,
                 "export_date": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             },
         }],

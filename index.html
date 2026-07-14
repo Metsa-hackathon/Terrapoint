@@ -972,6 +972,7 @@
     var activeParcelSearch = null;
     var parcelSearchSequence = 0;
     var addressResolutionSequence = 0;
+    var activeAddressResolution = null;
     var addressFetches = new Map();
     var activeAddressFetch = null;
 
@@ -1016,7 +1017,7 @@
             clearTimeout(timer);
             var payload = await res.json().catch(function() { return {}; });
             if (!res.ok) {
-                throw new Error(payload.error || (res.status === 404 ? 'Katastri numbrit ei leitud.' : 'Serveri viga: ' + res.status));
+                throw new Error(payload.error || payload.detail || (res.status === 404 ? 'Katastri numbrit ei leitud.' : 'Serveri viga: ' + res.status));
             }
             if (payload.error) throw new Error(payload.error);
             return payload;
@@ -1034,8 +1035,38 @@
     var aiStreaming = false;
     var aiMessageQueue = [];
     var aiAbortController = null;
+    var aiStreamGeneration = 0;
+    var aiSnapshotReceipt = null;
     var aiLastSendAt = 0;
     var aiRecentSendTimes = [];
+
+    function aiOwnsStream(generation, controller, katasterNr) {
+        return generation === aiStreamGeneration
+            && controller === aiAbortController
+            && katasterNr === aiCurrentKataster;
+    }
+
+    function recordChatSnapshotReceipt(data, nowMs) {
+        var ttlSeconds = data && Number(data.chat_snapshot_ttl_seconds);
+        if (!data || !data.chat_snapshot || !Number.isFinite(ttlSeconds) || ttlSeconds <= 30) {
+            aiSnapshotReceipt = null;
+            return;
+        }
+        aiSnapshotReceipt = {
+            token: data.chat_snapshot,
+            receivedAtMs: Number(nowMs),
+            ttlMs: ttlSeconds * 1000,
+        };
+    }
+
+    function hasFreshChatSnapshot(data, nowMs) {
+        if (!data || !data.chat_snapshot || !aiSnapshotReceipt) return false;
+        var ageMs = Number(nowMs) - aiSnapshotReceipt.receivedAtMs;
+        return aiSnapshotReceipt.token === data.chat_snapshot
+            && Number.isFinite(ageMs)
+            && ageMs >= 0
+            && ageMs < aiSnapshotReceipt.ttlMs - 30000;
+    }
 
     function aiAppendMessage(role, content) {
         var container = document.getElementById('ai-chat-messages');
@@ -1153,12 +1184,19 @@
         var trimmed = JSON.parse(JSON.stringify(data));
         if (trimmed.kataster) delete trimmed.kataster.geometry;
         delete trimmed.map_layers;
+        delete trimmed.chat_snapshot;
+        delete trimmed.chat_snapshot_expires_at;
+        delete trimmed.chat_snapshot_ttl_seconds;
         return trimmed;
     }
 
     async function aiSendMessage(message) {
         if (!aiCurrentKataster) {
             aiAppendMessage('assistant', '<span style="color:var(--ink-4);font-style:italic">Otsi esmalt ülevalt katastri number või aadress — seejärel saan su metsa kohta küsimustele vastata.</span>');
+            return;
+        }
+        if (!hasFreshChatSnapshot(currentData, performance.now())) {
+            aiShowUnavailableData('AI kinnistuandmed aegusid. Otsi kinnistu uuesti.');
             return;
         }
         if (!message.trim()) return;
@@ -1194,6 +1232,10 @@
 
         aiStreaming = true;
         document.getElementById('ai-chat-send').disabled = true;
+        var streamGeneration = ++aiStreamGeneration;
+        var streamKataster = aiCurrentKataster;
+        var controller = null;
+        var stallTimer = null;
 
         // Live message element we update as chunks arrive
         var liveBubble = aiAppendMessage('assistant', '<div class="ai-thinking-block"><span class="ai-thinking-text">Mõtleb...</span></div><div class="ai-answer-block"></div>');
@@ -1201,7 +1243,7 @@
         var answerBlock = liveBubble.querySelector('.ai-answer-block');
 
         try {
-            var controller = new AbortController();
+            controller = new AbortController();
             aiAbortController = controller;
             var resp = await fetch(`${AI_API_BASE}/chat`, {
                 method: 'POST',
@@ -1210,6 +1252,7 @@
                     kataster_nr: aiCurrentKataster,
                     message: message,
                     history: aiChatHistory.slice(0, -1),
+                    snapshot: currentData.chat_snapshot,
                     data: aiTrimData(currentData),
                 }),
                 signal: controller.signal,
@@ -1222,7 +1265,9 @@
                 }
                 try {
                     var j = JSON.parse(t);
-                    throw new Error(j.error || ('Serveri viga (HTTP ' + resp.status + ')'));
+                    var chatError = new Error(j.error || ('Serveri viga (HTTP ' + resp.status + ')'));
+                    chatError.code = j.code;
+                    throw chatError;
                 } catch(je) {
                     if (je.message) throw je;
                     throw new Error('Serveri viga (HTTP ' + resp.status + ')');
@@ -1237,7 +1282,7 @@
             var firstAnswerChunk = true;
 
             // 180s safety timeout — if nothing arrives for 180s, abort
-            var stallTimer = setTimeout(function() { controller.abort(); }, 180000);
+            stallTimer = setTimeout(function() { controller.abort(); }, 180000);
 
             while (true) {
                 var result = await reader.read();
@@ -1315,17 +1360,32 @@
                 }
             }
 
-            aiChatHistory.push({role: 'assistant', content: fullText});
-            if (aiChatHistory.length > 20) aiChatHistory = aiChatHistory.slice(-20);
-            document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + '. Küsi lisaküsimusi';
+            if (aiOwnsStream(streamGeneration, controller, streamKataster)) {
+                aiChatHistory.push({role: 'assistant', content: fullText});
+                if (aiChatHistory.length > 20) aiChatHistory = aiChatHistory.slice(-20);
+                document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + '. Küsi lisaküsimusi';
+            }
 
         } catch(err) {
-            if (liveBubble) {
+            if (
+                aiOwnsStream(streamGeneration, controller, streamKataster)
+                && (err.code === 'CHAT_SNAPSHOT_EXPIRED' || err.code === 'CHAT_SNAPSHOT_INVALID' || err.code === 'CHAT_SNAPSHOT_UNAVAILABLE')
+            ) {
+                aiSnapshotReceipt = null;
+                if (currentData) {
+                    delete currentData.chat_snapshot;
+                    delete currentData.chat_snapshot_expires_at;
+                    delete currentData.chat_snapshot_ttl_seconds;
+                }
+                aiShowUnavailableData(err.message || 'AI kinnistuandmed aegusid. Otsi kinnistu uuesti.');
+            } else if (aiOwnsStream(streamGeneration, controller, streamKataster) && liveBubble) {
                 var msg = err.name === 'AbortError' ? 'AI vastus aegus. Proovi lühemat küsimust.' : err.message;
                 liveBubble.innerHTML = '<span style="color:var(--danger)">' + escHtml(msg) + '</span>';
             }
         }
 
+        if (stallTimer) clearTimeout(stallTimer);
+        if (!aiOwnsStream(streamGeneration, controller, streamKataster)) return;
         aiStreaming = false;
         aiAbortController = null;
         if (aiCurrentKataster) {
@@ -1353,6 +1413,7 @@
         }
 
         // New parcel: cancel any in-flight stream, clear queue, reset history.
+        aiStreamGeneration++;
         if (aiAbortController) { try { aiAbortController.abort(); } catch (_) {} aiAbortController = null; }
         aiMessageQueue.length = 0;
         aiStreaming = false;
@@ -1382,7 +1443,8 @@
         aiShowAnalyzeButton();
     }
 
-    function aiShowUnavailableData() {
+    function aiShowUnavailableData(message) {
+        aiStreamGeneration++;
         if (aiAbortController) aiAbortController.abort();
         aiAbortController = null;
         aiStreaming = false;
@@ -1395,9 +1457,9 @@
         if (input) input.disabled = true;
         if (send) send.disabled = true;
         var messages = document.getElementById('ai-chat-messages');
-        if (messages) messages.innerHTML = '<div class="ai-welcome">AI analüüs vajab katastri ja metsa põhiandmeid.</div>';
+        if (messages) messages.innerHTML = '<div class="ai-welcome">' + escHtml(message || 'AI analüüs vajab katastri ja metsa põhiandmeid.') + '</div>';
         var subtitle = document.querySelector('.ai-chat-subtitle');
-        if (subtitle) subtitle.textContent = 'Metsa põhiandmeid ei õnnestunud laadida. Proovi otsingut uuesti.';
+        if (subtitle) subtitle.textContent = message || 'Metsa põhiandmeid ei õnnestunud laadida. Proovi otsingut uuesti.';
     }
 
     function aiShowAnalyzeButton() {
@@ -1459,7 +1521,7 @@
 
     function openEraldisSheet(eraldised, triggerBtn) {
         var existing = document.getElementById('eraldis-sheet');
-        if (existing) existing.remove();
+        if (existing) closeEraldisSheet(true);
 
         var fmtNum = function(n) {
             if (n == null) return '?';
@@ -1525,18 +1587,26 @@
             if (ev.target === overlay) close();
         });
         sheet.querySelector('.eraldis-sheet-close').addEventListener('click', close);
-        document.addEventListener('keydown', function escHandler(ev) {
+        function escHandler(ev) {
             if (ev.key === 'Escape') {
                 close();
-                document.removeEventListener('keydown', escHandler);
             }
-        });
+        }
+        overlay._cleanup = function() {
+            document.removeEventListener('keydown', escHandler);
+        };
+        document.addEventListener('keydown', escHandler);
     }
 
-    function closeEraldisSheet() {
+    function closeEraldisSheet(immediate) {
         var overlay = document.getElementById('eraldis-sheet');
         if (!overlay) return;
+        if (overlay._cleanup) overlay._cleanup();
         overlay.classList.remove('open');
+        if (immediate) {
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            return;
+        }
         setTimeout(function() { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 200);
     }
 
@@ -1559,7 +1629,17 @@
     let parcelLayer = null;
     let katasterWmsLayer = null;
     let mapClickBusy = false;
+    let mapSelectionSequence = 0;
+    let activeMapConfirmCancel = null;
     const overlayLayers = {};
+
+    function cancelMapSelection() {
+        mapSelectionSequence++;
+        if (activeMapConfirmCancel) activeMapConfirmCancel();
+        activeMapConfirmCancel = null;
+        mapClickBusy = false;
+        if (map) map.getContainer().style.cursor = '';
+    }
 
     // Reverse-lookup a cadastre parcel at (lng, lat) using WMS GetFeatureInfo.
     // (WFS INTERSECTS on this geoserver returns empty; GetFeatureInfo is reliable.)
@@ -1598,6 +1678,7 @@
         if (mapClickBusy) return;
         if (!katasterWmsLayer || !map.hasLayer(katasterWmsLayer)) return; // disabled when layer off
         mapClickBusy = true;
+        var operationId = ++mapSelectionSequence;
         var container = map.getContainer();
         container.style.cursor = 'progress';
         // Visible click marker
@@ -1606,12 +1687,14 @@
         }).addTo(map);
         try {
             var tunnus = await findKatasterAtPoint(e.latlng.lng, e.latlng.lat);
+            if (operationId !== mapSelectionSequence) return;
             if (!tunnus) {
                 showError('Sellelt kohalt ei leitud katastriüksust');
                 return;
             }
             // Pause here: ask user to confirm before doing the heavy search + AI chat.
             var confirmed = await showMapConfirm(tunnus, e.latlng);
+            if (operationId !== mapSelectionSequence) return;
             if (!confirmed) return;
             var navInput = document.getElementById('kataster-input');
             var landInput = document.getElementById('kataster-input-landing');
@@ -1619,11 +1702,15 @@
             if (landInput) landInput.value = tunnus;
             await doSearch();
         } catch (err) {
-            showError('Kaardilt otsing ebaõnnestus: ' + (err.message || err));
+            if (operationId === mapSelectionSequence) {
+                showError('Kaardilt otsing ebaõnnestus: ' + (err.message || err));
+            }
         } finally {
-            container.style.cursor = '';
             setTimeout(function() { try { map.removeLayer(clickMarker); } catch (_) {} }, 1200);
-            mapClickBusy = false;
+            if (operationId === mapSelectionSequence) {
+                container.style.cursor = '';
+                mapClickBusy = false;
+            }
         }
     }
 
@@ -1655,14 +1742,19 @@
                 popup.style.top = '50%';
             }
 
+            var settled = false;
             function done(value) {
+                if (settled) return;
+                settled = true;
                 popup.hidden = true;
                 confirmBtn.removeEventListener('click', onConfirm);
                 cancelBtn.removeEventListener('click', onCancel);
                 if (map) map.off('click', onMapClickAgain, true);
                 if (typeof escHandler === 'function') document.removeEventListener('keydown', escHandler);
+                if (activeMapConfirmCancel === cancelActive) activeMapConfirmCancel = null;
                 resolve(value);
             }
+            function cancelActive() { done(false); }
             function onConfirm() { done(true); }
             function onCancel() { done(false); }
             function onMapClickAgain(ev) {
@@ -1677,6 +1769,8 @@
             // Use capture phase + once:false to detect next map click as cancel
             if (map) map.on('click', onMapClickAgain, true);
             document.addEventListener('keydown', escHandler);
+            if (activeMapConfirmCancel) activeMapConfirmCancel();
+            activeMapConfirmCancel = cancelActive;
         });
     }
 
@@ -2617,10 +2711,65 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             html += '</div>';
         }
         el.innerHTML = html;
+        var animEl = el.querySelector('#anim-co2');
         setTimeout(function() {
-            var animEl = document.getElementById('anim-co2');
-            if (animEl) animateNumber(animEl, data.co2_tons_total, '', 0);
+            if (animEl && animEl.isConnected) animateNumber(animEl, data.co2_tons_total, '', 0);
         }, 300);
+    }
+
+    function eudrProtectionState(spatialStatus) {
+        var status = spatialStatus || {};
+        function read(name) {
+            var item = status[name];
+            if (!item) return { intersects: null, complete: false };
+            if (item.intersects === true) return { intersects: true, complete: item.sources_complete === true };
+            if (item.sources_complete === true && item.intersects === false) return { intersects: false, complete: true };
+            return { intersects: null, complete: false };
+        }
+        var natura = read('natura_2000');
+        var kaitseala = read('kaitseala');
+        var sood = read('sood');
+        var sourcesComplete = natura.complete && kaitseala.complete && sood.complete;
+        var riskLevel = (natura.intersects === true || kaitseala.intersects === true)
+            ? 'Kõrge risk — kaitseala piirangud'
+            : sood.intersects === true
+                ? 'Keskmine risk — soostik'
+                : !sourcesComplete
+                    ? 'Staatus teadmata — osa ruumiandmeid puudub'
+                    : 'Madal risk — kaitseala ei ole';
+        return {
+            natura: natura.intersects,
+            kaitseala: kaitseala.intersects,
+            sood: sood.intersects,
+            sourcesComplete: sourcesComplete,
+            riskLevel: riskLevel,
+        };
+    }
+
+    function restrictionDataState(spatialStatus, meta) {
+        var protection = eudrProtectionState(spatialStatus);
+        var detected = [];
+        if (protection.natura === true) detected.push('Natura 2000');
+        if (protection.kaitseala === true) detected.push('kaitseala');
+        if (protection.sood === true) detected.push('soo');
+        var unavailable = meta && Array.isArray(meta.unavailable_sources) ? meta.unavailable_sources : [];
+        var truncated = meta && Array.isArray(meta.truncated_layers) ? meta.truncated_layers : [];
+        var restrictionLayers = [
+            'kaitsealad', 'piirang', 'piirangukeelualad', 'kaitsevoondid',
+            'karuputk', 'malestised', 'uleujutus', 'veekaitse',
+            'ranna_piirang', 'vaetiste_keeld', 'kma_kitsendused', 'katsealad',
+        ];
+        var otherLayersComplete = !unavailable.some(function(source) {
+            return source.indexOf('layers.') === 0 && restrictionLayers.indexOf(source.slice(7)) !== -1;
+        }) && !truncated.some(function(layer) {
+            return restrictionLayers.indexOf(layer) !== -1;
+        });
+        var sourcesComplete = protection.sourcesComplete && otherLayersComplete;
+        return {
+            detected: detected,
+            sourcesComplete: sourcesComplete,
+            canClaimEmpty: sourcesComplete && detected.length === 0,
+        };
     }
 
     function renderEudr(fullData) {
@@ -2630,8 +2779,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
         var k = fullData.kataster;
         var m = fullData.mets || {};
-        var t = fullData.toetused || {};
-        var r = fullData.riskid || {};
+        var protection = eudrProtectionState(fullData.spatial_status);
 
         // Geograafilised koordinaadid — arvuta centroidist kui geometry on olemas
         var lat = null, lon = null;
@@ -2666,27 +2814,31 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         checks.push({ ok: eraldised.length > 0, label: 'Metsaeraldised', value: eraldised.length + ' tk (' + metsPindala.toFixed(1) + ' ha)' });
         checks.push({ ok: !!k.mk_nimi, label: 'Maakond', value: k.mk_nimi || '—' });
         checks.push({ ok: !!k.ov_nimi, label: 'Vald', value: k.ov_nimi || '—' });
+        checks.push({
+            ok: protection.sourcesComplete,
+            label: 'Looduskaitse andmed',
+            value: protection.sourcesComplete ? 'kontrollitud' : 'osaliselt puudu',
+        });
 
         // Kaitsestaatus
         var protectionBadges = [];
-        var natura = t.natura_2000 || (r.natura_2000);
-        var kaitseala = t.kaitseala || (r.kaitseala);
-        var sood = t.sood || (r.sood);
-        protectionBadges.push({ active: natura, label: 'Natura 2000' });
-        protectionBadges.push({ active: kaitseala, label: 'Kaitseala' });
-        protectionBadges.push({ active: sood, label: 'Sood' });
+        protectionBadges.push({ state: protection.natura, label: 'Natura 2000' });
+        protectionBadges.push({ state: protection.kaitseala, label: 'Kaitseala' });
+        protectionBadges.push({ state: protection.sood, label: 'Sood' });
 
         // Vastavuse kokkuvõte
         var passedChecks = checks.filter(function(c) { return c.ok; }).length;
         var totalChecks = checks.length;
         var allPass = passedChecks === totalChecks;
-        var riskLevel = (natura || kaitseala) ? 'Kõrge risk — kaitseala piirangud' : (sood ? 'Keskmine risk — soostik' : 'Madal risk — kaitseala ei ole');
+        var riskLevel = protection.riskLevel;
 
         var html = '';
 
         // Vastavuse staatuse banner
-        var bannerColor = allPass ? 'var(--success)' : 'var(--warn)';
-        var bannerBg = allPass ? 'var(--success-bg)' : 'var(--warn-bg)';
+        var hasSpatialRisk = protection.natura === true || protection.kaitseala === true || protection.sood === true;
+        var bannerOk = allPass && protection.sourcesComplete && !hasSpatialRisk;
+        var bannerColor = bannerOk ? 'var(--success)' : 'var(--warn)';
+        var bannerBg = bannerOk ? 'var(--success-bg)' : 'var(--warn-bg)';
         html += '<div style="background:' + bannerBg + ';border-left:3px solid ' + bannerColor + ';padding:10px 12px;border-radius:4px;margin-bottom:14px">';
         html += '<div style="font-size:13px;font-weight:600;color:' + bannerColor + ';margin-bottom:2px">EUDR deklaratsioon</div>';
         html += '<div style="font-size:13px;color:var(--ink-3)">' + passedChecks + '/' + totalChecks + ' nõuet täidetud · ' + escHtml(riskLevel) + '</div>';
@@ -2705,8 +2857,12 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         html += '<div class="label" style="margin-bottom:6px">Looduskaitse staatus</div>';
         html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
         protectionBadges.forEach(function(b) {
-            var cls = b.active ? 'pill-warn' : 'pill-neutral';
-            var txt = b.active ? b.label + ' ✓' : b.label + ' —';
+            var cls = b.state === true ? 'pill-warn' : 'pill-neutral';
+            var txt = b.state === true
+                ? b.label + ' leitud'
+                : b.state === false
+                    ? b.label + ' ei tuvastatud'
+                    : b.label + ' teadmata';
             html += '<span class="' + cls + '">' + escHtml(txt) + '</span>';
         });
         html += '</div></div>';
@@ -2878,21 +3034,34 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         el.innerHTML = html;
     }
 
-    function renderKitsendused(data) {
+    function renderKitsendused(data, context) {
         var el = document.getElementById('kitsendused-info');
         var linkEl = document.getElementById('kitsendused-link');
-        if (!data || data.length === 0) {
-            el.innerHTML = '<p class="muted">Kitsendusi ei leitud, krunt asub kitsendusteta alal</p>';
-            if (linkEl) linkEl.style.display = 'none';
-            return;
-        }
-
+        var restrictionState = restrictionDataState(
+            context && context.spatial_status,
+            context && context.meta
+        );
         var katasterNr = '';
         if (window.currentData && window.currentData.kataster) {
             katasterNr = window.currentData.kataster.katastri_nr || window.currentData.kataster.number || '';
         }
         var eelisLink = katasterNr ? 'https://infoleht.keskkonnainfo.ee/?q=' + encodeURIComponent(katasterNr) : 'https://infoleht.keskkonnainfo.ee/';
         var maaametLink = 'https://xgis.maaamet.ee/xgis2/page/app/maainfo?search=' + encodeURIComponent(katasterNr);
+        if (!data || data.length === 0) {
+            if (restrictionState.detected.length > 0) {
+                el.innerHTML = '<p class="muted">Tuvastatud ruumiline looduskaitsestaatus: ' + escHtml(restrictionState.detected.join(', ')) + '.</p>';
+            } else if (!restrictionState.sourcesComplete) {
+                el.innerHTML = '<p class="muted">Kõiki piiranguallikaid ei õnnestunud kontrollida. Piirangute puudumist ei saa kinnitada.</p>';
+            } else {
+                el.innerHTML = '<p class="muted">Kontrollitud allikatest kitsendusi ei leitud.</p>';
+            }
+            if (linkEl) {
+                linkEl.style.display = restrictionState.canClaimEmpty ? 'none' : '';
+                var emptyLink = linkEl.querySelector('a');
+                if (emptyLink) emptyLink.href = eelisLink;
+            }
+            return;
+        }
 
         function kitsRows(items) {
             var rows = '';
@@ -2925,7 +3094,11 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             return rows;
         }
 
-        var html = '<details class="eraldised-panel table-panel kitsendused-panel" open>';
+        var html = '';
+        if (!restrictionState.sourcesComplete) {
+            html += '<p class="muted" style="margin-bottom:10px">Osa piiranguallikaid jäi kontrollimata; loetelu ei pruugi olla täielik.</p>';
+        }
+        html += '<details class="eraldised-panel table-panel kitsendused-panel" open>';
         html += tablePanelSummary(data.length, 'Kitsendused ja piirangud');
         html += '<div class="table-grid-hscroll">';
         html += '<div class="table-grid-header kitsendused-table-header"><div>Tüüp</div><div>Lisainfo</div></div>';
@@ -3128,6 +3301,13 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         document.getElementById('loading').classList.add('hidden');
     }
 
+    function showParcelResolutionError(message) {
+        hideLoading();
+        showDashboard();
+        renderErrorState(message);
+        showError(message);
+    }
+
     function shouldShowBroadPartialWarning(meta) {
         if (!meta || !meta.partial) return false;
         if (meta.ai_analysis_available === true) return false;
@@ -3143,6 +3323,93 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             && meta.ai_analysis_available !== true
             && (meta.details_skipped || meta.sampled_eraldised)
         );
+    }
+
+    function resetParcelResult(requestId) {
+        if (requestId !== parcelSearchSequence) return false;
+
+        cancelMapSelection();
+        currentData = null;
+        aiSnapshotReceipt = null;
+        window._timberValue = 0;
+        window._vaartusData = {};
+        clearParcelPanels();
+
+        if (parcelLayer) {
+            if (map && map.hasLayer(parcelLayer)) map.removeLayer(parcelLayer);
+            parcelLayer = null;
+        }
+        Object.keys(overlayLayers).forEach(removeOverlayLayer);
+        window._mapLayersData = {};
+        updateMapLegend([]);
+        updateKihtLegend();
+        if (map) map.closePopup();
+
+        aiShowUnavailableData();
+        aiRenderEraldisHints([]);
+        _aiUserScrolledUp = false;
+        var inputArea = document.getElementById('ai-chat-input-area');
+        if (inputArea) inputArea.style.display = 'none';
+        closeEraldisSheet(true);
+        var restrictionsLink = document.getElementById('kitsendused-link');
+        if (restrictionsLink) restrictionsLink.style.display = 'none';
+        return true;
+    }
+
+    function clearParcelPanels() {
+        [
+            'kataster-info', 'mets-info', 'vaartus-info', 'sinik-info',
+            'riskid-info', 'teatised-info', 'kitsendused-info',
+            'toetused-info', 'eudr-info',
+        ].forEach(function(id) {
+            var panel = document.getElementById(id);
+            if (panel) panel.innerHTML = '<p class="muted">—</p>';
+        });
+    }
+
+    function clearSearchBusyState() {
+        var btn = document.getElementById('search-btn');
+        var landBtn = document.getElementById('search-btn-landing');
+        [btn, landBtn].forEach(function(button) {
+            if (!button) return;
+            button.disabled = false;
+            button.classList.remove('is-loading');
+            var searchBox = button.closest('.search-box');
+            if (searchBox) searchBox.classList.remove('is-searching');
+        });
+    }
+
+    function beginParcelReplacement() {
+        var requestId = ++parcelSearchSequence;
+        if (activeParcelSearch) activeParcelSearch.abort();
+        activeParcelSearch = null;
+        activeAddressResolution = null;
+        clearSearchBusyState();
+        resetParcelResult(requestId);
+        return requestId;
+    }
+
+    function addressResolutionOwns(addressRequestId, parcelRequestId) {
+        return addressRequestId === addressResolutionSequence && parcelRequestId === parcelSearchSequence;
+    }
+
+    function cancelActiveAddressResolution() {
+        addressResolutionSequence++;
+        if (activeAddressResolution && activeAddressResolution.parcelRequestId === parcelSearchSequence) {
+            hideLoading();
+        }
+        activeAddressResolution = null;
+    }
+
+    function cancelPendingInputOperations() {
+        cancelActiveAddressResolution();
+        if (!activeParcelSearch) return;
+        var requestId = ++parcelSearchSequence;
+        activeParcelSearch.abort();
+        activeParcelSearch = null;
+        clearSearchBusyState();
+        resetParcelResult(requestId);
+        hideLoading();
     }
 
     function renderErrorState(msg) {
@@ -3312,21 +3579,26 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 doSearch();
                 return;
             }
+            var parcelRequestId = beginParcelReplacement();
+            activeAddressResolution = {addressRequestId: requestId, parcelRequestId: parcelRequestId};
+            showLoading();
             fetchAddresses(value).then(function(results) {
-                if (requestId !== addressResolutionSequence) return;
+                if (!addressResolutionOwns(requestId, parcelRequestId)) return;
+                activeAddressResolution = null;
                 if (results.length > 0) {
                     var first = results[0];
                     if (navInput) navInput.value = first.katastri_nr;
                     if (landInput) landInput.value = first.katastri_nr;
                     doSearch();
                 } else {
-                    showError('Aadressi "' + value + '" ei leitud. Proovi katastritunnust või teist aadressi.');
+                    showParcelResolutionError('Aadressi "' + value + '" ei leitud. Proovi katastritunnust või teist aadressi.');
                 }
             }).catch(function() {
-                if (requestId !== addressResolutionSequence) return;
+                if (!addressResolutionOwns(requestId, parcelRequestId)) return;
+                activeAddressResolution = null;
                 var dropdown = landDropdown || document.getElementById('address-dropdown');
                 showDropdownEmpty(dropdown);
-                showError('Aadressiotsing ebaõnnestus. Proovi hetke pärast uuesti või sisesta katastritunnus.');
+                showParcelResolutionError('Aadressiotsing ebaõnnestus. Proovi hetke pärast uuesti või sisesta katastritunnus.');
             });
         }
 
@@ -3346,21 +3618,26 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 doSearch();
                 return;
             }
+            var parcelRequestId = beginParcelReplacement();
+            activeAddressResolution = {addressRequestId: requestId, parcelRequestId: parcelRequestId};
+            showLoading();
             fetchAddresses(value).then(function(results) {
-                if (requestId !== addressResolutionSequence) return;
+                if (!addressResolutionOwns(requestId, parcelRequestId)) return;
+                activeAddressResolution = null;
                 if (results.length > 0) {
                     var first = results[0];
                     if (navInput) navInput.value = first.katastri_nr;
                     if (landInput) landInput.value = first.katastri_nr;
                     doSearch();
                 } else {
-                    showError('Aadressi "' + value + '" ei leitud. Proovi katastritunnust või teist aadressi.');
+                    showParcelResolutionError('Aadressi "' + value + '" ei leitud. Proovi katastritunnust või teist aadressi.');
                 }
             }).catch(function() {
-                if (requestId !== addressResolutionSequence) return;
+                if (!addressResolutionOwns(requestId, parcelRequestId)) return;
+                activeAddressResolution = null;
                 var dropdown = landDropdown || document.getElementById('address-dropdown');
                 showDropdownEmpty(dropdown);
-                showError('Aadressiotsing ebaõnnestus. Proovi hetke pärast uuesti või sisesta katastritunnus.');
+                showParcelResolutionError('Aadressiotsing ebaõnnestus. Proovi hetke pärast uuesti või sisesta katastritunnus.');
             });
         }
 
@@ -3406,7 +3683,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             landInput.addEventListener('input', function() {
                 var val = landInput.value.trim();
                 invalidateAddressDropdown(landDropdown);
-                addressResolutionSequence++;
+                cancelPendingInputOperations();
             clearTimeout(landAddrTimer);
             if (val.length < 3) { landDropdown.style.display = 'none'; return; }
             if (KATASTER_RE.test(val)) { landDropdown.style.display = 'none'; return; }
@@ -3526,21 +3803,26 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 return;
             }
             // Non-kataster query: fetch addresses and use the first match
+            var parcelRequestId = beginParcelReplacement();
+            activeAddressResolution = {addressRequestId: requestId, parcelRequestId: parcelRequestId};
+            showLoading();
             fetchAddresses(value).then(function(results) {
-                if (requestId !== addressResolutionSequence) return;
+                if (!addressResolutionOwns(requestId, parcelRequestId)) return;
+                activeAddressResolution = null;
                 if (results.length > 0) {
                     var first = results[0];
                     document.getElementById('kataster-input').value = first.katastri_nr;
                     if (landInput) landInput.value = first.katastri_nr;
                     doSearch();
                 } else {
-                    showError('Aadressi "' + value + '" ei leitud. Proovi katastritunnust või teist aadressi.');
+                    showParcelResolutionError('Aadressi "' + value + '" ei leitud. Proovi katastritunnust või teist aadressi.');
                 }
             }).catch(function() {
-                if (requestId !== addressResolutionSequence) return;
+                if (!addressResolutionOwns(requestId, parcelRequestId)) return;
+                activeAddressResolution = null;
                 var dropdown = document.getElementById('address-dropdown');
                 showDropdownEmpty(dropdown);
-                showError('Aadressiotsing ebaõnnestus. Proovi hetke pärast uuesti või sisesta katastritunnus.');
+                showParcelResolutionError('Aadressiotsing ebaõnnestus. Proovi hetke pärast uuesti või sisesta katastritunnus.');
             });
         }
 
@@ -3636,7 +3918,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         input.addEventListener('input', function() {
             var val = input.value.trim();
             invalidateAddressDropdown(dropdown);
-            addressResolutionSequence++;
+            cancelPendingInputOperations();
             clearTimeout(addressTimer);
             if (val.length < 3) { dropdown.style.display = 'none'; return; }
             // If it looks like a kataster number, don't search addresses
@@ -3678,7 +3960,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
     function selectAddressItem(item, dropdown, target) {
         var kataster = item.dataset.kataster;
         if (!kataster) return;
-        addressResolutionSequence++;
+        cancelActiveAddressResolution();
         invalidateAddressDropdown(dropdown);
         target.value = kataster;
         var navInput = document.getElementById('kataster-input');
@@ -3737,8 +4019,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
     async function doSearch() {
         var nr = document.getElementById('kataster-input').value.trim();
         if (!nr) { showError('Sisesta katastri number.'); return; }
-        var requestId = ++parcelSearchSequence;
-        if (activeParcelSearch) activeParcelSearch.abort();
+        var requestId = beginParcelReplacement();
         var controller = new AbortController();
         activeParcelSearch = controller;
 
@@ -3757,7 +4038,11 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         try {
             var data = await searchParcel(nr, controller);
             if (requestId !== parcelSearchSequence) return;
+            if (!data || !data.kataster || !data.kataster.number) {
+                throw new Error('Otsinguteenus tagastas puudulikud kinnistuandmed. Proovi uuesti.');
+            }
             currentData = data;
+            recordChatSnapshotReceipt(data, performance.now());
 
             window._timberValue = (data.vaartus && data.vaartus.total_value_eur) || 0;
             window._vaartusData = data.vaartus || {};
@@ -3776,12 +4061,21 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             safe(renderSinik, data.sinik, 'sinik');
             safe(renderRiskid, data.riskid, 'riskid');
             safe(renderTeatised, data.teatised, 'teatised', data.teatised_meta);
-            safe(renderKitsendused, data.kitsendused, 'kitsendused');
+            safe(renderKitsendused, data.kitsendused, 'kitsendused', {
+                spatial_status: data.spatial_status,
+                meta: data.meta,
+            });
             safe(renderToetused, data.toetused, 'toetused');
             safe(renderEudr, data, 'eudr');
 
-            // Load map overlay layers
-            if (data.map_layers) loadMapLayers(data.map_layers);
+            // Replace all parcel-scoped map state before revealing the result.
+            loadMapLayers(data.map_layers || {});
+            if (data.kataster.geometry) {
+                showParcel(data.kataster.geometry);
+            } else if (parcelLayer) {
+                if (map && map.hasLayer(parcelLayer)) map.removeLayer(parcelLayer);
+                parcelLayer = null;
+            }
             document.getElementById('map-controls').style.display = '';
             dismissMapHint();
             collapseMapLegendOnMobile();
@@ -3795,10 +4089,14 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             }
 
             // Trigger AI analysis
-            if (data.kataster && data.meta && data.meta.ai_analysis_available === true) {
+            if (data.kataster && data.meta && data.meta.ai_analysis_available === true && hasFreshChatSnapshot(data, performance.now())) {
                 aiAnalyzeKataster(data.kataster.number, data.mets ? data.mets.eraldised : null);
             } else {
-                aiShowUnavailableData();
+                aiShowUnavailableData(
+                    data.meta && data.meta.ai_analysis_available === true
+                        ? 'AI turvakontroll ei ole hetkel saadaval. Proovi otsingut uuesti.'
+                        : null
+                );
             }
 
             // Show parcel on the already-visible map
@@ -3806,12 +4104,12 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 if (requestId !== parcelSearchSequence) return;
                 map.invalidateSize();
                 if (data.kataster && data.kataster.geometry) {
-                    showParcel(data.kataster.geometry);
                     fitToParcel(data.kataster.geometry);
                 }
             }, 200);
         } catch (err) {
             if (requestId !== parcelSearchSequence) return;
+            resetParcelResult(requestId);
             hideLoading();
             showDashboard();
             renderErrorState(err.message);
@@ -3819,11 +4117,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         } finally {
             if (requestId !== parcelSearchSequence) return;
             activeParcelSearch = null;
-            btn.disabled = false;
-            btn.classList.remove('is-loading');
-            searchBox.classList.remove('is-searching');
-            if (landBtn) { landBtn.disabled = false; landBtn.classList.remove('is-loading'); }
-            if (landSearchBox) landSearchBox.classList.remove('is-searching');
+            clearSearchBusyState();
         }
 
     }

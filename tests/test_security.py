@@ -1,9 +1,11 @@
 import unittest
 import os
+import base64
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+import config
 from api.index import (
     ChatRequest,
     app,
@@ -29,6 +31,21 @@ class SecurityBoundaryTests(unittest.TestCase):
 
         self.assertFalse(allowed)
         self.assertGreater(retry_after, 0)
+
+    def test_vercel_preview_origin_is_allowed_from_platform_environment(self):
+        with patch.dict(
+            os.environ,
+            {
+                "CORS_ORIGINS": "https://terrapoint.ee",
+                "VERCEL_URL": "terrapoint-git-a1b2c3.vercel.app",
+                "VERCEL_BRANCH_URL": "terrapoint-git-main-team.vercel.app",
+            },
+            clear=False,
+        ):
+            origins = config._parse_cors_origins()
+
+        self.assertIn("https://terrapoint-git-a1b2c3.vercel.app", origins)
+        self.assertIn("https://terrapoint-git-main-team.vercel.app", origins)
 
     def test_chat_request_rejects_oversized_message(self):
         with self.assertRaises(Exception):
@@ -146,20 +163,26 @@ class SecurityBoundaryTests(unittest.TestCase):
         }))
 
     def test_chat_optional_partial_data_passes_readiness_gate(self):
+        data = {
+            "kataster": {"number": "78404:409:0113"},
+            "mets": {"eraldised": [{"eraldis_nr": 1}]},
+            "meta": {
+                "partial": True,
+                "unavailable_sources": ["metsaregister.teatised"],
+            },
+        }
         payload = {
             "kataster_nr": "78404:409:0113",
             "message": "Analüüsi kinnistut",
-            "data": {
-                "kataster": {"number": "78404:409:0113"},
-                "mets": {"eraldised": [{"eraldis_nr": 1}]},
-                "meta": {
-                    "partial": True,
-                    "unavailable_sources": ["metsaregister.teatised"],
-                },
-            },
+            "data": data,
         }
 
-        with patch.dict(os.environ, {"OPENCODE_ZEN_API_KEY": ""}):
+        snapshot_key = base64.urlsafe_b64encode(b"k" * 32).decode()
+        with patch.dict(os.environ, {
+            "TERRAPOINT_CHAT_SNAPSHOT_KEY_B64": snapshot_key,
+            "OPENCODE_ZEN_API_KEY": "",
+        }):
+            payload["snapshot"], _ = __import__("api.index", fromlist=["_issue_chat_snapshot"])._issue_chat_snapshot(data)
             response = TestClient(app).post("/api/chat", json=payload)
 
         self.assertEqual(response.status_code, 500)

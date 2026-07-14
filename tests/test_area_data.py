@@ -1,7 +1,8 @@
+import copy
 import unittest
 from unittest.mock import patch
 
-from api.index import MAX_CHAT_PROMPT_CHARS, _forest_area_ha, _prioritize_notice_rows, build_system_prompt
+from api.index import MAX_CHAT_PROMPT_CHARS, _chat_evidence_digest, _forest_area_ha, _prioritize_notice_rows, build_system_prompt
 
 
 class AreaDataTests(unittest.TestCase):
@@ -324,6 +325,26 @@ class AreaDataTests(unittest.TestCase):
         self.assertIn("--- ANDMEPIIRANGUD ---", prompt)
         self.assertIn("Metsa detailandmed jäid osaliselt laadimata", prompt)
         self.assertIn("Mahupiiri tõttu kärbitud kaardikihid: kaitsealad", prompt)
+
+    def test_ai_prompt_and_snapshot_bind_canonical_spatial_status(self):
+        protected = {
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 2},
+            "mets": {"eraldised": [{"eraldis_nr": 1}]},
+            "meta": {"partial": False, "unavailable_sources": []},
+            "spatial_status": {
+                "natura_2000": {"intersects": False, "sources_complete": True},
+                "kaitseala": {"intersects": True, "sources_complete": True},
+                "sood": {"intersects": False, "sources_complete": True},
+            },
+        }
+        unprotected = copy.deepcopy(protected)
+        unprotected["spatial_status"]["kaitseala"]["intersects"] = False
+
+        prompt = build_system_prompt(protected)
+
+        self.assertIn("Kaitseala: leitud", prompt)
+        self.assertIn("Natura 2000: ei tuvastatud", prompt)
+        self.assertNotEqual(_chat_evidence_digest(protected), _chat_evidence_digest(unprotected))
 
     def test_ai_prompt_cannot_escape_the_parcel_data_boundary(self):
         prompt = build_system_prompt({

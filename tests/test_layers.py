@@ -32,6 +32,30 @@ class LayerResultTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(result, ("kaitsealad", features, False, True))
 
+    async def test_malformed_features_value_marks_layer_unavailable(self):
+        result = await _fetch_layer(
+            FakeClient(FakeResponse(features={"not": "a list"})),
+            "kaitsealad",
+            "eelis",
+            "eelis:kr_kaitseala",
+            "24,59,25,60",
+            attempts=1,
+        )
+
+        self.assertEqual(result, ("kaitsealad", [], True, False))
+
+    async def test_non_object_feature_marks_layer_unavailable(self):
+        result = await _fetch_layer(
+            FakeClient(FakeResponse(features=[None])),
+            "kaitsealad",
+            "eelis",
+            "eelis:kr_kaitseala",
+            "24,59,25,60",
+            attempts=1,
+        )
+
+        self.assertEqual(result, ("kaitsealad", [], True, False))
+
 
 if __name__ == "__main__":
     unittest.main()

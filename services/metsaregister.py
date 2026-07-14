@@ -29,7 +29,11 @@ async def _wfs_get(url: str, timeout: float = 10.0, retries: int = 3) -> list[di
                         continue
                     raise MetsaregisterWFSError(f"WFS {resp.status_code}")
                 resp.raise_for_status()
-                return resp.json().get("features", [])
+                payload = resp.json()
+                features = payload.get("features") if isinstance(payload, dict) else None
+                if not isinstance(features, list) or any(not isinstance(feature, dict) for feature in features):
+                    raise MetsaregisterWFSError("WFS response has invalid features")
+                return features
         except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError):
             if attempt < retries:
                 await asyncio.sleep(0.3 * (2 ** attempt))

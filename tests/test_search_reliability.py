@@ -231,13 +231,75 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         with (
             patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
             patch("api.index.query_eraldis", new=AsyncMock(return_value=[])),
-            patch("api.index.query_all_layers", new=AsyncMock(return_value=({"kaitsealad": [nearby_but_not_intersecting]}, [], []))),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({
+                "kaitsealad": [nearby_but_not_intersecting],
+                "katsealad": [],
+                "sood": [],
+            }, [], []))),
             patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
             patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
         ):
             result = await api._search_core("78404:409:0113", 0)
 
         self.assertEqual(result["kitsendused"], [])
+        self.assertEqual(result["spatial_status"]["kaitseala"], {
+            "intersects": False,
+            "sources_complete": True,
+        })
+
+    async def test_empty_feature_geometry_makes_spatial_evidence_incomplete(self):
+        empty_geometry = {
+            "type": "Feature",
+            "geometry": {"type": "Polygon", "coordinates": []},
+            "properties": {},
+        }
+        parcel_geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+
+        filtered, incomplete = api._filter_features_by_geometry_with_status(
+            [empty_geometry],
+            parcel_geometry,
+        )
+
+        self.assertEqual(filtered, [])
+        self.assertTrue(incomplete)
+
+    async def test_non_list_features_and_empty_parcel_are_incomplete(self):
+        parcel_geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+
+        self.assertEqual(
+            api._filter_features_by_geometry_with_status({}, parcel_geometry),
+            ([], True),
+        )
+        self.assertEqual(
+            api._filter_features_by_geometry_with_status([], {"type": "Polygon", "coordinates": []}),
+            ([], True),
+        )
+
+    async def test_self_intersecting_geometries_are_incomplete(self):
+        valid_parcel = {
+            "type": "Polygon",
+            "coordinates": [[[0.2, 1.4], [0.6, 1.4], [0.6, 1.8], [0.2, 1.4]]],
+        }
+        bow_tie = {
+            "type": "Polygon",
+            "coordinates": [[[0, 0], [2, 2], [0, 2], [2, 0], [0, 0]]],
+        }
+        feature = {"type": "Feature", "geometry": bow_tie, "properties": {}}
+
+        self.assertEqual(
+            api._filter_features_by_geometry_with_status([feature], valid_parcel)[1],
+            True,
+        )
+        self.assertEqual(
+            api._filter_features_by_geometry_with_status([], bow_tie),
+            ([], True),
+        )
 
     async def test_layer_truncation_is_not_reported_as_partial(self):
         # Suur mets → kihid jooksevad 100 feature piirile (truncated), kuid
@@ -266,6 +328,10 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result["meta"]["partial"])
         self.assertEqual(result["meta"]["truncated_layers"], sorted(truncated_layers))
         self.assertEqual(result["meta"]["unavailable_sources"], [])
+        self.assertIsNone(result["spatial_status"]["kaitseala"]["intersects"])
+        self.assertFalse(result["spatial_status"]["kaitseala"]["sources_complete"])
+        self.assertIsNone(result["spatial_status"]["sood"]["intersects"])
+        self.assertFalse(result["spatial_status"]["sood"]["sources_complete"])
         protection = next(item for item in result["toetused"] if item["id"] == "looduskaitse-piirangute-huvitis")
         self.assertEqual(protection["eligibility_status"], "Vajab kontrolli")
 
@@ -293,8 +359,47 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result["meta"]["partial"])
         self.assertIn("layers.kaitsealad", result["meta"]["unavailable_sources"])
         self.assertEqual(result["meta"]["truncated_layers"], [])
+        self.assertIsNone(result["spatial_status"]["kaitseala"]["intersects"])
+        self.assertFalse(result["spatial_status"]["kaitseala"]["sources_complete"])
         protection = next(item for item in result["toetused"] if item["id"] == "looduskaitse-piirangute-huvitis")
         self.assertEqual(protection["eligibility_status"], "Vajab kontrolli")
+
+    def test_spatial_status_keeps_positive_evidence_when_other_sources_are_incomplete(self):
+        status = api._build_spatial_status(
+            {
+                "kaitsealad": [{"type": "Feature"}],
+                "katsealad": [],
+                "sood": [],
+            },
+            [],
+            ["layers.katsealad"],
+            [],
+        )
+
+        self.assertEqual(status["kaitseala"], {
+            "intersects": True,
+            "sources_complete": False,
+        })
+        self.assertEqual(status["sood"], {
+            "intersects": False,
+            "sources_complete": True,
+        })
+        self.assertEqual(status["natura_2000"], {
+            "intersects": False,
+            "sources_complete": True,
+        })
+
+    def test_malformed_relevant_geometry_marks_source_incomplete(self):
+        parcel = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        malformed = {"type": "Feature", "geometry": {"type": "Polygon", "coordinates": "bad"}}
+
+        filtered, incomplete = api._filter_features_by_geometry_with_status([malformed], parcel)
+
+        self.assertEqual(filtered, [])
+        self.assertTrue(incomplete)
 
     async def test_large_forest_fetches_element_data_not_just_peapuuliik(self):
         # Suure metsaga (>30 eraldist) peab liikide koosseis baseeruma
