@@ -37,7 +37,8 @@ class AssetPassportTests(unittest.TestCase):
         self.assertEqual(volume["value"], 224)
         self.assertEqual(volume["unit"], "m³")
         self.assertEqual(volume["provenance"], "derived")
-        self.assertEqual(volume["provenance_label"], "Terrapointi tuletis")
+        self.assertEqual(volume["label"], "Kasvava metsa kogumaht")
+        self.assertEqual(volume["provenance_label"], "Arvutatud Metsaregistri andmetest")
         self.assertEqual(volume["source"]["name"], "Metsaregister")
         self.assertEqual(volume["source"]["oldest_as_of"], "2024-01-15")
         self.assertIn("m³/ha × pindala", volume["derivation"])
@@ -46,19 +47,26 @@ class AssetPassportTests(unittest.TestCase):
 
         timber = passports[1]
         self.assertEqual(timber["range"], {"low": 16_000, "base": 18_500, "high": 21_000})
-        self.assertEqual(timber["label"], "Kasvava puidu stsenaarium")
+        self.assertEqual(timber["label"], "Kasvava puidu indikatiivne hinnavahemik")
         self.assertEqual(timber["confidence"]["score"], 82)
         self.assertEqual(timber["confidence"]["label"], "Kõrge lähteandmete usaldus")
         self.assertEqual(timber["provenance"], "estimate")
+        self.assertEqual(timber["provenance_label"], "Arvutuslik hinnavahemik")
 
         land = passports[2]
         self.assertTrue(land["available"])
         self.assertEqual(land["value"], 4_200)
         self.assertEqual(land["provenance"], "official")
+        self.assertEqual(land["label"], "Maa maksustamishind")
+        self.assertEqual(land["provenance_label"], "Maa- ja Ruumiamet")
         self.assertIn("maksustamishind", " ".join(land["limitations"]).lower())
 
         property_value = passports[3]
-        self.assertEqual(property_value["label"], "Maa ja puidu indikatiivne vahemik")
+        self.assertEqual(property_value["label"], "Kogu kinnistu indikatiivne hinnavahemik")
+        self.assertEqual(
+            property_value["provenance_label"],
+            "Maa maksustamishind + puidu hinnavahemik",
+        )
         self.assertIsNone(property_value["range"]["base"])
         self.assertIn("tehing", " ".join(property_value["limitations"]).lower())
         combined_limitations = " ".join(property_value["limitations"]).lower()
@@ -80,7 +88,7 @@ class AssetPassportTests(unittest.TestCase):
 
         volume = passports[0]
         self.assertEqual(volume["provenance"], "mixed")
-        self.assertEqual(volume["provenance_label"], "Ametlikud ja tuletatud sisendid")
+        self.assertEqual(volume["provenance_label"], "Registriandmed + Terrapointi hinnang")
         self.assertEqual(volume["quality"]["official_stands"], 1)
         self.assertEqual(volume["quality"]["estimated_stands"], 1)
         self.assertTrue(any("hinnanguline" in item.lower() for item in volume["limitations"]))
@@ -89,6 +97,7 @@ class AssetPassportTests(unittest.TestCase):
         property_value = passports[3]
         self.assertFalse(land["available"])
         self.assertFalse(property_value["available"])
+        self.assertEqual(property_value["unavailable_label"], "Maa maksustamishind puudub")
 
     def test_all_estimated_volume_never_claims_official_stock_inputs(self):
         passports = build_asset_passports(
@@ -106,7 +115,7 @@ class AssetPassportTests(unittest.TestCase):
 
         volume, timber = passports[:2]
         self.assertEqual(volume["provenance"], "estimate")
-        self.assertEqual(volume["provenance_label"], "Terrapointi hinnang")
+        self.assertEqual(volume["provenance_label"], "Hinnatud Metsaregistri andmete põhjal")
         self.assertEqual(volume["quality"]["official_stands"], 0)
         self.assertEqual(volume["confidence"]["level"], "madal")
         self.assertIn("hinnang", volume["confidence"]["label"].lower())
@@ -128,6 +137,7 @@ class AssetPassportTests(unittest.TestCase):
 
         volume = passports[0]
         self.assertFalse(volume["available"])
+        self.assertEqual(volume["unavailable_label"], "Eraldiste tagavara lähteandmed puuduvad")
         self.assertEqual(volume["provenance"], "unknown")
         self.assertNotEqual(volume["confidence"]["level"], "kõrge")
         self.assertTrue(any("teatis" in reason.lower() for reason in volume["confidence"]["reasons"]))
@@ -160,8 +170,63 @@ class AssetPassportTests(unittest.TestCase):
         self.assertEqual(volume["provenance"], "mixed")
         self.assertIn("puud", volume["provenance_label"].lower())
         self.assertFalse(timber["available"])
+        self.assertEqual(timber["unavailable_label"], "Puidu hinnangut ei saa tagavaraandmeteta arvutada")
         self.assertTrue(land["available"])
         self.assertFalse(property_value["available"])
+        self.assertEqual(property_value["unavailable_label"], "Puidu tagavaraandmed puuduvad")
+
+    def test_rejects_incomplete_or_invalid_timber_ranges(self):
+        invalid_ranges = [
+            {"low_eur": None, "base_eur": 1_000, "high_eur": None},
+            {"low_eur": 2_000, "base_eur": 1_500, "high_eur": 1_000},
+            {"low_eur": 1_000, "base_eur": float("nan"), "high_eur": 2_000},
+        ]
+
+        for timber_estimate in invalid_ranges:
+            with self.subTest(timber_estimate=timber_estimate):
+                passports = build_asset_passports(
+                    stands=[{"eraldis_nr": 1, "tagavara_provenance": "official"}],
+                    inventory={"staatus": "värske"},
+                    reliability={"score": 82, "level": "kõrge", "reasons": []},
+                    timber_estimate=timber_estimate,
+                    property_estimate={
+                        "land_reference_available": True,
+                        "land_reference_eur": 4_200,
+                        "low_eur": 5_000,
+                        "base_eur": None,
+                        "high_eur": 8_000,
+                    },
+                    total_volume_m3=100,
+                )
+
+                timber = passports[1]
+                self.assertFalse(timber["available"])
+                self.assertEqual(
+                    timber["unavailable_label"],
+                    "Puidu hinnavahemiku lähteandmed puuduvad",
+                )
+                self.assertEqual(timber["range"], {"low": None, "base": None, "high": None})
+                self.assertEqual(
+                    passports[3]["unavailable_label"],
+                    "Puidu hinnavahemiku lähteandmed puuduvad",
+                )
+
+    def test_combines_missing_land_and_timber_reasons(self):
+        passports = build_asset_passports(
+            stands=[{"eraldis_nr": 1, "tagavara_provenance": "unavailable"}],
+            inventory={"staatus": "kriitiline"},
+            reliability={"score": 20, "level": "madal", "reasons": []},
+            timber_estimate={"low_eur": None, "base_eur": None, "high_eur": None},
+            property_estimate={"land_reference_available": False},
+            total_volume_m3=0,
+        )
+
+        property_value = passports[3]
+        self.assertFalse(property_value["available"])
+        self.assertEqual(
+            property_value["unavailable_label"],
+            "Maa maksustamishind ja puidu tagavaraandmed puuduvad",
+        )
 
 
 if __name__ == "__main__":

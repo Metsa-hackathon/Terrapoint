@@ -1,3 +1,6 @@
+import math
+
+
 METSAREGISTER_URL = "https://register.metsad.ee/otsiEraldis"
 FOREST_ACT_VALIDITY_URL = "https://www.riigiteataja.ee/akt/109042026002#para11"
 FOREST_INVENTORY_ACCURACY_URL = "https://www.riigiteataja.ee/akt/131052024011#para13"
@@ -5,6 +8,21 @@ LAND_VALUE_URL = "https://maaruum.ee/maakataster-ja-maa-hindamine/maa-hindamine/
 TIMBER_PRICE_URL = "https://erametsaliit.ee/wp-content/uploads/2026/05/puiduhinnad-2026-i-kv.pdf"
 FOREST_ASSORTMENT_METHOD_URL = "https://www.riigiteataja.ee/aktilisa/1180/3202/5002/VV_17m_lisa5.pdf"
 FOREST_HARVEST_COST_METHOD_URL = "https://www.riigiteataja.ee/aktilisa/1180/3202/5002/VV_17m_lisa7.pdf"
+
+
+def _finite_number(value: object) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def _valid_range(estimate: dict, *, require_base: bool) -> bool:
+    low = estimate.get("low_eur")
+    base = estimate.get("base_eur")
+    high = estimate.get("high_eur")
+    if not (_finite_number(low) and _finite_number(high) and low <= high):
+        return False
+    if base is None:
+        return not require_base
+    return _finite_number(base) and low <= base <= high
 
 
 def _inventory_confidence(
@@ -91,13 +109,13 @@ def build_asset_passports(
     usable_stands = official_stands + estimated_stands + unknown_stands
     if estimated_stands and official_stands:
         volume_provenance = "mixed"
-        volume_provenance_label = "Ametlikud ja tuletatud sisendid"
+        volume_provenance_label = "Registriandmed + Terrapointi hinnang"
     elif estimated_stands and not official_stands and not unknown_stands and not unavailable_stands:
         volume_provenance = "estimate"
-        volume_provenance_label = "Terrapointi hinnang"
+        volume_provenance_label = "Hinnatud Metsaregistri andmete põhjal"
     elif official_stands and not estimated_stands and not unknown_stands and not unavailable_stands:
         volume_provenance = "derived"
-        volume_provenance_label = "Terrapointi tuletis"
+        volume_provenance_label = "Arvutatud Metsaregistri andmetest"
     else:
         volume_provenance = "unknown" if not usable_stands else "mixed"
         volume_provenance_label = "Tagavaraandmed puuduvad" if not usable_stands else "Sisendid on osaliselt puudu"
@@ -125,25 +143,45 @@ def build_asset_passports(
         )
 
     value_confidence = _value_confidence(reliability)
-    land_available = property_estimate.get("land_reference_available") is True
+    land_available = (
+        property_estimate.get("land_reference_available") is True
+        and _finite_number(property_estimate.get("land_reference_eur"))
+    )
+    stock_available = usable_stands > 0 and unavailable_stands == 0
+    timber_range_available = _valid_range(timber_estimate, require_base=True)
     timber_available = (
-        usable_stands > 0
-        and unavailable_stands == 0
-        and timber_estimate.get("base_eur") is not None
+        stock_available
+        and timber_range_available
     )
     property_available = (
         land_available
-        and usable_stands > 0
-        and unavailable_stands == 0
-        and property_estimate.get("low_eur") is not None
-        and property_estimate.get("high_eur") is not None
+        and timber_available
+        and _valid_range(property_estimate, require_base=False)
     )
+    timber_unavailable_label = (
+        "Puidu hinnangut ei saa tagavaraandmeteta arvutada"
+        if not stock_available
+        else "Puidu hinnavahemiku lähteandmed puuduvad"
+    )
+    if not land_available and not stock_available:
+        property_unavailable_label = "Maa maksustamishind ja puidu tagavaraandmed puuduvad"
+    elif not land_available and not timber_available:
+        property_unavailable_label = "Maa maksustamishind ja puidu hinnavahemik puuduvad"
+    elif not land_available:
+        property_unavailable_label = "Maa maksustamishind puudub"
+    elif not stock_available:
+        property_unavailable_label = "Puidu tagavaraandmed puuduvad"
+    elif not timber_available:
+        property_unavailable_label = "Puidu hinnavahemiku lähteandmed puuduvad"
+    else:
+        property_unavailable_label = "Kinnistu hinnavahemiku lähteandmed puuduvad"
 
     return [
         {
             "id": "forest_volume",
-            "label": "Kasvava metsa tagavara",
+            "label": "Kasvava metsa kogumaht",
             "available": usable_stands > 0 and unavailable_stands == 0,
+            "unavailable_label": "Eraldiste tagavara lähteandmed puuduvad",
             "value": round(total_volume_m3) if usable_stands > 0 and unavailable_stands == 0 else None,
             "unit": "m³",
             "provenance": volume_provenance,
@@ -179,8 +217,9 @@ def build_asset_passports(
         },
         {
             "id": "timber_value",
-            "label": "Kasvava puidu stsenaarium",
+            "label": "Kasvava puidu indikatiivne hinnavahemik",
             "available": timber_available,
+            "unavailable_label": timber_unavailable_label,
             "range": {
                 "low": timber_estimate.get("low_eur") if timber_available else None,
                 "base": timber_estimate.get("base_eur") if timber_available else None,
@@ -188,7 +227,7 @@ def build_asset_passports(
             },
             "unit": "€",
             "provenance": "estimate",
-            "provenance_label": "Terrapointi stsenaarium",
+            "provenance_label": "Arvutuslik hinnavahemik",
             "source": {"name": "Metsaregister ja Eesti Erametsaliit", "url": TIMBER_PRICE_URL, "as_of": "2026-03"},
             "methodology_sources": [
                 {"label": "Ametlik sortimenteerimise metoodika", "url": FOREST_ASSORTMENT_METHOD_URL},
@@ -206,12 +245,13 @@ def build_asset_passports(
         },
         {
             "id": "land_reference",
-            "label": "Maa ametlik referents",
+            "label": "Maa maksustamishind",
             "available": land_available,
+            "unavailable_label": "Maa maksustamishind puudub",
             "value": property_estimate.get("land_reference_eur") if land_available else None,
             "unit": "€",
             "provenance": "official",
-            "provenance_label": "Ametlik katastriandmestik",
+            "provenance_label": "Maa- ja Ruumiamet",
             "source": {"name": "Maa- ja Ruumiamet", "url": LAND_VALUE_URL},
             "derivation": "Katastriüksuse kehtiv maksustamishind; Terrapoint seda väärtust ümber ei arvuta.",
             "confidence": {"level": "official", "label": "Ametlik referentsväärtus", "reasons": []},
@@ -220,8 +260,9 @@ def build_asset_passports(
         },
         {
             "id": "property_estimate",
-            "label": "Maa ja puidu indikatiivne vahemik",
+            "label": "Kogu kinnistu indikatiivne hinnavahemik",
             "available": property_available,
+            "unavailable_label": property_unavailable_label,
             "range": {
                 "low": property_estimate.get("low_eur") if property_available else None,
                 "base": property_estimate.get("base_eur") if property_available else None,
@@ -229,9 +270,9 @@ def build_asset_passports(
             },
             "unit": "€",
             "provenance": "estimate",
-            "provenance_label": "Terrapointi stsenaarium",
+            "provenance_label": "Maa maksustamishind + puidu hinnavahemik",
             "source": {"name": "Metsaregister ja Maa- ja Ruumiamet", "url": LAND_VALUE_URL},
-            "derivation": "Kasvava puidu sortimendita stsenaariumivahemik + maa maksustamishinna ±30% tundlikkusvahemik. Keskpunkti ei kuvata, sest tehinguvõrdlusi ei kasutata.",
+            "derivation": "Kasvava puidu hinnavahemik + maa maksustamishinna ±30% vahemik. See ei ole kinnistu turuhind ega müügihinna prognoos. Keskpunkti ei kuvata, sest tehinguvõrdlusi ei kasutata.",
             "confidence": value_confidence,
             "limitations": [
                 "Avalikke võrreldavaid tehinguid selles vahemikus ei kasutata.",

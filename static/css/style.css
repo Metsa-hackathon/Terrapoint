@@ -2179,7 +2179,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     font-weight: 600;
     line-height: 1.25;
 }
-.asset-passport-value .asset-range-separator { padding: 0 3px; color: var(--ink-5); }
 .asset-passport-value small { color: var(--ink-4); font-size: 10.5px; }
 .asset-passport-missing { color: var(--ink-4); font-family: var(--ff-sans) !important; font-size: 13px !important; }
 .asset-passport-toggle {

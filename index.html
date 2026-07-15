@@ -942,7 +942,7 @@
     ]);
     const MAP_CONTEXT_TIMEOUT_MS = 20000;
     const BASEMAP_ACCESSED_AT = new Date().toISOString();
-    const MAP_BASEMAP_IDS = Object.freeze(['maaruum-orthophoto', 'maaruum-gray', 'esri-light-gray']);
+    const MAP_BASEMAP_IDS = Object.freeze(['maaruum-orthophoto']);
 
     function arraysEqual(left, right) {
         return Array.isArray(left)
@@ -2449,7 +2449,7 @@
             var tunnus = await findKatasterAtPoint(e.latlng.lng, e.latlng.lat);
             if (operationId !== mapSelectionSequence) return;
             if (!tunnus) {
-                showError('Sellelt kohalt ei leitud katastriüksust');
+                showError('Selles punktis ei leitud katastriüksust. Klõpsa kinnistu piiri sees või sisesta aadress või katastritunnus.');
                 return;
             }
             // Pause here: ask user to confirm before doing the heavy search + AI chat.
@@ -2463,7 +2463,7 @@
             await doSearch();
         } catch (err) {
             if (operationId === mapSelectionSequence) {
-                showError('Kaardilt otsing ebaõnnestus: ' + (err.message || err));
+                showError('Katastriüksuse otsing kaardilt ebaõnnestus. Proovi uuesti või sisesta aadress või katastritunnus.');
             }
         } finally {
             setTimeout(function() { try { map.removeLayer(clickMarker); } catch (_) {} }, 1200);
@@ -2565,16 +2565,31 @@
             }
         );
 
-        const maaruumGrayMap = L.tileLayer(
-            'https://tiles.maaamet.ee/tm/wmts/1.0.0/hallkaart/default/GMC/{z}/{y}/{x}.png?ASUTUS=Terrapoint&KESKKOND=PROD&IS=terrapoint.ee',
-            {
-                tileSize: 256, maxNativeZoom: 18, maxZoom: 19, minZoom: 6,
-                attribution: 'Maa- ja Ruumiameti halltoonides kaart · väljavõte ' + basemapExtractionDateEt,
-            }
-        );
-
         // Iga lehelaadimine algab ametlikult ortofotolt.
         maaruumOrthophoto.addTo(map);
+        var orthophotoTileErrors = 0;
+        var orthophotoTileLoads = 0;
+        maaruumOrthophoto.on('loading', function() {
+            orthophotoTileErrors = 0;
+            orthophotoTileLoads = 0;
+        });
+        maaruumOrthophoto.on('tileerror', function() {
+            orthophotoTileErrors += 1;
+        });
+        maaruumOrthophoto.on('tileload', function() {
+            orthophotoTileLoads += 1;
+        });
+        maaruumOrthophoto.on('load', function() {
+            var nextNotice = mapWorkspaceState.basemapNotice;
+            if (orthophotoTileErrors >= 3) {
+                nextNotice = 'Ortofoto ei ole hetkel saadaval. Proovi kaarti mõne hetke pärast uuesti.';
+            } else if (orthophotoTileLoads >= 3 && orthophotoTileErrors === 0) {
+                nextNotice = null;
+            }
+            if (nextNotice === mapWorkspaceState.basemapNotice) return;
+            mapWorkspaceState = selectMapBasemap(mapWorkspaceState, 'maaruum-orthophoto', nextNotice);
+            renderMapWorkspaceState();
+        });
 
         // Cadastre WMS overlay (Maa-amet / gsavalik) — katastripiiride
         // kiht, alati sisse lülitatud (kasutaja saab vajadusel eemaldada).
@@ -2607,26 +2622,8 @@
         // Click anywhere on map → reverse-lookup the cadastre at that point → run search
         map.on('click', handleMapClick);
 
-        // Vaikimisi kokkupandud aluskaardi valik eristab alati pakkujat ja toodet.
-        var baseLayers = {
-            'Maa- ja Ruumiamet · ortofoto': maaruumOrthophoto,
-            'Maa- ja Ruumiamet · halltoonides kaart': maaruumGrayMap,
-        };
-        var basemapPosition = 'bottomleft';
-        var basemapControl = L.control.layers(baseLayers, null, { position: basemapPosition, collapsed: true });
-
-        basemapControl.addTo(map);
-        map.on('baselayerchange', function(event) {
-            var basemapId = event.layer === maaruumOrthophoto ? 'maaruum-orthophoto'
-                : event.layer === maaruumGrayMap ? 'maaruum-gray'
-                : null;
-            if (!basemapId) return;
-            mapWorkspaceState = selectMapBasemap(mapWorkspaceState, basemapId, null);
-            renderMapWorkspaceState();
-        });
-
-        // Aluskaart muutub ainult kasutaja valikust. Üksiku WMTS-paani ajutine
-        // viga ei tohi zoomimisel ortofotot hallkaardiga asendada.
+        // Terrapointi aluskaart on alati ortofoto. Üksiku WMTS-paani ajutine
+        // viga ega zoomimine ei tohi aluskaarti asendada.
 
         // Kui dashboard oli initMap ajal `display: none` (või mõni esivanem
         // 0-laiune), Leaflet suurustab kaardi valesti. invalidateSize
@@ -2955,10 +2952,8 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         var low = stand.vaartus_min_eur;
         var high = stand.vaartus_max_eur;
         if (low != null && high != null) {
-            return '<span class="er-value-range">' + formatEur(low)
-                + '<span class="asset-range-separator" aria-hidden="true">–</span><span class="sr-only"> kuni </span>'
-                + formatEur(high) + '</span>'
-                + (midpoint != null ? '<small>Keskpunkt ' + formatEur(midpoint) + '</small>' : '');
+            return '<span class="er-value-range">' + formatEurRange(low, high) + '</span>'
+                + (midpoint != null ? '<small>Vahemiku keskpunkt ' + formatEur(midpoint) + '</small>' : '');
         }
         return midpoint != null ? '<span class="er-value-range">' + formatEur(midpoint) + '</span>' : '—';
     }
@@ -3044,6 +3039,13 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
     function formatEur(n) {
         if (n == null) return '—';
         return EUR_FORMATTER.format(Math.round(n));
+    }
+
+    function formatEurRange(low, high) {
+        if (!Number.isFinite(low) || !Number.isFinite(high) || low > high) return '—';
+        var lowText = formatNum(Math.round(low));
+        var highText = formatNum(Math.round(high));
+        return '<span class="currency-range">' + lowText + '–' + highText + ' €</span>';
     }
 
     function formatNum(n, decimals) {
@@ -3341,9 +3343,32 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
     // === End shared filtering & pagination utilities ===
 
-    function renderMets(data) {
+    function missingForestDataMessage(meta, valueContext) {
+        var metadataKnown = meta
+            && typeof meta.partial === 'boolean'
+            && Array.isArray(meta.unavailable_sources)
+            && meta.unavailable_sources.every(function(source) { return typeof source === 'string'; })
+            && meta.partial === (meta.unavailable_sources.length > 0);
+        if (!metadataKnown) {
+            return valueContext
+                ? 'Puidu hinnangu lähteandmeid ei saanud kontrollida. Proovi otsingut uuesti.'
+                : 'Metsaeraldiste olemasolu ei saanud kontrollida. Proovi otsingut uuesti.';
+        }
+        var unavailable = meta && Array.isArray(meta.unavailable_sources) ? meta.unavailable_sources : [];
+        var sourceFailed = unavailable.indexOf('metsaregister.eraldised') !== -1;
+        if (sourceFailed) {
+            return valueContext
+                ? 'Metsaeraldiste andmeallikas ei vastanud, seetõttu ei saa puidu hinnangut koostada. Proovi uuesti.'
+                : 'Metsaeraldiste andmeallikas ei vastanud. Proovi otsingut uuesti.';
+        }
+        return valueContext
+            ? 'Metsaregistrist ei leitud metsaeraldisi, seetõttu puidu hinnangut ei ole.'
+            : 'Metsaregistrist ei leitud selle katastriüksuse kohta metsaeraldisi.';
+    }
+
+    function renderMets(data, meta) {
         var el = document.getElementById('mets-info');
-        if (!data) { el.innerHTML = '<p class="muted">Metsaandmeid pole</p>'; return; }
+        if (!data) { el.innerHTML = '<p class="muted">' + missingForestDataMessage(meta, false) + '</p>'; return; }
         var boniteet = data.boniteet || BONITEET_LABELS[data.boniteedi_kood] || data.boniteedi_kood || '—';
         var compHtml = '';
         if (data.liikide_koosseis && data.liikide_koosseis.length > 0) {
@@ -3451,15 +3476,14 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         }[trustLevel] || 'Usaldus vajab kontrolli';
 
         function passportValue(passport) {
-            if (passport.available === false) return '<strong class="asset-passport-missing">Andmed puuduvad</strong>';
+            if (passport.available === false) return '<strong class="asset-passport-missing">' + escHtml(passport.unavailable_label || 'Näitaja lähteandmed puuduvad') + '</strong>';
             if (passport.range) {
-                return '<strong>' + formatEur(passport.range.low) + '<span class="asset-range-separator" aria-hidden="true">–</span><span class="sr-only"> kuni </span>' + formatEur(passport.range.high) + '</strong>'
-                    + (passport.range.base != null ? '<small>Keskpunkt ' + formatEur(passport.range.base) + '</small>' : '');
+                return '<strong>' + formatEurRange(passport.range.low, passport.range.high) + '</strong>'
+                    + (passport.range.base != null ? '<small>Vahemiku keskpunkt ' + formatEur(passport.range.base) + '</small>' : '');
             }
             var value = passport.unit === '€' ? formatEur(passport.value) : formatNum(passport.value);
             var unit = passport.unit === '€' ? '' : ' ' + escHtml(passport.unit || '');
-            var volumeHint = passport.id === 'forest_volume' ? '<small>ehk ' + formatNum(passport.value) + ' tihumeetrit</small>' : '';
-            return '<strong>' + value + unit + '</strong>' + volumeHint;
+            return '<strong>' + value + unit + '</strong>';
         }
 
         function sourceDate(source) {
@@ -3526,9 +3550,9 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         return html;
     }
 
-    function renderVaartus(data) {
+    function renderVaartus(data, meta) {
         var el = document.getElementById('vaartus-info');
-        if (!data) { el.innerHTML = '<p class="muted">Väärtuse andmeid pole</p>'; return; }
+        if (!data) { el.innerHTML = '<p class="muted">' + missingForestDataMessage(meta, true) + '</p>'; return; }
         window._timberValue = data.base_value_eur != null ? data.base_value_eur : (data.total_value_eur || 0);
         window._vaartusData = data;
         var html = '';
@@ -5036,8 +5060,8 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 }
             }
             if (data.kataster) safe(renderKataster, data.kataster, 'kataster');
-            safe(renderMets, data.mets, 'mets');
-            safe(renderVaartus, data.vaartus, 'vaartus');
+            safe(renderMets, data.mets, 'mets', data.meta);
+            safe(renderVaartus, data.vaartus, 'vaartus', data.meta);
             safe(renderSinik, data.sinik, 'sinik');
             safe(renderRiskid, data.riskid, 'riskid');
             safe(renderTeatised, data.teatised, 'teatised', data.teatised_meta);

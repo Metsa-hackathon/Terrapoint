@@ -364,6 +364,7 @@ class AreaDataTests(unittest.TestCase):
                     "id": "forest_volume",
                     "label": "Kasvava metsa tagavara",
                     "available": False,
+                    "unavailable_label": "Eraldiste tagavara lähteandmed puuduvad",
                     "provenance_label": "Terrapointi tuletis",
                     "source": {
                         "name": "Metsaregister",
@@ -384,6 +385,7 @@ class AreaDataTests(unittest.TestCase):
         self.assertIn("Inventuur on kaks aastat vana.", prompt)
         self.assertIn("Tagavara ei ole automaatselt raiutav kogus.", prompt)
         self.assertIn("Saadavus: andmed puuduvad", prompt)
+        self.assertIn("Põhjus: Eraldiste tagavara lähteandmed puuduvad", prompt)
         self.assertIn("https://register.metsad.ee/otsiEraldis", prompt)
 
     def test_ai_prompt_does_not_present_unavailable_stock_as_a_financial_fact(self):

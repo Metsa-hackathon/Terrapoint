@@ -131,10 +131,11 @@ class FrontendContractTests(unittest.TestCase):
         self.assertNotIn('/static/css/style.css?r=jkl102', INDEX_HTML)
 
     def test_asset_passports_render_traceable_values_and_contextual_ai_actions(self):
+        range_helper = _extract_js_function("formatEurRange")
         helper_start = INDEX_HTML.index("    function renderAssetPassports(passports, reliability)")
-        helper_end = INDEX_HTML.index("    function renderVaartus(data)", helper_start)
+        helper_end = INDEX_HTML.index("    function renderVaartus(data, meta)", helper_start)
         helper = INDEX_HTML[helper_start:helper_end]
-        value_render = re.search(r'function renderVaartus\(data\).*?\n    }', INDEX_HTML, re.DOTALL)
+        value_render = re.search(r'function renderVaartus\(data, meta\).*?\n    }', INDEX_HTML, re.DOTALL)
         self.assertIsNotNone(value_render)
         self.assertIn("data.andmepassid", value_render.group(0))
         self.assertIn("var hasAssetPassports", value_render.group(0))
@@ -144,11 +145,11 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("renderAssetPassports", value_render.group(0))
         self.assertIn("asset-ai-btn", helper)
         self.assertIn("safeExternalUrl", helper)
-        self.assertIn("tihumeetrit", helper)
+        self.assertNotIn("tihumeetrit", helper)
         self.assertIn("data-ai-question", helper)
         self.assertIn("document.getElementById('dashboard').addEventListener('click'", INDEX_HTML)
         self.assertIn("aiSendMessage(question)", INDEX_HTML)
-        self.assertIn('<span class="asset-range-separator" aria-hidden="true">–</span><span class="sr-only"> kuni </span>', helper)
+        self.assertNotIn('<span class="sr-only"> kuni </span>', helper)
         self.assertIn('<span class="asset-passport-heading">', helper)
         self.assertNotIn('<div class="asset-passport-heading">', helper)
         self.assertIn('id="ai-chat-status" class="sr-only" aria-live="polite"', INDEX_HTML)
@@ -169,7 +170,7 @@ class FrontendContractTests(unittest.TestCase):
         self.assertNotIn("Puidu keskväärtus / ha", INDEX_HTML)
         self.assertNotIn("Kaalutud kännuraha", INDEX_HTML)
         self.assertNotIn("Vaata kinnistu turuväärtust", INDEX_HTML)
-        self.assertIn("Keskpunkt ' + formatEur(midpoint)", INDEX_HTML)
+        self.assertIn("Vahemiku keskpunkt ' + formatEur(midpoint)", INDEX_HTML)
         self.assertNotIn("metsa majanduslikku väärtust", INDEX_HTML)
         self.assertNotIn("kogu kinnistu väärtust eurodes", INDEX_HTML)
 
@@ -186,36 +187,66 @@ class FrontendContractTests(unittest.TestCase):
               return DATE_FORMATTER.format(new Date(Date.UTC(parts[0], parts[1] - 1, parts[2])));
             }}
             function safeExternalUrl(value) {{ try {{ const url = new URL(String(value)); return url.protocol === 'https:' ? url.href : ''; }} catch (error) {{ return ''; }} }}
+            {range_helper}
             {helper}
             const html = renderAssetPassports({json.dumps([
                 {
-                    "id": "forest_volume", "label": "Kasvava metsa tagavara", "available": True,
-                    "value": 224, "unit": "m³", "provenance": "derived", "provenance_label": "Terrapointi tuletis",
+                    "id": "forest_volume", "label": "Kasvava metsa kogumaht", "available": True,
+                    "value": 1944, "unit": "m³", "provenance": "derived", "provenance_label": "Arvutatud Metsaregistri andmetest",
                     "source": {"name": "Metsaregister", "url": "https://register.metsad.ee/otsiEraldis", "oldest_as_of": "2024-01-15", "newest_as_of": "2025-02-01"},
                     "methodology_sources": [{"label": "Veapiirid", "url": "https://www.riigiteataja.ee/akt/example"}],
                     "derivation": "Tagavara × pindala", "confidence": {"label": "Värske registriinfo", "reasons": ["Inventuur on värske."]},
                     "limitations": ["Ei ole raiutav kogus."], "ai_question": "Selgita & kontrolli"
                 },
                 {
-                    "id": "land_reference", "label": "Maa ametlik referents", "available": False,
-                    "unit": "€", "provenance": "official", "provenance_label": "Ametlik katastriandmestik",
+                    "id": "timber_value", "label": "Kasvava puidu indikatiivne hinnavahemik", "available": True,
+                    "range": {"low": 20603, "base": 71537, "high": 122471}, "unit": "€",
+                    "provenance": "estimate", "provenance_label": "Arvutuslik hinnavahemik",
+                    "source": {"name": "Metsaregister ja Eesti Erametsaliit", "url": "https://example.test/timber"},
+                    "derivation": "Puidu hinnavahemik", "confidence": {"label": "Keskmine", "reasons": []},
+                    "limitations": ["Ei ole ostupakkumine."], "ai_question": "Selgita puidu hinda"
+                },
+                {
+                    "id": "land_reference", "label": "Maa maksustamishind", "available": True,
+                    "value": 16349, "unit": "€", "provenance": "official", "provenance_label": "Maa- ja Ruumiamet",
                     "source": {"name": "Vale", "url": "javascript:alert(1)"}, "derivation": "Puudub",
                     "confidence": {"label": "Ametlik referentsväärtus", "reasons": []}, "limitations": [], "ai_question": "Selgita"
+                },
+                {
+                    "id": "property_estimate", "label": "Kogu kinnistu indikatiivne hinnavahemik", "available": True,
+                    "range": {"low": 32047, "base": None, "high": 143725}, "unit": "€",
+                    "provenance": "estimate", "provenance_label": "Maa maksustamishind + puidu hinnavahemik",
+                    "source": {"name": "Metsaregister ja Maa- ja Ruumiamet", "url": "https://example.test/property"},
+                    "derivation": "Maa + puit", "confidence": {"label": "Keskmine", "reasons": []},
+                    "limitations": ["Ei ole turuhind."], "ai_question": "Selgita kinnistu vahemikku"
+                },
+                {
+                    "id": "missing_test", "label": "Puuduv näitaja", "available": False,
+                    "unavailable_label": "Lähteandmed ei vastanud <kontrolli>",
+                    "provenance": "unknown", "provenance_label": "Kontrollimata",
+                    "source": {"name": "Test"}, "derivation": "Puudub",
+                    "confidence": {"label": "Teadmata", "reasons": []}, "limitations": [], "ai_question": "Selgita"
                 }
             ], ensure_ascii=False)}, {{level:'madal'}});
             process.stdout.write(html);
         """
         html = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True).stdout
-        self.assertIn("224", html)
+        self.assertIn("1944", html.replace(" ", ""))
         self.assertIn("m³", html)
-        self.assertIn("ehk 224 tihumeetrit", html)
-        self.assertIn("Terrapointi tuletis", html)
+        self.assertNotIn("tihumeetrit", html)
+        self.assertIn("Arvutatud Metsaregistri andmetest", html)
         self.assertIn("Metsaregister", html)
-        self.assertIn("Andmed puuduvad", html)
+        visible_text = re.sub(r"<[^>]+>", "", html).replace(" ", " ")
+        self.assertIn("20 603–122 471 €", visible_text)
+        self.assertIn("Vahemiku keskpunkt 71 537 €", visible_text)
+        self.assertIn("32 047–143 725 €", visible_text)
+        self.assertNotIn("€–kuni", visible_text)
+        self.assertNotIn("Andmed puuduvad", html)
+        self.assertIn("Lähteandmed ei vastanud &lt;kontrolli&gt;", html)
         self.assertIn("Selgita &amp; kontrolli", html)
         self.assertIn("asset-trust-madal", html)
         self.assertNotIn("javascript:", html)
-        self.assertLess(html.index("Kasvava metsa tagavara"), html.index("Maa ametlik referents"))
+        self.assertLess(html.index("Kasvava metsa kogumaht"), html.index("Maa maksustamishind"))
 
         for css_class in (
             ".asset-ledger", ".asset-trust-strip", ".asset-passport",
@@ -384,7 +415,7 @@ console.log(JSON.stringify({{
         self.assertIn("eraldisLabel(e.eraldis_nr)", INDEX_HTML)
         self.assertIn(".eraldis-label", STYLE_CSS)
 
-        forest_render = re.search(r'function renderMets\(data\).*?\n    }', INDEX_HTML, re.DOTALL)
+        forest_render = re.search(r'function renderMets\(data, meta\).*?\n    }', INDEX_HTML, re.DOTALL)
         picker_render = re.search(r'function openEraldisSheet\(eraldised, triggerBtn\).*?\n    }', INDEX_HTML, re.DOTALL)
         self.assertIsNotNone(forest_render)
         self.assertIsNotNone(picker_render)
@@ -553,15 +584,92 @@ console.log(JSON.stringify({{
         self.assertNotIn("märts 2026", value_render)
         self.assertNotIn("juuni 2026", value_render)
 
+    def test_missing_forest_copy_distinguishes_empty_registry_from_source_failure(self):
+        helper = _extract_js_function("missingForestDataMessage")
+        render_forest = _extract_js_function("renderMets")
+        render_value = _extract_js_function("renderVaartus")
+        do_search = _extract_js_function("doSearch")
+        script = f"""
+{helper}
+console.log(JSON.stringify({{
+  emptyForest: missingForestDataMessage({{partial:false, unavailable_sources:[]}}, false),
+  failedForest: missingForestDataMessage({{partial:true, unavailable_sources:['metsaregister.eraldised']}}, false),
+  emptyValue: missingForestDataMessage({{partial:false, unavailable_sources:[]}}, true),
+  failedValue: missingForestDataMessage({{partial:true, unavailable_sources:['metsaregister.eraldised']}}, true),
+  unknownForest: missingForestDataMessage({{partial:true}}, false),
+  inconsistentForest: missingForestDataMessage({{partial:true, unavailable_sources:[]}}, false),
+  invalidSourceForest: missingForestDataMessage({{partial:true, unavailable_sources:[{{}}]}}, false),
+}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        messages = json.loads(result.stdout)
+
+        self.assertIn("ei leitud", messages["emptyForest"])
+        self.assertIn("ei vastanud", messages["failedForest"])
+        self.assertIn("puidu hinnangut ei ole", messages["emptyValue"])
+        self.assertIn("puidu hinnangut koostada", messages["failedValue"])
+        self.assertIn("ei saanud kontrollida", messages["unknownForest"])
+        self.assertIn("ei saanud kontrollida", messages["inconsistentForest"])
+        self.assertIn("ei saanud kontrollida", messages["invalidSourceForest"])
+        self.assertIn("missingForestDataMessage(meta, false)", render_forest)
+        self.assertIn("missingForestDataMessage(meta, true)", render_value)
+        self.assertIn("safe(renderMets, data.mets, 'mets', data.meta)", do_search)
+        self.assertIn("safe(renderVaartus, data.vaartus, 'vaartus', data.meta)", do_search)
+
+    def test_map_click_empty_and_failure_messages_offer_a_clear_next_step(self):
+        handler = "async " + _extract_js_function("handleMapClick")
+        script = f"""
+let mapClickBusy = false;
+let mapSelectionSequence = 0;
+let katasterWmsLayer = {{}};
+let findKatasterAtPoint;
+const errors = [];
+const container = {{style: {{cursor: ''}}}};
+const map = {{
+  hasLayer() {{ return true; }},
+  getContainer() {{ return container; }},
+  removeLayer() {{}},
+}};
+const L = {{circleMarker() {{ return {{addTo() {{ return {{}}; }}}}; }}}};
+const setTimeout = function(callback) {{ callback(); }};
+function showError(message) {{ errors.push(message); }}
+function showMapConfirm() {{ return Promise.resolve(false); }}
+function doSearch() {{ return Promise.resolve(); }}
+const document = {{getElementById() {{ return null; }}}};
+{handler}
+(async function() {{
+  findKatasterAtPoint = async function() {{ return null; }};
+  await handleMapClick({{latlng: {{lng: 24, lat: 59}}}});
+  const emptyState = {{message: errors.pop(), busy: mapClickBusy, cursor: container.style.cursor}};
+  findKatasterAtPoint = async function() {{ throw new Error('upstream detail'); }};
+  await handleMapClick({{latlng: {{lng: 24, lat: 59}}}});
+  const failureState = {{message: errors.pop(), busy: mapClickBusy, cursor: container.style.cursor}};
+  console.log(JSON.stringify({{emptyState, failureState}}));
+}})();
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        states = json.loads(result.stdout)
+
+        self.assertIn("Klõpsa kinnistu piiri sees", states["emptyState"]["message"])
+        self.assertIn("sisesta aadress või katastritunnus", states["emptyState"]["message"])
+        self.assertIn("Katastriüksuse otsing kaardilt ebaõnnestus", states["failureState"]["message"])
+        self.assertNotIn("upstream detail", states["failureState"]["message"])
+        for state in states.values():
+            self.assertFalse(state["busy"])
+            self.assertEqual(state["cursor"], "")
+
     def test_compartment_scenarios_show_range_keep_zero_and_enrich_map_details(self):
         number_helper = _extract_js_function("canonicalEraldisNumber")
         scenario_helper = _extract_js_function("standScenarioHtml")
+        range_helper = _extract_js_function("formatEurRange")
         merge_helper = _extract_js_function("mergeMapStandDetails")
         script = rf"""
-function escHtml(value) {{ return String(value == null ? '' : value); }}
-function formatEur(value) {{ return value == null ? '—' : String(Math.round(value)).replace(/\B(?=(\d{{3}})+(?!\d))/g, ' ') + ' €'; }}
-{number_helper}
-{scenario_helper}
+    function escHtml(value) {{ return String(value == null ? '' : value); }}
+    function formatEur(value) {{ return value == null ? '—' : String(Math.round(value)).replace(/\B(?=(\d{{3}})+(?!\d))/g, ' ') + ' €'; }}
+    function formatNum(value) {{ return value == null ? '—' : String(Math.round(value)).replace(/\B(?=(\d{{3}})+(?!\d))/g, ' '); }}
+    {number_helper}
+    {range_helper}
+    {scenario_helper}
 {merge_helper}
 const searchData = {{
   kataster: {{number: '78404:409:0113'}},
@@ -587,9 +695,10 @@ console.log(JSON.stringify({{
         result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
         state = json.loads(result.stdout)
 
-        self.assertIn("1 000 €", state["range"])
-        self.assertIn("2 000 €", state["range"])
-        self.assertIn("Keskpunkt 1 500 €", state["range"])
+        visible_range = re.sub(r"<[^>]+>", "", state["range"])
+        self.assertIn("1 000–2 000 €", visible_range)
+        self.assertIn("Vahemiku keskpunkt 1 500 €", visible_range)
+        self.assertNotIn("aria-label", state["range"])
         self.assertIn("0 €", state["zero"])
         self.assertEqual(state["properties"]["tagavara_y_ha"], 210)
         self.assertEqual(state["properties"]["vaartus_min_eur"], 1000)
@@ -1195,12 +1304,9 @@ console.log(JSON.stringify({{
         self.assertIn("availableViews: Object.keys(MAP_VIEW_PRESETS)", INDEX_HTML)
 
         init_map = _extract_js_function("initMap")
-        base_layers = re.search(r"var baseLayers = \{(.*?)\n\s*\};", init_map, re.DOTALL)
-        self.assertIsNotNone(base_layers)
-        self.assertEqual(base_layers.group(1).count(":"), 2)
-        self.assertIn("'Maa- ja Ruumiamet · ortofoto': maaruumOrthophoto", base_layers.group(1))
-        self.assertIn("'Maa- ja Ruumiamet · halltoonides kaart': maaruumGrayMap", base_layers.group(1))
-        self.assertNotIn("Esri", base_layers.group(1))
+        self.assertNotIn("var baseLayers", init_map)
+        self.assertNotIn("L.control.layers", init_map)
+        self.assertNotIn("Esri", init_map)
 
     def test_map_workspace_presets_state_and_reset_are_deterministic(self):
         source = _marked_js_source("// MAP_WORKSPACE_PURE_START", "// MAP_WORKSPACE_PURE_END")
@@ -1261,56 +1367,54 @@ console.log(JSON.stringify({{
         self.assertIsNone(state["reset"]["requestController"])
         self.assertEqual(state["initialContextThemes"], state["expected"]["overview"])
 
-    def test_official_maaruum_basemaps_use_verified_wmts_contracts_and_default(self):
+    def test_official_maaruum_orthophoto_uses_verified_wmts_contract_and_default(self):
         init_map = _extract_js_function("initMap")
         orthophoto_url = (
             "https://tiles.maaamet.ee/tm/wmts/1.0.0/foto/default/GMC/"
             "{z}/{y}/{x}.jpg?ASUTUS=Terrapoint&KESKKOND=PROD&IS=terrapoint.ee"
         )
-        gray_map_url = (
-            "https://tiles.maaamet.ee/tm/wmts/1.0.0/hallkaart/default/GMC/"
-            "{z}/{y}/{x}.png?ASUTUS=Terrapoint&KESKKOND=PROD&IS=terrapoint.ee"
-        )
 
         self.assertIn("var mapWorkspaceState = createMapWorkspaceState('maaruum-orthophoto');", INDEX_HTML)
         self.assertIn(orthophoto_url, init_map)
-        self.assertIn(gray_map_url, init_map)
         self.assertIn("const maaruumOrthophoto = L.tileLayer(", init_map)
-        self.assertIn("const maaruumGrayMap = L.tileLayer(", init_map)
         orthophoto = re.search(
             r"const maaruumOrthophoto = L\.tileLayer\(.*?\{(.*?)\}\s*\);",
             init_map,
             re.DOTALL,
         )
-        gray_map = re.search(
-            r"const maaruumGrayMap = L\.tileLayer\(.*?\{(.*?)\}\s*\);",
-            init_map,
-            re.DOTALL,
-        )
         self.assertIsNotNone(orthophoto)
-        self.assertIsNotNone(gray_map)
         self.assertIn("minZoom: 6", init_map)
         self.assertIn("tileSize: 256", orthophoto.group(1))
         self.assertIn("minZoom: 6", orthophoto.group(1))
         self.assertIn("maxNativeZoom: 18", orthophoto.group(1))
         self.assertIn("maxZoom: 19", orthophoto.group(1))
-        self.assertIn("tileSize: 256", gray_map.group(1))
-        self.assertIn("minZoom: 6", gray_map.group(1))
-        self.assertIn("maxZoom: 19", gray_map.group(1))
         self.assertIn("maaruumOrthophoto.addTo(map);", init_map)
         self.assertNotIn("esriWorldImagery.addTo(map);", init_map)
+
+    def test_map_exposes_only_the_orthophoto_basemap(self):
+        init_map = _extract_js_function("initMap")
+
+        self.assertIn("Object.freeze(['maaruum-orthophoto'])", INDEX_HTML)
+        self.assertNotIn("hallkaart", init_map)
+        self.assertNotIn("maaruumGrayMap", init_map)
+        self.assertNotIn("L.control.layers", init_map)
+        self.assertNotIn("baselayerchange", init_map)
 
     def test_tile_errors_never_change_the_selected_official_basemap(self):
         init_map = _extract_js_function("initMap")
 
-        self.assertNotIn("on('tileerror'", init_map)
+        self.assertIn("on('tileerror'", init_map)
+        self.assertIn("on('tileload'", init_map)
+        self.assertIn("on('loading'", init_map)
+        self.assertIn("on('load'", init_map)
+        self.assertIn("Ortofoto ei ole hetkel saadaval", init_map)
         self.assertNotIn("activateOfficialBasemapFallback", init_map)
         self.assertNotIn("activateIndependentNeutralFallback", init_map)
         self.assertNotIn("esriLightGrayCanvas", init_map)
         self.assertNotIn("map.removeLayer(maaruumOrthophoto)", init_map)
         self.assertNotIn("map.removeLayer(maaruumGrayMap)", init_map)
 
-    def test_explicit_basemap_selection_survives_tile_errors(self):
+    def test_map_runtime_creates_and_activates_only_the_orthophoto_basemap(self):
         init_map = _extract_js_function("initMap")
         script = f"""
 const createdLayers = [];
@@ -1327,11 +1431,9 @@ function makeLayer(url) {{
 }}
 const mapStub = {{
   layers: new Set(),
-  handlers: {{}},
   setView() {{ return this; }},
-  on(name, handler) {{ this.handlers[name] = handler; return this; }},
+  on() {{ return this; }},
   hasLayer(layer) {{ return this.layers.has(layer); }},
-  removeLayer(layer) {{ this.layers.delete(layer); return this; }},
   getContainer() {{ return {{}}; }},
   invalidateSize() {{}},
 }};
@@ -1354,55 +1456,67 @@ const setTimeout = function() {{ return 1; }};
 const clearTimeout = function() {{}};
 let map;
 let katasterWmsLayer;
-let mapWorkspaceState = {{selectedBasemapId: 'maaruum-orthophoto'}};
+let mapWorkspaceState = {{selectedBasemapId: 'maaruum-orthophoto', basemapNotice: null}};
+let renderCount = 0;
 function selectMapBasemap(state, selectedBasemapId, basemapNotice) {{
-  return {{selectedBasemapId, basemapNotice}};
+  return Object.assign({{}}, state, {{selectedBasemapId, basemapNotice}});
 }}
-function renderMapWorkspaceState() {{}}
+function renderMapWorkspaceState() {{ renderCount += 1; }}
 function handleMapClick() {{}}
 {init_map}
 initMap();
 const orthophoto = createdLayers.find(layer => layer.url.includes('/foto/'));
 const gray = createdLayers.find(layer => layer.url.includes('/hallkaart/'));
-const baseLayers = [orthophoto, gray];
-function explicitlySelect(layer) {{
-  baseLayers.forEach(candidate => mapStub.layers.delete(candidate));
-  mapStub.layers.add(layer);
-  mapStub.handlers.baselayerchange({{layer}});
-}}
-explicitlySelect(gray);
-gray.fire('tileerror');
-const grayAfterError = mapWorkspaceState.selectedBasemapId;
-explicitlySelect(orthophoto);
+orthophoto.fire('loading');
 orthophoto.fire('tileerror');
 orthophoto.fire('tileerror');
+orthophoto.fire('tileerror');
+orthophoto.fire('load');
+const outageNotice = mapWorkspaceState.basemapNotice;
+const selectedAfterErrors = mapWorkspaceState.selectedBasemapId;
+orthophoto.fire('loading');
+orthophoto.fire('tileload');
+orthophoto.fire('load');
+const noticeAfterOneLateTile = mapWorkspaceState.basemapNotice;
+orthophoto.fire('loading');
+orthophoto.fire('tileload');
+orthophoto.fire('tileload');
+orthophoto.fire('tileload');
+orthophoto.fire('load');
 console.log(JSON.stringify({{
-  grayAfterError,
-  orthophotoAfterErrors: mapWorkspaceState.selectedBasemapId,
+  basemapCount: createdLayers.filter(layer => layer.url.includes('/foto/') || layer.url.includes('/hallkaart/')).length,
+  grayExists: Boolean(gray),
   orthophotoActive: mapStub.hasLayer(orthophoto),
-  grayActive: mapStub.hasLayer(gray),
+  outageNotice,
+  selectedAfterErrors,
+  noticeAfterOneLateTile,
+  noticeAfterLoad: mapWorkspaceState.basemapNotice,
+  renderCount,
 }}));
 """
         result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
         state = json.loads(result.stdout)
 
-        self.assertEqual(state["grayAfterError"], "maaruum-gray")
-        self.assertEqual(state["orthophotoAfterErrors"], "maaruum-orthophoto")
+        self.assertEqual(state["basemapCount"], 1)
+        self.assertFalse(state["grayExists"])
         self.assertTrue(state["orthophotoActive"])
-        self.assertFalse(state["grayActive"])
+        self.assertIn("Ortofoto ei ole hetkel saadaval", state["outageNotice"])
+        self.assertEqual(state["selectedAfterErrors"], "maaruum-orthophoto")
+        self.assertIn("Ortofoto ei ole hetkel saadaval", state["noticeAfterOneLateTile"])
+        self.assertIsNone(state["noticeAfterLoad"])
+        self.assertEqual(state["renderCount"], 2)
 
-    def test_basemap_selection_state_is_preserved_but_omitted_from_compact_legend(self):
+    def test_only_orthophoto_is_accepted_as_a_basemap_selection(self):
         pure = _marked_js_source("// MAP_WORKSPACE_PURE_START", "// MAP_WORKSPACE_PURE_END")
         script = f"""
 {pure}
 const initial = createMapWorkspaceState();
-const fallback = selectMapBasemap(initial, 'maaruum-gray', 'Ortofoto ei laadinud; kasutusel on ametlik neutraalne varualuskaart.');
-const orthophoto = selectMapBasemap(fallback, 'maaruum-orthophoto', null);
+const rejected = selectMapBasemap(initial, 'maaruum-gray', 'Sobimatu aluskaart');
+const orthophoto = selectMapBasemap(initial, 'maaruum-orthophoto', null);
 console.log(JSON.stringify({{
   initial,
-  fallback,
+  rejected,
   orthophoto,
-  fallbackRows: mapWorkspaceLegendModel(fallback).rows,
   orthophotoRows: mapWorkspaceLegendModel(orthophoto).rows,
 }}));
 """
@@ -1410,33 +1524,16 @@ console.log(JSON.stringify({{
         state = json.loads(result.stdout)
 
         self.assertEqual(state["initial"]["selectedBasemapId"], "maaruum-orthophoto")
-        self.assertEqual(state["fallback"]["selectedBasemapId"], "maaruum-gray")
+        self.assertEqual(state["rejected"]["selectedBasemapId"], "maaruum-orthophoto")
+        self.assertIsNone(state["rejected"]["basemapNotice"])
         self.assertIsNone(state["orthophoto"]["basemapNotice"])
-        self.assertEqual(state["fallbackRows"], [])
         self.assertEqual(state["orthophotoRows"], [])
 
-    def test_basemap_runtime_offers_two_official_choices_and_hides_esri_fallback(self):
+    def test_basemap_runtime_has_no_selector_or_fallback(self):
         init_map = _extract_js_function("initMap")
-        change_handler = re.search(
-            r"map\.on\('baselayerchange', function\(event\) \{(.*?)\n\s*\}\);",
-            init_map,
-            re.DOTALL,
-        )
-        self.assertIsNotNone(change_handler)
-        handler = change_handler.group(1)
-
-        for layer_name, basemap_id in (
-            ("maaruumOrthophoto", "maaruum-orthophoto"),
-            ("maaruumGrayMap", "maaruum-gray"),
-        ):
-            self.assertIn(f"event.layer === {layer_name}", handler)
-            self.assertIn(f"'{basemap_id}'", handler)
-        self.assertIn("selectMapBasemap", handler)
-        self.assertIn("renderMapWorkspaceState();", handler)
-        self.assertNotIn("customized", handler)
-        self.assertIn("'Maa- ja Ruumiamet · ortofoto': maaruumOrthophoto", init_map)
-        self.assertIn("'Maa- ja Ruumiamet · halltoonides kaart': maaruumGrayMap", init_map)
-        self.assertNotIn("'Esri · World Light Gray Canvas': esriLightGrayCanvas", init_map)
+        self.assertNotIn("L.control.layers", init_map)
+        self.assertNotIn("baselayerchange", init_map)
+        self.assertNotIn("maaruumGrayMap", init_map)
         self.assertNotIn("esriWorldImagery", init_map)
         self.assertNotIn("esriWayback", init_map)
         self.assertNotIn("esriLightGrayCanvas", init_map)
@@ -1449,7 +1546,6 @@ console.log(JSON.stringify({{
         self.assertIn("new Intl.DateTimeFormat('et-EE')", init_map)
         self.assertIn("basemapExtractionDateEt", init_map)
         self.assertIn("Maa- ja Ruumiameti ortofoto", init_map)
-        self.assertIn("Maa- ja Ruumiameti halltoonides kaart", init_map)
         self.assertIn("väljavõte ' + basemapExtractionDateEt", init_map)
         self.assertIn("pildistusaeg erineb asukohati", init_map)
         self.assertNotIn("värskeim", init_map)

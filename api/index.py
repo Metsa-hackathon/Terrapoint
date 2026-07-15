@@ -3186,6 +3186,8 @@ def build_system_prompt(data: dict) -> str:
                 "  Saadavus: "
                 + ("saadaval" if passport.get("available") is not False else "andmed puuduvad")
             )
+            if passport.get("available") is False and passport.get("unavailable_label"):
+                lines.append(f"  Põhjus: {_prompt_text(passport['unavailable_label'], 160)}")
             source_url = _prompt_text(source.get("url", ""), 180)
             source_url_text = f"; URL {source_url}" if source_url.startswith("https://") else ""
             source_dates = source.get("oldest_as_of") or source.get("as_of") or "teadmata"
