@@ -64,6 +64,118 @@ def _extract_js_function(name):
 
 
 class FrontendContractTests(unittest.TestCase):
+    def test_sources_explain_registry_inputs_before_terrapoint_calculations(self):
+        section_start = INDEX_HTML.index('<section class="sources"')
+        section_end = INDEX_HTML.index('</section>', section_start)
+        section = INDEX_HTML[section_start:section_end]
+
+        self.assertIn("Registriandmed sisse. Selgitatud hinnangud välja.", section)
+        self.assertIn('class="sources-sub"', section)
+        self.assertIn("Registrite lähteandmed", section)
+        self.assertIn("Terrapointi arvutused", section)
+        self.assertEqual(section.count('<article class="source-card"'), 4)
+        self.assertIn("Täiendavad kontrollallikad", section)
+        self.assertNotIn("Eesti <em>riiklikud registrid</em>", section)
+
+    def test_map_lookup_recovers_identifier_from_adob_id(self):
+        helper = "async " + _extract_js_function("findKatasterAtPoint")
+        script = rf"""
+const requests = [];
+const KATASTER_RE = /^\d{{5}}:\d{{3}}:\d{{4}}(?::\d{{1,4}})?$/;
+const WMS_LOOKUP_TIMEOUT_MS = 7000;
+const CADASTRE_FALLBACK_TIMEOUT_MS = 13000;
+class AbortController {{ constructor() {{ this.signal = {{}}; }} abort() {{}} }}
+function setTimeout() {{ return 1; }}
+function clearTimeout() {{}}
+async function fetch(url) {{
+  requests.push(url);
+  if (url.startsWith('/api/cadastre/objects/')) {{
+    return {{ok: true, json: async () => ({{katastri_nr: '80802:001:0615'}})}};
+  }}
+  return {{
+    ok: true,
+    json: async () => ({{features: [{{properties: {{adob_id: 11006012, l_aadress: 'Taali metskond 19'}}}}]}}),
+  }};
+}}
+{helper}
+(async function() {{
+  const result = await findKatasterAtPoint(24.5, 58.5);
+  console.log(JSON.stringify({{result, requests}}));
+}})();
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertEqual(state["result"], "80802:001:0615")
+        self.assertEqual(len(state["requests"]), 2)
+        self.assertEqual(state["requests"][1], "/api/cadastre/objects/11006012")
+
+    def test_map_lookup_returns_valid_wms_identifier_without_fallback(self):
+        helper = "async " + _extract_js_function("findKatasterAtPoint")
+        script = rf"""
+const requests = [];
+const KATASTER_RE = /^\d{{5}}:\d{{3}}:\d{{4}}(?::\d{{1,4}})?$/;
+const WMS_LOOKUP_TIMEOUT_MS = 7000;
+const CADASTRE_FALLBACK_TIMEOUT_MS = 13000;
+class AbortController {{ constructor() {{ this.signal = {{}}; }} abort() {{}} }}
+function setTimeout() {{ return 1; }}
+function clearTimeout() {{}}
+async function fetch(url) {{
+  requests.push(url);
+  return {{
+    ok: true,
+    json: async () => ({{features: [{{properties: {{tunnus: '78404:409:0113', adob_id: 6663936}}}}]}}),
+  }};
+}}
+{helper}
+(async function() {{
+  const result = await findKatasterAtPoint(24.5, 58.5);
+  console.log(JSON.stringify({{result, requests}}));
+}})();
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertEqual(state["result"], "78404:409:0113")
+        self.assertEqual(len(state["requests"]), 1)
+
+    def test_map_lookup_calls_backend_fallback_only_once(self):
+        helper = "async " + _extract_js_function("findKatasterAtPoint")
+        script = rf"""
+const requests = [];
+const KATASTER_RE = /^\d{{5}}:\d{{3}}:\d{{4}}(?::\d{{1,4}})?$/;
+const WMS_LOOKUP_TIMEOUT_MS = 7000;
+const CADASTRE_FALLBACK_TIMEOUT_MS = 13000;
+class AbortController {{ constructor() {{ this.signal = {{}}; }} abort() {{}} }}
+function setTimeout(callback, delay) {{ if (delay === 250) callback(); return 1; }}
+function clearTimeout() {{}}
+async function fetch(url) {{
+  requests.push(url);
+  if (url.startsWith('/api/cadastre/objects/')) return {{ok: false, status: 502}};
+  return {{
+    ok: true,
+    json: async () => ({{features: [{{properties: {{adob_id: 11006012}}}}]}}),
+  }};
+}}
+{helper}
+(async function() {{
+  try {{ await findKatasterAtPoint(24.5, 58.5); }} catch (error) {{}}
+  console.log(JSON.stringify({{requests}}));
+}})();
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertEqual(len(state["requests"]), 2)
+        self.assertEqual(state["requests"][1], "/api/cadastre/objects/11006012")
+
+    def test_map_lookup_timeout_budget_covers_backend_retries(self):
+        helper = _extract_js_function("findKatasterAtPoint")
+
+        self.assertIn("CADASTRE_FALLBACK_TIMEOUT_MS", helper)
+        self.assertIn("WMS_LOOKUP_TIMEOUT_MS", helper)
+        self.assertIn("resolveKatasterObject", helper)
+
     def test_address_lookups_use_one_shared_request_path(self):
         self.assertEqual(INDEX_HTML.count("var url = '/api/address/'"), 1)
         self.assertEqual(INDEX_HTML.count("fetch(url, { signal: controller.signal })"), 1)
@@ -115,7 +227,8 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("must-revalidate", cache_control)
 
     def test_changed_stylesheet_busts_the_previous_immutable_url(self):
-        self.assertIn('/static/css/style.css?r=jkl113', INDEX_HTML)
+        self.assertIn('/static/css/style.css?r=jkl114', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl113', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl112', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl111', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl110', INDEX_HTML)

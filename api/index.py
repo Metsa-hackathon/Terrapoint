@@ -36,7 +36,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from services.kataster import query_kataster
+from services.kataster import KatasterWFSError, query_kataster, resolve_kataster_by_adob_id
 from services.metsaregister import SPECIES_NAMES, MetsaregisterWFSError, query_eraldis, query_eraldis_element, query_natura_2000, query_teatised, query_kahjustused
 from services.validation import _validate_kataster_nr_or_400
 from services.layers import (
@@ -933,6 +933,39 @@ async def address_search(q: str = "", request: Request = None):
         # Logi ainult tüüp, mitte str(exc) — väldib URL-i lekkimist logidesse
         print(f"[address] lookup failed: {type(exc).__name__}", flush=True)
         return json_response({"error": "Aadressiotsing ebaõnnestus. Proovi uuesti."}, 502)
+
+
+@app.get("/api/cadastre/objects/{adob_id}")
+async def cadastral_object(adob_id: str, request: Request):
+    if not re.fullmatch(r"\d{1,10}", adob_id):
+        return json_response({"error": "Vigane katastriobjekti tunnus."}, 400)
+    adob_id_value = int(adob_id)
+    if adob_id_value < 1 or adob_id_value > 2_147_483_647:
+        return json_response({"error": "Vigane katastriobjekti tunnus."}, 400)
+    cache_key = f"cadastre_object:{adob_id_value}"
+    cached = wfs_cache.get(cache_key)
+    if isinstance(cached, str):
+        return json_response({"katastri_nr": cached})
+    allowed, retry_after = _check_rate_limit(
+        _client_identifier(request),
+        "cadastre_object",
+        30,
+        60,
+    )
+    if not allowed:
+        return json_response(
+            {"error": "Liiga palju päringuid. Proovi uuesti mõne sekundi pärast."},
+            429,
+            {"Retry-After": str(retry_after)},
+        )
+    try:
+        katastri_nr = await resolve_kataster_by_adob_id(adob_id_value)
+    except KatasterWFSError:
+        return json_response({"error": "Katastri andmeallikas ei vasta. Proovi uuesti."}, 502)
+    if not katastri_nr:
+        return json_response({"error": "Katastriobjekti ei leitud."}, 404)
+    wfs_cache.set(cache_key, katastri_nr, ttl=86400)
+    return json_response({"katastri_nr": katastri_nr})
 
 
 VPS_API = "https://terrapoint.46-62-230-110.sslip.io/api"

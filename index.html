@@ -64,7 +64,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl034">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl113">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl114">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -742,118 +742,107 @@
     <!-- Allikad -->
     <section class="sources" id="allikad" aria-label="Andmeallikad">
         <div class="sources-inner">
-            <div class="sources-eyebrow">
-                <span class="dot" aria-hidden="true"></span>
-                Andmeallikad
-            </div>
-            <h2 class="sources-title">Eesti <em>riiklikud registrid</em>, millest Terrapoint oma <em>arvutused</em> teeb.</h2>
+            <header class="sources-head">
+                <div class="sources-eyebrow">
+                    <span class="dot" aria-hidden="true"></span>
+                    Andmete päritolu
+                </div>
+                <h2 class="sources-title">Registriandmed sisse. Selgitatud hinnangud välja.</h2>
+                <p class="sources-sub">Terrapoint ühendab ametlikud kinnistu-, metsa- ja piiranguandmed avaldatud hinna- ning toetusinfoga. Registrifaktid jäävad muutmata; mahu-, väärtus-, süsiniku- ja riskiarvutused märgime alati Terrapointi hinnanguna.</p>
+            </header>
 
-            <div class="sources-grid">
-                <a class="source-card" href="https://geoportaal.maaamet.ee" target="_blank" rel="noopener" aria-label="Maa- ja Ruumiamet">
-                    <div class="source-org">Maa- ja Ruumiamet</div>
-                    <h3 class="source-name">Kataster ja ortofoto</h3>
-                    <p class="source-desc">Katastriüksuse piir, number, pindala, sihtotstarve, omandivorm, aadress.</p>
-                    <span class="source-arrow" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </span>
-                </a>
-
-                <a class="source-card" href="https://register.metsad.ee" target="_blank" rel="noopener" aria-label="Metsaregister">
-                    <div class="source-org">Metsaregister</div>
-                    <h3 class="source-name">Eraldised ja teatised</h3>
-                    <p class="source-desc">Puuliik, vanus, tagavara, pindala, metsateatised, kahjustused, Natura 2000.</p>
-                    <span class="source-arrow" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </span>
-                </a>
-
-                <a class="source-card" href="https://erametsaliit.ee/puidu-hinnainfo" target="_blank" rel="noopener" aria-label="Eesti Erametsaliit">
-                    <div class="source-org">Erametsaliit</div>
-                    <h3 class="source-name">Puidu hinnad</h3>
-                    <p class="source-desc">Männi-, kuuse-, kasepalk, paberipuit, küttepuu. I kvartal 2026.</p>
-                    <span class="source-arrow" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </span>
-                </a>
-
-                <a class="source-card" href="https://www.eramets.ee/toetused" target="_blank" rel="noopener" aria-label="KIK toetused">
-                    <div class="source-org">KIK + Erametsakeskus</div>
-                    <h3 class="source-name">Metsatoetused 2026</h3>
-                    <p class="source-desc">Ametlikud 2026 meetmed, tähtajad ja sobivustingimused.</p>
-                    <span class="source-arrow" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </span>
-                </a>
-
-                <a class="source-card" href="https://eelis.ee" target="_blank" rel="noopener" aria-label="EELIS">
-                    <div class="source-org">EELIS</div>
-                    <h3 class="source-name">Kaitstavad alad</h3>
-                    <p class="source-desc">Kaitsealad, hoiualad, Natura 2000 elupaigad, kaitstavad liigid.</p>
-                    <span class="source-arrow" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </span>
-                </a>
-
-                <a class="source-card" href="https://kitsendused.kataster.ee" target="_blank" rel="noopener" aria-label="Kitsenduste kaart">
-                    <div class="source-org">Kitsenduste kaart</div>
-                    <h3 class="source-name">Kitsendused</h3>
-                    <p class="source-desc">Veekaitsevööndid, ehituskeeluvööndid, maaparandus, KPO piirangud.</p>
-                    <span class="source-arrow" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </span>
-                </a>
-
-                <a class="source-card" href="https://geoportaal.maaamet.ee/est/ruumiandmed/korgusandmed-p114.html" target="_blank" rel="noopener" aria-label="LiDAR">
-                    <div class="source-org">LiDAR</div>
-                    <h3 class="source-name">Kõrgusmudel</h3>
-                    <p class="source-desc">DTM, DSM, nDSM, CHM. Metsa kõrguse ja biomassi alus.</p>
-                    <span class="source-arrow" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </span>
-                </a>
-
-                <a class="source-card" href="https://register.muinas.ee" target="_blank" rel="noopener" aria-label="Muinsuskaitseamet">
-                    <div class="source-org">Muinsuskaitseamet</div>
-                    <h3 class="source-name">Kultuurimälestised</h3>
-                    <p class="source-desc">Kinnismälestised, kaitsevööndid, pärandkultuur.</p>
-                    <span class="source-arrow" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </span>
-                </a>
-
-                <a class="source-card" href="https://esthub.maaruum.ee" target="_blank" rel="noopener" aria-label="Sentinel-2">
-                    <div class="source-org">Sentinel-2</div>
-                    <h3 class="source-name">Satelliitkaugseire</h3>
-                    <p class="source-desc">10 m RGB + NIR, 5-päevane tsükkel, NDVI, üraski-seire.</p>
-                    <span class="source-arrow" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </span>
-                </a>
-
-                <a class="source-card" href="https://stat.ee" target="_blank" rel="noopener" aria-label="Statistikaamet">
-                    <div class="source-org">Statistikaamet</div>
-                    <h3 class="source-name">Metsandusstatistika</h3>
-                    <p class="source-desc">Metsamaa pindala, raiemahud, juurdekasv, sortimendid.</p>
-                    <span class="source-arrow" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </span>
-                </a>
-
-                <a class="source-card" href="https://rmk.ee" target="_blank" rel="noopener" aria-label="RMK">
-                    <div class="source-org">RMK</div>
-                    <h3 class="source-name">Riigimets</h3>
-                    <p class="source-desc">Arengukava, süsinikuraport, kaardirakendus, uuringud.</p>
-                    <span class="source-arrow" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </span>
-                </a>
-
-                <div class="source-card source-card-own" aria-label="Terrapoint enda arvutused">
-                    <div class="source-org">Terrapoint</div>
-                    <h3 class="source-name">Arvutused</h3>
-                    <p class="source-desc">Väärtus, süsinikuvaru, terviseindeks, üraskirisk, AI-analüüs.</p>
+            <div class="source-flow" aria-label="Andmetest arvutuseni">
+                <div class="source-flow-step">
+                    <span class="source-flow-number">01</span>
+                    <div>
+                        <strong>Registrite lähteandmed</strong>
+                        <span>Piirid, metsaeraldised, piirangud, hinnad ja toetused.</span>
+                    </div>
+                </div>
+                <svg class="source-flow-arrow" viewBox="0 0 48 24" fill="none" aria-hidden="true"><path d="M3 12h38M34 5l7 7-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <div class="source-flow-step source-flow-step-result">
+                    <span class="source-flow-number">02</span>
+                    <div>
+                        <strong>Terrapointi arvutused</strong>
+                        <span>Maht, hinnavahemik, süsinikuvaru, riskid ja toetuste sobivus.</span>
+                    </div>
                 </div>
             </div>
+
+            <div class="sources-grid">
+                <article class="source-card">
+                    <div class="source-card-head">
+                        <span class="source-card-number">01</span>
+                        <div>
+                            <div class="source-org">Maa- ja Ruumiamet</div>
+                            <h3 class="source-name">Kinnistu ja aluskaart</h3>
+                        </div>
+                    </div>
+                    <p class="source-desc">Katastriüksuse tunnus, piir, pindala, aadress, sihtotstarve, omandivorm, maksustamishind ja ortofoto.</p>
+                    <div class="source-use"><span>Terrapoint kasutab</span><p>Kinnistu tuvastamiseks, pindala kontrolliks, maa referentsiks ja kaardivaateks.</p></div>
+                    <a class="source-link" href="https://geoportaal.maaamet.ee" target="_blank" rel="noopener">Ava Maa- ja Ruumiameti geoportaal <span aria-hidden="true">↗</span></a>
+                </article>
+
+                <article class="source-card">
+                    <div class="source-card-head">
+                        <span class="source-card-number">02</span>
+                        <div>
+                            <div class="source-org">Metsaregister</div>
+                            <h3 class="source-name">Metsaeraldised ja teatised</h3>
+                        </div>
+                    </div>
+                    <p class="source-desc">Puuliik, vanus, pindala, tagavara, inventuuri kuupäev, metsateatised ja registreeritud kahjustused.</p>
+                    <div class="source-use"><span>Terrapoint kasutab</span><p>Metsa kogumahu, puidustsenaariumi, inventuuri usaldusväärsuse ja riskisignaalide arvutamiseks.</p></div>
+                    <a class="source-link" href="https://register.metsad.ee" target="_blank" rel="noopener">Ava Metsaregister <span aria-hidden="true">↗</span></a>
+                </article>
+
+                <article class="source-card">
+                    <div class="source-card-head">
+                        <span class="source-card-number">03</span>
+                        <div>
+                            <div class="source-org">EELIS · kitsendused · kultuurimälestised</div>
+                            <h3 class="source-name">Loodus- ja kasutuspiirangud</h3>
+                        </div>
+                    </div>
+                    <p class="source-desc">Kaitsealad, Natura 2000, kaitstavad liigid, veekaitse, ehituskeeld, maaparandus ja mälestiste kaitsevööndid.</p>
+                    <div class="source-use"><span>Terrapoint kasutab</span><p>Piirangute koondvaateks ja otsuste puhul eraldi kontrollimist vajavate asjaolude esiletoomiseks.</p></div>
+                    <div class="source-links" aria-label="Piirangute andmeallikad">
+                        <a class="source-link" href="https://eelis.ee" target="_blank" rel="noopener">EELIS <span aria-hidden="true">↗</span></a>
+                        <a class="source-link" href="https://kitsendused.kataster.ee" target="_blank" rel="noopener">Kitsenduste kaart <span aria-hidden="true">↗</span></a>
+                        <a class="source-link" href="https://register.muinas.ee" target="_blank" rel="noopener">Kultuurimälestiste register <span aria-hidden="true">↗</span></a>
+                    </div>
+                </article>
+
+                <article class="source-card">
+                    <div class="source-card-head">
+                        <span class="source-card-number">04</span>
+                        <div>
+                            <div class="source-org">Erametsaliit · KIK · Erametsakeskus</div>
+                            <h3 class="source-name">Hinnainfo ja toetused</h3>
+                        </div>
+                    </div>
+                    <p class="source-desc">Avaldatud puiduhinnad, toetuste meetmed, tähtajad ja ametlikud sobivustingimused.</p>
+                    <div class="source-use"><span>Terrapoint kasutab</span><p>Indikatiivse puidu hinnavahemiku ning võimalike toetusmeetmete esmase sobivuse arvutamiseks.</p></div>
+                    <div class="source-links" aria-label="Hinna- ja toetusallikad">
+                        <a class="source-link" href="https://erametsaliit.ee/puidu-hinnainfo" target="_blank" rel="noopener">Puidu hinnainfo <span aria-hidden="true">↗</span></a>
+                        <a class="source-link" href="https://www.eramets.ee/toetused" target="_blank" rel="noopener">Metsatoetused <span aria-hidden="true">↗</span></a>
+                    </div>
+                </article>
+            </div>
+
+            <aside class="sources-secondary" aria-labelledby="sources-secondary-title">
+                <div>
+                    <span class="sources-secondary-label">Kontrollkiht</span>
+                    <h3 id="sources-secondary-title">Täiendavad kontrollallikad</h3>
+                    <p>Need allikad lisavad konteksti, kuid ei asenda kinnistu registriandmeid ega kohapealset metsahindamist.</p>
+                </div>
+                <div class="sources-secondary-links">
+                    <a href="https://geoportaal.maaamet.ee/est/ruumiandmed/korgusandmed-p114.html" target="_blank" rel="noopener">LiDAR ja kõrgusmudel <span aria-hidden="true">↗</span></a>
+                    <a href="https://esthub.maaruum.ee" target="_blank" rel="noopener">Sentinel-2 kaugseire <span aria-hidden="true">↗</span></a>
+                    <a href="https://stat.ee" target="_blank" rel="noopener">Statistikaamet <span aria-hidden="true">↗</span></a>
+                    <a href="https://rmk.ee" target="_blank" rel="noopener">RMK uuringud <span aria-hidden="true">↗</span></a>
+                </div>
+            </aside>
         </div>
     </section>
 
@@ -2092,6 +2081,9 @@
     let mapClickBusy = false;
     let mapSelectionSequence = 0;
     let activeMapConfirmCancel = null;
+    const KATASTER_RE = /^\d{5}:\d{3}:\d{4}(?::\d{1,4})?$/;
+    const WMS_LOOKUP_TIMEOUT_MS = 7000;
+    const CADASTRE_FALLBACK_TIMEOUT_MS = 13000;
     const overlayLayers = {};
     var mapWorkspaceState = createMapWorkspaceState('maaruum-orthophoto');
     var pendingLegacyMapFallback = null;
@@ -2404,6 +2396,20 @@
     // Reverse-lookup a cadastre parcel at (lng, lat) using WMS GetFeatureInfo.
     // (WFS INTERSECTS on this geoserver returns empty; GetFeatureInfo is reliable.)
     async function findKatasterAtPoint(lng, lat) {
+        async function resolveKatasterObject(adobId) {
+            var ctrl = new AbortController();
+            var timer = setTimeout(function() { ctrl.abort(); }, CADASTRE_FALLBACK_TIMEOUT_MS);
+            try {
+                var response = await fetch('/api/cadastre/objects/' + adobId, { signal: ctrl.signal });
+                if (!response.ok) throw new Error('Katastriobjekti päring ' + response.status);
+                var data = await response.json();
+                return typeof data.katastri_nr === 'string' && KATASTER_RE.test(data.katastri_nr)
+                    ? data.katastri_nr : null;
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
         var d = 0.0005; // ~55m half-width buffer around the point
         var bbox = (lng - d) + ',' + (lat - d) + ',' + (lng + d) + ',' + (lat + d);
         var url = 'https://gsavalik.envir.ee/geoserver/kataster/wms' +
@@ -2413,21 +2419,37 @@
             '&width=101&height=101&x=50&y=50' +
             '&info_format=application/json&feature_count=1';
         var lastError;
+        var fallbackAdobId = null;
         for (var attempt = 0; attempt < 2; attempt++) {
             var ctrl = new AbortController();
-            var timer = setTimeout(function() { ctrl.abort(); }, 7000);
+            var timer = setTimeout(function() { ctrl.abort(); }, WMS_LOOKUP_TIMEOUT_MS);
             try {
                 var resp = await fetch(url, { signal: ctrl.signal });
                 if (!resp.ok) throw new Error('WMS ' + resp.status);
                 var data = await resp.json();
                 if (!data.features || data.features.length === 0) return null;
-                return data.features[0].properties && data.features[0].properties.tunnus || null;
+                var properties = data.features[0].properties || {};
+                var tunnus = properties.tunnus;
+                var validTunnus = typeof tunnus === 'string' && KATASTER_RE.test(tunnus);
+                if (validTunnus) return tunnus;
+
+                var adobId = Number(properties.adob_id);
+                if (!Number.isSafeInteger(adobId) || adobId < 1) {
+                    throw new Error('WMS vastusest puudub katastriobjekti tunnus');
+                }
+                fallbackAdobId = adobId;
+                break;
             } catch (err) {
                 lastError = err;
                 if (attempt === 0) await new Promise(function(resolve) { setTimeout(resolve, 250); });
             } finally {
                 clearTimeout(timer);
             }
+        }
+        if (fallbackAdobId !== null) {
+            var fallbackTunnus = await resolveKatasterObject(fallbackAdobId);
+            if (!fallbackTunnus) throw new Error('Katastriobjekti vastusest puudub katastritunnus');
+            return fallbackTunnus;
         }
         throw lastError;
     }
@@ -4590,7 +4612,6 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         // Landing search button -> run doSearch using nav input
         // Smart submit (typed/entered): katastritunnus → direct search; address → auto-pick first match
         // Same as chip submit so Enter behaves consistently across landing and nav
-        var KATASTER_RE = /^\d{5}:\d{3}:\d{4}(?::\d{1,4})?$/;
         // Kataster-sarnane: ainult numbrid, eraldajad ("-", " ", "." või ":") ja
         // vähemalt üks number. Lubame ":" et "78404:409:113" (vale pikkusega) saaks
         // samuti normaliseerida.
