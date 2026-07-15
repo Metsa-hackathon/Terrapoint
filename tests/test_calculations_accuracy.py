@@ -228,6 +228,7 @@ class TimberPriceTests(unittest.TestCase):
         self.assertEqual(v["methodology"], "Terrapoint unknown-assortment range v3")
         self.assertEqual(v["price_updated"], "2026-Q1")
         self.assertEqual(v["price_as_of"], "2026-03")
+        self.assertEqual(v["market_context_updated"], "2026-06")
         self.assertTrue(v["sources"])
         self.assertFalse(v["property_estimate"]["has_transaction_comparables"])
         self.assertFalse(v["property_estimate"]["land_reference_available"])

@@ -529,6 +529,30 @@ console.log(JSON.stringify({{
         self.assertIn("https://maaruum.ee/maakataster-ja-maa-hindamine/kinnisvaratehingud/kinnisvaratehingute-statistika", API_PY)
         self.assertIn("https://keskkonnaagentuur.ee/node/2695", API_PY)
 
+    def test_valuation_period_uses_api_quarter_and_hides_background_commentary_date(self):
+        period_helper = _extract_js_function("formatPricePeriod")
+        value_render = _extract_js_function("renderVaartus")
+        script = f"""
+{period_helper}
+console.log(JSON.stringify({{
+  first: formatPricePeriod('2026-Q1'),
+  second: formatPricePeriod('2030-Q2'),
+  unknown: formatPricePeriod('invalid'),
+}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        periods = json.loads(result.stdout)
+
+        self.assertEqual(periods["first"], "2026 I kvartal")
+        self.assertEqual(periods["second"], "2030 II kvartal")
+        self.assertEqual(periods["unknown"], "Periood teadmata")
+        self.assertIn("formatPricePeriod(data.price_updated)", value_render)
+        self.assertIn("Puiduhindade alus", value_render)
+        self.assertNotIn("Hinnaperiood", value_render)
+        self.assertNotIn("Turu suunainfo", value_render)
+        self.assertNotIn("märts 2026", value_render)
+        self.assertNotIn("juuni 2026", value_render)
+
     def test_compartment_scenarios_show_range_keep_zero_and_enrich_map_details(self):
         number_helper = _extract_js_function("canonicalEraldisNumber")
         scenario_helper = _extract_js_function("standScenarioHtml")
@@ -1276,29 +1300,17 @@ console.log(JSON.stringify({{
         self.assertIn("maaruumOrthophoto.addTo(map);", init_map)
         self.assertNotIn("esriWorldImagery.addTo(map);", init_map)
 
-    def test_official_basemap_failures_switch_to_independent_neutral_map_without_looping(self):
+    def test_tile_errors_never_change_the_selected_official_basemap(self):
         init_map = _extract_js_function("initMap")
-        fallback = _extract_js_function("activateOfficialBasemapFallback")
-        independent_fallback = _extract_js_function("activateIndependentNeutralFallback")
 
-        self.assertEqual(init_map.count("maaruumOrthophoto.on('tileerror'"), 1)
-        self.assertEqual(init_map.count("maaruumGrayMap.on('tileerror'"), 1)
-        self.assertIn("if (orthophotoFallbackUsed || !map.hasLayer(maaruumOrthophoto)) return false;", fallback)
-        self.assertIn("orthophotoFallbackUsed = true;", fallback)
-        self.assertIn("map.removeLayer(maaruumOrthophoto);", fallback)
-        self.assertIn("maaruumGrayMap.addTo(map);", fallback)
-        self.assertIn("'maaruum-gray'", fallback)
-        self.assertIn("renderMapWorkspaceState();", fallback)
-        self.assertNotIn("removeOverlayLayer", fallback)
-        self.assertNotIn("clearMapContextThemeLayers", fallback)
-        self.assertIn("grayFallbackUsed", independent_fallback)
-        self.assertIn("map.removeLayer(maaruumGrayMap);", independent_fallback)
-        self.assertIn("esriLightGrayCanvas.addTo(map);", independent_fallback)
-        self.assertIn("'esri-light-gray'", independent_fallback)
-        self.assertNotIn("esriLightGrayCanvas.on('tileerror'", init_map)
-        self.assertIn("if (basemapId === 'maaruum-orthophoto') orthophotoFallbackUsed = false;", init_map)
+        self.assertNotIn("on('tileerror'", init_map)
+        self.assertNotIn("activateOfficialBasemapFallback", init_map)
+        self.assertNotIn("activateIndependentNeutralFallback", init_map)
+        self.assertNotIn("esriLightGrayCanvas", init_map)
+        self.assertNotIn("map.removeLayer(maaruumOrthophoto)", init_map)
+        self.assertNotIn("map.removeLayer(maaruumGrayMap)", init_map)
 
-    def test_official_basemap_fallback_eligibility_resets_for_explicit_reselection(self):
+    def test_explicit_basemap_selection_survives_tile_errors(self):
         init_map = _extract_js_function("initMap")
         script = f"""
 const createdLayers = [];
@@ -1352,8 +1364,7 @@ function handleMapClick() {{}}
 initMap();
 const orthophoto = createdLayers.find(layer => layer.url.includes('/foto/'));
 const gray = createdLayers.find(layer => layer.url.includes('/hallkaart/'));
-const esri = createdLayers.find(layer => layer.url.includes('World_Light_Gray_Base'));
-const baseLayers = [orthophoto, gray, esri];
+const baseLayers = [orthophoto, gray];
 function explicitlySelect(layer) {{
   baseLayers.forEach(candidate => mapStub.layers.delete(candidate));
   mapStub.layers.add(layer);
@@ -1361,34 +1372,24 @@ function explicitlySelect(layer) {{
 }}
 explicitlySelect(gray);
 gray.fire('tileerror');
-const firstGrayFailure = mapWorkspaceState.selectedBasemapId;
+const grayAfterError = mapWorkspaceState.selectedBasemapId;
 explicitlySelect(orthophoto);
 orthophoto.fire('tileerror');
-const secondCycleGray = mapWorkspaceState.selectedBasemapId;
-gray.fire('tileerror');
-const secondCycleEsri = mapWorkspaceState.selectedBasemapId;
-gray.fire('tileerror');
-const automaticLoopBlocked = mapWorkspaceState.selectedBasemapId;
-explicitlySelect(gray);
-gray.fire('tileerror');
+orthophoto.fire('tileerror');
 console.log(JSON.stringify({{
-  firstGrayFailure,
-  secondCycleGray,
-  secondCycleEsri,
-  automaticLoopBlocked,
-  explicitGrayReselection: mapWorkspaceState.selectedBasemapId,
-  esriActive: mapStub.hasLayer(esri),
+  grayAfterError,
+  orthophotoAfterErrors: mapWorkspaceState.selectedBasemapId,
+  orthophotoActive: mapStub.hasLayer(orthophoto),
+  grayActive: mapStub.hasLayer(gray),
 }}));
 """
         result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
         state = json.loads(result.stdout)
 
-        self.assertEqual(state["firstGrayFailure"], "esri-light-gray")
-        self.assertEqual(state["secondCycleGray"], "maaruum-gray")
-        self.assertEqual(state["secondCycleEsri"], "esri-light-gray")
-        self.assertEqual(state["automaticLoopBlocked"], "esri-light-gray")
-        self.assertEqual(state["explicitGrayReselection"], "esri-light-gray")
-        self.assertTrue(state["esriActive"])
+        self.assertEqual(state["grayAfterError"], "maaruum-gray")
+        self.assertEqual(state["orthophotoAfterErrors"], "maaruum-orthophoto")
+        self.assertTrue(state["orthophotoActive"])
+        self.assertFalse(state["grayActive"])
 
     def test_basemap_selection_state_is_preserved_but_omitted_from_compact_legend(self):
         pure = _marked_js_source("// MAP_WORKSPACE_PURE_START", "// MAP_WORKSPACE_PURE_END")
@@ -1438,7 +1439,7 @@ console.log(JSON.stringify({{
         self.assertNotIn("'Esri · World Light Gray Canvas': esriLightGrayCanvas", init_map)
         self.assertNotIn("esriWorldImagery", init_map)
         self.assertNotIn("esriWayback", init_map)
-        self.assertIn("map.hasLayer(esriLightGrayCanvas)", handler)
+        self.assertNotIn("esriLightGrayCanvas", init_map)
         self.assertNotIn("Esri satelliit (värskeim)", INDEX_HTML)
         self.assertNotIn("Ortofoto 2026", INDEX_HTML)
         self.assertNotIn("2026. aasta ortofoto", INDEX_HTML)

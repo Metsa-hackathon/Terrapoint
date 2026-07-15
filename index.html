@@ -2573,14 +2573,6 @@
             }
         );
 
-        const esriLightGrayCanvas = L.tileLayer(
-            'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-            {
-                maxNativeZoom: 16, maxZoom: 19, minZoom: 3,
-                attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OpenStreetMap contributors, and the GIS user community',
-            }
-        );
-
         // Iga lehelaadimine algab ametlikult ortofotolt.
         maaruumOrthophoto.addTo(map);
 
@@ -2629,51 +2621,12 @@
                 : event.layer === maaruumGrayMap ? 'maaruum-gray'
                 : null;
             if (!basemapId) return;
-            if (map.hasLayer(esriLightGrayCanvas)) map.removeLayer(esriLightGrayCanvas);
-            if (basemapId === 'maaruum-orthophoto') orthophotoFallbackUsed = false;
-            if (basemapId === 'maaruum-orthophoto' || basemapId === 'maaruum-gray') grayFallbackUsed = false;
             mapWorkspaceState = selectMapBasemap(mapWorkspaceState, basemapId, null);
             renderMapWorkspaceState();
         });
 
-        // Each official layer can fall back once. The independent layer has no
-        // tileerror handler, so failures cannot create a fallback loop.
-        // https://leafletjs.com/reference.html#gridlayer-tileerror
-        var orthophotoFallbackUsed = false;
-        var grayFallbackUsed = false;
-        function activateOfficialBasemapFallback() {
-            if (orthophotoFallbackUsed || !map.hasLayer(maaruumOrthophoto)) return false;
-            orthophotoFallbackUsed = true;
-            grayFallbackUsed = false;
-            map.removeLayer(maaruumOrthophoto);
-            maaruumGrayMap.addTo(map);
-            mapWorkspaceState = selectMapBasemap(
-                mapWorkspaceState,
-                'maaruum-gray',
-                'Ortofoto ei laadinud; kasutusel on ametlik neutraalne varualuskaart.'
-            );
-            renderMapWorkspaceState();
-            return true;
-        }
-        maaruumOrthophoto.on('tileerror', function() {
-            activateOfficialBasemapFallback();
-        });
-        function activateIndependentNeutralFallback() {
-            if (grayFallbackUsed || !map.hasLayer(maaruumGrayMap)) return false;
-            grayFallbackUsed = true;
-            map.removeLayer(maaruumGrayMap);
-            esriLightGrayCanvas.addTo(map);
-            mapWorkspaceState = selectMapBasemap(
-                mapWorkspaceState,
-                'esri-light-gray',
-                'Ametlik halltoonides kaart ei laadinud; kasutusel on sõltumatu neutraalne Esri aluskaart.'
-            );
-            renderMapWorkspaceState();
-            return true;
-        }
-        maaruumGrayMap.on('tileerror', function() {
-            activateIndependentNeutralFallback();
-        });
+        // Aluskaart muutub ainult kasutaja valikust. Üksiku WMTS-paani ajutine
+        // viga ei tohi zoomimisel ortofotot hallkaardiga asendada.
 
         // Kui dashboard oli initMap ajal `display: none` (või mõni esivanem
         // 0-laiune), Leaflet suurustab kaardi valesti. invalidateSize
@@ -3116,6 +3069,12 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         var date = new Date(Date.UTC(year, month - 1, day));
         if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return '—';
         return DATE_FORMATTER.format(date);
+    }
+
+    function formatPricePeriod(value) {
+        var match = /^(\d{4})-Q([1-4])$/.exec(String(value || ''));
+        if (!match) return 'Periood teadmata';
+        return match[1] + ' ' + ['I', 'II', 'III', 'IV'][Number(match[2]) - 1] + ' kvartal';
     }
 
     function safeExternalUrl(value) {
@@ -3606,8 +3565,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             if (scenarioMidpointPerM3 != null) html += '<div class="info-row"><span class="label">Sortimendita keskpunkt ' + ddInfo('Küttepuidu alumise ja palgi ülemise kännuraha stsenaariumi aritmeetiline keskpunkt €/m³. Tegelik sortimendijaotus vajab diameetri-, kvaliteedi- ja kahjustusandmeid.') + '</span><span class="value">' + formatNum(scenarioMidpointPerM3, 2) + ' €/m³</span></div>';
         }
         if (!hasAssetPassports) html += '<div class="info-row"><span class="label">Elus puistutagavara ' + ddInfo('Metsaregistri 1. rinde, 2. rinde ja üksikpuude elus tagavara × eraldiste pindala. Surnud ja lamapuit ei kuulu müüdava puidu kogusesse.') + '</span><span class="value">' + formatNum(data.tagavara_m3) + ' m³</span></div>';
-        html += '<div class="info-row"><span class="label">Hinnaperiood</span><span class="value">märts 2026</span></div>';
-        html += '<div class="info-row"><span class="label">Turu suunainfo</span><span class="value">juuni 2026</span></div>';
+        html += '<div class="info-row"><span class="label">Puiduhindade alus ' + ddInfo('Arvutus kasutab selle perioodi Erametsaliidu puiduhindu. Hilisem turukommentaar on ainult taustainfo ja ei muuda arvutust.') + '</span><span class="value">' + escHtml(data.price_source || 'Hinnaallikas teadmata') + ' · ' + escHtml(formatPricePeriod(data.price_updated)) + '</span></div>';
 
         html += '<details class="evidence-details"><summary>Kuidas hinnang kujuneb</summary><div class="evidence-body">';
         html += '<p><strong>Puit:</strong> iga eraldise elus tagavara × pindala. Alumine stsenaarium kasutab küttepuidu ja ülemine avaldatud või hinnangulise liigihinna olemasolul palgi kännuraha. Tegelik sortimendijaotus, raievalmidus ja kinnistupõhised kulud vajavad lisandmeid.</p>';
