@@ -763,6 +763,20 @@ def _forest_area_ha(eraldised: list[dict]) -> float:
     return round(sum((e.get("pindala_ha") or 0) for e in eraldised), 2)
 
 
+def _subsidy_stand_age(stand: dict):
+    raw_age = stand.get("vanus_raw")
+    derived_age = stand.get("vanus")
+    for age in (raw_age, derived_age):
+        if isinstance(age, bool) or age is None:
+            continue
+        try:
+            if float(age) > 0:
+                return age
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
 def _chat_completion_payload(model: str, messages: list[dict]) -> dict:
     return {
         "model": model,
@@ -2386,28 +2400,23 @@ async def _search_core(
     has_kuusk = spruce["has_spruce"]
     max_kuusk_vanus = spruce["max_spruce_age"]
     subsidy_stands = []
-    for index, stand in enumerate(eraldised):
+    for stand in eraldised:
         stand_copy = {
             "eraldis_nr": stand.get("eraldis_nr"),
             "puuliik": stand.get("puuliik"),
             "puuliik_kood": stand.get("puuliik_kood"),
-            "vanus": stand.get("vanus_raw", stand.get("vanus")),
+            "vanus": _subsidy_stand_age(stand),
             "pindala_ha": stand.get("pindala_ha"),
-            "kuivendatud": bool(stand.get("kuivendatud", False)),
+            "kuivendatud": stand.get("kuivendatud"),
+            "registreerimise_kp": stand.get("registreerimise_kp"),
         }
-        stand_spruce = spruce_context(
-            [stand],
-            [all_elements[index] if index < len(all_elements) else []],
-        )
-        stand_copy["sisaldab_kuuske"] = stand_spruce["has_spruce"]
-        stand_copy["kuuse_vanus_max"] = stand_spruce["max_spruce_age"]
         if stand_copy["eraldis_nr"] is not None:
             subsidy_stands.append(stand_copy)
     stand_data_complete = (
         "metsaregister.eraldised" not in unavailable_sources
         and all(
             stand.get("eraldis_nr") is not None
-            and stand.get("vanus_raw", stand.get("vanus")) is not None
+            and _subsidy_stand_age(stand) is not None
             and stand.get("pindala_ha") is not None
             for stand in eraldised
         )
@@ -2416,11 +2425,14 @@ async def _search_core(
         "forest_data_complete": "metsaregister.eraldised" not in unavailable_sources,
         "stand_data_complete": stand_data_complete,
         "protection_data_complete": protection_data_complete,
+        "natura_data_complete": spatial_status["natura_2000"]["sources_complete"],
         "vep_data_complete": False,
         "natura_2000": natura_2000,
         "vaariselupaik": vaariselupaik,
         "kaitseala": kaitseala,
         "pindala_ha": kataster_data.get("pindala_ha", 0),
+        "mittemetsamaa_ha": max((kataster_data.get("pindala_ha") or 0) - mets_pindala_ha, 0),
+        "omvorm": kataster_data.get("omvorm"),
         "spruce_data_complete": (
             not skip_details
             and not sampled_eraldised
@@ -3120,18 +3132,43 @@ def build_system_prompt(data: dict) -> str:
 
     subsidy_lines: list[str] = []
     subsidy_summary_lines: list[str] = []
-    if toetused:
+    prompt_subsidies = toetused
+    if toetused and any("relevance" in item or "is_recommended" in item for item in toetused):
+        prompt_subsidies = [
+            item for item in toetused
+            if item.get("is_recommended")
+            or item.get("relevance") == "watchlist"
+            or (
+                item.get("relevance") == "insufficient_data"
+                and item.get("application_status") in {"open", "year_round", "upcoming"}
+            )
+        ]
+    elif toetused:
+        prompt_subsidies = [
+            item for item in toetused
+            if item.get("application_status") != "closed"
+            and item.get("eligibility_status") != "Ei sobi teadaolevate andmete põhjal"
+        ]
+    if prompt_subsidies:
         subsidy_lines.append("--- METSATOETUSTE HINNANG ---")
         subsidy_summary_lines.append("--- METSATOETUSTE KOKKUVÕTE ---")
-        for t in toetused[:12]:
+        for t in prompt_subsidies[:12]:
+            if t.get("is_recommended"):
+                recommendation_label = "kinnistuandmetega seotud soovitus"
+            elif t.get("relevance") == "watchlist":
+                recommendation_label = "jälgimisnimekiri; ei ole avatud soovitus"
+            else:
+                recommendation_label = "vajab väliste faktide kontrolli; ei ole soovitus"
             subsidy_summary_lines.append(
                 f"  {_prompt_text(t.get('name', t.get('nimi', '?')), 70)}: "
-                f"{_prompt_text(t.get('eligibility_status', 'Vajab kontrolli'), 50)}"
+                f"{_prompt_text(t.get('eligibility_status', 'Vajab kontrolli'), 50)}; "
+                f"{recommendation_label}"
             )
             parts = [
                 f"  {_prompt_text(t.get('name', t.get('nimi', '?')), 100)}: "
                 f"{_prompt_text(t.get('eligibility_status', 'Vajab kontrolli'), 80)}"
             ]
+            parts.append(f"Soovitusklass: {recommendation_label}")
             if t.get("eligibility_reason"):
                 parts.append(f"Põhjus: {_prompt_text(t['eligibility_reason'], 150)}")
             parts.append(
@@ -3172,12 +3209,17 @@ def build_system_prompt(data: dict) -> str:
                     f"kataloog kehtib kuni {_prompt_text(t.get('catalog_valid_through', 'teadmata'), 40)})"
                 )
             subsidy_lines.append(" | ".join(parts))
-        if len(toetused) > 12:
-            subsidy_lines.append(f"  ... ja veel {len(toetused) - 12} toetust; küsi vajadusel täpsustust")
-            subsidy_summary_lines.append(f"  ... ja veel {len(toetused) - 12} toetust")
-        disclaimer = toetused[0].get("disclaimer")
+        if len(prompt_subsidies) > 12:
+            subsidy_lines.append(f"  ... ja veel {len(prompt_subsidies) - 12} toetust; küsi vajadusel täpsustust")
+            subsidy_summary_lines.append(f"  ... ja veel {len(prompt_subsidies) - 12} toetust")
+        disclaimer = prompt_subsidies[0].get("disclaimer")
         if disclaimer:
             subsidy_lines.append(_prompt_text(disclaimer, 240))
+    elif toetused:
+        subsidy_lines.extend([
+            "--- METSATOETUSTE HINNANG ---",
+            "  Kinnistuandmetega seotud avatud, aastaringset või tulevast meedet ei tuvastatud.",
+        ])
 
     raie = data.get("raie", {})
     if raie:

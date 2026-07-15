@@ -206,7 +206,7 @@ async def query_eraldis(kataster_nr: str) -> list[dict]:
             "korgus": props.get("korgus"),
             "pindala_ha": props.get("pindala", 0),
             "taius_1": props.get("taius_1"),
-            "kuivendatud": bool(props.get("kuivendatud", False)),
+            "kuivendatud": bool(props.get("kuivendatud")) if props.get("kuivendatud") is not None else None,
             "tuleohu_kood": props.get("tuleohu_kood"),
             "siht1": props.get("siht1"),
             "eraldis_nr": props.get("eraldise_nr"),

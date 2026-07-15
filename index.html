@@ -64,7 +64,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl034">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl110">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl111">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -685,7 +685,7 @@
                     </div>
                     <h3>Toetused ja hüvitised</h3>
                 </div>
-                <p class="section-desc">Toetused ja hüvitised metsaomanikule</p>
+                <p class="section-desc">Kinnistuandmetega seotud ametlikud meetmed</p>
                 <div id="toetused-info">
                     <div class="card-placeholder">
                         <div class="ph-eyebrow">Kuvatakse pärast otsingut</div>
@@ -778,7 +778,7 @@
                 <a class="source-card" href="https://www.eramets.ee/toetused" target="_blank" rel="noopener" aria-label="KIK toetused">
                     <div class="source-org">KIK + Erametsakeskus</div>
                     <h3 class="source-name">Metsatoetused 2026</h3>
-                    <p class="source-desc">13 aktiivset meedet: Natura 2000, kliimakindel mets, metsastamine, ürask.</p>
+                    <p class="source-desc">Ametlikud 2026 meetmed, tähtajad ja sobivustingimused.</p>
                     <span class="source-arrow" aria-hidden="true">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                     </span>
@@ -3834,22 +3834,41 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             var legacyApplicationStatus = t.voor_status === 'unknown'
                 ? 'awaiting_dates'
                 : t.voor_status;
+            var applicationStatus = t.application_status || legacyApplicationStatus || 'awaiting_dates';
+            var relevance = t.relevance || (applicationStatus === 'closed'
+                ? 'archived'
+                : eligibilityStatus === 'Ei sobi teadaolevate andmete põhjal'
+                    ? 'not_relevant'
+                    : 'insufficient_data');
+            var isRecommended = t.is_recommended === true
+                && ['matched', 'possible'].indexOf(relevance) !== -1
+                && ['open', 'year_round', 'upcoming'].indexOf(applicationStatus) !== -1;
             return Object.assign({}, t, {
                 eligibility_status: eligibilityStatus,
                 eligibility_reason: t.eligibility_reason || t.pohjus || 'Ametlikud tingimused vajavad kontrolli.',
-                application_status: t.application_status || legacyApplicationStatus || 'awaiting_dates',
+                application_status: applicationStatus,
                 application_period: t.application_period || t.taotlusvoor || 'Kuupäevad selgumisel',
                 application_channel: t.application_channel || 'Vaata ametlikku allikat',
-                source_name: t.source_name || t.asutus || 'Ametlik allikas',
-                source_url: t.source_url || t.url,
+                info_url: t.info_url || t.source_url || t.url,
+                relevance: relevance,
+                is_recommended: isRecommended,
                 verification_items: t.verification_items || ['Kontrolli meetme kehtivaid tingimusi ametlikust allikast.'],
                 disclaimer: t.disclaimer || 'Terrapointi hinnang on esmane sõelumine. Lõpliku otsuse teeb toetuse andja.'
             });
         });
 
-        var likely = data.filter(function(t) { return t.eligibility_status === 'Tõenäoliselt sobib'; });
-        var check = data.filter(function(t) { return t.eligibility_status === 'Vajab kontrolli'; });
-        var ineligible = data.filter(function(t) { return t.eligibility_status === 'Ei sobi teadaolevate andmete põhjal'; });
+        var recommended = data.filter(function(t) { return t.is_recommended; });
+        var needsCheck = data.filter(function(t) {
+            return !t.is_recommended
+                && t.relevance === 'insufficient_data'
+                && t.application_status !== 'closed';
+        });
+        var watchlist = data.filter(function(t) { return !t.is_recommended && t.relevance === 'watchlist'; });
+        var other = data.filter(function(t) {
+            return !t.is_recommended
+                && t.relevance !== 'watchlist'
+                && !(t.relevance === 'insufficient_data' && t.application_status !== 'closed');
+        });
 
         var categoryNames = {
             'looduskaitse': 'Looduskaitse', 'metsahooldus': 'Metsahooldus', 'metsastamine': 'Metsastamine',
@@ -3887,7 +3906,8 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         }
         function renderCard(t) {
             var state = eligibilityClass(t.eligibility_status);
-            var link = t.source_url || t.url || 'https://www.eramets.ee/toetused/';
+            var link = safeExternalUrl(t.info_url || t.source_url || t.application_url || t.url || '');
+            var legalLink = safeExternalUrl(t.legal_url || '');
             var applicationBadge = applicationBadgeLabel(t);
             var catName = categoryNames[t.category] || t.category;
             var cls = 'toetus-card toetus-' + state;
@@ -3895,6 +3915,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             var matchedHa = t.eraldised_match_ha || 0;
             var filterLabel = t.eraldised_filter_label || '';
             var verificationItems = t.verification_items || [];
+            var sourceName = t.source_name || t.asutus || 'Ametlik allikas';
 
             var html = '<article class="' + cls + '">';
             html += '<div class="toetus-top">';
@@ -3941,8 +3962,9 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             }
 
             html += '<div class="toetus-footer">';
-            html += '<div class="toetus-source-meta"><span>Allika seis: ' + escHtml(t.source_as_of || 'teadmata') + '</span><span>Kontrollitud: ' + escHtml(t.verified_at || 'teadmata') + '</span></div>';
-            html += '<a href="' + escHtml(link) + '" target="_blank" rel="noopener" class="toetus-cta">' + escHtml(t.source_name || 'Ametlik allikas') + ' <span aria-hidden="true">↗</span></a>';
+            html += '<div class="toetus-source-meta"><span>Allikas: ' + escHtml(sourceName) + '</span><span>Allika seis: ' + escHtml(t.source_as_of || 'teadmata') + '</span><span>Kontrollitud: ' + escHtml(t.verified_at || 'teadmata') + '</span></div>';
+            if (link) html += '<a href="' + escHtml(link) + '" target="_blank" rel="noopener" class="toetus-cta">Ametlik info <span aria-hidden="true">↗</span></a>';
+            if (legalLink && legalLink !== link) html += '<a href="' + escHtml(legalLink) + '" target="_blank" rel="noopener" class="toetus-legal-link">Õigusakt <span aria-hidden="true">↗</span></a>';
             html += '</div>';
             html += '<p class="toetus-disclaimer">' + escHtml(t.disclaimer || 'Terrapointi hinnang on esmane sõelumine. Lõpliku otsuse teeb toetuse andja.') + '</p>';
             html += '</article>';
@@ -3950,28 +3972,41 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         }
 
         var html = '';
-        if (likely.length > 0) {
-            html += '<div class="toetus-group-heading"><strong>Tõenäoliselt sobivad</strong><span>' + likely.length + '</span></div>';
+        if (recommended.length > 0) {
+            html += '<div class="toetus-group-heading"><strong>Sinu kinnistuga seotud</strong><span>' + recommended.length + '</span></div>';
             html += '<div class="toetus-list-scroll"><div class="toetus-list">';
-            likely.forEach(function(t) { html += renderCard(t); });
+            recommended.forEach(function(t) { html += renderCard(t); });
             html += '</div></div>';
+        } else {
+            html += '<p class="toetus-empty">Kinnistuandmetega seotud avatud, aastaringset või tulevast meedet ei leitud.</p>';
         }
 
-        if (check.length > 0) {
-            html += '<div class="toetus-group-heading toetus-group-check"><strong>Vajavad kontrolli</strong><span>' + check.length + '</span></div>';
-            html += '<div class="toetus-list">';
-            check.forEach(function(t) { html += renderCard(t); });
-            html += '</div>';
+        if (watchlist.length > 0) {
+            html += '<details class="toetus-details"><summary class="muted-summary">';
+            html += '<span class="toetus-details-label">Jälgi ametliku vooru avanemist</span>';
+            html += '<span class="toetus-details-count">' + watchlist.length + '</span></summary>';
+            html += '<div class="toetus-list toetus-list-ineligible">';
+            watchlist.forEach(function(t) { html += renderCard(t); });
+            html += '</div></details>';
         }
 
-        if (ineligible.length > 0) {
-            html += '<details class="toetus-details"' + (likely.length === 0 && check.length === 0 ? ' open' : '') + '>';
+        if (needsCheck.length > 0) {
+            html += '<details class="toetus-details"><summary class="muted-summary">';
+            html += '<span class="toetus-details-label">Võib olla asjakohane, kontrolli tingimusi</span>';
+            html += '<span class="toetus-details-count">' + needsCheck.length + '</span></summary>';
+            html += '<div class="toetus-list toetus-list-ineligible">';
+            needsCheck.forEach(function(t) { html += renderCard(t); });
+            html += '</div></details>';
+        }
+
+        if (other.length > 0) {
+            html += '<details class="toetus-details">';
             html += '<summary class="muted-summary">';
-            html += '<span class="toetus-details-label">Ei sobi teadaolevate andmete põhjal</span>';
-            html += '<span class="toetus-details-count">' + ineligible.length + '</span>';
+            html += '<span class="toetus-details-label">Muud meetmed ja lõppenud voorud</span>';
+            html += '<span class="toetus-details-count">' + other.length + '</span>';
             html += '</summary>';
             html += '<div class="toetus-list toetus-list-ineligible">';
-            ineligible.forEach(function(t) { html += renderCard(t); });
+            other.forEach(function(t) { html += renderCard(t); });
             html += '</div></details>';
         }
 

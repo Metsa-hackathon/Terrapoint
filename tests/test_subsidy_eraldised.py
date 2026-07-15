@@ -7,7 +7,15 @@ from unittest.mock import patch
 from services import subsidies
 
 
-def _mk_eraldis(nr, kood="MA", vanus=30, pindala=1.0, kuivendatud=False):
+def _mk_eraldis(
+    nr,
+    kood="MA",
+    vanus=30,
+    pindala=1.0,
+    kuivendatud=False,
+    invent_kp="2025-01-15",
+    registreerimise_kp="2025-01-15",
+):
     return {
         "eraldis_nr": nr,
         "puuliik": {"MA": "Mänd", "KU": "Kuusk", "KS": "Kask"}.get(kood, kood),
@@ -17,6 +25,8 @@ def _mk_eraldis(nr, kood="MA", vanus=30, pindala=1.0, kuivendatud=False):
         "kuivendatud": kuivendatud,
         "sisaldab_kuuske": kood == "KU",
         "kuuse_vanus_max": vanus if kood == "KU" else 0,
+        "invent_kp": invent_kp,
+        "registreerimise_kp": registreerimise_kp,
     }
 
 
@@ -29,8 +39,11 @@ def _base_data(**overrides):
         "kaitseala": False,
         "vaariselupaik": False,
         "mets_pindala": 2.0,
+        "mets_pindala_ha": 2.0,
+        "mittemetsamaa_ha": 0.0,
         "pindala_ha": 2.0,
         "siht1": "MAATULUNDUSMAA",
+        "omvorm": "Eraomand",
         "spruce_data_complete": True,
         "eraldised": [_mk_eraldis(1, vanus=40, pindala=2.0)],
     }
@@ -64,14 +77,14 @@ class SubsidyCatalogTests(unittest.TestCase):
 
     def test_catalog_public_periods_and_sources_match_verified_fixture(self):
         expected = {
-            "looduskaitse-piirangute-huvitis": ("04.04–30.04.2026", "https://www.pria.ee/toetused/natura-2000-erametsades-elurikkuse-soodustamise-toetus-2026"),
-            "vep-kaitseleping": ("Aastaringselt", "https://www.keskkonnaamet.ee/elusloodus-looduskaitse/metsandus/vaariselupaigad"),
+            "looduskaitse-piirangute-huvitis": ("04.04–30.04.2026", "https://www.eramets.ee/toetused/natura-metsa-toetus/"),
+            "vep-kaitseleping": ("Aastaringselt", "https://www.eramets.ee/toetused/vaariselupaiga-kaitseks-lepingu-solmimine/"),
             "kliimakindla-metsa-kujundamine": ("07.04–23.04.2026", "https://www.eramets.ee/metsa-kujundamine/"),
             "kliimakindla-metsa-rajamine": ("I voor 16.06–02.07.2026; II voor 17.11–01.12.2026", "https://www.eramets.ee/toetused/metsa-uuendamise-toetus/"),
-            "metsastamine": ("16.04–07.05.2026", "https://www.riigiteataja.ee/akt/124032026004"),
+            "metsastamine": ("16.04–07.05.2026", "https://www.eramets.ee/metsastamine/"),
             "uraskikahjustuste-ennetamine": ("01.09–15.09.2026", "https://www.eramets.ee/uraskikahjustuste-ennetamine/"),
-            "metsameede-monitoring": ("2026. aasta kuupäevad avaldamata", "https://www.kik.ee/et/toetatavad-tegevused/metsameede"),
-            "metsa-inventeerimine": ("01.12–15.12.2026", "https://www.riigiteataja.ee/akt/110032026007"),
+            "metsameede-monitoring": ("2026. aasta kuupäevad avaldamata", "https://www.eramets.ee/toetused/metsameede/"),
+            "metsa-inventeerimine": ("01.12–15.12.2026", "https://www.eramets.ee/toetused/metsa-inventeerimise-toetus/"),
             "parandkultuuri-sailitamine": ("16.06–02.07.2026", "https://www.eramets.ee/toetused/parandkultuuri-sailitamise-toetus/"),
             "maaparandussusteemi-korrastamine": ("2026. aasta kuupäevad avaldamata", "https://www.eramets.ee/toetused/metsamaaparandustoode-toetus/"),
             "vastutustundliku-metsanduse-edendamine": ("03.03–17.03.2026", "https://www.eramets.ee/toetused/uhistutoetus/"),
@@ -93,10 +106,27 @@ class SubsidyCatalogTests(unittest.TestCase):
             self.assertTrue(item["source_name"])
             self.assertTrue(item["source_url"].startswith("https://"))
             self.assertRegex(item["source_as_of"], r"^\d{4}-\d{2}(-\d{2})?$")
-            self.assertEqual(item["verified_at"], "2026-07-13")
+            self.assertEqual(item["verified_at"], "2026-07-15")
             self.assertLessEqual(date.fromisoformat(item["source_as_of"]), date.fromisoformat(item["verified_at"]))
             self.assertTrue(item["verification_items"])
             self.assertIn("Lõpliku otsuse", item["disclaimer"])
+
+    def test_secondary_official_urls_are_exact(self):
+        results = {item["id"]: item for item in subsidies.check_subsidies(_base_data())}
+        expected = {
+            "looduskaitse-piirangute-huvitis": (
+                "https://www.pria.ee/toetused/natura-2000-erametsades-elurikkuse-soodustamise-toetus-2026",
+                "https://www.riigiteataja.ee/akt/122032023015?leiaKehtiv",
+            ),
+            "metsastamine": (None, "https://www.riigiteataja.ee/akt/124032026004"),
+            "metsa-inventeerimine": (None, "https://www.riigiteataja.ee/akt/110032026007"),
+        }
+
+        for subsidy_id, (application_url, legal_url) in expected.items():
+            with self.subTest(subsidy_id=subsidy_id):
+                self.assertEqual(results[subsidy_id]["application_url"], application_url)
+                self.assertEqual(results[subsidy_id]["legal_url"], legal_url)
+                self.assertEqual(results[subsidy_id]["info_url"], results[subsidy_id]["source_url"])
 
     def test_stale_or_duplicate_measures_are_not_advertised(self):
         results = subsidies.check_subsidies(_base_data())
@@ -110,7 +140,7 @@ class SubsidyCatalogTests(unittest.TestCase):
 
         self.assertEqual(
             item["amount"],
-            "20 €/ha inventeerimine; 25 €/ha inventeerimine koos püsimetsakavaga",
+            "Kuni 20 €/ha inventeerimine; kuni 25 €/ha inventeerimine koos püsimetsakavaga",
         )
         self.assertEqual(item["application_period"], "01.12–15.12.2026")
         self.assertEqual(item["application_channel"], "Uus e-PRIA, taotlejaks metsaühistu")
@@ -170,6 +200,151 @@ class SubsidyCatalogTests(unittest.TestCase):
 
 
 class SubsidyEligibilityTests(unittest.TestCase):
+    def test_state_owned_property_has_no_private_forest_recommendations(self):
+        results = subsidies.check_subsidies(_base_data(omvorm="Riigiomand"))
+
+        self.assertFalse(any(item["is_recommended"] for item in results))
+        self.assertTrue(all(item["relevance"] in {"not_relevant", "archived"} for item in results))
+
+    def test_existing_forest_is_not_recommended_for_afforestation(self):
+        item = _by_id(
+            subsidies.check_subsidies(_base_data(mets_pindala_ha=2.0, mittemetsamaa_ha=0.0)),
+            "metsastamine",
+        )
+
+        self.assertFalse(item["is_recommended"])
+        self.assertEqual(item["relevance"], "not_relevant")
+
+    def test_recommendations_exclude_closed_and_association_only_programs(self):
+        with patch.object(subsidies, "_today", return_value=date(2026, 7, 15)):
+            results = subsidies.check_subsidies(_base_data())
+
+        recommended = [item for item in results if item["is_recommended"]]
+        self.assertTrue(recommended)
+        self.assertTrue(all(item["application_status"] in {"open", "year_round", "upcoming"} for item in recommended))
+        self.assertTrue(all(item["category"] != "ühistu" for item in recommended))
+
+    def test_recommendations_on_2026_07_15_are_exact_for_complete_base_data(self):
+        with patch.object(subsidies, "_today", return_value=date(2026, 7, 15)):
+            recommended_ids = {
+                item["id"] for item in subsidies.check_subsidies(_base_data())
+                if item["is_recommended"]
+            }
+
+        self.assertEqual(recommended_ids, {"metsa-inventeerimine"})
+
+    def test_positive_property_and_compartment_matches_become_recommendations(self):
+        cases = (
+            (date(2026, 4, 15), "looduskaitse-piirangute-huvitis", {"natura_2000": True}),
+            (date(2026, 7, 15), "vep-kaitseleping", {"vaariselupaik": True, "vep_data_complete": True}),
+            (date(2026, 4, 15), "kliimakindla-metsa-kujundamine", {
+                "eraldised": [_mk_eraldis(1, vanus=20)],
+            }),
+            (date(2026, 7, 15), "uraskikahjustuste-ennetamine", {
+                "eraldised": [_mk_eraldis(1, kood="KU", vanus=55)],
+            }),
+            (date(2026, 4, 20), "metsastamine", {
+                "pindala_ha": 2.0,
+                "mets_pindala_ha": 1.0,
+                "mittemetsamaa_ha": 1.0,
+            }),
+        )
+
+        for today, subsidy_id, overrides in cases:
+            with self.subTest(subsidy_id=subsidy_id), patch.object(subsidies, "_today", return_value=today):
+                item = _by_id(subsidies.check_subsidies(_base_data(**overrides)), subsidy_id)
+                self.assertTrue(item["is_recommended"])
+                self.assertIn(item["relevance"], {"matched", "possible"})
+
+    def test_unknown_ownership_cannot_become_a_positive_recommendation(self):
+        inventory = _by_id(
+            subsidies.check_subsidies(_base_data(omvorm=None)),
+            "metsa-inventeerimine",
+        )
+
+        self.assertFalse(inventory["is_recommended"])
+        self.assertEqual(inventory["relevance"], "insufficient_data")
+        self.assertIn("eraomand", inventory["eligibility_reason"].lower())
+
+    def test_inventory_uses_registry_entry_date_not_inventory_date(self):
+        stand = _mk_eraldis(1, invent_kp="2023-06-01")
+        stand["registreerimise_kp"] = "2026-06-15"
+
+        item = _by_id(
+            subsidies.check_subsidies(_base_data(eraldised=[stand])),
+            "metsa-inventeerimine",
+        )
+
+        self.assertEqual(item["relevance"], "possible")
+        self.assertTrue(item["is_recommended"])
+        self.assertIn("2026", item["eligibility_reason"])
+
+    def test_inventory_rejects_malformed_registry_entry_date(self):
+        stand = _mk_eraldis(1)
+        stand["registreerimise_kp"] = "2026-garbage"
+
+        item = _by_id(
+            subsidies.check_subsidies(_base_data(eraldised=[stand])),
+            "metsa-inventeerimine",
+        )
+
+        self.assertFalse(item["is_recommended"])
+        self.assertEqual(item["relevance"], "insufficient_data")
+
+    def test_missing_drainage_flag_is_not_treated_as_proof_of_ineligibility(self):
+        stand = _mk_eraldis(1, kuivendatud=None)
+
+        item = _by_id(
+            subsidies.check_subsidies(_base_data(eraldised=[stand])),
+            "maaparandussusteemi-korrastamine",
+        )
+
+        self.assertEqual(item["eligibility_status"], "Vajab kontrolli")
+        self.assertEqual(item["relevance"], "insufficient_data")
+        self.assertTrue(item["andmed_piiratud"])
+
+    def test_protection_measure_uses_overlap_specific_legal_source(self):
+        natura = _by_id(
+            subsidies.check_subsidies(_base_data(natura_2000=True)),
+            "looduskaitse-piirangute-huvitis",
+        )
+        outside_natura = _by_id(
+            subsidies.check_subsidies(_base_data(kaitseala=True)),
+            "looduskaitse-piirangute-huvitis",
+        )
+
+        self.assertEqual(natura["legal_url"], "https://www.riigiteataja.ee/akt/122032023015?leiaKehtiv")
+        self.assertEqual(outside_natura["legal_url"], "https://www.riigiteataja.ee/akt/122032023017?leiaKehtiv")
+        self.assertIn("ainult omanik", outside_natura["applicant_scope"].lower())
+
+    def test_incomplete_natura_source_does_not_claim_outside_natura_rules(self):
+        item = _by_id(
+            subsidies.check_subsidies(_base_data(
+                kaitseala=True,
+                natura_2000=False,
+                natura_data_complete=False,
+                protection_data_complete=False,
+            )),
+            "looduskaitse-piirangute-huvitis",
+        )
+
+        self.assertIsNone(item["legal_url"])
+        self.assertIsNone(item["application_url"])
+        self.assertNotIn("ainult omanik", item["applicant_scope"].lower())
+
+    def test_secondary_spruce_does_not_create_beetle_match(self):
+        stand = _mk_eraldis(3, "MA", vanus=55, pindala=1.25)
+        stand["sisaldab_kuuske"] = True
+        stand["kuuse_vanus_max"] = 55
+
+        item = _by_id(
+            subsidies.check_subsidies(_base_data(eraldised=[stand])),
+            "uraskikahjustuste-ennetamine",
+        )
+
+        self.assertFalse(item["is_recommended"])
+        self.assertEqual(item["eraldised_match"], [])
+
     def test_missing_required_property_data_needs_verification(self):
         data = _base_data(
             forest_data_complete=False,

@@ -6,6 +6,14 @@ from api.index import MAX_CHAT_PROMPT_CHARS, _chat_evidence_digest, _forest_area
 
 
 class AreaDataTests(unittest.TestCase):
+    def test_subsidy_age_uses_derived_age_when_raw_register_age_is_missing(self):
+        from api.index import _subsidy_stand_age
+
+        self.assertEqual(_subsidy_stand_age({"vanus_raw": None, "vanus": 72}), 72)
+        self.assertEqual(_subsidy_stand_age({"vanus_raw": 61, "vanus": 72}), 61)
+        self.assertIsNone(_subsidy_stand_age({"vanus_raw": None, "vanus": 0}))
+        self.assertEqual(_subsidy_stand_age({"vanus_raw": 0, "vanus": 72}), 72)
+
     def test_forest_area_is_sum_of_all_eraldised_not_last_eraldis(self):
         eraldised = [
             {"id": 1, "pindala_ha": 2.62},
@@ -131,7 +139,7 @@ class AreaDataTests(unittest.TestCase):
         self.assertIn("Keskmine hind: 13.1 EUR/m³", prompt)
         self.assertNotIn("väärtus 7800 EUR", prompt)
 
-    def test_ai_prompt_includes_all_subsidy_states_and_audit_fields(self):
+    def test_ai_prompt_includes_actionable_legacy_subsidy_and_audit_fields(self):
         prompt = build_system_prompt({
             "kataster": {"number": "78404:409:0113", "pindala_ha": 2},
             "toetused": [
@@ -181,7 +189,8 @@ class AreaDataTests(unittest.TestCase):
 
         self.assertIn("--- METSATOETUSTE HINNANG ---", prompt)
         self.assertIn("Inventeerimise toetus: Vajab kontrolli", prompt)
-        self.assertIn("Looduskaitse hüvitis: Ei sobi teadaolevate andmete põhjal", prompt)
+        self.assertNotIn("Looduskaitse hüvitis", prompt)
+        self.assertNotIn("https://www.pria.ee/toetused/example", prompt)
         self.assertIn("Seitsme aasta piirang vajab kontrolli.", prompt)
         self.assertIn("01.12–15.12.2026", prompt)
         self.assertIn("metsaühistu liikmesus", prompt)
@@ -194,6 +203,65 @@ class AreaDataTests(unittest.TestCase):
         self.assertIn("allika seis 2026-03-10", prompt)
         self.assertIn("kataloog kehtib kuni 2026-12-31", prompt)
         self.assertIn("Lõpliku otsuse teeb toetuse andja.", prompt)
+
+    def test_ai_prompt_excludes_unrelated_and_closed_subsidy_links(self):
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 2},
+            "toetused": [
+                {
+                    "name": "Inventeerimise toetus",
+                    "eligibility_status": "Vajab kontrolli",
+                    "eligibility_reason": "Inventuuri kuupäev sobitub.",
+                    "application_status": "upcoming",
+                    "application_period": "01.12–15.12.2026",
+                    "relevance": "possible",
+                    "is_recommended": True,
+                    "source_name": "Erametsakeskus",
+                    "source_url": "https://www.eramets.ee/toetused/metsa-inventeerimise-toetus/",
+                },
+                {
+                    "name": "Metsaühistu toetus",
+                    "eligibility_status": "Vajab kontrolli",
+                    "application_status": "closed",
+                    "relevance": "archived",
+                    "is_recommended": False,
+                    "source_url": "https://www.eramets.ee/toetused/uhistutoetus/",
+                },
+            ],
+        })
+
+        self.assertIn("Inventeerimise toetus", prompt)
+        self.assertNotIn("Metsaühistu toetus", prompt)
+        self.assertNotIn("uhistutoetus", prompt)
+
+    def test_ai_prompt_keeps_actionable_measures_that_need_external_facts(self):
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 2},
+            "toetused": [
+                {
+                    "name": "Vääriselupaiga kaitseleping",
+                    "eligibility_status": "Vajab kontrolli",
+                    "application_status": "year_round",
+                    "relevance": "insufficient_data",
+                    "is_recommended": False,
+                    "source_name": "Erametsakeskus",
+                    "source_url": "https://www.eramets.ee/toetused/vaariselupaiga-kaitseks-lepingu-solmimine/",
+                },
+                {
+                    "name": "Lõppenud kontrollimata meede",
+                    "eligibility_status": "Vajab kontrolli",
+                    "application_status": "closed",
+                    "relevance": "archived",
+                    "is_recommended": False,
+                    "source_url": "https://example.test/closed",
+                },
+            ],
+        })
+
+        self.assertIn("Vääriselupaiga kaitseleping", prompt)
+        self.assertIn("ei ole soovitus", prompt)
+        self.assertNotIn("Lõppenud kontrollimata meede", prompt)
+        self.assertNotIn("example.test/closed", prompt)
 
     def test_ai_prompt_for_large_parcel_stays_within_model_budget(self):
         eraldised = [

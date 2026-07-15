@@ -115,7 +115,8 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("must-revalidate", cache_control)
 
     def test_changed_stylesheet_busts_the_previous_immutable_url(self):
-        self.assertIn('/static/css/style.css?r=jkl110', INDEX_HTML)
+        self.assertIn('/static/css/style.css?r=jkl111', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl110', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl109', INDEX_HTML)
         self.assertIn('/static/css/font-sizes.css?r=jkl034', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl108', INDEX_HTML)
@@ -433,6 +434,10 @@ console.log(JSON.stringify({{
             "source_url",
             "verified_at",
             "match_reason",
+            "is_recommended",
+            "relevance",
+            "info_url",
+            "legal_url",
         ):
             self.assertIn(contract, rendered)
         for label in (
@@ -443,16 +448,85 @@ console.log(JSON.stringify({{
         ):
             self.assertIn(label, rendered)
         self.assertIn('target="_blank" rel="noopener"', rendered)
+        self.assertIn("function safeExternalUrl(value)", INDEX_HTML)
+        self.assertIn("return url.protocol === 'https:' ? url.href : '';", INDEX_HTML)
+        self.assertIn("safeExternalUrl(t.info_url", rendered)
+        self.assertIn("safeExternalUrl(t.legal_url", rendered)
         self.assertIn("toetus-eligibility-badge", STYLE_CSS)
         self.assertIn("toetus-verification-list", STYLE_CSS)
         self.assertIn("t.disclaimer", rendered)
         self.assertIn("toetus-more-matches", rendered)
         self.assertIn("t.eligibility_status || (t.sobib", rendered)
         self.assertIn("t.application_status || legacyApplicationStatus", rendered)
+        self.assertIn("t.is_recommended === true", rendered)
+        self.assertNotIn("((t.eraldised_match || []).length ? 'possible'", rendered)
+        self.assertIn("Sinu kinnistuga seotud", rendered)
+        self.assertIn("Võib olla asjakohane, kontrolli tingimusi", rendered)
+        self.assertIn("Muud meetmed ja lõppenud voorud", rendered)
+        self.assertNotIn("https://www.eramets.ee/toetused/';", rendered)
+
+    def test_subsidies_execute_grouping_and_safe_official_links(self):
+        render = re.search(r'function renderToetused\(data\).*?\n    }', INDEX_HTML, re.DOTALL).group(0)
+        safe_start = INDEX_HTML.index("    function safeExternalUrl(value)")
+        safe_end = INDEX_HTML.index("    function sourceLinksHtml", safe_start)
+        safe_helper = INDEX_HTML[safe_start:safe_end]
+        payload = [
+            {
+                "name": "Soovitatud meede", "category": "metsahooldus",
+                "eligibility_status": "Tõenäoliselt sobib", "application_status": "upcoming",
+                "relevance": "matched", "is_recommended": True,
+                "source_url": "https://official.example/info", "legal_url": "https://official.example/law",
+            },
+            {
+                "name": "Jälgitav meede", "category": "maaparandus",
+                "eligibility_status": "Vajab kontrolli", "application_status": "awaiting_dates",
+                "relevance": "watchlist", "is_recommended": False,
+            },
+            {
+                "name": "Kontrollitav meede", "category": "looduskaitse",
+                "eligibility_status": "Vajab kontrolli", "application_status": "year_round",
+                "relevance": "insufficient_data", "is_recommended": False,
+            },
+            {
+                "name": "Lõppenud meede", "category": "ühistu",
+                "eligibility_status": "Vajab kontrolli", "application_status": "closed",
+                "relevance": "archived", "is_recommended": False,
+                "source_url": "javascript:alert(1)", "legal_url": "data:text/html,unsafe",
+            },
+            {
+                "name": "Vana payload", "category": "inventeerimine",
+                "eligibility_status": "Vajab kontrolli", "application_status": "upcoming",
+                "eraldised_match": [{"eraldis_nr": 1, "match_reason": "vana vaste"}],
+            },
+        ]
+        script = f"""
+            var output = {{innerHTML: ''}};
+            global.document = {{getElementById: function() {{ return output; }}}};
+            function escHtml(value) {{ return String(value == null ? '' : value).replace(/[&<>\"']/g, ''); }}
+            function formatNum(value) {{ return String(value); }}
+            function eraldisLabel(value) {{ return 'Eraldis ' + value; }}
+            {safe_helper}
+            {render}
+            renderToetused({json.dumps(payload, ensure_ascii=False)});
+            process.stdout.write(output.innerHTML);
+        """
+        html = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True).stdout
+
+        labels = [
+            "Sinu kinnistuga seotud", "Soovitatud meede",
+            "Jälgi ametliku vooru avanemist", "Jälgitav meede",
+            "Võib olla asjakohane, kontrolli tingimusi", "Kontrollitav meede", "Vana payload",
+            "Muud meetmed ja lõppenud voorud", "Lõppenud meede",
+        ]
+        positions = [html.index(label) for label in labels]
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn('href="https://official.example/info"', html)
+        self.assertIn('href="https://official.example/law"', html)
+        self.assertNotIn("javascript:", html)
+        self.assertNotIn("data:text/html", html)
 
     def test_subsidy_counts_have_explicit_contrast_and_mobile_avoids_nested_scroll(self):
         self.assertIn(".toetus-group-heading > span { background: var(--success); color: #fff; }", STYLE_CSS)
-        self.assertIn(".toetus-group-check > span { background: var(--warn); color: #fff; }", STYLE_CSS)
         self.assertIn(".toetus-details-count { background: var(--ink-5); color: #fff; }", STYLE_CSS)
         self.assertIn(".toetus-list-scroll { max-height: none; overflow-y: visible; }", STYLE_CSS)
 
@@ -460,9 +534,11 @@ console.log(JSON.stringify({{
         self.assertIn('"forest_data_complete": "metsaregister.eraldised" not in unavailable_sources', API_PY)
         self.assertIn('"stand_data_complete": stand_data_complete', API_PY)
         self.assertIn('"protection_data_complete": protection_data_complete', API_PY)
+        self.assertIn('"natura_data_complete": spatial_status["natura_2000"]["sources_complete"]', API_PY)
         self.assertIn('"vep_data_complete": False', API_PY)
         self.assertIn('spatial_status = _build_spatial_status(', API_PY)
         self.assertIn('spatial_status["kaitseala"]["intersects"] is True', API_PY)
+        self.assertIn('"registreerimise_kp": stand.get("registreerimise_kp")', API_PY)
 
     def test_archive_notice_outage_does_not_show_broad_data_warning(self):
         helper = re.search(r'function shouldShowBroadPartialWarning\(meta\).*?\n    }', INDEX_HTML, re.DOTALL)
