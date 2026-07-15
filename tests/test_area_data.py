@@ -347,6 +347,71 @@ class AreaDataTests(unittest.TestCase):
         self.assertIn("Metsatoetus 1: Vajab kontrolli", prompt)
         self.assertIn("Metsatoetus 12: Vajab kontrolli", prompt)
 
+    def test_ai_prompt_includes_asset_passport_traceability(self):
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 2},
+            "vaartus": {
+                "tagavara_m3": 224,
+                "andmepassid": [{
+                    "id": "forest_volume",
+                    "label": "Kasvava metsa tagavara",
+                    "available": False,
+                    "provenance_label": "Terrapointi tuletis",
+                    "source": {
+                        "name": "Metsaregister",
+                        "url": "https://register.metsad.ee/otsiEraldis",
+                        "oldest_as_of": "2024-01-15",
+                    },
+                    "derivation": "Elus tagavara m³/ha × pindala.",
+                    "confidence": {"label": "Värske registriinfo", "reasons": ["Inventuur on kaks aastat vana."]},
+                    "limitations": ["Tagavara ei ole automaatselt raiutav kogus."],
+                }],
+            },
+        })
+
+        self.assertIn("ANDMEPASS: Kasvava metsa tagavara", prompt)
+        self.assertIn("Terrapointi tuletis", prompt)
+        self.assertIn("Metsaregister", prompt)
+        self.assertIn("Elus tagavara m³/ha × pindala.", prompt)
+        self.assertIn("Inventuur on kaks aastat vana.", prompt)
+        self.assertIn("Tagavara ei ole automaatselt raiutav kogus.", prompt)
+        self.assertIn("Saadavus: andmed puuduvad", prompt)
+        self.assertIn("https://register.metsad.ee/otsiEraldis", prompt)
+
+    def test_ai_prompt_does_not_present_unavailable_stock_as_a_financial_fact(self):
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 10},
+            "mets": {
+                "tagavara_y_ha": None,
+                "elus_tagavara_ha": None,
+                "eraldised": [{
+                    "eraldis_nr": 2,
+                    "puuliik": "kuusk",
+                    "tagavara_y_ha": None,
+                    "tagavara_provenance": "unavailable",
+                    "vaartus_hinnang_eur": None,
+                }],
+            },
+            "vaartus": {
+                "base_value_eur": None,
+                "range_low_eur": None,
+                "range_high_eur": None,
+                "base_value_per_ha": None,
+                "tagavara_m3": None,
+                "andmepassid": [
+                    {"id": "forest_volume", "label": "Kasvava metsa tagavara", "available": False},
+                    {"id": "timber_value", "label": "Kasvava puidu hinnang", "available": False},
+                ],
+            },
+        })
+
+        self.assertIn("Elus puistutagavara: andmed puuduvad", prompt)
+        self.assertIn("Eraldis 2: kuusk", prompt)
+        self.assertIn("tagavara puudub", prompt)
+        self.assertNotIn("Puidu keskväärtus:", prompt)
+        self.assertNotIn("Väärtus ha kohta:", prompt)
+        self.assertNotIn("Kogutagavara:", prompt)
+
     def test_ai_system_prompt_separates_facts_estimates_and_inference(self):
         prompt = build_system_prompt({
             "kataster": {"number": "78404:409:0113", "pindala_ha": 2},

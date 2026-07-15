@@ -1,0 +1,235 @@
+METSAREGISTER_URL = "https://register.metsad.ee/otsiEraldis"
+FOREST_ACT_VALIDITY_URL = "https://www.riigiteataja.ee/akt/109042026002#para11"
+FOREST_INVENTORY_ACCURACY_URL = "https://www.riigiteataja.ee/akt/131052024011#para13"
+LAND_VALUE_URL = "https://maaruum.ee/maakataster-ja-maa-hindamine/maa-hindamine/maa-korraline-hindamine"
+TIMBER_PRICE_URL = "https://erametsaliit.ee/wp-content/uploads/2026/05/puiduhinnad-2026-i-kv.pdf"
+
+
+def _inventory_confidence(
+    inventory: dict,
+    reliability: dict,
+    official_stands: int,
+    estimated_stands: int,
+    unknown_stands: int,
+    unavailable_stands: int,
+) -> dict:
+    status = inventory.get("staatus")
+    level = {"värske": "kõrge", "hoiatus": "keskmine", "kriitiline": "madal"}.get(status, "teadmata")
+    rank = {"teadmata": 0, "madal": 0, "keskmine": 1, "kõrge": 2, "hea": 2}
+    reliability_level = reliability.get("level", "teadmata")
+    if rank.get(reliability_level, 0) < rank.get(level, 0):
+        level = reliability_level
+
+    if unavailable_stands:
+        level = "madal"
+        label = "Tagavaraandmed on puudulikud"
+    elif estimated_stands and not official_stands and not unknown_stands and not unavailable_stands:
+        level = "madal"
+        label = "Tagavara on Terrapointi hinnang"
+    elif estimated_stands:
+        if rank.get(level, 0) > rank["keskmine"]:
+            level = "keskmine"
+        label = "Tagavara on osaliselt hinnanguline"
+    elif unknown_stands:
+        if rank.get(level, 0) > rank["keskmine"]:
+            level = "keskmine"
+        label = "Tagavara päritolu vajab kontrolli"
+    else:
+        label = {
+            "kõrge": "Värske registriinfo",
+            "hea": "Värske registriinfo",
+            "keskmine": "Kontrolli inventuuri vanust",
+            "madal": "Vajab uut inventuuri või kohapealset kontrolli",
+            "teadmata": "Andmete vanus vajab kontrolli",
+        }.get(level, "Andmete usaldus vajab kontrolli")
+    reasons = []
+    inventory_age = inventory.get("inventuuri_vanus_max_a")
+    if inventory_age is not None:
+        reasons.append(f"Vanim inventuur on {inventory_age} täisaastat vana.")
+    if estimated_stands:
+        reasons.append(f"{estimated_stands} eraldise tagavara on Terrapointi hinnang, sest registri tagavara puudus.")
+    if unknown_stands:
+        reasons.append(f"{unknown_stands} eraldise tagavara päritolu ei ole vastuses määratud.")
+    if unavailable_stands:
+        reasons.append(f"{unavailable_stands} eraldise tagavara ega hinnangu jaoks vajalikud lähteandmed ei ole saadaval.")
+    for reason in reliability.get("reasons") or []:
+        if reason not in reasons:
+            reasons.append(reason)
+    reasons.append("Metsakorralduse juhendi veapiir ei ole selle kinnistu mõõdetud veavahemik.")
+    return {"level": level, "label": label, "reasons": reasons}
+
+
+def _value_confidence(reliability: dict) -> dict:
+    level = reliability.get("level", "teadmata")
+    return {
+        "level": level,
+        "label": {
+            "kõrge": "Kõrge lähteandmete usaldus",
+            "hea": "Kõrge lähteandmete usaldus",
+            "keskmine": "Keskmine lähteandmestik",
+            "madal": "Nõrk lähteandmestik",
+        }.get(level, "Usaldus vajab kontrolli"),
+        "score": reliability.get("score"),
+        "reasons": list(reliability.get("reasons") or []),
+    }
+
+
+def build_asset_passports(
+    stands: list[dict],
+    inventory: dict,
+    reliability: dict,
+    timber_estimate: dict,
+    property_estimate: dict,
+    total_volume_m3: float,
+) -> list[dict]:
+    official_stands = sum(stand.get("tagavara_provenance") == "official" for stand in stands)
+    estimated_stands = sum(stand.get("tagavara_provenance") == "estimated" for stand in stands)
+    unavailable_stands = sum(stand.get("tagavara_provenance") == "unavailable" for stand in stands)
+    unknown_stands = len(stands) - official_stands - estimated_stands - unavailable_stands
+    usable_stands = official_stands + estimated_stands + unknown_stands
+    if estimated_stands and official_stands:
+        volume_provenance = "mixed"
+        volume_provenance_label = "Ametlikud ja tuletatud sisendid"
+    elif estimated_stands and not official_stands and not unknown_stands and not unavailable_stands:
+        volume_provenance = "estimate"
+        volume_provenance_label = "Terrapointi hinnang"
+    elif official_stands and not estimated_stands and not unknown_stands and not unavailable_stands:
+        volume_provenance = "derived"
+        volume_provenance_label = "Terrapointi tuletis"
+    else:
+        volume_provenance = "unknown" if not usable_stands else "mixed"
+        volume_provenance_label = "Tagavaraandmed puuduvad" if not usable_stands else "Sisendid on osaliselt puudu"
+
+    volume_limitations = [
+        "Kasvava metsa tagavara ei ole automaatselt raiutav ega müüdav puidukogus.",
+        "Tulemus ei arvesta inventuuri järel toimunud, kuid tõendamata raiet, kasvu ega kahjustust.",
+    ]
+    if estimated_stands:
+        volume_limitations.append(
+            f"{estimated_stands} eraldise tagavara on hinnanguline, sest registritagavara puudus."
+        )
+
+    volume_source_name = "Metsaregister"
+    volume_derivation = "Eraldise elus tagavara m³/ha × pindala; seejärel liidetakse eraldiste tulemused."
+    if estimated_stands:
+        volume_source_name = "Metsaregistri sisendid ja Terrapointi hinnang"
+        volume_derivation += (
+            " Puuduva registritagavara korral hindab Terrapoint m³/ha boniteedi ja kõrguse või vanuse järgi."
+        )
+        volume_limitations.append("Puuduva registritagavara asendamiseks kasutatav kasvutabel on Terrapointi sisemine heuristik.")
+    if unavailable_stands:
+        volume_limitations.append(
+            f"{unavailable_stands} eraldise tagavara ei olnud registris ega seda saanud olemasolevatest andmetest hinnata."
+        )
+
+    value_confidence = _value_confidence(reliability)
+    land_available = property_estimate.get("land_reference_available") is True
+    timber_available = (
+        usable_stands > 0
+        and unavailable_stands == 0
+        and timber_estimate.get("base_eur") is not None
+    )
+    property_available = (
+        land_available
+        and usable_stands > 0
+        and unavailable_stands == 0
+        and property_estimate.get("low_eur") is not None
+        and property_estimate.get("high_eur") is not None
+    )
+
+    return [
+        {
+            "id": "forest_volume",
+            "label": "Kasvava metsa tagavara",
+            "available": usable_stands > 0 and unavailable_stands == 0,
+            "value": round(total_volume_m3) if usable_stands > 0 and unavailable_stands == 0 else None,
+            "unit": "m³",
+            "provenance": volume_provenance,
+            "provenance_label": volume_provenance_label,
+            "source": {
+                "name": volume_source_name,
+                "url": METSAREGISTER_URL,
+                "oldest_as_of": inventory.get("vanim_invent_kp"),
+                "newest_as_of": inventory.get("uusim_invent_kp"),
+            },
+            "methodology_sources": [
+                {"label": "Inventuuriandmete kehtivus", "url": FOREST_ACT_VALIDITY_URL},
+                {"label": "Inventuuri lubatud veapiirid", "url": FOREST_INVENTORY_ACCURACY_URL},
+            ],
+            "derivation": volume_derivation,
+            "confidence": _inventory_confidence(
+                inventory,
+                reliability,
+                official_stands,
+                estimated_stands,
+                unknown_stands,
+                unavailable_stands,
+            ),
+            "quality": {
+                "total_stands": len(stands),
+                "official_stands": official_stands,
+                "estimated_stands": estimated_stands,
+                "unknown_stands": unknown_stands,
+                "unavailable_stands": unavailable_stands,
+            },
+            "limitations": volume_limitations,
+            "ai_question": "Selgita selle kinnistu kasvava metsa tagavara, andmete päritolu ja ebakindlust. Ära käsitle tagavara automaatselt raiutava kogusena.",
+        },
+        {
+            "id": "timber_value",
+            "label": "Kasvava puidu hinnang",
+            "available": timber_available,
+            "range": {
+                "low": timber_estimate.get("low_eur") if timber_available else None,
+                "base": timber_estimate.get("base_eur") if timber_available else None,
+                "high": timber_estimate.get("high_eur") if timber_available else None,
+            },
+            "unit": "€",
+            "provenance": "estimate",
+            "provenance_label": "Terrapointi hinnang",
+            "source": {"name": "Metsaregister ja Eesti Erametsaliit", "url": TIMBER_PRICE_URL, "as_of": "2026-03"},
+            "derivation": "Iga eraldise elus tagavara × pindala × puuliikide kaalutud kännuraha; eraldiste väärtused liidetakse.",
+            "confidence": value_confidence,
+            "limitations": [
+                "Hinnang ei ole ostupakkumine ega kutselise hindaja koostatud turuväärtus.",
+                "Tegelik hind sõltub puidu kvaliteedist, ligipääsust, töömahust ja müügihetke turust.",
+            ] + ([f"{estimated_stands} eraldise tagavara on hinnanguline."] if estimated_stands else [])
+              + ([f"{unavailable_stands} eraldise tagavara puudub."] if unavailable_stands else []),
+            "ai_question": "Selgita kasvava puidu hinnavahemikku, selle arvutuskäiku ja peamisi ebakindlusi selle kinnistu andmete põhjal.",
+        },
+        {
+            "id": "land_reference",
+            "label": "Maa ametlik referents",
+            "available": land_available,
+            "value": property_estimate.get("land_reference_eur") if land_available else None,
+            "unit": "€",
+            "provenance": "official",
+            "provenance_label": "Ametlik katastriandmestik",
+            "source": {"name": "Maa- ja Ruumiamet", "url": LAND_VALUE_URL},
+            "derivation": "Katastriüksuse kehtiv maksustamishind; Terrapoint seda väärtust ümber ei arvuta.",
+            "confidence": {"level": "official", "label": "Ametlik referentsväärtus", "reasons": []},
+            "limitations": ["Maksustamishind ei ole kinnistu turuhind ega tõenda võimalikku müügihinda."],
+            "ai_question": "Selgita selle kinnistu maa maksustamishinna tähendust ja miks see ei ole sama mis turuhind.",
+        },
+        {
+            "id": "property_estimate",
+            "label": "Kinnistu koondhinnang",
+            "available": property_available,
+            "range": {
+                "low": property_estimate.get("low_eur") if property_available else None,
+                "base": property_estimate.get("base_eur") if property_available else None,
+                "high": property_estimate.get("high_eur") if property_available else None,
+            },
+            "unit": "€",
+            "provenance": "estimate",
+            "provenance_label": "Terrapointi hinnang",
+            "source": {"name": "Metsaregister ja Maa- ja Ruumiamet", "url": LAND_VALUE_URL},
+            "derivation": "Kasvava puidu hinnavahemik + maa maksustamishinna ±30% tundlikkusvahemik.",
+            "confidence": value_confidence,
+            "limitations": [
+                "Avalikke võrreldavaid tehinguid koondhinnangus ei kasutata.",
+                "Koondhinnang ei asenda kutselist hindamisakti ega siduvat ostupakkumist.",
+            ],
+            "ai_question": "Selgita kinnistu koondhinnangut, maa ja puidu osakaalu ning milliseid andmeid tuleks enne müügiotsust kontrollida.",
+        },
+    ]

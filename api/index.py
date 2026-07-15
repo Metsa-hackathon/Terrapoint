@@ -50,6 +50,7 @@ from services.layers import (
     reduce_theme,
 )
 from services.subsidies import check_subsidies
+from services.data_passports import build_asset_passports
 from calculators.carbon import carbon_potential
 from calculators.cutting_age import cutting_age_indicator
 from calculators.health_index import (
@@ -1909,7 +1910,7 @@ async def _search_core(
                         "eraldis_id": e.get("id"),
                         "puuliik_kood": kood,
                         "puuliik": e.get("puuliik", kood),
-                        "tagavara_y_ha": e.get("tagavara_y_ha") or 0,
+                        "tagavara_y_ha": e.get("tagavara_y_ha"),
                         "vanus": e.get("vanus") or 0,
                     })
 
@@ -1938,6 +1939,10 @@ async def _search_core(
 
         # Aggregate across all eraldised (weighted by pindala)
         total_pindala = _forest_area_ha(eraldised)
+        stock_complete = not any(
+            eraldis.get("tagavara_provenance") == "unavailable"
+            for eraldis in eraldised
+        )
 
         # Weighted average tagavara and vanus
         if total_pindala > 0:
@@ -2077,7 +2082,9 @@ async def _search_core(
             vanus = raw_vanus or 0
             classifier_vanus = e.get("vanus_raw", raw_vanus)
             classifier_kood = e.get("puuliik_kood_raw", kood)
-            tagavara = e.get("tagavara_y_ha") or 0
+            raw_tagavara = e.get("tagavara_y_ha")
+            tagavara = raw_tagavara or 0
+            stand_stock_available = e.get("tagavara_provenance") != "unavailable"
             e_pindala = e.get("pindala_ha") or 0
             boniteet_kood = e.get("boniteedi_kood", 3)
             raievanus = e.get("raievanus") or 0
@@ -2147,9 +2154,10 @@ async def _search_core(
                 "puuliik": e.get("puuliik"),
                 "puuliik_kood": kood,
                 "vanus": vanus,
-                "tagavara_y_ha": tagavara,
-                "elus_tagavara_ha": tagavara,
+                "tagavara_y_ha": raw_tagavara,
+                "elus_tagavara_ha": raw_tagavara,
                 "tagavara_rinded": e.get("tagavara_rinded"),
+                "tagavara_provenance": e.get("tagavara_provenance"),
                 "pindala_ha": e_pindala,
                 "boniteet": e.get("boniteet"),
                 "boniteet_kood": boniteet_kood,
@@ -2164,18 +2172,19 @@ async def _search_core(
                 "age_source_available": classifier_vanus is not None,
                 "species_source_available": classifier_kood is not None,
                 "kuivendatud": kuivendatud,
-                "vaartus_eur": legacy_value,
-                "vaartus_hinnang_eur": estimated_stand_value,
-                "vaartus_min_eur": stand_value["low_eur"],
-                "vaartus_max_eur": stand_value["high_eur"],
-                "vaartus_per_ha": legacy_value_per_ha,
-                "vaartus_hinnang_per_ha": estimated_value_per_ha,
+                "vaartus_eur": legacy_value if stand_stock_available else None,
+                "vaartus_hinnang_eur": estimated_stand_value if stand_stock_available else None,
+                "vaartus_min_eur": stand_value["low_eur"] if stand_stock_available else None,
+                "vaartus_max_eur": stand_value["high_eur"] if stand_stock_available else None,
+                "vaartus_per_ha": legacy_value_per_ha if stand_stock_available else None,
+                "vaartus_hinnang_per_ha": estimated_value_per_ha if stand_stock_available else None,
                 "seisuhind": legacy_price,
                 "hinnang_seisuhind": estimated_price,
                 "hinna_allika_kvaliteet": stand_value["price_source_quality"],
                 "koosseisu_detail_kasutatud": stand_value["composition_used"],
                 "koosseisu_katvus": stand_value["composition_coverage"],
                 "hinnangulise_hinna_osakaal": stand_value["estimated_value_share"],
+                "hinnangulise_koosseisu_osakaal": stand_value["estimated_composition_share"],
                 "vanuseruhm": vanuseruhm,
                 "vanuseruhm_label": vanuseruhm_label,
                 "vanuseruhm_desc": vanuseruhm_desc,
@@ -2196,7 +2205,8 @@ async def _search_core(
                         "puuliik": puuliik_nimi_map.get(kood, e.get("puuliik")),
                         "puuliik_kood": kood,
                         "vanus": e.get("vanus") or 0,
-                        "tagavara_y_ha": e.get("tagavara_y_ha") or 0,
+                        "tagavara_y_ha": e.get("tagavara_y_ha"),
+                        "tagavara_provenance": e.get("tagavara_provenance"),
                         "pindala_ha": e_pindala,
                         "boniteet": e.get("boniteet"),
                         "korgus": e.get("korgus"),
@@ -2211,10 +2221,10 @@ async def _search_core(
                         "age_class_provenance": e_raie["age_class_provenance"],
                         "age_source_available": classifier_vanus is not None,
                         "species_source_available": classifier_kood is not None,
-                        "vaartus_eur": legacy_value,
-                        "vaartus_hinnang_eur": estimated_stand_value,
-                        "vaartus_per_ha": legacy_value_per_ha,
-                        "vaartus_hinnang_per_ha": estimated_value_per_ha,
+                        "vaartus_eur": legacy_value if stand_stock_available else None,
+                        "vaartus_hinnang_eur": estimated_stand_value if stand_stock_available else None,
+                        "vaartus_per_ha": legacy_value_per_ha if stand_stock_available else None,
+                        "vaartus_hinnang_per_ha": estimated_value_per_ha if stand_stock_available else None,
                         "vanuseruhm": vanuseruhm,
                         "vanuseruhm_label": vanuseruhm_label,
                         "vanuseruhm_desc": vanuseruhm_desc,
@@ -2233,17 +2243,17 @@ async def _search_core(
             "puuliik": puuliik_nimi_map.get(puuliik, primary.get("puuliik", puuliik)),
             "puuliik_kood": puuliik,
             "vanus": int(avg_vanus),
-            "tagavara_y_ha": round(avg_tagavara, 1),
-            "elus_tagavara_ha": round(avg_tagavara, 1),
+            "tagavara_y_ha": round(avg_tagavara, 1) if stock_complete else None,
+            "elus_tagavara_ha": round(avg_tagavara, 1) if stock_complete else None,
             "boniteet": primary.get("boniteet"),
             "korgus": primary.get("korgus"),
             "pindala_ha": total_pindala,
             "kuivendatud": primary.get("kuivendatud"),
             "liikide_koosseis": koosseis_with_osakaal,
-            "total_biomass_tons_ha": carbon.get("biomass_tons_ha"),
-            "co2_tons_ha": carbon.get("co2_tons_ha"),
-            "co2_tons_total": carbon.get("co2_tons_total"),
-            "potential_income_eur": carbon.get("potential_income_eur"),
+            "total_biomass_tons_ha": carbon.get("biomass_tons_ha") if stock_complete else None,
+            "co2_tons_ha": carbon.get("co2_tons_ha") if stock_complete else None,
+            "co2_tons_total": carbon.get("co2_tons_total") if stock_complete else None,
+            "potential_income_eur": carbon.get("potential_income_eur") if stock_complete else None,
             "eraldised": sorted_eraldised_summary,
             "eraldisi_kokku": len(eraldised),
             "inventuur": inventory_summary,
@@ -2257,10 +2267,10 @@ async def _search_core(
             mets_result["juurdekasv_m3_a"] = round(total_growth, 1)
 
         # Timber value = sum of all eraldiste values (consistent calculation)
-        legacy_timber_value = sum(e.get("vaartus_eur", 0) for e in eraldised_summary)
-        timber_value = sum(e.get("vaartus_hinnang_eur", 0) for e in eraldised_summary)
-        timber_low = sum(e.get("vaartus_min_eur", 0) for e in eraldised_summary)
-        timber_high = sum(e.get("vaartus_max_eur", 0) for e in eraldised_summary)
+        legacy_timber_value = sum((e.get("vaartus_eur") or 0) for e in eraldised_summary)
+        timber_value = sum((e.get("vaartus_hinnang_eur") or 0) for e in eraldised_summary)
+        timber_low = sum((e.get("vaartus_min_eur") or 0) for e in eraldised_summary)
+        timber_high = sum((e.get("vaartus_max_eur") or 0) for e in eraldised_summary)
         total_m3 = sum((e.get("tagavara_y_ha") or 0) * (e.get("pindala_ha") or 0) for e in eraldised)
 
         # Kaalutud keskmine seisuhind kõigi eraldiste liikide järgi
@@ -2289,12 +2299,29 @@ async def _search_core(
             pulp_price = prices["pulp"]
 
         composition_coverage = (
-            sum(e.get("vaartus_hinnang_eur", 0) * e.get("koosseisu_katvus", 0) for e in eraldised_summary) / timber_value
+            sum((e.get("vaartus_hinnang_eur") or 0) * e.get("koosseisu_katvus", 0) for e in eraldised_summary) / timber_value
             if timber_value else 0
         )
         estimated_value = sum(
-            e.get("vaartus_hinnang_eur", 0) * e.get("hinnangulise_hinna_osakaal", 0)
+            (e.get("vaartus_hinnang_eur") or 0) * e.get("hinnangulise_hinna_osakaal", 0)
             for e in eraldised_summary
+        )
+        estimated_volume_m3 = sum(
+            (e.get("tagavara_y_ha") or 0) * (e.get("pindala_ha") or 0)
+            for e in eraldised
+            if e.get("tagavara_provenance") == "estimated"
+        )
+        estimated_composition_m3 = sum(
+            (e.get("tagavara_y_ha") or 0)
+            * (e.get("pindala_ha") or 0)
+            * summary.get("hinnangulise_koosseisu_osakaal", 0)
+            for e, summary in zip(eraldised, eraldised_summary)
+        )
+        total_stock_area = sum((e.get("pindala_ha") or 0) for e in eraldised)
+        unavailable_stock_area = sum(
+            (e.get("pindala_ha") or 0)
+            for e in eraldised
+            if e.get("tagavara_provenance") == "unavailable"
         )
         reliability = valuation_reliability(
             inventory_summary,
@@ -2304,6 +2331,10 @@ async def _search_core(
             not skip_details and "metsaregister.eraldis_element" not in unavailable_sources,
             (inventory_summary.get("inventuurijargne_kavandatud_maht_m3", 0) / total_m3) if total_m3 else 0,
             not any(source.startswith("metsaregister.teatis") for source in unavailable_sources),
+            estimated_volume_share=estimated_volume_m3 / total_m3 if total_m3 else 0,
+            estimated_composition_share=estimated_composition_m3 / total_m3 if total_m3 else 0,
+            unavailable_stock_area_share=unavailable_stock_area / total_stock_area if total_stock_area else 0,
+            unknown_notice_chronology_count=inventory_summary.get("inventuuri_seos_teadmata_teatised", 0),
         )
         timber_estimate = {
             "low_eur": round(timber_low * reliability["range_low_factor"]),
@@ -2314,6 +2345,9 @@ async def _search_core(
             kataster_data.get("maks_hind"),
             timber_estimate,
         )
+        if not stock_complete:
+            timber_estimate = {"low_eur": None, "base_eur": None, "high_eur": None}
+            property_estimate.update({"low_eur": None, "base_eur": None, "high_eur": None})
 
         # Preserve the established public fields during migration. The frontend
         # uses property_estimate; legacy consumers keep their previous values.
@@ -2332,17 +2366,17 @@ async def _search_core(
         legacy_land_value = round(max(maksuhind_ha * legacy_factor, legacy_floor) * kogupindala)
 
         vaartus_result = {
-            "total_value_eur": legacy_timber_value,
-            "base_value_eur": timber_value,
+            "total_value_eur": legacy_timber_value if stock_complete else None,
+            "base_value_eur": timber_value if stock_complete else None,
             "range_low_eur": timber_estimate["low_eur"],
             "range_high_eur": timber_estimate["high_eur"],
-            "value_per_ha": round(legacy_timber_value / total_pindala) if total_pindala > 0 else 0,
-            "base_value_per_ha": round(timber_value / total_pindala) if total_pindala > 0 else 0,
-            "price_per_m3": legacy_price_m3,
-            "base_price_per_m3": price_m3,
-            "tagavara_m3": round(total_m3),
-            "log_price": log_price,
-            "pulp_price": pulp_price,
+            "value_per_ha": round(legacy_timber_value / total_pindala) if stock_complete and total_pindala > 0 else None,
+            "base_value_per_ha": round(timber_value / total_pindala) if stock_complete and total_pindala > 0 else None,
+            "price_per_m3": legacy_price_m3 if stock_complete else None,
+            "base_price_per_m3": price_m3 if stock_complete else None,
+            "tagavara_m3": round(total_m3) if stock_complete else None,
+            "log_price": log_price if stock_complete else None,
+            "pulp_price": pulp_price if stock_complete else None,
             "price_source": "Eesti Erametsaliit",
             "price_updated": "2026-Q1",
             "price_as_of": "2026-03",
@@ -2362,18 +2396,18 @@ async def _search_core(
                 {"label": "Metsa hindamise ametlikud sisendandmed", "url": "https://maaruum.ee/sites/default/files/documents/2024-12/Metsaga%20kinnisasja%20ja%20kasvava%20metsa%20hindamiseks%20kasutatavad%20andmed_0.pdf", "as_of": "2024-12"},
                 {"label": "Maa- ja Ruumiameti tehingustatistika", "url": "https://maaruum.ee/maakataster-ja-maa-hindamine/kinnisvaratehingud/kinnisvaratehingute-statistika", "as_of": None},
             ],
-            "kinnistu_turuväärtus": legacy_land_value + legacy_timber_value,
+            "kinnistu_turuväärtus": legacy_land_value + legacy_timber_value if stock_complete else None,
             "maa_turuhind": legacy_land_value,
             "maa_maksuhind": kataster_data.get("maks_hind") or 0,
         }
 
         sinik_result = {
-            "co2_tons_total": carbon.get("co2_tons_total"),
-            "co2_tons_ha": carbon.get("co2_tons_ha"),
-            "total_biomass_tons_ha": carbon.get("biomass_tons_ha"),
-            "potential_income_eur": carbon.get("potential_income_eur"),
-            "cars_equivalent": carbon.get("cars_equivalent"),
-            "trees_equivalent": carbon.get("trees_equivalent"),
+            "co2_tons_total": carbon.get("co2_tons_total") if stock_complete else None,
+            "co2_tons_ha": carbon.get("co2_tons_ha") if stock_complete else None,
+            "total_biomass_tons_ha": carbon.get("biomass_tons_ha") if stock_complete else None,
+            "potential_income_eur": carbon.get("potential_income_eur") if stock_complete else None,
+            "cars_equivalent": carbon.get("cars_equivalent") if stock_complete else None,
+            "trees_equivalent": carbon.get("trees_equivalent") if stock_complete else None,
         }
 
     mets_pindala_ha = _forest_area_ha(eraldised) if eraldised else 0
@@ -2583,6 +2617,9 @@ async def _search_core(
         elif not decision_date:
             after_inventory = None
             chronology_unknown_reason = "otsuse_kuupaev_puudub"
+        elif parsed_event_date is None:
+            after_inventory = None
+            chronology_unknown_reason = "otsuse_kuupaev_vigane"
         elif association_method != "eraldise_nr":
             after_inventory = None
             chronology_unknown_reason = "eraldise_seos_ebakindel"
@@ -2652,6 +2689,10 @@ async def _search_core(
             not skip_details and "metsaregister.eraldis_element" not in unavailable_sources,
             (inventory_summary.get("inventuurijargne_kavandatud_maht_m3", 0) / total_m3) if total_m3 else 0,
             not any(source.startswith("metsaregister.teatis") for source in unavailable_sources),
+            estimated_volume_share=estimated_volume_m3 / total_m3 if total_m3 else 0,
+            estimated_composition_share=estimated_composition_m3 / total_m3 if total_m3 else 0,
+            unavailable_stock_area_share=unavailable_stock_area / total_stock_area if total_stock_area else 0,
+            unknown_notice_chronology_count=inventory_summary.get("inventuuri_seos_teadmata_teatised", 0),
         )
         timber_estimate = {
             "low_eur": round(timber_low * reliability["range_low_factor"]),
@@ -2662,11 +2703,22 @@ async def _search_core(
             kataster_data.get("maks_hind"),
             timber_estimate,
         )
+        if not stock_complete:
+            timber_estimate = {"low_eur": None, "base_eur": None, "high_eur": None}
+            property_estimate.update({"low_eur": None, "base_eur": None, "high_eur": None})
         vaartus_result.update({
             "range_low_eur": timber_estimate["low_eur"],
             "range_high_eur": timber_estimate["high_eur"],
             "reliability": reliability,
             "property_estimate": property_estimate,
+            "andmepassid": build_asset_passports(
+                eraldised,
+                inventory_summary,
+                reliability,
+                timber_estimate,
+                property_estimate,
+                total_m3,
+            ),
         })
         health_assessment = calculate_health_assessment(
             riskid["yrask_hinnang"]["score"],
@@ -3035,7 +3087,11 @@ def build_system_prompt(data: dict) -> str:
         lines.append("--- METSA ERALDISED ---")
         lines.append(f"Peapuuliik: {_prompt_text(m.get('puuliik', 'N/A'), 60)}")
         lines.append(f"Keskmine vanus: {_prompt_number(m.get('vanus'))} a")
-        tagavara = _prompt_number(m.get('elus_tagavara_ha') or m.get('tagavara_y_ha') or m.get('tagavara'))
+        raw_tagavara = next(
+            (value for value in (m.get('elus_tagavara_ha'), m.get('tagavara_y_ha'), m.get('tagavara')) if value is not None),
+            None,
+        )
+        tagavara = _prompt_number(raw_tagavara) if raw_tagavara is not None else "andmed puuduvad"
         lines.append(f"Elus puistutagavara: {tagavara} m³/ha")
         lines.append(f"Boniteet: {_prompt_text(m.get('boniteet', 'N/A'), 40)}")
         lines.append(f"Keskmine kõrgus: {_prompt_number(m.get('korgus'), 'N/A')} m")
@@ -3071,14 +3127,15 @@ def build_system_prompt(data: dict) -> str:
         if eraldised:
             lines.append("Eraldised (kuni 5):")
             for e in eraldised[:5]:
-                vaartus = _prompt_number(e.get('vaartus_hinnang_eur', e.get('vaartus_eur')))
+                stock_unavailable = e.get("tagavara_provenance") == "unavailable"
+                vaartus = None if stock_unavailable else _prompt_number(e.get('vaartus_hinnang_eur', e.get('vaartus_eur')))
                 vaartus_str = f", väärtus {vaartus} EUR" if vaartus else ""
-                etag = _prompt_number(e.get('tagavara_y_ha') or e.get('tagavara'))
+                etag = "tagavara puudub" if stock_unavailable else f"{_prompt_number(e.get('tagavara_y_ha') or e.get('tagavara'))} m³/ha"
                 eha = _prompt_number(e.get('pindala_ha') or e.get('pindala'))
                 lines.append(
                     f"  Eraldis {_prompt_text(e.get('eraldis_nr','?'), 30)}: "
                     f"{_prompt_text(e.get('puuliik','?'), 60)}, {_prompt_number(e.get('vanus'))} a, "
-                    f"{etag} m³/ha, {eha} ha{vaartus_str}"
+                    f"{etag}, {eha} ha{vaartus_str}"
                 )
             if len(eraldised) > 5:
                 compact_stands = "; ".join(
@@ -3094,11 +3151,21 @@ def build_system_prompt(data: dict) -> str:
     if v:
         lines.append("")
         lines.append("--- MAJANDUSLIK VÄÄRTUS ---")
-        lines.append(f"Puidu keskväärtus: {_prompt_number(v.get('base_value_eur', v.get('total_value_eur')))} EUR")
-        if v.get("range_low_eur") is not None and v.get("range_high_eur") is not None:
+        passports_by_id = {
+            passport.get("id"): passport
+            for passport in (v.get("andmepassid") or [])
+            if isinstance(passport, dict) and passport.get("id")
+        }
+        has_passports = bool(passports_by_id)
+        timber_available = not has_passports or passports_by_id.get("timber_value", {}).get("available") is not False
+        volume_available = not has_passports or passports_by_id.get("forest_volume", {}).get("available") is not False
+        property_available = not has_passports or passports_by_id.get("property_estimate", {}).get("available") is not False
+        if timber_available:
+            lines.append(f"Puidu keskväärtus: {_prompt_number(v.get('base_value_eur', v.get('total_value_eur')))} EUR")
+        if timber_available and v.get("range_low_eur") is not None and v.get("range_high_eur") is not None:
             lines.append(f"Puidu hinnavahemik: {_prompt_number(v['range_low_eur'])}–{_prompt_number(v['range_high_eur'])} EUR")
         property_estimate = v.get("property_estimate") or {}
-        if property_estimate.get("low_eur") is not None and property_estimate.get("high_eur") is not None:
+        if property_available and property_estimate.get("low_eur") is not None and property_estimate.get("high_eur") is not None:
             lines.append(
                 "Kinnistu automaatne vahemik: "
                 f"{_prompt_number(property_estimate['low_eur'])}–{_prompt_number(property_estimate['high_eur'])} EUR "
@@ -3107,15 +3174,55 @@ def build_system_prompt(data: dict) -> str:
         reliability = v.get("reliability") or {}
         if reliability:
             lines.append(f"Hinnangu usaldus: {_prompt_number(reliability.get('score'))}/100 ({_prompt_text(reliability.get('level', 'teadmata'), 60)})")
-        lines.append(f"Väärtus ha kohta: {_prompt_number(v.get('base_value_per_ha', v.get('value_per_ha')))} EUR/ha")
-        lines.append(f"Keskmine hind: {_prompt_number(v.get('base_price_per_m3', v.get('price_per_m3')))} EUR/m³")
-        lines.append(f"Kogutagavara: {_prompt_number(v.get('tagavara_m3'))} m³")
-        lines.append(f"Palgi hind: {_prompt_number(v.get('log_price'))} EUR/m³")
-        lines.append(f"Paberipuu hind: {_prompt_number(v.get('pulp_price'))} EUR/m³")
+        if timber_available:
+            lines.append(f"Väärtus ha kohta: {_prompt_number(v.get('base_value_per_ha', v.get('value_per_ha')))} EUR/ha")
+            lines.append(f"Keskmine hind: {_prompt_number(v.get('base_price_per_m3', v.get('price_per_m3')))} EUR/m³")
+            lines.append(f"Palgi hind: {_prompt_number(v.get('log_price'))} EUR/m³")
+            lines.append(f"Paberipuu hind: {_prompt_number(v.get('pulp_price'))} EUR/m³")
+        if volume_available:
+            lines.append(f"Kogutagavara: {_prompt_number(v.get('tagavara_m3'))} m³")
         if v.get("price_source"):
             lines.append(f"Hindade allikas: {_prompt_text(v.get('price_source', ''), 120)} ({_prompt_text(v.get('price_updated', ''), 40)})")
+        for passport in list(passports_by_id.values())[:4]:
+            source = passport.get("source") or {}
+            confidence = passport.get("confidence") or {}
+            lines.append(f"ANDMEPASS: {_prompt_text(passport.get('label', passport.get('id', '?')), 80)}")
+            lines.append(
+                "  Saadavus: "
+                + ("saadaval" if passport.get("available") is not False else "andmed puuduvad")
+            )
+            source_url = _prompt_text(source.get("url", ""), 180)
+            source_url_text = f"; URL {source_url}" if source_url.startswith("https://") else ""
+            source_dates = source.get("oldest_as_of") or source.get("as_of") or "teadmata"
+            if source.get("newest_as_of") and source.get("newest_as_of") != source_dates:
+                source_dates = f"{source_dates}–{source.get('newest_as_of')}"
+            lines.append(
+                "  Päritolu: "
+                f"{_prompt_text(passport.get('provenance_label', 'teadmata'), 80)}; "
+                f"allikas {_prompt_text(source.get('name', 'teadmata'), 80)}{source_url_text}; "
+                f"andmete seis {_prompt_text(source_dates, 90)}"
+            )
+            lines.append(f"  Arvutuskäik: {_prompt_text(passport.get('derivation', 'teadmata'), 220)}")
+            if confidence.get("label"):
+                lines.append(f"  Usaldus: {_prompt_text(confidence['label'], 100)}")
+            confidence_reasons = confidence.get("reasons") or []
+            if confidence_reasons:
+                lines.append(f"  Usaldust mõjutab: {_prompt_text('; '.join(str(item) for item in confidence_reasons), 280)}")
+            methodology = []
+            for item in (passport.get("methodology_sources") or [])[:3]:
+                method_url = _prompt_text(item.get("url", ""), 180)
+                if method_url.startswith("https://"):
+                    methodology.append(f"{_prompt_text(item.get('label', 'Metoodika'), 100)} {method_url}")
+            if methodology:
+                lines.append(f"  Metoodika: {_prompt_text('; '.join(methodology), 420)}")
+            limitations = passport.get("limitations") or []
+            if limitations:
+                lines.append(f"  Piirangud: {_prompt_text('; '.join(str(item) for item in limitations), 280)}")
 
-    if s:
+    if s and any(
+        s.get(field) is not None
+        for field in ("co2_tons_total", "co2_tons_ha", "total_biomass_tons_ha", "potential_income_eur")
+    ):
         lines.append("")
         lines.append("--- SÜSINIKUVARU ---")
         lines.append(f"CO2 kogus: {_prompt_number(s.get('co2_tons_total'))} t")

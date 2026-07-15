@@ -2048,6 +2048,181 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     margin-left: 4px;
 }
 
+.asset-ledger {
+    margin-bottom: 14px;
+}
+.asset-trust-strip {
+    --asset-trust-color: var(--ink-4);
+    --asset-trust-bg: var(--paper-2);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 14px;
+    margin-bottom: 4px;
+    border-left: 3px solid var(--asset-trust-color);
+    background: var(--asset-trust-bg);
+    border-radius: var(--r-sm);
+}
+.asset-trust-kõrge,
+.asset-trust-hea {
+    --asset-trust-color: var(--success);
+    --asset-trust-bg: var(--success-bg);
+}
+.asset-trust-keskmine,
+.asset-trust-teadmata {
+    --asset-trust-color: var(--warn);
+    --asset-trust-bg: var(--warn-bg);
+}
+.asset-trust-madal {
+    --asset-trust-color: var(--danger);
+    --asset-trust-bg: var(--danger-bg);
+}
+.asset-trust-strip > div {
+    display: grid;
+    gap: 2px;
+}
+.asset-trust-strip span {
+    color: var(--asset-trust-color);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.asset-trust-strip strong {
+    color: var(--ink-2);
+    font-size: 14px;
+}
+.asset-trust-strip p {
+    max-width: 26ch;
+    margin: 0;
+    color: var(--ink-4);
+    font-size: 12px;
+    line-height: 1.45;
+    text-align: right;
+}
+.asset-passport {
+    border-bottom: 1px solid var(--hair);
+}
+.asset-passport:first-child {
+    border-top: 1px solid var(--hair);
+}
+.asset-passport summary {
+    min-height: 66px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 16px;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 2px;
+    cursor: pointer;
+    list-style: none;
+}
+.asset-passport summary::-webkit-details-marker { display: none; }
+.asset-passport summary:focus-visible,
+.asset-ai-btn:focus-visible,
+.asset-source-link:focus-visible,
+.asset-passport-methods a:focus-visible {
+    outline: 2px solid var(--blue-500);
+    outline-offset: 2px;
+}
+.asset-passport-heading {
+    min-width: 0;
+    display: grid;
+    justify-items: start;
+    gap: 5px;
+}
+.asset-passport-label {
+    color: var(--ink-2);
+    font-size: 13.5px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+.asset-passport-origin {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 2px 8px;
+    border-radius: var(--r-full);
+    font-size: 10.5px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.asset-passport-origin-official { background: var(--success-bg); color: var(--success); }
+.asset-passport-origin-derived { background: var(--blue-50); color: var(--blue-700); }
+.asset-passport-origin-estimate,
+.asset-passport-origin-mixed,
+.asset-passport-origin-unknown { background: var(--warn-bg); color: var(--warn); }
+.asset-passport-value {
+    display: grid;
+    justify-items: end;
+    gap: 2px;
+    color: var(--ink-2);
+    text-align: right;
+    font-variant-numeric: tabular-nums lining-nums;
+}
+.asset-passport-value strong {
+    font-family: var(--ff-mono);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.25;
+}
+.asset-passport-value .asset-range-separator { padding: 0 3px; color: var(--ink-5); }
+.asset-passport-value small { color: var(--ink-4); font-size: 10.5px; }
+.asset-passport-missing { color: var(--ink-4); font-family: var(--ff-sans) !important; font-size: 13px !important; }
+.asset-passport-toggle {
+    width: 8px;
+    height: 8px;
+    border-right: 1.5px solid var(--ink-4);
+    border-bottom: 1.5px solid var(--ink-4);
+    transform: rotate(45deg) translateY(-2px);
+    transition: transform 160ms ease;
+}
+.asset-passport[open] .asset-passport-toggle { transform: rotate(225deg) translate(-2px, -2px); }
+.asset-passport-body {
+    padding: 4px 2px 16px;
+    color: var(--ink-3);
+    font-size: 13px;
+    line-height: 1.5;
+}
+.asset-passport-body dl { display: grid; gap: 8px; margin: 0 0 12px; }
+.asset-passport-body dl > div { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; }
+.asset-passport-body dt { color: var(--ink-4); }
+.asset-passport-body dd { margin: 0; color: var(--ink-2); overflow-wrap: anywhere; }
+.asset-source-link,
+.asset-passport-methods a {
+    color: var(--blue-700);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+}
+.asset-passport-note,
+.asset-passport-methods {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: var(--paper-2);
+    border-radius: var(--r-sm);
+}
+.asset-passport-warning { background: var(--warn-bg); }
+.asset-passport-note strong,
+.asset-passport-methods strong { color: var(--ink-2); font-size: 12px; }
+.asset-passport-note ul,
+.asset-passport-methods ul { margin: 5px 0 0; padding-left: 17px; }
+.asset-passport-note li,
+.asset-passport-methods li { margin: 3px 0; }
+.asset-ai-btn {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 12px;
+    padding: 9px 12px;
+    border: 1px solid var(--blue-200);
+    border-radius: var(--r-sm);
+    background: var(--blue-50);
+    color: var(--blue-700);
+    font: 600 13px/1.3 var(--ff-sans);
+    cursor: pointer;
+    transition: background 140ms ease, border-color 140ms ease;
+}
+.asset-ai-btn:hover { background: var(--blue-100); border-color: var(--blue-300); }
+
 /* ═══ TRAFFIC LIGHTS / PILLS ════════════════════════════════════════════════ */
 .traffic-light {
     display: inline-flex;
@@ -3876,6 +4051,15 @@ footer {
     .section-head h2 { font-size: 24px; }
     /* Trees: hidden on phone / small tablet — desktop keeps the full forest. */
     .hero-trees { display: none; }
+}
+
+@media (max-width: 520px) {
+    .asset-trust-strip { display: grid; gap: 6px; }
+    .asset-trust-strip p { max-width: none; text-align: left; }
+    .asset-passport summary { grid-template-columns: minmax(0, 1fr) 16px; }
+    .asset-passport-value { grid-column: 1; grid-row: 2; justify-items: start; text-align: left; }
+    .asset-passport-toggle { grid-column: 2; grid-row: 1 / span 2; }
+    .asset-passport-body dl > div { grid-template-columns: 1fr; gap: 2px; }
 }
 
 /* Phone */

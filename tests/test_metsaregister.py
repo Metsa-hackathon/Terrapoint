@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import AsyncMock, patch
 
 from services import metsaregister
-from services.metsaregister import MetsaregisterWFSError, query_eraldis, query_teatised
+from services.metsaregister import MetsaregisterWFSError, query_eraldis, query_eraldis_element, query_teatised
 
 
 class FakeResponse:
@@ -87,6 +87,46 @@ class MetsaregisterDataTests(unittest.IsolatedAsyncioTestCase):
             eraldised = await query_eraldis("78404:409:0113")
 
         self.assertEqual(eraldised[0]["tagavara_y_ha"], 0)
+        self.assertEqual(eraldised[0]["tagavara_provenance"], "official")
+
+    async def test_missing_stock_is_marked_as_terrapoint_estimate(self):
+        features = [{
+            "properties": {
+                "id": 1,
+                "peapuuliik_kood": "KU",
+                "boniteedi_kood": 1,
+                "korgus": 25,
+                "keskm_vanus": 75,
+                "pindala": 2,
+            },
+        }]
+
+        with patch("services.metsaregister._wfs_get", new=AsyncMock(return_value=features)):
+            eraldised = await query_eraldis("78404:409:0113")
+
+        self.assertGreater(eraldised[0]["tagavara_y_ha"], 0)
+        self.assertEqual(eraldised[0]["tagavara_provenance"], "estimated")
+
+    async def test_stock_without_registry_or_estimation_inputs_is_unavailable(self):
+        features = [{"properties": {"id": 1, "peapuuliik_kood": "KU", "pindala": 2}}]
+
+        with patch("services.metsaregister._wfs_get", new=AsyncMock(return_value=features)):
+            eraldised = await query_eraldis("78404:409:0113")
+
+        self.assertIsNone(eraldised[0]["tagavara_y_ha"])
+        self.assertEqual(eraldised[0]["tagavara_provenance"], "unavailable")
+
+    async def test_element_stock_preserves_official_and_estimated_provenance(self):
+        features = [
+            {"properties": {"puuliik_kood": "MA", "tagavara": 50, "vanus": 60}},
+            {"properties": {"puuliik_kood": "LV", "vanus": 60}},
+        ]
+
+        with patch("services.metsaregister._wfs_get", new=AsyncMock(return_value=features)):
+            elements = await query_eraldis_element(1)
+
+        self.assertEqual(elements[0]["tagavara_provenance"], "official")
+        self.assertEqual(elements[1]["tagavara_provenance"], "estimated")
 
     async def test_stand_keeps_internal_id_separate_from_official_compartment_number(self):
         features = [{
@@ -130,6 +170,7 @@ class MetsaregisterDataTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(eraldised[0]["tagavara_y_ha"], 35)
         self.assertEqual(eraldised[0]["elus_tagavara_ha"], 35)
         self.assertEqual(eraldised[0]["tagavara_rinded"], {"1": 1, "2": 0, "Y": 34})
+        self.assertEqual(eraldised[0]["tagavara_provenance"], "official")
 
     async def test_stand_preserves_inventory_freshness_and_growth_fields(self):
         features = [{

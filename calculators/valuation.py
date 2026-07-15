@@ -57,11 +57,14 @@ def calculate_stand_value(
     weighted = []
     composition_used = bool(usable_elements)
     composition_coverage = 0.0
+    estimated_composition_stock = 0.0
     if composition_used and stock > 0:
         element_total = sum(float(item.get("tagavara_y_ha") or 0) for item in usable_elements)
         scale = min(1.0, stock / element_total)
         for item in usable_elements:
             component_stock = float(item.get("tagavara_y_ha") or 0) * scale
+            if item.get("tagavara_provenance") == "estimated":
+                estimated_composition_stock += component_stock
             low, high, quality = _price_range(item.get("puuliik_kood"))
             weighted.append((component_stock, low, high, quality))
         known_stock = sum(component_stock for component_stock, _, _, _ in weighted)
@@ -104,6 +107,7 @@ def calculate_stand_value(
         "composition_coverage": round(composition_coverage, 4),
         "price_source_quality": source_quality,
         "estimated_value_share": round(estimated_base_value / total_base_value, 4) if total_base_value else 0,
+        "estimated_composition_share": round(estimated_composition_stock / stock, 4) if stock else 0,
     }
 
 
@@ -115,6 +119,10 @@ def valuation_reliability(
     details_complete: bool,
     post_inventory_volume_ratio: float = 0,
     notices_complete: bool = True,
+    estimated_volume_share: float = 0,
+    estimated_composition_share: float = 0,
+    unavailable_stock_area_share: float = 0,
+    unknown_notice_chronology_count: int = 0,
 ) -> dict:
     """Score data reliability separately from the monetary estimate."""
     inventory = inventory or {}
@@ -165,6 +173,34 @@ def valuation_reliability(
     if estimated_price_share > 0.2:
         score -= 12
         reasons.append("Osa puuliike kasutab laiemat hinnangulist hinnavahemikku")
+    if estimated_volume_share >= 0.8:
+        score -= 45
+        low_factor = min(low_factor, 0.6)
+        high_factor = max(high_factor, 1.4)
+        reasons.append("Valdav osa tagavarast on registritagavara puudumise tõttu hinnanguline")
+    elif estimated_volume_share > 0:
+        score -= 20
+        low_factor = min(low_factor, 0.75)
+        high_factor = max(high_factor, 1.25)
+        reasons.append("Osa tagavarast on registritagavara puudumise tõttu hinnanguline")
+    if estimated_composition_share >= 0.5:
+        score -= 15
+        low_factor = min(low_factor, 0.8)
+        high_factor = max(high_factor, 1.2)
+        reasons.append("Liigilise koosseisu tagavara on olulises osas hinnanguline")
+    elif estimated_composition_share > 0:
+        score -= 7
+        reasons.append("Liigilise koosseisu tagavara on osaliselt hinnanguline")
+    if unavailable_stock_area_share >= 0.5:
+        score -= 45
+        low_factor = min(low_factor, 0.6)
+        high_factor = max(high_factor, 1.4)
+        reasons.append("Vähemalt poolel metsamaa pindalast puudub tagavara või selle hinnanguks vajalik lähteinfo")
+    elif unavailable_stock_area_share > 0:
+        score -= 25
+        low_factor = min(low_factor, 0.75)
+        high_factor = max(high_factor, 1.25)
+        reasons.append("Osal metsamaa pindalast puudub tagavara või selle hinnanguks vajalik lähteinfo")
     if post_inventory_notices:
         score -= 20
         reasons.append(f"Pärast inventuuri on {post_inventory_notices} teatist")
@@ -177,6 +213,13 @@ def valuation_reliability(
         low_factor = min(low_factor, 0.7)
         high_factor = max(high_factor, 1.3)
         reasons.append("Metsateatiste allikas ei vastanud; inventuurijärgset raiet ei saanud kontrollida")
+    if unknown_notice_chronology_count:
+        score -= 20
+        low_factor = min(low_factor, 0.7)
+        high_factor = max(high_factor, 1.3)
+        reasons.append(
+            f"{unknown_notice_chronology_count} metsateatist ei saanud kindlalt inventuuri ega eraldisega seostada"
+        )
 
     score = max(0, min(100, score))
     level = "kõrge" if score >= 75 else "keskmine" if score >= 50 else "madal"

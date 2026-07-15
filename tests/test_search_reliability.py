@@ -202,6 +202,81 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         expected_weighted_price = round((78.6 * 10 + 21.1 * 200 + 82.1 * 150) / 360, 2)
         self.assertEqual(result["vaartus"]["base_price_per_m3"], expected_weighted_price)
 
+    async def test_unavailable_stock_area_suppresses_partial_financial_passports(self):
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        kataster = {
+            "number": "78404:409:0113",
+            "geometry": geometry,
+            "pindala_ha": 10,
+            "maks_hind": 4_200,
+        }
+        stands = [
+            {
+                "id": 1,
+                "eraldis_nr": 1,
+                "geometry": geometry,
+                "pindala_ha": 1,
+                "puuliik_kood": "MA",
+                "puuliik": "mänd",
+                "vanus": 60,
+                "tagavara_y_ha": 100,
+                "tagavara_provenance": "official",
+                "boniteedi_kood": 2,
+                "invent_kp": "2025-01-01",
+                "registreerimise_kp": "2025-01-01",
+            },
+            {
+                "id": 2,
+                "eraldis_nr": 2,
+                "geometry": geometry,
+                "pindala_ha": 9,
+                "puuliik_kood": "KU",
+                "puuliik": "kuusk",
+                "vanus": 0,
+                "tagavara_y_ha": None,
+                "tagavara_provenance": "unavailable",
+                "boniteedi_kood": 2,
+                "invent_kp": "2025-01-01",
+                "registreerimise_kp": "2025-01-01",
+            },
+        ]
+
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=stands)),
+            patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
+            patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        self.assertEqual(result["vaartus"]["reliability"]["level"], "madal")
+        self.assertTrue(any("puudub" in reason.lower() for reason in result["vaartus"]["reliability"]["reasons"]))
+        unavailable_stand = next(stand for stand in result["mets"]["eraldised"] if stand["eraldis_nr"] == 2)
+        self.assertIsNone(unavailable_stand["tagavara_y_ha"])
+        self.assertIsNone(unavailable_stand["vaartus_hinnang_eur"])
+        self.assertIsNone(result["mets"]["tagavara_y_ha"])
+        self.assertIsNone(result["vaartus"]["tagavara_m3"])
+        self.assertIsNone(result["vaartus"]["base_value_eur"])
+        self.assertIsNone(result["sinik"]["co2_tons_total"])
+        map_stand = next(
+            feature["properties"]
+            for feature in result["map_layers"]["eraldised"]["features"]
+            if feature["properties"]["eraldis_nr"] == 2
+        )
+        self.assertIsNone(map_stand["tagavara_y_ha"])
+        self.assertEqual(map_stand["tagavara_provenance"], "unavailable")
+        passports = {passport["id"]: passport for passport in result["vaartus"]["andmepassid"]}
+        self.assertFalse(passports["forest_volume"]["available"])
+        self.assertFalse(passports["timber_value"]["available"])
+        self.assertTrue(passports["land_reference"]["available"])
+        self.assertFalse(passports["property_estimate"]["available"])
+
     async def test_search_normalizes_invalid_official_numbers_and_serializes_without_internal_ids(self):
         geometry = {
             "type": "Polygon",
@@ -430,7 +505,11 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             "type": "Polygon",
             "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
         }
-        kataster = {"number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1}
+        kataster = {
+            "number": "78404:409:0113",
+            "geometry": geometry,
+            "pindala_ha": 1,
+        }
         stands = [{
             "id": 1,
             "eraldis_nr": 1,
@@ -478,7 +557,12 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             "type": "Polygon",
             "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
         }
-        kataster = {"number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1}
+        kataster = {
+            "number": "78404:409:0113",
+            "geometry": geometry,
+            "pindala_ha": 1,
+            "maks_hind": 4_200,
+        }
         stands = [{
             "id": 1,
             "eraldis_nr": 1,
@@ -1057,7 +1141,12 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             "type": "Polygon",
             "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
         }
-        kataster = {"number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1}
+        kataster = {
+            "number": "78404:409:0113",
+            "geometry": geometry,
+            "pindala_ha": 1,
+            "maks_hind": 4_200,
+        }
         eraldised = [{
             "id": 1,
             "pindala_ha": 1,
@@ -1119,6 +1208,15 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             "eraldise_nr": 2028,
             "pindala": 0.4,
         }}
+        malformed_date_notice = {"properties": {
+            "teatise_nr": "E",
+            "too_kood": "LR",
+            "otsus": "JAH",
+            "otsus_kinnitatud_kp": "vigane-kuupäev",
+            "raiutav_maht": 10,
+            "eraldise_nr": 1,
+            "pindala": 1,
+        }}
 
         with (
             patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
@@ -1126,7 +1224,7 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
             patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
             patch("api.index.query_all_layers", new=AsyncMock(return_value=({"lageraiealad": [clearcut]}, [], []))),
-            patch("api.index.query_teatised", new=AsyncMock(return_value=[notice, notice_second_row, notice_without_volume, recovered_notice, unmatched_notice])),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[notice, notice_second_row, notice_without_volume, recovered_notice, unmatched_notice, malformed_date_notice])),
             patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
         ):
             result = await api._search_core("78404:409:0113", api.time.time())
@@ -1139,10 +1237,32 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(any("teatist" in reason for reason in result["vaartus"]["reliability"]["reasons"]))
         self.assertEqual(result["riskid"]["ajaloolised_lageraiealad"][0]["periood_lopp"], 2015)
         self.assertEqual(result["vaartus"]["tagavara_m3"], 200)
+        self.assertEqual(
+            [passport["id"] for passport in result["vaartus"]["andmepassid"]],
+            ["forest_volume", "timber_value", "land_reference", "property_estimate"],
+        )
+        volume_passport = result["vaartus"]["andmepassid"][0]
+        self.assertEqual(volume_passport["value"], 200)
+        self.assertEqual(volume_passport["source"]["name"], "Metsaregister")
+        self.assertIn("m³/ha × pindala", volume_passport["derivation"])
+        passports = {passport["id"]: passport for passport in result["vaartus"]["andmepassid"]}
+        self.assertEqual(
+            passports["timber_value"]["range"],
+            {
+                "low": result["vaartus"]["range_low_eur"],
+                "base": result["vaartus"]["base_value_eur"],
+                "high": result["vaartus"]["range_high_eur"],
+            },
+        )
+        self.assertEqual(passports["land_reference"]["value"], 4_200)
+        self.assertTrue(passports["land_reference"]["available"])
+        self.assertEqual(passports["property_estimate"]["range"]["base"], result["vaartus"]["property_estimate"]["base_eur"])
         notices = {notice["number"]: notice for notice in result["teatised"]}
         self.assertTrue(notices["A"]["parast_inventuuri"])
         self.assertIsNone(notices["C"]["parast_inventuuri"])
         self.assertIsNone(notices["D"]["parast_inventuuri"])
+        self.assertIsNone(notices["E"]["parast_inventuuri"])
+        self.assertEqual(notices["E"]["inventuuri_seose_pohjus"], "otsuse_kuupaev_vigane")
         self.assertEqual(notices["A"]["eraldis_nr"], 1)
         self.assertEqual(notices["A"]["eraldis"], 1)
         self.assertEqual(notices["A"]["teatise_eraldis_nr"], 1)
@@ -1157,9 +1277,9 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["mets"]["inventuur"]["inventuurijargsed_teatise_read"], 3)
         self.assertEqual(result["mets"]["inventuur"]["inventuurijargne_kavandatud_maht_m3"], 70)
         self.assertEqual(result["mets"]["inventuur"]["inventuurijargse_teatise_maht_puudub"], 1)
-        self.assertEqual(result["mets"]["inventuur"]["inventuuri_seos_teadmata_teatised"], 2)
-        self.assertEqual(result["teatised_meta"]["teatisi_kokku"], 4)
-        self.assertEqual(result["teatised_meta"]["ridu_kokku"], 5)
+        self.assertEqual(result["mets"]["inventuur"]["inventuuri_seos_teadmata_teatised"], 3)
+        self.assertEqual(result["teatised_meta"]["teatisi_kokku"], 5)
+        self.assertEqual(result["teatised_meta"]["ridu_kokku"], 6)
 
     async def test_partial_notice_layers_preserve_rows_and_mark_search_partial(self):
         geometry = {

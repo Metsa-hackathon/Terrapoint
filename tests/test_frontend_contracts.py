@@ -115,7 +115,8 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("must-revalidate", cache_control)
 
     def test_changed_stylesheet_busts_the_previous_immutable_url(self):
-        self.assertIn('/static/css/style.css?r=jkl111', INDEX_HTML)
+        self.assertIn('/static/css/style.css?r=jkl112', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl111', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl110', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl109', INDEX_HTML)
         self.assertIn('/static/css/font-sizes.css?r=jkl034', INDEX_HTML)
@@ -127,6 +128,90 @@ class FrontendContractTests(unittest.TestCase):
         self.assertNotIn('/static/css/style.css?r=jkl104', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl103', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl102', INDEX_HTML)
+
+    def test_asset_passports_render_traceable_values_and_contextual_ai_actions(self):
+        helper_start = INDEX_HTML.index("    function renderAssetPassports(passports, reliability)")
+        helper_end = INDEX_HTML.index("    function renderVaartus(data)", helper_start)
+        helper = INDEX_HTML[helper_start:helper_end]
+        value_render = re.search(r'function renderVaartus\(data\).*?\n    }', INDEX_HTML, re.DOTALL)
+        self.assertIsNotNone(value_render)
+        self.assertIn("data.andmepassid", value_render.group(0))
+        self.assertIn("var hasAssetPassports", value_render.group(0))
+        self.assertIn("var timberPassport", value_render.group(0))
+        self.assertIn("if (!hasAssetPassports || timberValueAvailable)", value_render.group(0))
+        self.assertIn("if (!hasAssetPassports)", value_render.group(0))
+        self.assertIn("renderAssetPassports", value_render.group(0))
+        self.assertIn("asset-ai-btn", helper)
+        self.assertIn("safeExternalUrl", helper)
+        self.assertIn("tihumeetrit", helper)
+        self.assertIn("data-ai-question", helper)
+        self.assertIn("document.getElementById('dashboard').addEventListener('click'", INDEX_HTML)
+        self.assertIn("aiSendMessage(question)", INDEX_HTML)
+        self.assertIn('<span class="sr-only"> kuni </span>', helper)
+        self.assertIn('<span class="asset-passport-heading">', helper)
+        self.assertNotIn('<div class="asset-passport-heading">', helper)
+        self.assertIn('id="ai-chat-status" class="sr-only" aria-live="polite"', INDEX_HTML)
+        self.assertIn("function aiSetStatus(message)", INDEX_HTML)
+        self.assertIn("function aiDrainQueue()", INDEX_HTML)
+        self.assertIn("function aiQueueWaitMs(now)", INDEX_HTML)
+        self.assertIn("function aiRejectQueue(message)", INDEX_HTML)
+        self.assertIn("var next = aiMessageQueue[0]", INDEX_HTML)
+        self.assertIn("if (!queuedEntry) aiAppendMessage('user', message);", INDEX_HTML)
+        self.assertIn("function aiClearSubmittedInput(input, message)", INDEX_HTML)
+        self.assertIn("if (!queuedEntry) aiClearSubmittedInput(input, message);", INDEX_HTML)
+        self.assertNotIn("var nextMsg = aiMessageQueue.shift()", INDEX_HTML)
+        self.assertNotIn("aiMessageQueue.push(pendingUserMsg)", INDEX_HTML)
+        self.assertIn("kõrge: 'Kõrge lähteandmestik'", helper)
+
+        script = f"""
+            const EUR_FORMATTER = new Intl.NumberFormat('et-EE', {{style:'currency',currency:'EUR',maximumFractionDigits:0}});
+            const DATE_FORMATTER = new Intl.DateTimeFormat('et-EE', {{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'}});
+            const NUMBER_FORMATTERS = {{}};
+            function escHtml(value) {{ return String(value == null ? '' : value).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;'); }}
+            function formatEur(value) {{ return value == null ? '—' : EUR_FORMATTER.format(Math.round(value)); }}
+            function formatNum(value) {{ return value == null ? '—' : new Intl.NumberFormat('et-EE').format(Number(value)); }}
+            function formatDateEt(value) {{
+              if (!value) return '—';
+              const parts = String(value).slice(0, 10).split('-').map(Number);
+              return DATE_FORMATTER.format(new Date(Date.UTC(parts[0], parts[1] - 1, parts[2])));
+            }}
+            function safeExternalUrl(value) {{ try {{ const url = new URL(String(value)); return url.protocol === 'https:' ? url.href : ''; }} catch (error) {{ return ''; }} }}
+            {helper}
+            const html = renderAssetPassports({json.dumps([
+                {
+                    "id": "forest_volume", "label": "Kasvava metsa tagavara", "available": True,
+                    "value": 224, "unit": "m³", "provenance": "derived", "provenance_label": "Terrapointi tuletis",
+                    "source": {"name": "Metsaregister", "url": "https://register.metsad.ee/otsiEraldis", "oldest_as_of": "2024-01-15", "newest_as_of": "2025-02-01"},
+                    "methodology_sources": [{"label": "Veapiirid", "url": "https://www.riigiteataja.ee/akt/example"}],
+                    "derivation": "Tagavara × pindala", "confidence": {"label": "Värske registriinfo", "reasons": ["Inventuur on värske."]},
+                    "limitations": ["Ei ole raiutav kogus."], "ai_question": "Selgita & kontrolli"
+                },
+                {
+                    "id": "land_reference", "label": "Maa ametlik referents", "available": False,
+                    "unit": "€", "provenance": "official", "provenance_label": "Ametlik katastriandmestik",
+                    "source": {"name": "Vale", "url": "javascript:alert(1)"}, "derivation": "Puudub",
+                    "confidence": {"label": "Ametlik referentsväärtus", "reasons": []}, "limitations": [], "ai_question": "Selgita"
+                }
+            ], ensure_ascii=False)}, {{level:'madal'}});
+            process.stdout.write(html);
+        """
+        html = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True).stdout
+        self.assertIn("224", html)
+        self.assertIn("m³", html)
+        self.assertIn("ehk 224 tihumeetrit", html)
+        self.assertIn("Terrapointi tuletis", html)
+        self.assertIn("Metsaregister", html)
+        self.assertIn("Andmed puuduvad", html)
+        self.assertIn("Selgita &amp; kontrolli", html)
+        self.assertIn("asset-trust-madal", html)
+        self.assertNotIn("javascript:", html)
+        self.assertLess(html.index("Kasvava metsa tagavara"), html.index("Maa ametlik referents"))
+
+        for css_class in (
+            ".asset-ledger", ".asset-trust-strip", ".asset-passport",
+            ".asset-passport-origin", ".asset-ai-btn", ".asset-trust-kõrge",
+        ):
+            self.assertIn(css_class, STYLE_CSS)
 
     def test_dashboard_uses_desktop_space_without_widening_prose_sections(self):
         self.assertIn("--dashboard-max-w: min(calc(100vw - 48px), 1600px);", STYLE_CSS)
@@ -400,7 +485,7 @@ console.log(JSON.stringify({{
         self.assertNotIn("position: absolute;", disclosure_css.group(0))
 
     def test_valuation_and_health_show_method_confidence_and_sources(self):
-        self.assertIn("Kinnistu ja puidu hinnang", INDEX_HTML)
+        self.assertIn("Metsa vara ja andmete usaldus", INDEX_HTML)
         self.assertIn("Hinnangu usaldus", INDEX_HTML)
         self.assertIn("Kuidas hinnang kujuneb", INDEX_HTML)
         self.assertIn("terviseindeks_selgitus", INDEX_HTML)

@@ -62,6 +62,19 @@ class StandValuationTests(unittest.TestCase):
 
         self.assertLess(result["estimated_value_share"], 0.02)
 
+    def test_estimated_element_stock_reports_composition_uncertainty(self):
+        result = calculate_stand_value(
+            "MA",
+            stock_per_ha=100,
+            area_ha=1,
+            elements=[
+                {"puuliik_kood": "MA", "tagavara_y_ha": 50, "tagavara_provenance": "official"},
+                {"puuliik_kood": "LV", "tagavara_y_ha": 50, "tagavara_provenance": "estimated"},
+            ],
+        )
+
+        self.assertEqual(result["estimated_composition_share"], 0.5)
+
 
 class ValuationReliabilityTests(unittest.TestCase):
     def test_old_inventory_widens_range_and_reduces_reliability(self):
@@ -146,6 +159,51 @@ class ValuationReliabilityTests(unittest.TestCase):
         self.assertEqual(result["level"], "keskmine")
         self.assertLessEqual(result["range_low_factor"], 0.7)
         self.assertTrue(any("teatis" in reason.lower() for reason in result["reasons"]))
+
+    def test_estimated_volume_and_composition_widen_range_and_reduce_reliability(self):
+        result = valuation_reliability(
+            inventory={"inventuuri_vanus_max_a": 1},
+            composition_coverage=1,
+            estimated_price_share=0,
+            post_inventory_notices=0,
+            details_complete=True,
+            estimated_volume_share=1,
+            estimated_composition_share=0.5,
+        )
+
+        self.assertEqual(result["level"], "madal")
+        self.assertLessEqual(result["range_low_factor"], 0.6)
+        self.assertGreaterEqual(result["range_high_factor"], 1.4)
+        self.assertTrue(any("tagavara" in reason.lower() for reason in result["reasons"]))
+        self.assertTrue(any("koosseisu" in reason.lower() for reason in result["reasons"]))
+
+    def test_unavailable_stock_area_caps_confidence_and_widens_range(self):
+        result = valuation_reliability(
+            inventory={"inventuuri_vanus_max_a": 1},
+            composition_coverage=1,
+            estimated_price_share=0,
+            post_inventory_notices=0,
+            details_complete=True,
+            unavailable_stock_area_share=0.6,
+        )
+
+        self.assertEqual(result["level"], "madal")
+        self.assertLessEqual(result["range_low_factor"], 0.6)
+        self.assertGreaterEqual(result["range_high_factor"], 1.4)
+        self.assertTrue(any("puudub" in reason.lower() for reason in result["reasons"]))
+
+    def test_unknown_notice_chronology_reduces_reliability(self):
+        result = valuation_reliability(
+            inventory={"inventuuri_vanus_max_a": 1},
+            composition_coverage=1,
+            estimated_price_share=0,
+            post_inventory_notices=0,
+            details_complete=True,
+            unknown_notice_chronology_count=1,
+        )
+
+        self.assertEqual(result["level"], "keskmine")
+        self.assertTrue(any("seostada" in reason.lower() for reason in result["reasons"]))
 
 
 if __name__ == "__main__":

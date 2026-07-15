@@ -129,7 +129,7 @@ _TAGAVARA_BY_HEIGHT = {
 }
 
 
-def estimate_tagavara(boniteet_kood: int, korgus: float, vanus: int) -> float:
+def estimate_tagavara(boniteet_kood: int, korgus: float, vanus: int) -> float | None:
     """Tagavara hinnang (m³/ha) kõrguse ja boniteedi järgi, kui metsaregister andmed puuduvad."""
     bk = boniteet_kood if boniteet_kood in _TAGAVARA_BY_HEIGHT else 3
     table = _TAGAVARA_BY_HEIGHT[bk]
@@ -153,7 +153,7 @@ def estimate_tagavara(boniteet_kood: int, korgus: float, vanus: int) -> float:
         est_height = vanus * 0.3
         return estimate_tagavara(bk, est_height, 0)
 
-    return 0.0
+    return None
 
 
 async def query_eraldis(kataster_nr: str) -> list[dict]:
@@ -178,12 +178,14 @@ async def query_eraldis(kataster_nr: str) -> list[dict]:
         # sama väärtuse alias-väljad. Surnud/lamapuitu (_s/_l) elusa puistu
         # turumahu hulka ei liideta.
         tagavara = _live_stock_per_ha(props)
+        tagavara_provenance = "official"
         if tagavara is None:
             tagavara = estimate_tagavara(
                 int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3,
                 props.get("korgus", 0),
                 props.get("keskm_vanus", 0),
             )
+            tagavara_provenance = "estimated" if tagavara is not None else "unavailable"
         result.append({
             "id": props.get("id"),
             "puuliik": SPECIES_NAMES.get(kood, kood),
@@ -195,6 +197,7 @@ async def query_eraldis(kataster_nr: str) -> list[dict]:
             # existing clients; new consumers should use `elus_tagavara_ha`.
             "tagavara_y_ha": tagavara,
             "elus_tagavara_ha": tagavara,
+            "tagavara_provenance": tagavara_provenance,
             "tagavara_rinded": {
                 "1": _finite_number(props.get("tagavara_1_ha")),
                 "2": _finite_number(props.get("tagavara_2_ha")),
@@ -232,14 +235,17 @@ async def query_eraldis_element(eraldis_id: int) -> list[dict]:
         p = feat.get("properties", {})
         kood = p.get("puuliik_kood", "")
         tagavara = _first_present(p.get("tagavara"), p.get("tagavara_y_ha"))
+        tagavara_provenance = "official"
         if tagavara is None:
             tagavara = estimate_tagavara(3, 0, p.get("vanus", 0))
+            tagavara_provenance = "estimated" if tagavara is not None else "unavailable"
         result.append({
             "eraldis_id": eraldis_id,
             "puuliik": SPECIES_NAMES.get(kood, kood),
             "puuliik_kood": kood,
             "vanus": p.get("vanus", 0),
             "tagavara_y_ha": tagavara,
+            "tagavara_provenance": tagavara_provenance,
             "taius": p.get("taius", 0),
         })
     return result
