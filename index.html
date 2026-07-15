@@ -64,7 +64,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl034">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl109">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl110">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -377,55 +377,6 @@
          andmed laaditakse peale otsingut) -->
     <section id="dashboard" class="dashboard">
 
-        <!-- Terrapoint AI Chat -->
-        <div class="ai-chat-section" id="ai-chat-section">
-            <div class="ai-chat-header">
-                <div class="ai-chat-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="12" y1="2" x2="12" y2="6"/>
-                        <line x1="12" y1="18" x2="12" y2="22"/>
-                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
-                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
-                        <line x1="2" y1="12" x2="6" y2="12"/>
-                        <line x1="18" y1="12" x2="22" y2="12"/>
-                        <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
-                        <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
-                        <path d="M12 8l-3 5h2l-2 3h6l-2-3h2l-3-5z" fill="currentColor" stroke="none"/>
-                    </svg>
-                </div>
-                <div>
-                    <h2>Terrapoint AI</h2>
-                    <p class="ai-chat-subtitle">Otsi katastri number, et saada AI analüüs oma metsast</p>
-                </div>
-            </div>
-            <div class="ai-chat-messages" id="ai-chat-messages">
-                <div class="ai-message ai-welcome">
-                    <div class="ai-avatar"></div>
-                    <div class="ai-bubble">
-                        <p>Tere! Olen Terrapoint AI.</p>
-                        <p>Otsi ülevalt oma katastri number ja ma analüüsin su metsaandmeid. Annan nõu kas müüa, hoida või taotleda toetusi.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="ai-chat-input-area" id="ai-chat-input-area" style="display:none">
-                <div class="ai-chat-input-wrap">
-                    <textarea id="ai-chat-input" placeholder="Küsi oma metsa kohta..." autocomplete="off" rows="1" aria-label="Küsimus AI-le"></textarea>
-                    <button id="ai-chat-send" aria-label="Saada">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="ai-chat-hints" id="ai-chat-hints">
-                    <button class="ai-hint" data-q="Kas peaksin metsa müüma või hoidma?">Müüa või hoida?</button>
-                    <button class="ai-hint" data-q="Milliseid toetusi ma saan taotleda?">Toetused</button>
-                    <button class="ai-hint" data-q="Millised on riskid ja kuidas neid maandada?">Riskid</button>
-                    <button class="ai-hint ai-hint-custom" id="ai-quick-ask">Küsi AI-lt</button>
-                    <div id="ai-eraldis-hints"></div>
-                </div>
-            </div>
-        </div>
-
         <!-- Map Section (always visible) -->
         <div class="map-section">
             <div class="map-wrapper">
@@ -452,40 +403,81 @@
                     <div class="map-workspace" id="map-workspace">
                         <button class="map-workspace-opener map-workspace-button" id="map-workspace-opener" type="button" aria-controls="map-workspace-panel" aria-expanded="false">
                             <span class="map-workspace-opener-copy">
-                                <span class="map-workspace-eyebrow">Kaardivaade</span>
+                                <span class="map-workspace-eyebrow">Kaardikihid</span>
                                 <strong id="map-workspace-current-view">Ülevaade</strong>
                             </span>
-                            <span class="map-workspace-opener-status" id="map-workspace-opener-status">Vali esmalt kinnistu</span>
+                            <span class="map-workspace-opener-status" id="map-workspace-opener-status">Vali kinnistu</span>
                         </button>
                         <div class="map-workspace-panel" id="map-workspace-panel" hidden>
                             <div class="map-workspace-panel-header">
                                 <div>
-                                    <div class="map-workspace-eyebrow">Kaardi töölaud</div>
+                                    <div class="map-workspace-eyebrow">Kaardikihid</div>
                                     <strong id="map-workspace-panel-title">Ülevaade</strong>
                                 </div>
-                                <button class="map-workspace-close map-workspace-button" id="map-workspace-close" type="button" aria-label="Sulge kaardi töölaud">×</button>
+                                <button class="map-workspace-close map-workspace-button" id="map-workspace-close" type="button" aria-label="Sulge kaardikihid">×</button>
                             </div>
                             <div class="map-workspace-panel-body">
-                                <p class="map-workspace-status" id="map-workspace-status" role="status">Vali esmalt kinnistu</p>
+                                <p class="map-workspace-status" id="map-workspace-status" role="status">Vali kinnistu</p>
                                 <div class="map-view-presets" aria-label="Kaardivaated">
                                     <button type="button" class="map-view-preset" data-map-view="overview" disabled>Ülevaade</button>
-                                    <button type="button" class="map-view-preset" data-map-view="feasibility" disabled>Teostatavus</button>
                                     <button type="button" class="map-view-preset" data-map-view="restrictions" disabled>Piirangud</button>
                                     <button type="button" class="map-view-preset" data-map-view="risks" disabled>Riskid</button>
-                                    <button type="button" class="map-view-preset" data-map-view="subsidies" disabled>Toetused</button>
-                                    <button type="button" class="map-view-preset" data-map-view="history" disabled>Ajalugu</button>
                                 </div>
-                                <div class="map-workspace-section">
-                                    <div class="map-workspace-section-title">Aktiivsed teemad</div>
-                                    <div class="map-theme-controls" id="map-workspace-theme-controls"></div>
-                                </div>
-                                <button class="map-workspace-reset map-workspace-button" id="map-workspace-reset" type="button" disabled>Taasta ülevaade</button>
+                                <div class="map-workspace-section-title map-workspace-legend-title">Kaardil</div>
                                 <div class="map-workspace-legend" id="map-workspace-legend" role="region" aria-label="Kaardi legend">
-                                    <p class="map-workspace-empty">Vali esmalt kinnistu, et näha kaardi tähendusi ja allikaid.</p>
+                                    <p class="map-workspace-empty">Vali kinnistu, et näha kaardi sisu.</p>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terrapoint AI Chat -->
+        <div class="ai-chat-section" id="ai-chat-section">
+            <div class="ai-chat-header">
+                <div class="ai-chat-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="2" x2="12" y2="6"/>
+                        <line x1="12" y1="18" x2="12" y2="22"/>
+                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                        <line x1="2" y1="12" x2="6" y2="12"/>
+                        <line x1="18" y1="12" x2="22" y2="12"/>
+                        <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+                        <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+                        <path d="M12 8l-3 5h2l-2 3h6l-2-3h2l-3-5z" fill="currentColor" stroke="none"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2>AI analüüs</h2>
+                    <p class="ai-chat-subtitle">Kinnistupõhine nõuanne</p>
+                </div>
+            </div>
+            <div class="ai-chat-messages" id="ai-chat-messages">
+                <div class="ai-message ai-welcome">
+                    <div class="ai-avatar"></div>
+                    <div class="ai-bubble">
+                        <p>Otsi kinnistu ja käivita AI analüüs.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="ai-chat-input-area" id="ai-chat-input-area" style="display:none">
+                <div class="ai-chat-input-wrap">
+                    <textarea id="ai-chat-input" placeholder="Küsi oma metsa kohta..." autocomplete="off" rows="1" aria-label="Küsimus AI-le"></textarea>
+                    <button id="ai-chat-send" aria-label="Saada">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ai-chat-hints" id="ai-chat-hints">
+                    <button class="ai-hint" data-q="Kas peaksin metsa müüma või hoidma?">Müüa või hoida?</button>
+                    <button class="ai-hint" data-q="Milliseid toetusi ma saan taotleda?">Toetused</button>
+                    <button class="ai-hint" data-q="Millised on riskid ja kuidas neid maandada?">Riskid</button>
+                    <button class="ai-hint ai-hint-custom" id="ai-quick-ask">Küsi AI-lt</button>
+                    <div id="ai-eraldis-hints"></div>
                 </div>
             </div>
         </div>
@@ -923,11 +915,6 @@
             label: 'Ülevaade',
             themeIds: Object.freeze(['nature_protection', 'species_habitats', 'water_restrictions', 'heritage_other']),
         }),
-        feasibility: Object.freeze({
-            id: 'feasibility',
-            label: 'Teostatavus',
-            themeIds: Object.freeze(['nature_protection', 'species_habitats', 'water_restrictions', 'heritage_other', 'flood_wetlands']),
-        }),
         restrictions: Object.freeze({
             id: 'restrictions',
             label: 'Piirangud',
@@ -938,16 +925,6 @@
             label: 'Riskid',
             themeIds: Object.freeze(['flood_wetlands', 'forest_health', 'invasive_species']),
         }),
-        subsidies: Object.freeze({
-            id: 'subsidies',
-            label: 'Toetused',
-            themeIds: Object.freeze(['subsidy_indicators']),
-        }),
-        history: Object.freeze({
-            id: 'history',
-            label: 'Ajalugu',
-            themeIds: Object.freeze(['forest_notices', 'archival_clearcuts']),
-        }),
     });
     const MAP_THEME_DEFINITIONS = Object.freeze({
         nature_protection: Object.freeze({label: 'Looduskaitse', interpretation: 'Kaitstavate objektide ja vööndite kattuvus; tegevuse tingimused vajavad ametlikku kontrolli.', color: '#1b4332'}),
@@ -957,49 +934,14 @@
         flood_wetlands: Object.freeze({label: 'Üleujutus ja märgalad', interpretation: 'Ametlikud märgala- ja kitsendusalad, mitte konkreetse sündmuse prognoos.', color: '#3f7180'}),
         forest_health: Object.freeze({label: 'Metsatervise riskid', interpretation: 'Registrivaatlused ja ekspertiisiandmed, mitte reaalajaseire ega prognoos.', color: '#9a594c'}),
         invasive_species: Object.freeze({label: 'Võõrliigid', interpretation: 'Registreeritud leiukohad; puuduv vaste ei tõenda liigi puudumist looduses.', color: '#89596f'}),
-        subsidy_indicators: Object.freeze({label: 'Toetuse ruumilised indikaatorid', interpretation: 'Ruumiline või andmepõhine indikaator; ei kinnita toetuskõlblikkust.', color: '#80652f'}),
-        forest_notices: Object.freeze({label: 'Metsateatised', interpretation: 'Ametlikud registrisündmused; metsateatis ei kinnita töö teostamist.', color: '#6b5b8e'}),
-        archival_clearcuts: Object.freeze({label: 'Lageraietuvastus 2011–2016', interpretation: 'Arhiivne satelliidituvastus perioodist 2011–2016, mitte tänase metsaseisundi kinnitus.', color: '#6b7280'}),
     });
-    const MAP_THEME_ORDER = Object.freeze(Object.keys(MAP_THEME_DEFINITIONS));
     const SERVER_BACKED_MAP_THEMES = Object.freeze([
         'nature_protection', 'species_habitats', 'water_restrictions', 'heritage_other',
-        'flood_wetlands', 'forest_health', 'invasive_species', 'archival_clearcuts',
+        'flood_wetlands', 'forest_health', 'invasive_species',
     ]);
     const MAP_CONTEXT_TIMEOUT_MS = 20000;
     const BASEMAP_ACCESSED_AT = new Date().toISOString();
-    const MAP_BASEMAP_DEFINITIONS = Object.freeze({
-        'maaruum-orthophoto': Object.freeze({
-            provider: 'Maa- ja Ruumiamet',
-            product: 'ortofoto',
-            status: 'Valitud aluskaart',
-            interpretation: 'Ortofotomosaiigi pildistusaeg erineb asukohati; kohaliku lennu kuupäeva saab kontrollida X-GIS-i metainfost.',
-        }),
-        'maaruum-gray': Object.freeze({
-            provider: 'Maa- ja Ruumiamet',
-            product: 'halltoonides kaart',
-            status: 'Ametlik neutraalne varualuskaart',
-            interpretation: 'Ametlik neutraalne varualuskaart, mida kasutatakse ka ortofoto laadimistõrke korral.',
-        }),
-        'esri-light-gray': Object.freeze({
-            provider: 'Esri',
-            product: 'World Light Gray Canvas',
-            status: 'Sõltumatu neutraalne varualuskaart',
-            interpretation: 'Esri sõltumatu neutraalne aluskaart, mida kasutatakse ainult ametlike aluskaartide laadimistõrke korral.',
-        }),
-        'esri-world-imagery': Object.freeze({
-            provider: 'Esri',
-            product: 'World Imagery',
-            status: 'Valitud aluskaart',
-            interpretation: 'Esri koondatud pildikiht; pildistusaeg ja allikas võivad asukohati erineda.',
-        }),
-        'esri-wayback-2026-02-26': Object.freeze({
-            provider: 'Esri',
-            product: 'World Imagery Wayback (26.02.2026)',
-            status: 'Valitud ajalooline aluskaart',
-            interpretation: 'Esri World Imagery Waybacki 26.02.2026 väljalase; pildistusaeg võib olla väljalaskekuupäevast varasem.',
-        }),
-    });
+    const MAP_BASEMAP_IDS = Object.freeze(['maaruum-orthophoto', 'maaruum-gray', 'esri-light-gray']);
 
     function arraysEqual(left, right) {
         return Array.isArray(left)
@@ -1012,12 +954,9 @@
         return {
             parcelId: null,
             viewId: 'overview',
-            customized: false,
             activeThemeIds: MAP_VIEW_PRESETS.overview.themeIds.slice(),
-            hiddenOverviewMatches: [],
             selectedBasemapId: selectedBasemapId || 'maaruum-orthophoto',
             basemapNotice: null,
-            basemapAccessedAt: BASEMAP_ACCESSED_AT,
             themeResults: {},
             themeCache: {},
             persistentContext: null,
@@ -1041,59 +980,19 @@
         });
         return Object.assign({}, state, {
             viewId: viewId,
-            customized: false,
             activeThemeIds: preset.themeIds.slice(),
             themeResults: themeResults,
-            hiddenOverviewMatches: [],
-            errorStatus: null,
-        });
-    }
-
-    function availableMapThemeIds(state) {
-        return MAP_THEME_ORDER.filter(function(themeId) {
-            return themeId !== 'archival_clearcuts' || (state && state.viewId === 'history');
-        });
-    }
-
-    function toggleMapTheme(state, themeId) {
-        var knownTheme = Object.keys(MAP_VIEW_PRESETS).some(function(viewId) {
-            return MAP_VIEW_PRESETS[viewId].themeIds.indexOf(themeId) !== -1;
-        });
-        if (!knownTheme || availableMapThemeIds(state).indexOf(themeId) === -1) return state;
-
-        var active = state.activeThemeIds.slice();
-        var hidden = state.hiddenOverviewMatches.slice();
-        if (state.viewId === 'overview' && MAP_VIEW_PRESETS.overview.themeIds.indexOf(themeId) !== -1) {
-            var hiddenIndex = hidden.indexOf(themeId);
-            var overviewResult = state.themeResults && state.themeResults[themeId];
-            if (hiddenIndex === -1 && (!overviewResult || overviewResult.match_count < 1)) return state;
-            if (hiddenIndex === -1) hidden.push(themeId);
-            else hidden.splice(hiddenIndex, 1);
-        } else {
-            var activeIndex = active.indexOf(themeId);
-            if (activeIndex === -1) active.push(themeId);
-            else active.splice(activeIndex, 1);
-        }
-        var presetThemes = MAP_VIEW_PRESETS[state.viewId].themeIds;
-        return Object.assign({}, state, {
-            activeThemeIds: active,
-            hiddenOverviewMatches: hidden,
-            customized: hidden.length > 0 || !arraysEqual(active, presetThemes),
             errorStatus: null,
         });
     }
 
     function mapViewDisplayLabel(state) {
         var preset = MAP_VIEW_PRESETS[state.viewId] || MAP_VIEW_PRESETS.overview;
-        return preset.label + (state.customized ? ' · kohandatud' : '');
-    }
-
-    function restoreMapOverview(state) {
-        return selectMapViewPreset(state, 'overview');
+        return preset.label;
     }
 
     function selectMapBasemap(state, basemapId, notice) {
-        if (!MAP_BASEMAP_DEFINITIONS[basemapId]) return state;
+        if (MAP_BASEMAP_IDS.indexOf(basemapId) === -1) return state;
         return Object.assign({}, state, {
             selectedBasemapId: basemapId,
             basemapNotice: notice || null,
@@ -1105,7 +1004,6 @@
         reset.parcelId = parcelId || null;
         reset.requestGeneration = ((state && state.requestGeneration) || 0) + 1;
         reset.basemapNotice = state && state.basemapNotice || null;
-        reset.basemapAccessedAt = state && state.basemapAccessedAt || BASEMAP_ACCESSED_AT;
         return reset;
     }
 
@@ -1360,52 +1258,6 @@
             + '</div>';
     }
 
-    function mapOfficialDateTimestamp(value) {
-        var match = /^(\d{4})-(\d{2})-(\d{2})(?:T|$)/.exec(String(value || ''));
-        if (!match) return null;
-        var date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
-        if (
-            date.getUTCFullYear() !== Number(match[1])
-            || date.getUTCMonth() !== Number(match[2]) - 1
-            || date.getUTCDate() !== Number(match[3])
-        ) return null;
-        return date.getTime();
-    }
-
-    function formatMapOfficialDate(value) {
-        var timestamp = mapOfficialDateTimestamp(value);
-        if (timestamp === null) return 'Kuupäev teadmata';
-        return new Intl.DateTimeFormat('et-EE', {
-            day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC',
-        }).format(new Date(timestamp));
-    }
-
-    function mapThemeRecordsHtml(theme) {
-        var records = Array.isArray(theme && theme.records) ? theme.records : [];
-        if (!records.length) return '';
-        var items = records.map(function(record) {
-            var label = mapEscapeHtml(record.label || 'Kirje');
-            var provenance = mapEscapeHtml(record.provenance || 'Päritolu teadmata');
-            if (theme.id === 'forest_notices') {
-                var association = record.location_scope === 'stand' && record.eraldis_nr !== null
-                    ? 'Eraldis ' + record.eraldis_nr : 'Asukoht kinnistul määramata';
-                return '<li><strong>' + label + '</strong>'
-                    + '<span>' + mapEscapeHtml(record.event_status_label || 'Staatus määramata') + '</span>'
-                    + '<span>' + mapEscapeHtml(formatMapOfficialDate(record.event_date)) + '</span>'
-                    + '<span>' + provenance + '</span>'
-                    + '<span>' + mapEscapeHtml(association) + '</span></li>';
-            }
-            var extent = record.location_scope === 'parcel'
-                ? 'Kinnistu tasemel'
-                : (record.eraldis_nrs || []).map(function(number) { return 'Eraldis ' + number; }).join(', ');
-            return '<li><strong>' + label + '</strong>'
-                + '<span>' + mapEscapeHtml(extent || 'Asukoht määramata') + '</span>'
-                + '<span>' + provenance + '</span>'
-                + '<span>' + mapEscapeHtml(record.interpretation || 'Tõlgendus puudub.') + '</span></li>';
-        }).join('');
-        return '<ul class="map-theme-records" aria-label="Teema vastete üksikasjad">' + items + '</ul>';
-    }
-
     function mapResultStatusText(result, kind, loadingStatus) {
         if (loadingStatus === 'refreshing' && result) {
             return result.state === 'unavailable' ? 'Laadib' : 'Uuendab';
@@ -1420,31 +1272,13 @@
         if (result.state === 'unavailable') return 'Allikas ei vasta';
         if (result.state === 'partial') return count ? count + ' vastet · osaline' : 'Puudumist ei saa kinnitada · osaline';
         if (result.state === 'empty') return 'Vasteid ei leitud';
-        if (result.state === 'matches' && kind === 'forest_notices') return 'Sündmused leitud · ' + count;
-        if (result.state === 'matches' && kind === 'subsidy_indicators') return 'Indikaatorid leitud · ' + count;
         if (result.state === 'matches') return count + ' vastet';
         return loadingStatus === 'loading' ? 'Laadib' : 'Allikas ei vasta';
     }
 
     function mapWorkspaceLegendModel(state) {
         state = state || createMapWorkspaceState();
-        var basemap = MAP_BASEMAP_DEFINITIONS[state.selectedBasemapId] || MAP_BASEMAP_DEFINITIONS['maaruum-orthophoto'];
-        var rows = [{
-            id: 'basemap',
-            label: basemap.provider + ' · ' + basemap.product,
-            status: state.basemapNotice || basemap.status,
-            color: '#64748b',
-            interpretation: basemap.interpretation,
-            sources: [{
-                key: state.selectedBasemapId,
-                provider: basemap.provider,
-                label: basemap.product,
-                interpretation: basemap.interpretation,
-                provenance: 'Aluskaart',
-                data_as_of: null,
-                accessed_at: state.basemapAccessedAt || BASEMAP_ACCESSED_AT,
-            }],
-        }];
+        var rows = [];
         var persistent = state.persistentContext || {};
         var parcelResult = persistent.parcel || null;
         var standsResult = persistent.stands ? Object.assign({}, persistent.stands, {
@@ -1486,22 +1320,22 @@
                 : matchedCount ? 'Leiti ' + matchedCount + ' olulist teemat'
                 : 'Olulisi kattuvusi ei leitud';
             aggregate = {
-                checks: checks, hiddenCount: state.hiddenOverviewMatches.length,
+                checks: checks,
                 status: aggregateStatus,
             };
             rows.push({
                 id: 'overview_check', label: 'Piirangute kontroll', status: aggregateStatus,
                 color: '#334155', interpretation: 'Ülevaade kontrollib kõiki kohustuslikke piiranguteemasid; nulltulemused ja tõrked on detailis.',
-                checks: checks, hiddenCount: state.hiddenOverviewMatches.length,
+                checks: checks,
             });
             checks.forEach(function(check) {
-                if (!check.result || check.result.match_count < 1 || state.hiddenOverviewMatches.indexOf(check.id) !== -1) return;
+                if (!check.result || check.result.match_count < 1) return;
                 visibleThemeIds.push(check.id);
                 var definition = MAP_THEME_DEFINITIONS[check.id];
                 rows.push({
                     id: check.id, label: check.label, status: check.status, color: definition.color,
                     interpretation: definition.interpretation, sources: check.result.sources || [],
-                    records: check.result.records || [], match_count: check.result.match_count,
+                    match_count: check.result.match_count,
                     previous_result: check.result.previous_result, refresh_failed: check.result.refresh_failed,
                 });
             });
@@ -1515,7 +1349,7 @@
                     id: themeId, label: (result && result.label) || definition.label,
                     status: mapResultStatusText(result, themeId, state.loadingStatus), color: definition.color,
                     interpretation: definition.interpretation, sources: result && result.sources || [],
-                    records: result && result.records || [], match_count: result && result.match_count,
+                    match_count: result && result.match_count,
                     previous_result: result && result.previous_result, refresh_failed: result && result.refresh_failed,
                 });
             });
@@ -1523,166 +1357,6 @@
         return {rows: rows, aggregate: aggregate, visibleThemeIds: visibleThemeIds};
     }
 
-    function mapCompartmentNumber(value) {
-        if (value === null || value === undefined || typeof value === 'boolean') return null;
-        var text = String(value).trim();
-        if (!text || !/^\d+(?:\.0+)?$/.test(text)) return null;
-        var number = Number(text);
-        if (!Number.isSafeInteger(number) || number < 0) return null;
-        return String(number);
-    }
-
-    function mapStandFeatures(data) {
-        var mapLayers = isMapRecord(data && data.map_layers) ? data.map_layers : {};
-        var stands = isMapRecord(mapLayers.eraldised) && Array.isArray(mapLayers.eraldised.features)
-            ? mapLayers.eraldised.features
-            : [];
-        return stands.filter(isMapFeature);
-    }
-
-    function mapStandByNumber(data) {
-        var byNumber = {};
-        mapStandFeatures(data).forEach(function(feature) {
-            var number = mapCompartmentNumber(feature.properties.eraldis_nr);
-            if (number !== null && !byNumber[number]) byNumber[number] = feature;
-        });
-        return byNumber;
-    }
-
-    function mapResponseTimestamp(data, key) {
-        if (data && typeof data[key] === 'string') return data[key];
-        if (data && isMapRecord(data.meta) && typeof data.meta[key] === 'string') return data.meta[key];
-        return null;
-    }
-
-    function deriveForestNoticeTheme(data) {
-        var notices = Array.isArray(data && data.teatised) ? data.teatised.filter(isMapRecord) : [];
-        var stands = mapStandByNumber(data);
-        var attemptedAt = mapResponseTimestamp(data, 'attempted_at');
-        var checkedAt = mapResponseTimestamp(data, 'checked_at');
-        var records = [];
-        notices.forEach(function(notice) {
-            var eraldisNr = mapCompartmentNumber(notice.eraldis_nr);
-            var locationScope = notice.location_scope === 'stand' && eraldisNr !== null ? 'stand' : 'parcel_unlocated';
-            var record = {
-                id: String(notice.number || ''),
-                label: String(notice.tyyp || 'Metsateatis'),
-                eraldis_nr: eraldisNr,
-                event_status: typeof notice.event_status === 'string' ? notice.event_status : 'unknown',
-                event_status_label: typeof notice.event_status_label === 'string' ? notice.event_status_label : 'Staatus määramata',
-                event_date: typeof notice.event_date === 'string' ? notice.event_date : null,
-                location_scope: locationScope,
-                provenance: 'Ametlik andmekiht',
-            };
-            records.push(record);
-        });
-        records.sort(function(left, right) {
-            var leftTime = mapOfficialDateTimestamp(left.event_date);
-            var rightTime = mapOfficialDateTimestamp(right.event_date);
-            var leftKnown = leftTime !== null;
-            var rightKnown = rightTime !== null;
-            if (leftKnown !== rightKnown) return leftKnown ? -1 : 1;
-            if (leftKnown && leftTime !== rightTime) return rightTime - leftTime;
-            return left.id.localeCompare(right.id, 'et-EE', {numeric: true, sensitivity: 'base'});
-        });
-        var features = [];
-        records.forEach(function(record) {
-            if (record.location_scope === 'stand' && stands[record.eraldis_nr]) {
-                features.push({
-                    type: 'Feature',
-                    geometry: stands[record.eraldis_nr].geometry,
-                    properties: Object.assign({}, record, { source_key: 'forest_notices' }),
-                });
-            }
-        });
-        var unavailableSources = data && data.meta && Array.isArray(data.meta.unavailable_sources)
-            ? data.meta.unavailable_sources : [];
-        var sourceUnavailable = unavailableSources.some(function(source) {
-            return typeof source === 'string' && source.indexOf('metsaregister.teatis') === 0;
-        });
-        var noticeMeta = isMapRecord(data && data.teatised_meta) ? data.teatised_meta : {};
-        var capped = Number.isFinite(noticeMeta.ridu_kokku)
-            && Number.isFinite(noticeMeta.ridu_kuvatud)
-            && noticeMeta.ridu_kuvatud < noticeMeta.ridu_kokku;
-        var state = sourceUnavailable && !records.length ? 'unavailable'
-            : sourceUnavailable || capped ? 'partial'
-            : records.length ? 'matches' : 'empty';
-        return {
-            id: 'forest_notices',
-            label: 'Metsateatised',
-            state: state,
-            match_count: records.length,
-            records: records,
-            features: features,
-            sources: [{
-                key: 'forest_notices', state: state,
-                label: 'Metsaregistri metsateatised', provider: 'Keskkonnaagentuur',
-                interpretation: 'Ametlikud registrisündmused; metsateatis ei kinnita töö teostamist.',
-                provenance: 'Ametlik andmekiht',
-                data_as_of: null, attempted_at: attemptedAt, checked_at: checkedAt, match_count: records.length,
-                style: { color: '#6b5b8e', weight: 3, fillOpacity: 0.18, dash: '5,4' },
-            }],
-        };
-    }
-
-    function isClearlyIneligibleSubsidy(subsidy) {
-        var status = String(subsidy.eligibility_status || '').trim().toLocaleLowerCase('et-EE');
-        return ['ei sobi teadaolevate andmete põhjal', 'ineligible', 'not_eligible', 'clearly_ineligible'].indexOf(status) !== -1;
-    }
-
-    function deriveSubsidyIndicatorTheme(data) {
-        var subsidies = Array.isArray(data && data.toetused) ? data.toetused.filter(isMapRecord) : [];
-        var stands = mapStandByNumber(data);
-        var attemptedAt = mapResponseTimestamp(data, 'attempted_at');
-        var checkedAt = mapResponseTimestamp(data, 'checked_at');
-        var records = [];
-        var features = [];
-        subsidies.forEach(function(subsidy) {
-            if (isClearlyIneligibleSubsidy(subsidy)) return;
-            var scope = subsidy.match_scope;
-            if (scope !== 'property' && scope !== 'compartment') return;
-            if (scope === 'property' && (subsidy.andmed_piiratud === true || subsidy.limited === true)) return;
-            var eraldisNrs = [];
-            (Array.isArray(subsidy.eraldised_match) ? subsidy.eraldised_match : []).forEach(function(match) {
-                var number = mapCompartmentNumber(match && match.eraldis_nr);
-                if (number !== null && eraldisNrs.indexOf(number) === -1) eraldisNrs.push(number);
-            });
-            if (scope === 'compartment' && !eraldisNrs.length) return;
-            var record = {
-                id: String(subsidy.id || ''),
-                label: String(subsidy.name || subsidy.nimi || 'Toetuse indikaator'),
-                location_scope: scope === 'compartment' ? 'stand' : 'parcel',
-                eraldis_nrs: eraldisNrs,
-                provenance: 'Terrapointi tuletis',
-                interpretation: String(subsidy.eligibility_reason || subsidy.match_reason || 'Ruumiline või andmepõhine indikaator; ei kinnita toetuskõlblikkust.'),
-            };
-            records.push(record);
-            eraldisNrs.forEach(function(eraldisNr) {
-                if (!stands[eraldisNr]) return;
-                features.push({
-                    type: 'Feature',
-                    geometry: stands[eraldisNr].geometry,
-                    properties: Object.assign({}, record, { eraldis_nr: eraldisNr, source_key: 'subsidy_indicators' }),
-                });
-            });
-        });
-        return {
-            id: 'subsidy_indicators',
-            label: 'Toetuse ruumilised indikaatorid',
-            state: records.length ? 'matches' : 'empty',
-            match_count: records.length,
-            records: records,
-            features: features,
-            sources: [{
-                key: 'subsidy_indicators', state: records.length ? 'matches' : 'empty',
-                label: 'Terrapointi toetuste analüüs', provider: 'Terrapoint',
-                interpretation: 'Ruumiline või andmepõhine indikaator; ei kinnita toetuskõlblikkust.',
-                provenance: 'Terrapointi tuletis',
-                data_as_of: null, attempted_at: attemptedAt, checked_at: checkedAt, match_count: records.length,
-                style: { color: '#80652f', weight: 3, fillOpacity: 0.2, dash: '4,3' },
-            }],
-        };
-    }
     // MAP_WORKSPACE_PURE_END
 
     function fetchAddressResults(value) {
@@ -2381,7 +2055,6 @@
                 + '</p>';
         }
         if (row.ageLegend) detailHtml += mapStandAgeLegendHtml();
-        detailHtml += mapThemeRecordsHtml(row);
         if (Array.isArray(row.checks)) {
             detailHtml += '<div class="map-overview-checks">' + row.checks.map(function(check) {
                 var retry = check.result && ['partial', 'unavailable'].indexOf(check.result.state) !== -1
@@ -2390,10 +2063,6 @@
                 return '<div class="map-overview-check"><span><strong>' + mapEscapeHtml(check.label) + '</strong><small>'
                     + mapEscapeHtml(check.status) + '</small></span>' + retry + '</div>';
             }).join('') + '</div>';
-            if (row.hiddenCount) {
-                var hiddenText = row.hiddenCount === 1 ? '1 kattuvus peidetud' : row.hiddenCount + ' kattuvust peidetud';
-                detailHtml += '<p class="map-hidden-count">' + hiddenText + '</p>';
-            }
         }
         if (Array.isArray(row.sources) && row.sources.length) {
             detailHtml += '<div class="map-source-list">' + row.sources.map(mapSourceDetailsHtml).join('') + '</div>';
@@ -2422,10 +2091,6 @@
         if (active && typeof active.matches === 'function') {
             if (active.matches('[data-map-view]')) {
                 focus = {kind: 'view', value: active.getAttribute('data-map-view')};
-            } else if (active.matches('[data-map-theme]')) {
-                focus = {kind: 'theme', value: active.getAttribute('data-map-theme')};
-            } else if (active.id === 'map-workspace-reset') {
-                focus = {kind: 'reset', value: null};
             } else if (active.matches('[data-map-retry]')) {
                 focus = {kind: 'retry', value: active.getAttribute('data-map-retry')};
             } else if (active.matches('summary')) {
@@ -2446,15 +2111,12 @@
         }
         if (!state.focus) return;
         var target = null;
-        if (state.focus.kind === 'reset') {
-            target = document.getElementById('map-workspace-reset');
-        } else if (state.focus.kind === 'summary' && legend) {
+        if (state.focus.kind === 'summary' && legend) {
             legend.querySelectorAll('details[data-map-row]').forEach(function(row) {
                 if (!target && row.getAttribute('data-map-row') === state.focus.value) target = row.querySelector('summary');
             });
         } else {
             var attribute = state.focus.kind === 'view' ? 'data-map-view'
-                : state.focus.kind === 'theme' ? 'data-map-theme'
                 : state.focus.kind === 'retry' ? 'data-map-retry' : null;
             if (attribute) {
                 document.querySelectorAll('[' + attribute + ']').forEach(function(control) {
@@ -2478,43 +2140,32 @@
         var domState = captureMapWorkspaceDomState();
         var hasParcel = Boolean(mapWorkspaceState.parcelId);
         var viewLabel = mapViewDisplayLabel(mapWorkspaceState);
-        var statusText = !hasParcel ? 'Vali esmalt kinnistu'
+        var statusText = mapWorkspaceState.basemapNotice || (!hasParcel ? 'Vali kinnistu'
             : mapWorkspaceState.loadingStatus === 'refreshing' ? 'Uuendab'
             : mapWorkspaceState.loadingStatus === 'loading' ? 'Laadib'
             : mapWorkspaceState.loadingStatus === 'error' ? 'Allikas ei vasta'
-            : mapWorkspaceState.parcelId;
+            : 'Valmis');
         var currentView = document.getElementById('map-workspace-current-view');
         var panelTitle = document.getElementById('map-workspace-panel-title');
         var openerStatus = document.getElementById('map-workspace-opener-status');
         var status = document.getElementById('map-workspace-status');
         var legend = document.getElementById('map-workspace-legend');
-        var themeControls = document.getElementById('map-workspace-theme-controls');
-        var reset = document.getElementById('map-workspace-reset');
         if (currentView) currentView.textContent = viewLabel;
         if (panelTitle) panelTitle.textContent = viewLabel;
         if (openerStatus) openerStatus.textContent = statusText;
-        if (status) status.textContent = statusText;
+        if (status) {
+            status.textContent = statusText;
+            status.hidden = hasParcel && mapWorkspaceState.loadingStatus === 'success' && !mapWorkspaceState.basemapNotice;
+        }
         document.querySelectorAll('[data-map-view]').forEach(function(button) {
             var selected = button.getAttribute('data-map-view') === mapWorkspaceState.viewId;
             button.disabled = !hasParcel;
             button.setAttribute('aria-pressed', String(selected));
         });
-        if (reset) reset.disabled = !hasParcel;
-        if (themeControls) {
-            themeControls.innerHTML = availableMapThemeIds(mapWorkspaceState).map(function(themeId) {
-                var definition = MAP_THEME_DEFINITIONS[themeId];
-                var selected = mapWorkspaceState.activeThemeIds.indexOf(themeId) !== -1
-                    && mapWorkspaceState.hiddenOverviewMatches.indexOf(themeId) === -1;
-                return '<button type="button" class="map-theme-toggle' + (selected ? ' is-active' : '')
-                    + '" data-map-theme="' + mapEscapeHtml(themeId) + '" aria-pressed="' + selected + '"'
-                    + (hasParcel ? '' : ' disabled') + '><span style="--theme-color:' + mapEscapeHtml(definition.color)
-                    + '"></span>' + mapEscapeHtml(definition.label) + '</button>';
-            }).join('');
-        }
         if (legend) {
             legend.innerHTML = model.rows.length
                 ? model.rows.map(mapLegendRowHtml).join('')
-                : '<p class="map-workspace-empty">Vali esmalt kinnistu, et näha kaardi tähendusi ja allikaid.</p>';
+                : '<p class="map-workspace-empty">Vali kinnistu, et näha kaardi sisu.</p>';
         }
         restoreMapWorkspaceDomState(domState);
 
@@ -2617,27 +2268,10 @@
     }
 
     function selectMapView(viewId) {
+        if (!MAP_VIEW_PRESETS[viewId]) return Promise.resolve(false);
         clearLegacyMapFallbackLayers();
         pendingLegacyMapFallback = null;
         mapWorkspaceState = selectMapViewPreset(mapWorkspaceState, viewId);
-        renderMapWorkspaceState();
-        if (mapWorkspaceState.parcelId) return requestMapContextForParcel(mapWorkspaceState.parcelId);
-        return Promise.resolve(false);
-    }
-
-    function toggleMapThemeSelection(themeId) {
-        clearLegacyMapFallbackLayers();
-        pendingLegacyMapFallback = null;
-        mapWorkspaceState = toggleMapTheme(mapWorkspaceState, themeId);
-        renderMapWorkspaceState();
-        if (mapWorkspaceState.parcelId) return requestMapContextForParcel(mapWorkspaceState.parcelId);
-        return Promise.resolve(false);
-    }
-
-    function restoreMapOverviewView() {
-        clearLegacyMapFallbackLayers();
-        pendingLegacyMapFallback = null;
-        mapWorkspaceState = restoreMapOverview(mapWorkspaceState);
         renderMapWorkspaceState();
         if (mapWorkspaceState.parcelId) return requestMapContextForParcel(mapWorkspaceState.parcelId);
         return Promise.resolve(false);
@@ -2648,26 +2282,9 @@
         return requestMapContextForParcel(mapWorkspaceState.parcelId, { retry: true });
     }
 
-    function deriveClientMapThemes(data) {
-        var history = deriveForestNoticeTheme(data);
-        var subsidies = deriveSubsidyIndicatorTheme(data);
-        var results = Object.assign({}, mapWorkspaceState.themeResults, {
-            forest_notices: history,
-            subsidy_indicators: subsidies,
-        });
-        mapWorkspaceState = Object.assign({}, mapWorkspaceState, {
-            themeResults: results,
-            themeCache: Object.assign({}, mapWorkspaceState.themeCache, {
-                forest_notices: history,
-                subsidy_indicators: subsidies,
-            }),
-        });
-        renderMapWorkspaceState();
-    }
-
     function setLegacyMapFallback(parcelId, data) {
         if (!data || !data.kataster || data.kataster.number !== parcelId) return false;
-        if (mapWorkspaceState.viewId !== 'overview' || mapWorkspaceState.customized) return false;
+        if (mapWorkspaceState.viewId !== 'overview') return false;
         pendingLegacyMapFallback = { parcelId: parcelId, viewId: 'overview', data: data };
         return applyLegacyMapFallback();
     }
@@ -2678,7 +2295,6 @@
             pendingLegacyMapFallback.parcelId !== mapWorkspaceState.parcelId
             || pendingLegacyMapFallback.viewId !== mapWorkspaceState.viewId
             || mapWorkspaceState.viewId !== 'overview'
-            || mapWorkspaceState.customized
             || mapWorkspaceState.hasValidPersistentContext
         ) {
             pendingLegacyMapFallback = null;
@@ -2694,9 +2310,8 @@
 
     window.mapWorkspaceHooks = {
         getState: function() { return mapWorkspaceState; },
+        availableViews: Object.keys(MAP_VIEW_PRESETS),
         selectView: selectMapView,
-        toggleTheme: toggleMapThemeSelection,
-        restoreOverview: restoreMapOverviewView,
         retry: retryMapContext,
         render: renderMapWorkspaceState,
     };
@@ -2889,22 +2504,6 @@
             }
         );
 
-        const esriWorldImagery = L.tileLayer(
-            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-            {
-                maxZoom: 19, minZoom: 3,
-                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-            }
-        );
-
-        const esriWayback = L.tileLayer(
-            'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/64001/{z}/{y}/{x}',
-            {
-                maxZoom: 19, minZoom: 3,
-                attribution: 'Esri Wayback 2026-02-26 &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-            }
-        );
-
         // Iga lehelaadimine algab ametlikult ortofotolt.
         maaruumOrthophoto.addTo(map);
 
@@ -2943,9 +2542,6 @@
         var baseLayers = {
             'Maa- ja Ruumiamet · ortofoto': maaruumOrthophoto,
             'Maa- ja Ruumiamet · halltoonides kaart': maaruumGrayMap,
-            'Esri · World Light Gray Canvas': esriLightGrayCanvas,
-            'Esri · World Imagery': esriWorldImagery,
-            'Esri · World Imagery Wayback (26.02.2026)': esriWayback,
         };
         var basemapPosition = 'bottomleft';
         var basemapControl = L.control.layers(baseLayers, null, { position: basemapPosition, collapsed: true });
@@ -2954,11 +2550,9 @@
         map.on('baselayerchange', function(event) {
             var basemapId = event.layer === maaruumOrthophoto ? 'maaruum-orthophoto'
                 : event.layer === maaruumGrayMap ? 'maaruum-gray'
-                : event.layer === esriLightGrayCanvas ? 'esri-light-gray'
-                : event.layer === esriWorldImagery ? 'esri-world-imagery'
-                : event.layer === esriWayback ? 'esri-wayback-2026-02-26'
                 : null;
             if (!basemapId) return;
+            if (map.hasLayer(esriLightGrayCanvas)) map.removeLayer(esriLightGrayCanvas);
             if (basemapId === 'maaruum-orthophoto') orthophotoFallbackUsed = false;
             if (basemapId === 'maaruum-orthophoto' || basemapId === 'maaruum-gray') grayFallbackUsed = false;
             mapWorkspaceState = selectMapBasemap(mapWorkspaceState, basemapId, null);
@@ -4607,7 +4201,6 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         var workspace = document.getElementById('map-workspace');
         var opener = document.getElementById('map-workspace-opener');
         var close = document.getElementById('map-workspace-close');
-        var reset = document.getElementById('map-workspace-reset');
         if (!workspace || !opener || !close) return;
         opener.setAttribute('aria-expanded', 'false');
         opener.addEventListener('click', function() {
@@ -4615,16 +4208,10 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             else openMapWorkspace();
         });
         close.addEventListener('click', function() { closeMapWorkspace(true); });
-        if (reset) reset.addEventListener('click', function() { restoreMapOverviewView(); });
         workspace.addEventListener('click', function(event) {
             var viewButton = event.target.closest('[data-map-view]');
             if (viewButton && !viewButton.disabled) {
                 selectMapView(viewButton.getAttribute('data-map-view'));
-                return;
-            }
-            var themeButton = event.target.closest('[data-map-theme]');
-            if (themeButton && !themeButton.disabled) {
-                toggleMapThemeSelection(themeButton.getAttribute('data-map-theme'));
                 return;
             }
             if (event.target.closest('[data-map-retry]')) retryMapContext();
@@ -5180,7 +4767,6 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             }
             currentData = data;
             recordChatSnapshotReceipt(data, performance.now());
-            deriveClientMapThemes(data);
             setLegacyMapFallback(nr, data);
 
             window._timberValue = (data.vaartus && data.vaartus.total_value_eur) || 0;

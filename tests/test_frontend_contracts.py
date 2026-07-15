@@ -105,7 +105,7 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn(".ai-hint { min-height: 44px;", STYLE_CSS)
         self.assertIn(".map-workspace-button { min-width: 44px; min-height: 44px;", STYLE_CSS)
         self.assertIn(".map-view-preset { min-height: 44px;", STYLE_CSS)
-        self.assertIn(".map-theme-toggle { min-height: 44px;", STYLE_CSS)
+        self.assertNotIn(".map-theme-toggle", STYLE_CSS)
         self.assertNotIn("transform: scale(0.95)", STYLE_CSS)
 
     def test_unhashed_static_assets_are_revalidated(self):
@@ -115,7 +115,8 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("must-revalidate", cache_control)
 
     def test_changed_stylesheet_busts_the_previous_immutable_url(self):
-        self.assertIn('/static/css/style.css?r=jkl109', INDEX_HTML)
+        self.assertIn('/static/css/style.css?r=jkl110', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl109', INDEX_HTML)
         self.assertIn('/static/css/font-sizes.css?r=jkl034', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl108', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl107', INDEX_HTML)
@@ -895,6 +896,47 @@ console.log(JSON.stringify({{
         self.assertIn("formatEur(data.base_value_eur != null ? data.base_value_eur : data.total_value_eur)", INDEX_HTML)
         self.assertNotIn("animateNumber(animEl, data.total_value_eur, '', 0);", INDEX_HTML)
 
+    def test_map_workspace_is_minimal_and_ai_analysis_follows_the_map(self):
+        map_start = INDEX_HTML.index('<div class="map-section">')
+        ai_start = INDEX_HTML.index('<div class="ai-chat-section" id="ai-chat-section">')
+        metrics_start = INDEX_HTML.index('<div class="metrics-grid">')
+        self.assertLess(map_start, ai_start)
+        self.assertLess(ai_start, metrics_start)
+
+        workspace = re.search(
+            r'<div class="map-controls" id="map-controls">.*?</div>\s*</div>\s*</div>',
+            INDEX_HTML,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(workspace)
+        self.assertEqual(
+            re.findall(
+                r'<button[^>]+class="map-view-preset"[^>]+data-map-view="([^"]+)"[^>]*>([^<]+)</button>',
+                workspace.group(0),
+            ),
+            [('overview', 'Ülevaade'), ('restrictions', 'Piirangud'), ('risks', 'Riskid')],
+        )
+        self.assertNotIn('Aktiivsed teemad', workspace.group(0))
+        self.assertNotIn('id="map-workspace-theme-controls"', workspace.group(0))
+        self.assertNotIn('id="map-workspace-reset"', workspace.group(0))
+        self.assertIn(".map-workspace.is-open .map-workspace-opener { display: none; }", STYLE_CSS)
+
+        render = _extract_js_function("renderMapWorkspaceState")
+        self.assertIn("mapWorkspaceState.basemapNotice ||", render)
+        self.assertIn("status.hidden = hasParcel && mapWorkspaceState.loadingStatus === 'success' && !mapWorkspaceState.basemapNotice;", render)
+        self.assertNotIn("toggleTheme:", INDEX_HTML)
+        self.assertNotIn("function toggleMapThemeSelection", INDEX_HTML)
+        self.assertIn("if (!MAP_VIEW_PRESETS[viewId]) return Promise.resolve(false);", _extract_js_function("selectMapView"))
+        self.assertIn("availableViews: Object.keys(MAP_VIEW_PRESETS)", INDEX_HTML)
+
+        init_map = _extract_js_function("initMap")
+        base_layers = re.search(r"var baseLayers = \{(.*?)\n\s*\};", init_map, re.DOTALL)
+        self.assertIsNotNone(base_layers)
+        self.assertEqual(base_layers.group(1).count(":"), 2)
+        self.assertIn("'Maa- ja Ruumiamet · ortofoto': maaruumOrthophoto", base_layers.group(1))
+        self.assertIn("'Maa- ja Ruumiamet · halltoonides kaart': maaruumGrayMap", base_layers.group(1))
+        self.assertNotIn("Esri", base_layers.group(1))
+
     def test_map_workspace_presets_state_and_reset_are_deterministic(self):
         source = _marked_js_source("// MAP_WORKSPACE_PURE_START", "// MAP_WORKSPACE_PURE_END")
         script = f"""
@@ -902,52 +944,35 @@ console.log(JSON.stringify({{
 {source}
 const expected = {{
   overview: ['nature_protection', 'species_habitats', 'water_restrictions', 'heritage_other'],
-  feasibility: ['nature_protection', 'species_habitats', 'water_restrictions', 'heritage_other', 'flood_wetlands'],
   restrictions: ['nature_protection', 'species_habitats', 'water_restrictions', 'heritage_other', 'flood_wetlands'],
   risks: ['flood_wetlands', 'forest_health', 'invasive_species'],
-  subsidies: ['subsidy_indicators'],
-  history: ['forest_notices', 'archival_clearcuts'],
 }};
 const presetSnapshot = Object.fromEntries(Object.entries(MAP_VIEW_PRESETS).map(([id, preset]) => [id, preset.themeIds]));
 let mutationBlocked = false;
 try {{ MAP_VIEW_PRESETS.overview.themeIds.push('parcel'); }} catch (_) {{ mutationBlocked = true; }}
 let state = createMapWorkspaceState('session-basemap');
-state = Object.assign({{}}, state, {{themeResults: {{
-  nature_protection: {{state: 'matches', match_count: 1}},
-  species_habitats: {{state: 'empty', match_count: 0}},
-}}}});
-const overviewHidden = toggleMapTheme(state, 'nature_protection');
-const overviewEmpty = toggleMapTheme(state, 'species_habitats');
-const persistentUntoggleable = toggleMapTheme(state, 'parcel');
 state = selectMapViewPreset(state, 'risks');
-state = toggleMapTheme(state, 'invasive_species');
-const customizedLabel = mapViewDisplayLabel(state);
-const restored = restoreMapOverview(state);
+const selectedLabel = mapViewDisplayLabel(state);
+const restored = selectMapViewPreset(state, 'overview');
 const populated = Object.assign({{}}, restored, {{
   parcelId: 'old', themeResults: {{nature_protection: {{state: 'matches'}}}},
   themeCache: {{nature_protection: {{state: 'matches'}}}}, hasValidPersistentContext: true,
   requestGeneration: 7, requestController: {{id: 'old'}},
 }});
 const reset = resetMapWorkspaceForParcel(populated, '78404:409:0113');
-const subsidiesBeforeContext = Object.assign({{}}, selectMapViewPreset(reset, 'subsidies'), {{parcelId: '78404:409:0113'}});
-const subsidiesBootstrapThemes = mapContextThemeIdsForState(subsidiesBeforeContext);
+const initialContextThemes = mapContextThemeIdsForState(Object.assign({{}}, reset, {{parcelId: '78404:409:0113'}}));
 console.log(JSON.stringify({{
   expected,
   presetSnapshot,
   frozen: Object.isFrozen(MAP_VIEW_PRESETS) && Object.isFrozen(MAP_VIEW_PRESETS.overview) && Object.isFrozen(MAP_VIEW_PRESETS.overview.themeIds),
   mutationBlocked,
-  overviewActive: overviewHidden.activeThemeIds,
-  overviewHidden: overviewHidden.hiddenOverviewMatches,
-  overviewEmptyHidden: overviewEmpty.hiddenOverviewMatches,
-  overviewCustomized: overviewHidden.customized,
-  persistentUntoggleable: persistentUntoggleable === state || arraysEqual(persistentUntoggleable.activeThemeIds, MAP_VIEW_PRESETS.overview.themeIds),
-  customizedThemes: state.activeThemeIds,
-  customizedLabel,
+  selectedThemes: state.activeThemeIds,
+  selectedLabel,
   restoredView: restored.viewId,
   restoredThemes: restored.activeThemeIds,
   restoredBasemap: restored.selectedBasemapId,
   reset,
-  subsidiesBootstrapThemes,
+  initialContextThemes,
 }}));
 """
         result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
@@ -956,13 +981,8 @@ console.log(JSON.stringify({{
         self.assertEqual(state["presetSnapshot"], state["expected"])
         self.assertTrue(state["frozen"])
         self.assertTrue(state["mutationBlocked"])
-        self.assertEqual(state["overviewActive"], state["expected"]["overview"])
-        self.assertEqual(state["overviewHidden"], ["nature_protection"])
-        self.assertEqual(state["overviewEmptyHidden"], [])
-        self.assertTrue(state["overviewCustomized"])
-        self.assertTrue(state["persistentUntoggleable"])
-        self.assertEqual(state["customizedThemes"], ["flood_wetlands", "forest_health"])
-        self.assertEqual(state["customizedLabel"], "Riskid · kohandatud")
+        self.assertEqual(state["selectedThemes"], state["expected"]["risks"])
+        self.assertEqual(state["selectedLabel"], "Riskid")
         self.assertEqual(state["restoredView"], "overview")
         self.assertEqual(state["restoredThemes"], state["expected"]["overview"])
         self.assertEqual(state["restoredBasemap"], "session-basemap")
@@ -974,7 +994,7 @@ console.log(JSON.stringify({{
         self.assertFalse(state["reset"]["hasValidPersistentContext"])
         self.assertEqual(state["reset"]["requestGeneration"], 8)
         self.assertIsNone(state["reset"]["requestController"])
-        self.assertEqual(state["subsidiesBootstrapThemes"], state["expected"]["overview"])
+        self.assertEqual(state["initialContextThemes"], state["expected"]["overview"])
 
     def test_official_maaruum_basemaps_use_verified_wmts_contracts_and_default(self):
         init_map = _extract_js_function("initMap")
@@ -1126,45 +1146,31 @@ console.log(JSON.stringify({{
         self.assertEqual(state["explicitGrayReselection"], "esri-light-gray")
         self.assertTrue(state["esriActive"])
 
-    def test_basemap_selection_state_legend_and_freshness_are_separate(self):
+    def test_basemap_selection_state_is_preserved_but_omitted_from_compact_legend(self):
         pure = _marked_js_source("// MAP_WORKSPACE_PURE_START", "// MAP_WORKSPACE_PURE_END")
         script = f"""
 {pure}
 const initial = createMapWorkspaceState();
 const fallback = selectMapBasemap(initial, 'maaruum-gray', 'Ortofoto ei laadinud; kasutusel on ametlik neutraalne varualuskaart.');
 const orthophoto = selectMapBasemap(fallback, 'maaruum-orthophoto', null);
-const fallbackRow = mapWorkspaceLegendModel(fallback).rows[0];
-const orthophotoRow = mapWorkspaceLegendModel(orthophoto).rows[0];
 console.log(JSON.stringify({{
   initial,
   fallback,
   orthophoto,
-  fallbackRow,
-  orthophotoRow,
-  orthophotoSourceHtml: mapSourceDetailsHtml(orthophotoRow.sources[0]),
+  fallbackRows: mapWorkspaceLegendModel(fallback).rows,
+  orthophotoRows: mapWorkspaceLegendModel(orthophoto).rows,
 }}));
 """
         result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
         state = json.loads(result.stdout)
 
         self.assertEqual(state["initial"]["selectedBasemapId"], "maaruum-orthophoto")
-        self.assertFalse(state["fallback"]["customized"])
-        self.assertFalse(state["orthophoto"]["customized"])
         self.assertEqual(state["fallback"]["selectedBasemapId"], "maaruum-gray")
         self.assertIsNone(state["orthophoto"]["basemapNotice"])
-        self.assertEqual(state["fallbackRow"]["id"], "basemap")
-        self.assertIn("Maa- ja Ruumiamet", state["fallbackRow"]["label"])
-        self.assertIn("halltoonides kaart", state["fallbackRow"]["label"])
-        self.assertIn("ametlik neutraalne varualuskaart", state["fallbackRow"]["status"])
-        self.assertIn("Maa- ja Ruumiamet", state["orthophotoRow"]["label"])
-        self.assertIn("ortofoto", state["orthophotoRow"]["label"])
-        self.assertIn("X-GIS", state["orthophotoRow"]["interpretation"])
-        self.assertIn("pildistusaeg", state["orthophotoRow"]["interpretation"])
-        self.assertIn("Andmete ajaseis teadmata", state["orthophotoSourceHtml"])
-        self.assertIn('class="map-source-accessed">Väljavõte ', state["orthophotoSourceHtml"])
-        self.assertNotRegex(state["orthophotoSourceHtml"], r"map-source-as-of[^<]*Väljavõte")
+        self.assertEqual(state["fallbackRows"], [])
+        self.assertEqual(state["orthophotoRows"], [])
 
-    def test_basemap_runtime_tracks_exact_layer_identity_and_names_esri_options(self):
+    def test_basemap_runtime_offers_two_official_choices_and_hides_esri_fallback(self):
         init_map = _extract_js_function("initMap")
         change_handler = re.search(
             r"map\.on\('baselayerchange', function\(event\) \{(.*?)\n\s*\}\);",
@@ -1177,9 +1183,6 @@ console.log(JSON.stringify({{
         for layer_name, basemap_id in (
             ("maaruumOrthophoto", "maaruum-orthophoto"),
             ("maaruumGrayMap", "maaruum-gray"),
-            ("esriLightGrayCanvas", "esri-light-gray"),
-            ("esriWorldImagery", "esri-world-imagery"),
-            ("esriWayback", "esri-wayback-2026-02-26"),
         ):
             self.assertIn(f"event.layer === {layer_name}", handler)
             self.assertIn(f"'{basemap_id}'", handler)
@@ -1188,9 +1191,10 @@ console.log(JSON.stringify({{
         self.assertNotIn("customized", handler)
         self.assertIn("'Maa- ja Ruumiamet · ortofoto': maaruumOrthophoto", init_map)
         self.assertIn("'Maa- ja Ruumiamet · halltoonides kaart': maaruumGrayMap", init_map)
-        self.assertIn("'Esri · World Light Gray Canvas': esriLightGrayCanvas", init_map)
-        self.assertIn("'Esri · World Imagery': esriWorldImagery", init_map)
-        self.assertIn("'Esri · World Imagery Wayback (26.02.2026)': esriWayback", init_map)
+        self.assertNotIn("'Esri · World Light Gray Canvas': esriLightGrayCanvas", init_map)
+        self.assertNotIn("esriWorldImagery", init_map)
+        self.assertNotIn("esriWayback", init_map)
+        self.assertIn("map.hasLayer(esriLightGrayCanvas)", handler)
         self.assertNotIn("Esri satelliit (värskeim)", INDEX_HTML)
         self.assertNotIn("Ortofoto 2026", INDEX_HTML)
         self.assertNotIn("2026. aasta ortofoto", INDEX_HTML)
@@ -1217,21 +1221,18 @@ console.log(JSON.stringify({{
         self.assertIn('id="map-workspace-panel"', source)
         self.assertIn('id="map-workspace-close"', source)
         self.assertIn('id="map-workspace-status"', source)
-        self.assertIn('Vali esmalt kinnistu', source)
-        self.assertIn('id="map-workspace-theme-controls"', source)
-        self.assertIn('id="map-workspace-reset"', source)
-        self.assertIn('Taasta ülevaade', source)
+        self.assertIn('Vali kinnistu', source)
+        self.assertNotIn('id="map-workspace-theme-controls"', source)
+        self.assertNotIn('id="map-workspace-reset"', source)
+        self.assertIn('Kaardil', source)
         self.assertEqual(INDEX_HTML.count('role="region" aria-label="Kaardi legend"'), 1)
         self.assertEqual(source.count('role="region" aria-label="Kaardi legend"'), 1)
         self.assertEqual(
             re.findall(r'<button[^>]+class="map-view-preset"[^>]+data-map-view="([^"]+)"[^>]*>([^<]+)</button>', source),
             [
                 ('overview', 'Ülevaade'),
-                ('feasibility', 'Teostatavus'),
                 ('restrictions', 'Piirangud'),
                 ('risks', 'Riskid'),
-                ('subsidies', 'Toetused'),
-                ('history', 'Ajalugu'),
             ],
         )
 
@@ -1278,7 +1279,6 @@ console.log(JSON.stringify({{
         model = json.loads(result.stdout)
 
         self.assertEqual(model["overviewRows"], [
-            ["basemap", "Valitud aluskaart"],
             ["parcel", "Kinnistu leitud"],
             ["stands", "Allikas ei vasta"],
             ["overview_check", "Piirangute kontroll osaline"],
@@ -1291,7 +1291,6 @@ console.log(JSON.stringify({{
             ["heritage_other", "Puudumist ei saa kinnitada · osaline"],
         ])
         self.assertEqual(model["riskRows"], [
-            ["basemap", "Valitud aluskaart"],
             ["parcel", "Kinnistu leitud"],
             ["stands", "Allikas ei vasta"],
             ["flood_wetlands", "Vasteid ei leitud"],
@@ -1318,8 +1317,6 @@ console.log(JSON.stringify({{
     mapResultStatusText({{state: 'partial', match_count: 0}}, 'theme'),
     mapResultStatusText({{state: 'unavailable', match_count: 0}}, 'theme'),
     mapResultStatusText({{state: 'unavailable', match_count: 0}}, 'theme', 'refreshing'),
-    mapResultStatusText({{state: 'matches', match_count: 2}}, 'forest_notices'),
-    mapResultStatusText({{state: 'matches', match_count: 3}}, 'subsidy_indicators'),
   ],
   sourceHtml: mapSourceDetailsHtml(source),
 }}));
@@ -1329,7 +1326,7 @@ console.log(JSON.stringify({{
         self.assertEqual(rendered["statuses"], [
             "Laadib", "Uuendab", "Vasteid ei leitud", "4 vastet",
             "2 vastet · osaline", "Puudumist ei saa kinnitada · osaline",
-            "Allikas ei vasta", "Laadib", "Sündmused leitud · 2", "Indikaatorid leitud · 3",
+            "Allikas ei vasta", "Laadib",
         ])
         self.assertIn("Keskkonnaagentuur · EELIS: ametlik kiht", rendered["sourceHtml"])
         self.assertIn("Registrikanne ei ole tegevusluba.", rendered["sourceHtml"])
@@ -1337,31 +1334,22 @@ console.log(JSON.stringify({{
         self.assertIn('class="map-source-checked">Viimati edukalt kontrollitud ', rendered["sourceHtml"])
         self.assertNotRegex(rendered["sourceHtml"], r"map-source-as-of[^<]*Kontrollitud")
 
-    def test_archive_theme_is_only_offered_from_history_base_view(self):
+    def test_removed_history_layers_are_not_offered_in_the_minimal_workspace(self):
         pure = _marked_js_source("// MAP_WORKSPACE_PURE_START", "// MAP_WORKSPACE_PURE_END")
         script = f"""
 {pure}
 let state = createMapWorkspaceState('base');
-const overviewChoices = availableMapThemeIds(state);
-const refusedOutsideHistory = toggleMapTheme(state, 'archival_clearcuts');
-state = selectMapViewPreset(state, 'history');
-state = toggleMapTheme(state, 'forest_notices');
-const historyChoices = availableMapThemeIds(state);
-const customLabel = mapViewDisplayLabel(state);
-const switched = selectMapViewPreset(state, 'risks');
+const refusedHistoryView = selectMapViewPreset(state, 'history');
 console.log(JSON.stringify({{
-  overviewChoices, refusedThemes: refusedOutsideHistory.activeThemeIds,
-  historyChoices, customLabel, switchedThemes: switched.activeThemeIds,
+  presetIds: Object.keys(MAP_VIEW_PRESETS),
+  refusedHistoryView,
 }}));
 """
         result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
         state = json.loads(result.stdout)
 
-        self.assertNotIn("archival_clearcuts", state["overviewChoices"])
-        self.assertNotIn("archival_clearcuts", state["refusedThemes"])
-        self.assertIn("archival_clearcuts", state["historyChoices"])
-        self.assertEqual(state["customLabel"], "Ajalugu · kohandatud")
-        self.assertNotIn("archival_clearcuts", state["switchedThemes"])
+        self.assertEqual(state["presetIds"], ["overview", "restrictions", "risks"])
+        self.assertEqual(state["refusedHistoryView"]["viewId"], "overview")
 
     def test_map_workspace_keyboard_aria_details_and_retry_contract(self):
         init = _extract_js_function("initMapWorkspaceControls")
@@ -1376,7 +1364,7 @@ console.log(JSON.stringify({{
         self.assertIn("setAttribute('aria-expanded'", init)
         self.assertIn("map-workspace-close", init)
         self.assertIn("data-map-view", init)
-        self.assertIn("data-map-theme", init)
+        self.assertNotIn("data-map-theme", init)
         self.assertIn("retryMapContext()", init)
         self.assertIn("<details", row)
         self.assertIn("<summary", row)
@@ -1384,12 +1372,12 @@ console.log(JSON.stringify({{
         self.assertIsNotNone(summary)
         self.assertNotIn("<button", summary.group(0))
         self.assertIn("mapWorkspaceLegendModel(mapWorkspaceState)", render)
-        self.assertIn("availableMapThemeIds(mapWorkspaceState)", render)
+        self.assertNotIn("availableMapThemeIds(mapWorkspaceState)", render)
         self.assertIn("window.matchMedia('(max-width: 640px)').matches", open_workspace)
         self.assertIn("requestAnimationFrame(function()", open_workspace)
         self.assertIn("window.scrollTo(0, window.scrollY + mapSection.getBoundingClientRect().top - 64)", open_workspace)
         self.assertIn("closeMapWorkspace(Boolean(restoreFocus))", close_mobile)
-        self.assertIn("row.hiddenCount === 1 ? '1 kattuvus peidetud'", row)
+        self.assertNotIn("hiddenCount", row)
 
     def test_map_workspace_css_is_restrained_scrollable_and_mobile_sheet(self):
         desktop = re.search(r"(?m)^\.map-workspace \{([^}]*)\}", STYLE_CSS)
@@ -1401,7 +1389,7 @@ console.log(JSON.stringify({{
         self.assertRegex(STYLE_CSS, r"@media \(max-width: 640px\) \{[\s\S]*?\.map-workspace-panel \{[^}]*position: fixed;[^}]*max-height: 72vh;[^}]*overflow: hidden;")
         self.assertIn(".map-workspace-button:focus-visible", STYLE_CSS)
         self.assertIn(".map-view-preset:focus-visible", STYLE_CSS)
-        self.assertIn(".map-theme-toggle:focus-visible", STYLE_CSS)
+        self.assertNotIn(".map-theme-toggle", STYLE_CSS)
 
     def test_map_age_legend_and_ai_picker_use_neutral_age_classes(self):
         row = _extract_js_function("mapStandAgeLegendHtml")
@@ -1441,8 +1429,8 @@ console.log(JSON.stringify({{
         )
         for function_name in (
             "initMapWorkspaceControls", "openMapWorkspace", "closeMapWorkspace",
-            "closeMapWorkspaceOnMobile", "selectMapView", "toggleMapThemeSelection",
-            "restoreMapOverviewView", "retryMapContext", "renderMapWorkspaceState",
+            "closeMapWorkspaceOnMobile", "selectMapView",
+            "retryMapContext", "renderMapWorkspaceState",
         ):
             source = _extract_js_function(function_name)
             for renderer in forbidden_renderers:
@@ -1454,16 +1442,16 @@ console.log(JSON.stringify({{
 {source}
 const controller = {{id: 'current'}};
 let state = createMapWorkspaceState('orthophoto');
-state = Object.assign({{}}, selectMapViewPreset(state, 'history'), {{
+state = Object.assign({{}}, selectMapViewPreset(state, 'risks'), {{
   parcelId: '78404:409:0113',
-  themeResults: {{archival_clearcuts: {{state: 'matches', features: [{{id: 1}}]}}}},
-  themeCache: {{archival_clearcuts: {{state: 'matches', features: [{{id: 1}}]}}}},
+  themeResults: {{forest_health: {{state: 'matches', features: [{{id: 1}}]}}}},
+  themeCache: {{forest_health: {{state: 'matches', features: [{{id: 1}}]}}}},
   hasValidPersistentContext: true,
   requestGeneration: 5,
 }});
 const refreshing = beginMapContextRequestState(state, 6, controller, true);
 const requested = serverBackedThemeIds(refreshing.activeThemeIds);
-const switchedView = selectMapViewPreset(refreshing, 'subsidies');
+const switchedView = selectMapViewPreset(refreshing, 'restrictions');
 console.log(JSON.stringify({{
   requested,
   loadingStatus: refreshing.loadingStatus,
@@ -1480,10 +1468,10 @@ console.log(JSON.stringify({{
         result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
         state = json.loads(result.stdout)
 
-        self.assertEqual(state["requested"], ["archival_clearcuts"])
+        self.assertEqual(state["requested"], ["flood_wetlands", "forest_health", "invasive_species"])
         self.assertEqual(state["loadingStatus"], "refreshing")
-        self.assertEqual(state["retainedResults"]["archival_clearcuts"]["features"], [{"id": 1}])
-        self.assertEqual(state["retainedCache"]["archival_clearcuts"]["features"], [{"id": 1}])
+        self.assertEqual(state["retainedResults"]["forest_health"]["features"], [{"id": 1}])
+        self.assertEqual(state["retainedCache"]["forest_health"]["features"], [{"id": 1}])
         self.assertTrue(state["owner"])
         self.assertFalse(state["staleGeneration"])
         self.assertFalse(state["staleController"])
@@ -1575,98 +1563,12 @@ console.log(JSON.stringify({{grouped, fallbackAgain: second[1].style}}));
         self.assertEqual(state["grouped"][1]["style"], state["fallbackAgain"])
         self.assertNotEqual(state["grouped"][1]["style"]["color"], "#123456")
 
-    def test_history_records_are_sorted_rendered_safely_and_keep_notice_completeness(self):
-        source = _marked_js_source("// MAP_WORKSPACE_PURE_START", "// MAP_WORKSPACE_PURE_END")
-        script = f"""
-{source}
-const standFeature = {{type: 'Feature', geometry: {{type: 'Polygon', coordinates: []}}, properties: {{eraldis_nr: 5}}}};
-const data = {{
-  map_layers: {{eraldised: {{features: [standFeature]}}}},
-  teatised: [
-    {{number: 'T-old', tyyp: 'Harvendusraie', eraldis_nr: 5, event_status: 'archived', event_status_label: 'Arhiivitud sündmus', event_date: '2025-01-02', location_scope: 'stand'}},
-    {{number: 'T-unknown', tyyp: '<img src=x onerror=alert(1)>', event_status: 'unknown', event_status_label: '<b>Staatus määramata</b>', event_date: null, location_scope: 'parcel_unlocated'}},
-    {{number: 'T-new', tyyp: 'Lageraie', eraldis_nr: 5, event_status: 'permitted_current', event_status_label: 'Kehtiv lubatud töö', event_date: '2026-07-01', location_scope: 'stand'}},
-  ],
-  meta: {{unavailable_sources: ['metsaregister.teatis_arhiiv']}},
-  teatised_meta: {{ridu_kokku: 4, ridu_kuvatud: 3}},
-}};
-const history = deriveForestNoticeTheme(data);
-const row = mapWorkspaceLegendModel(Object.assign({{}}, selectMapViewPreset(createMapWorkspaceState(), 'history'), {{
-  parcelId: '78404:409:0113', hasValidPersistentContext: true,
-  persistentContext: {{parcel: {{state: 'matches'}}, stands: {{state: 'empty', count: 0, features: []}}}},
-  themeResults: {{forest_notices: history}},
-}})).rows.find(item => item.id === 'forest_notices');
-console.log(JSON.stringify({{history, row, detail: mapThemeRecordsHtml(row)}}));
-"""
-        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
-        state = json.loads(result.stdout)
-
-        history = state["history"]
-        self.assertEqual(history["id"], "forest_notices")
-        self.assertEqual(history["state"], "partial")
-        self.assertEqual(history["match_count"], 3)
-        self.assertEqual([record["id"] for record in history["records"]], ["T-new", "T-old", "T-unknown"])
-        self.assertEqual([feature["properties"]["id"] for feature in history["features"]], ["T-new", "T-old"])
-        unlocated = next(record for record in history["records"] if record["location_scope"] == "parcel_unlocated")
-        self.assertNotIn("geometry", unlocated)
-        self.assertEqual(state["row"]["records"], history["records"])
-        self.assertIn("Lageraie", state["detail"])
-        self.assertIn("Kehtiv lubatud töö", state["detail"])
-        self.assertIn("01.07.2026", state["detail"])
-        self.assertIn("Kuupäev teadmata", state["detail"])
-        self.assertIn("Ametlik andmekiht", state["detail"])
-        self.assertIn("Eraldis 5", state["detail"])
-        self.assertIn("Asukoht kinnistul määramata", state["detail"])
-        self.assertIn("&lt;img src=x onerror=alert(1)&gt;", state["detail"])
-        self.assertNotIn("<img src=x", state["detail"])
-        self.assertIn("&lt;b&gt;Staatus määramata&lt;/b&gt;", state["detail"])
-
-        no_records_script = f"""
-{source}
-const unavailable = deriveForestNoticeTheme({{teatised: [], meta: {{unavailable_sources: ['metsaregister.teatis']}}}});
-console.log(JSON.stringify(unavailable));
-"""
-        unavailable_result = subprocess.run(
-            ["node", "-e", no_records_script], check=True, capture_output=True, text=True
-        )
-        self.assertEqual(json.loads(unavailable_result.stdout)["state"], "unavailable")
-
-    def test_subsidy_reducer_requires_explicit_property_or_valid_compartment_scope(self):
-        source = _marked_js_source("// MAP_WORKSPACE_PURE_START", "// MAP_WORKSPACE_PURE_END")
-        script = f"""
-{source}
-const standFeature = {{type: 'Feature', geometry: {{type: 'Polygon', coordinates: []}}, properties: {{eraldis_nr: 5}}}};
-const data = {{
-  map_layers: {{eraldised: {{features: [standFeature]}}}},
-  toetused: [
-    {{id: 'stand', name: 'Eraldise indikaator', match_scope: 'compartment', eligibility_status: 'Tõenäoliselt sobib', eligibility_reason: 'Vanus vastab.', eraldised_match: [{{eraldis_nr: 5}}]}},
-    {{id: 'property', name: 'Kinnistu indikaator', match_scope: 'property', eligibility_status: 'Vajab kontrolli', eligibility_reason: 'Ametlik kattuvus.', eraldised_match: []}},
-    {{id: 'none', name: 'Üldine kontroll', match_scope: 'none', eligibility_status: 'Vajab kontrolli', eraldised_match: []}},
-    {{id: 'missing', name: 'Andmed puuduvad', match_scope: 'property', eligibility_status: 'Vajab kontrolli', andmed_piiratud: true, eraldised_match: []}},
-    {{id: 'empty-stand', name: 'Seos puudub', match_scope: 'compartment', eligibility_status: 'Vajab kontrolli', eraldised_match: []}},
-    {{id: 'invalid-stand', name: 'Vigane seos', match_scope: 'compartment', eligibility_status: 'Vajab kontrolli', eraldised_match: [{{eraldis_nr: 'x'}}]}},
-    {{id: 'ineligible', name: 'Välistatud', match_scope: 'compartment', eligibility_status: 'Ei sobi teadaolevate andmete põhjal', eraldised_match: [{{eraldis_nr: 5}}]}},
-  ],
-}};
-const theme = deriveSubsidyIndicatorTheme(data);
-console.log(JSON.stringify({{theme, detail: mapThemeRecordsHtml(theme)}}));
-"""
-        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
-        state = json.loads(result.stdout)
-
-        subsidies = state["theme"]
-        self.assertEqual(subsidies["id"], "subsidy_indicators")
-        self.assertEqual(subsidies["match_count"], 2)
-        self.assertEqual(len(subsidies["features"]), 1)
-        self.assertEqual([record["location_scope"] for record in subsidies["records"]], ["stand", "parcel"])
-        self.assertTrue(all(record["provenance"] == "Terrapointi tuletis" for record in subsidies["records"]))
-        self.assertTrue(all("eligible" not in record for record in subsidies["records"]))
-        self.assertTrue(all("Välistatud" not in record["label"] for record in subsidies["records"]))
-        self.assertIn("Eraldis 5", state["detail"])
-        self.assertIn("Kinnistu tasemel", state["detail"])
-        self.assertIn("Terrapointi tuletis", state["detail"])
-        self.assertIn("Vanus vastab.", state["detail"])
-        self.assertIn("Ametlik kattuvus.", state["detail"])
+    def test_removed_history_and_subsidy_views_do_not_build_hidden_map_themes(self):
+        self.assertNotIn("deriveForestNoticeTheme", INDEX_HTML)
+        self.assertNotIn("deriveSubsidyIndicatorTheme", INDEX_HTML)
+        self.assertNotIn("deriveClientMapThemes", INDEX_HTML)
+        self.assertNotIn("subsidy_indicators", INDEX_HTML)
+        self.assertNotIn("forest_notices", INDEX_HTML)
 
     def test_per_theme_refresh_failure_and_cached_revisit_are_explicit(self):
         source = _marked_js_source("// MAP_WORKSPACE_PURE_START", "// MAP_WORKSPACE_PURE_END")
@@ -1682,7 +1584,7 @@ let state = Object.assign({{}}, selectMapViewPreset(createMapWorkspaceState(), '
 const refreshing = beginMapContextRequestState(state, 3, controller, false, ['forest_health']);
 const failed = failMapContextRequestState(refreshing, ['forest_health'], 'Ajutine tõrge');
 const failedModel = mapWorkspaceLegendModel(failed);
-const switchedAway = selectMapViewPreset(failed, 'subsidies');
+const switchedAway = selectMapViewPreset(failed, 'restrictions');
 const revisited = selectMapViewPreset(switchedAway, 'risks');
 const revisiting = beginMapContextRequestState(revisited, 4, {{id: 'revisit'}}, false, ['forest_health']);
 const succeeded = applyMapContextResultState(revisiting, {{
@@ -1695,7 +1597,7 @@ let overview = Object.assign({{}}, selectMapViewPreset(state, 'overview'), {{the
 overview = beginMapContextRequestState(overview, 5, {{id: 'overview'}}, false, overviewThemeIds);
 overview = failMapContextRequestState(overview, overviewThemeIds, 'Ajutine tõrge');
 const overviewAggregate = mapWorkspaceLegendModel(overview).aggregate.status;
-console.log(JSON.stringify({{refreshing, failed, failedRows: failedModel.rows, revisited, revisiting, succeeded, overviewAggregate}}));
+console.log(JSON.stringify({{refreshing, failed, failedRows: failedModel.rows, switchedAway, revisited, revisiting, succeeded, overviewAggregate}}));
 """
         result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
         state = json.loads(result.stdout)
@@ -1709,6 +1611,7 @@ console.log(JSON.stringify({{refreshing, failed, failedRows: failedModel.rows, r
         self.assertTrue(failed_theme["stale"])
         failed_row = next(row for row in state["failedRows"] if row["id"] == "forest_health")
         self.assertIn("osaline", failed_row["status"])
+        self.assertEqual(state["switchedAway"]["viewId"], "restrictions")
         self.assertEqual(state["revisited"]["themeResults"]["forest_health"]["features"], [{"id": 1}])
         self.assertEqual(state["revisiting"]["loadingStatus"], "refreshing")
         self.assertEqual(state["succeeded"]["themeResults"]["forest_health"]["state"], "empty")
@@ -1718,7 +1621,7 @@ console.log(JSON.stringify({{refreshing, failed, failedRows: failedModel.rows, r
     def test_legacy_fallback_layers_are_scoped_and_cleared_on_success_and_view_changes(self):
         clear = _extract_js_function("clearLegacyMapFallbackLayers")
         apply_payload = _extract_js_function("applyMapContextPayload")
-        for function_name in ("selectMapView", "toggleMapThemeSelection", "restoreMapOverviewView"):
+        for function_name in ("selectMapView",):
             self.assertIn("clearLegacyMapFallbackLayers();", _extract_js_function(function_name))
         self.assertIn("clearLegacyMapFallbackLayers();", apply_payload)
         self.assertIn("LEGACY_MAP_FALLBACK_PREFIX", _extract_js_function("loadMapLayers"))
@@ -1866,7 +1769,7 @@ console.log(JSON.stringify(mapSourceDetailsHtml({{
             do_search.index("await searchParcel(nr, controller)"),
         )
         self.assertNotIn("loadMapLayers(data.map_layers", do_search)
-        self.assertIn("deriveClientMapThemes(data);", do_search)
+        self.assertNotIn("deriveClientMapThemes", do_search)
         self.assertIn("setLegacyMapFallback(nr, data);", do_search)
 
         fallback = _extract_js_function("applyLegacyMapFallback")
@@ -1879,8 +1782,8 @@ console.log(JSON.stringify(mapSourceDetailsHtml({{
             "renderRiskid", "renderTeatised", "renderKitsendused", "renderToetused", "renderEudr",
         )
         for function_name in (
-            "selectMapView", "toggleMapThemeSelection", "restoreMapOverviewView",
-            "retryMapContext", "renderMapWorkspaceState", "deriveClientMapThemes",
+            "selectMapView",
+            "retryMapContext", "renderMapWorkspaceState",
         ):
             source = _extract_js_function(function_name)
             for renderer in forbidden_renderers:
@@ -2076,22 +1979,22 @@ const document = {{
 
 const oldRow = makeElement({{'data-map-row': 'forest_health'}});
 oldRow.open = true;
-const oldTheme = makeElement({{'data-map-theme': 'forest_health'}});
+const oldView = makeElement({{'data-map-view': 'risks'}});
 openRows = [oldRow];
-document.activeElement = oldTheme;
-const keyboardThemeState = captureMapWorkspaceDomState();
+document.activeElement = oldView;
+const keyboardViewState = captureMapWorkspaceDomState();
 
 const newSummary = makeElement({{role: 'summary'}});
 const newRow = makeElement({{'data-map-row': 'forest_health'}});
 newRow.summary = newSummary;
 newSummary.row = newRow;
-const newTheme = makeElement({{'data-map-theme': 'forest_health'}});
+const newView = makeElement({{'data-map-view': 'risks'}});
 allRows = [newRow];
 openRows = [];
-controls['[data-map-view]'] = [];
-controls['[data-map-theme]'] = [newTheme];
+controls['[data-map-view]'] = [newView];
+controls['[data-map-theme]'] = [];
 controls['[data-map-retry]'] = [];
-restoreMapWorkspaceDomState(keyboardThemeState);
+restoreMapWorkspaceDomState(keyboardViewState);
 
 const oldRetry = makeElement({{'data-map-retry': 'row:forest_health'}});
 oldRetry.row = newRow;
@@ -2114,7 +2017,7 @@ newSummary.focusOptions = null;
 restoreMapWorkspaceDomState(retryState);
 
 console.log(JSON.stringify({{
-  keyboardFocusRestored: newTheme.focusOptions,
+  keyboardFocusRestored: newView.focusOptions,
   rowReopened: newRow.open,
   retryFocusRestored: replacementRetry.focusOptions,
   disabledRetryFocused: Boolean(disabledRetry.focusOptions),
@@ -2133,7 +2036,7 @@ console.log(JSON.stringify({{
         render = _extract_js_function("renderMapWorkspaceState")
         self.assertLess(
             render.index("captureMapWorkspaceDomState()"),
-            render.index("themeControls.innerHTML"),
+            render.index("legend.innerHTML"),
         )
         self.assertGreater(
             render.index("restoreMapWorkspaceDomState"),
@@ -2211,11 +2114,7 @@ const successful = mapSourceDetailsHtml({{
   key: 'official', provider: 'Amet', label: 'Kiht', state: 'matches',
   attempted_at: '2026-07-15T12:30:00Z', checked_at: '2026-07-15T12:29:00Z',
 }});
-const clientUnknown = deriveForestNoticeTheme({{teatised: []}}).sources[0];
-const clientServerStamped = deriveSubsidyIndicatorTheme({{
-  attempted_at: '2026-07-15T12:30:00Z', checked_at: '2026-07-15T12:29:00Z', toetused: [],
-}}).sources[0];
-console.log(JSON.stringify({{unavailable, successful, clientUnknown, clientServerStamped}}));
+console.log(JSON.stringify({{unavailable, successful}}));
 """
         result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
         state = json.loads(result.stdout)
@@ -2228,12 +2127,6 @@ console.log(JSON.stringify({{unavailable, successful, clientUnknown, clientServe
         self.assertNotIn("Viimati edukalt kontrollitud", state["unavailable"])
         self.assertIn('class="map-source-attempted">Kontrollikatse ', state["successful"])
         self.assertIn('class="map-source-checked">Viimati edukalt kontrollitud ', state["successful"])
-        self.assertIsNone(state["clientUnknown"]["attempted_at"])
-        self.assertIsNone(state["clientUnknown"]["checked_at"])
-        self.assertEqual(state["clientServerStamped"]["attempted_at"], "2026-07-15T12:30:00Z")
-        self.assertEqual(state["clientServerStamped"]["checked_at"], "2026-07-15T12:29:00Z")
-        self.assertNotIn("new Date()", _extract_js_function("deriveForestNoticeTheme"))
-        self.assertNotIn("new Date()", _extract_js_function("deriveSubsidyIndicatorTheme"))
 
 
 if __name__ == "__main__":

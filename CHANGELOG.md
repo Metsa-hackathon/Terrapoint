@@ -6,6 +6,18 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > domain). `terrapoint.vercel.app` on sama projekti alias — push master
 > branchi uuendab mõlemat korraga.
 
+## [Määramata] - 2026-07-15
+
+### Changed
+- **Selgem ja hõredam kaart** — nähtavad kaardivaated on nüüd „Ülevaade”,
+  „Piirangud” ja „Riskid”. Käsitsi teemalülitite loend, eraldi lähtestusnupp
+  ning aluskaardi legendirida eemaldati; aluskaardi valikus on kaks ametlikku
+  Maa- ja Ruumiameti kaarti. Esri neutraalne kaart säilib ainult automaatse
+  tõrkevaruna.
+- **AI analüüs kaardi järel** — AI plokk asub nüüd vahetult kaardi all ning
+  selle algtekst on lühem. Toetuste ja ajaloo detailid jäävad tulemuste
+  kaartidesse, kus nende kontekst on selgem.
+
 ## [Määramata] - 2026-07-13
 
 ### Added
