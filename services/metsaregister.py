@@ -128,10 +128,14 @@ _TAGAVARA_BY_HEIGHT = {
     5: [(5, 5), (10, 20), (15, 40), (20, 70), (25, 100), (30, 130)],
 }
 
+# The source table has no separate curves for the classifier's edge classes.
+# Use the nearest available class instead of silently treating both as III.
+_TAGAVARA_TABLE_CODE = {0: 1, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 5}
+
 
 def estimate_tagavara(boniteet_kood: int, korgus: float, vanus: int) -> float | None:
     """Tagavara hinnang (m³/ha) kõrguse ja boniteedi järgi, kui metsaregister andmed puuduvad."""
-    bk = boniteet_kood if boniteet_kood in _TAGAVARA_BY_HEIGHT else 3
+    bk = _TAGAVARA_TABLE_CODE.get(boniteet_kood, 3)
     table = _TAGAVARA_BY_HEIGHT[bk]
 
     # Kõrguse järgi interpolatsioon

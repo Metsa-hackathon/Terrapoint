@@ -165,11 +165,11 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("kõrge: 'Kõrge lähteandmestik'", helper)
         self.assertIn("Puidustsenaariumide keskpunkt / ha", INDEX_HTML)
         self.assertIn("Sortimendita keskpunkt", INDEX_HTML)
-        self.assertIn("<div style=\"text-align:right\">Stsenaarium</div>", INDEX_HTML)
+        self.assertIn('<div>Eraldis ja lähteandmed</div><div style="text-align:right">Puidustsenaarium</div>', INDEX_HTML)
         self.assertNotIn("Puidu keskväärtus / ha", INDEX_HTML)
         self.assertNotIn("Kaalutud kännuraha", INDEX_HTML)
         self.assertNotIn("Vaata kinnistu turuväärtust", INDEX_HTML)
-        self.assertIn("Stsenaariumide aritmeetiline keskpunkt", INDEX_HTML)
+        self.assertIn("Keskpunkt ' + formatEur(midpoint)", INDEX_HTML)
         self.assertNotIn("metsa majanduslikku väärtust", INDEX_HTML)
         self.assertNotIn("kogu kinnistu väärtust eurodes", INDEX_HTML)
 
@@ -392,7 +392,7 @@ console.log(JSON.stringify({{
         self.assertIn("sortEraldisedForDisplay(data.eraldised).forEach(function(e)", forest_render.group(0))
         self.assertIn("var standLabel = eraldisLabel(e.eraldis_nr);", forest_render.group(0))
         self.assertIn(
-            "'<div class=\"er-number\" title=\"' + escHtml(standLabel) + '\" aria-label=\"' + escHtml(standLabel) + '\">'",
+            "'<div class=\"er-stand-heading\"><span class=\"er-number\" title=\"' + escHtml(standLabel) + '\" aria-label=\"' + escHtml(standLabel) + '\">'",
             forest_render.group(0),
         )
         self.assertNotIn("(i + 1)", forest_render.group(0))
@@ -517,7 +517,9 @@ console.log(JSON.stringify({{
         self.assertIn("data.yrask_hinnang || data.yrask", INDEX_HTML)
         self.assertIn("Maa maksustamishind puudub; kinnistu koguhinnangut ei kuvata", INDEX_HTML)
         self.assertIn("e.vaartus_hinnang_eur != null ? e.vaartus_hinnang_eur : e.vaartus_eur", INDEX_HTML)
-        self.assertIn("p.vaartus_hinnang_eur != null ? p.vaartus_hinnang_eur : p.vaartus_eur", INDEX_HTML)
+        self.assertIn("standScenarioHtml(p)", INDEX_HTML)
+        self.assertIn("vaartus_min_eur", INDEX_HTML)
+        self.assertIn("vaartus_max_eur", INDEX_HTML)
         self.assertIn("and not sampled_eraldised", API_PY)
         self.assertIn("t >= 90 ? 'var(--data-state-ok)'", INDEX_HTML)
         self.assertNotIn('class="evidence-details" open', INDEX_HTML)
@@ -526,6 +528,61 @@ console.log(JSON.stringify({{
         self.assertIn("https://erametsaliit.ee/wp-content/uploads/2026/05/puiduhinnad-2026-i-kv.pdf", API_PY)
         self.assertIn("https://maaruum.ee/maakataster-ja-maa-hindamine/kinnisvaratehingud/kinnisvaratehingute-statistika", API_PY)
         self.assertIn("https://keskkonnaagentuur.ee/node/2695", API_PY)
+
+    def test_compartment_scenarios_show_range_keep_zero_and_enrich_map_details(self):
+        number_helper = _extract_js_function("canonicalEraldisNumber")
+        scenario_helper = _extract_js_function("standScenarioHtml")
+        merge_helper = _extract_js_function("mergeMapStandDetails")
+        script = rf"""
+function escHtml(value) {{ return String(value == null ? '' : value); }}
+function formatEur(value) {{ return value == null ? '—' : String(Math.round(value)).replace(/\B(?=(\d{{3}})+(?!\d))/g, ' ') + ' €'; }}
+{number_helper}
+{scenario_helper}
+{merge_helper}
+const searchData = {{
+  kataster: {{number: '78404:409:0113'}},
+  map_layers: {{eraldised: {{features: [{{
+    type: 'Feature', geometry: {{type: 'Polygon', coordinates: []}},
+    properties: {{
+      eraldis_nr: 4, tagavara_y_ha: 210,
+      vaartus_min_eur: 1000, vaartus_hinnang_eur: 1500, vaartus_max_eur: 2000,
+    }},
+  }}]}}}},
+}};
+const persistent = {{stands: {{state: 'matches', features: [{{
+  type: 'Feature', geometry: {{type: 'Polygon', coordinates: []}},
+  properties: {{eraldis_nr: 4, source_key: 'metsaregister_eraldis'}},
+}}]}}}};
+const merged = mergeMapStandDetails(persistent, searchData, '78404:409:0113');
+console.log(JSON.stringify({{
+  range: standScenarioHtml({{vaartus_min_eur: 1000, vaartus_hinnang_eur: 1500, vaartus_max_eur: 2000}}),
+  zero: standScenarioHtml({{vaartus_min_eur: 0, vaartus_hinnang_eur: 0, vaartus_max_eur: 0}}),
+  properties: merged.stands.features[0].properties,
+}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertIn("1 000 €", state["range"])
+        self.assertIn("2 000 €", state["range"])
+        self.assertIn("Keskpunkt 1 500 €", state["range"])
+        self.assertIn("0 €", state["zero"])
+        self.assertEqual(state["properties"]["tagavara_y_ha"], 210)
+        self.assertEqual(state["properties"]["vaartus_min_eur"], 1000)
+        self.assertEqual(state["properties"]["vaartus_hinnang_eur"], 1500)
+        self.assertEqual(state["properties"]["vaartus_max_eur"], 2000)
+        self.assertEqual(state["properties"]["source_key"], "metsaregister_eraldis")
+
+        apply_payload = _extract_js_function("applyMapContextPayload")
+        do_search = _extract_js_function("doSearch")
+        self.assertIn("mergeMapStandDetails", apply_payload)
+        self.assertIn("enrichVisibleMapStands", do_search)
+        self.assertIn('class="er-stand-summary"', INDEX_HTML)
+        self.assertIn('<div>Eraldis ja lähteandmed</div><div style="text-align:right">Puidustsenaarium</div>', INDEX_HTML)
+        self.assertRegex(
+            STYLE_CSS,
+            r"\.eraldised-row\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\) minmax\(124px, auto\);",
+        )
 
     def test_subsidies_render_auditable_status_source_and_compartment_reasons(self):
         render = re.search(r'function renderToetused\(data\).*?\n    }', INDEX_HTML, re.DOTALL)
@@ -2097,6 +2154,104 @@ function isMapFeature(value) {{
         self.assertEqual(state["parcelId"], "78404:409:0113")
         self.assertTrue(state["hasContext"])
         self.assertEqual(state["overlays"], ["parcel", "stands"])
+
+    def test_search_failure_does_not_abort_pending_map_context_for_same_parcel(self):
+        owns_map = _extract_js_function("hasPersistentMapContextForParcel")
+        owns_pending_map = _extract_js_function("hasActiveMapContextRequestForParcel")
+        do_search = _extract_js_function("doSearch").replace(
+            "function doSearch", "async function doSearch", 1
+        )
+        script = f"""
+let parcelSearchSequence = 0;
+let activeParcelSearch = null;
+let mapWorkspaceState = {{parcelId: null, hasValidPersistentContext: false, persistentContext: null}};
+const overlayLayers = {{}};
+const classList = {{add() {{}}, remove() {{}}}};
+const searchBox = {{classList}};
+const searchButton = {{disabled: false, classList, closest() {{ return searchBox; }}}};
+const elements = {{
+  'kataster-input': {{value: '78404:409:0113'}},
+  'search-btn': searchButton,
+  'search-btn-landing': null,
+  'map-controls': {{style: {{display: 'none'}}}},
+}};
+const document = {{getElementById(id) {{ return elements[id] || null; }}}};
+function beginParcelReplacement() {{ parcelSearchSequence += 1; return parcelSearchSequence; }}
+function showLoading() {{}}
+let finishMapContext = null;
+function requestMapContextForParcel(parcelId) {{
+  const controller = {{aborted: false, abort() {{ this.aborted = true; }}}};
+  mapWorkspaceState = {{
+    parcelId,
+    loadingStatus: 'loading',
+    requestController: controller,
+    hasValidPersistentContext: false,
+    persistentContext: null,
+  }};
+  return new Promise(resolve => {{
+    finishMapContext = function() {{
+      if (!controller.aborted) {{
+        mapWorkspaceState = {{
+          parcelId,
+          loadingStatus: 'success',
+          requestController: null,
+          hasValidPersistentContext: true,
+          persistentContext: {{parcel: {{state: 'matches', feature: {{type: 'Feature', geometry: {{type: 'Polygon'}}, properties: {{}}}}}}}},
+        }};
+        overlayLayers.parcel = {{id: 'parcel'}};
+      }}
+      resolve(!controller.aborted);
+    }};
+  }});
+}}
+async function searchParcel() {{ throw new Error('Analüüsiteenus ei vasta'); }}
+let fullResetCount = 0;
+function resetParcelResult() {{
+  fullResetCount += 1;
+  if (mapWorkspaceState.requestController) mapWorkspaceState.requestController.abort();
+  mapWorkspaceState = {{parcelId: null, hasValidPersistentContext: false, persistentContext: null}};
+}}
+let analyticalResetCount = 0;
+function resetAnalyticalResult() {{ analyticalResetCount += 1; }}
+function hideLoading() {{}}
+function showDashboard() {{}}
+let renderedError = null;
+function renderErrorState(message) {{ renderedError = message; }}
+function showError() {{}}
+function clearSearchBusyState() {{}}
+function isMapRecord(value) {{ return Boolean(value && typeof value === 'object' && !Array.isArray(value)); }}
+function isMapFeature(value) {{
+  return Boolean(isMapRecord(value) && value.type === 'Feature' && isMapRecord(value.geometry) && isMapRecord(value.properties));
+}}
+{owns_map}
+{owns_pending_map}
+{do_search}
+(async function() {{
+  await doSearch();
+  const pendingSurvived = fullResetCount === 0 && mapWorkspaceState.requestController.aborted === false;
+  finishMapContext();
+  await Promise.resolve();
+  console.log(JSON.stringify({{
+    pendingSurvived,
+    fullResetCount,
+    analyticalResetCount,
+    renderedError,
+    parcelId: mapWorkspaceState.parcelId,
+    hasContext: mapWorkspaceState.hasValidPersistentContext,
+    overlays: Object.keys(overlayLayers),
+  }}));
+}})().catch(error => {{ console.error(error); process.exit(1); }});
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertTrue(state["pendingSurvived"])
+        self.assertEqual(state["fullResetCount"], 0)
+        self.assertEqual(state["analyticalResetCount"], 1)
+        self.assertEqual(state["renderedError"], "Analüüsiteenus ei vasta")
+        self.assertEqual(state["parcelId"], "78404:409:0113")
+        self.assertTrue(state["hasContext"])
+        self.assertEqual(state["overlays"], ["parcel"])
 
     def test_legacy_stand_layer_prefers_age_color_and_matches_age_legend(self):
         layer = _extract_js_function("addEraldisedLayer")

@@ -3830,7 +3830,7 @@ footer {
 }
 .eraldised-table-header,
 .eraldised-row {
-    grid-template-columns: 72px minmax(80px, 1fr) 32px 48px 42px 46px 72px;
+    grid-template-columns: minmax(0, 1fr) minmax(124px, auto);
 }
 .teatised-table-header,
 .teatised-row {
@@ -3846,10 +3846,6 @@ footer {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-}
-.eraldised-table-header > *:nth-child(n+3):nth-child(-n+6),
-.eraldised-row > *:nth-child(n+3):nth-child(-n+6) {
-    text-align: right;
 }
 .table-grid-row:hover { background: var(--paper-2); }
 .table-grid-scroll {
@@ -3869,6 +3865,9 @@ footer {
 }
 .eraldised-row .er-number { color: var(--ink-2); font-weight: 650; }
 .eraldised-row .er-species { font-weight: 500; }
+.eraldised-row .er-stand-summary { min-width: 0; overflow: visible; white-space: normal; }
+.er-stand-heading { display: flex; align-items: baseline; gap: 8px; }
+.er-stand-meta { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 3px; color: var(--ink-4); font-size: 10px; line-height: 1.35; }
 .eraldised-row .er-inventory,
 .teatised-type span {
     display: block;
@@ -3881,6 +3880,10 @@ footer {
 .teatised-type { white-space: normal; line-height: 1.25; }
 .clearcut-period { max-width: 58%; text-align: right; white-space: normal; }
 .eraldised-row .er-value { font-weight: 700; color: var(--ink); font-family: var(--ff-mono); text-align: right; font-size: 0.92em; white-space: nowrap; }
+.er-value-range { white-space: nowrap; }
+.er-value small,
+.map-stand-scenario small { display: block; margin-top: 2px; color: var(--ink-4); font-family: var(--ff-sans); font-size: 10px; font-weight: 500; white-space: nowrap; }
+.map-stand-scenario { color: var(--ink); font-family: var(--ff-mono); font-size: 15px; font-weight: 800; line-height: 1.35; }
 .teatised-eraldis {
     font-weight: 600;
     color: var(--ink-2);
@@ -4179,8 +4182,14 @@ footer {
 
     .eraldised-table-header,
     .eraldised-row {
-        grid-template-columns: 72px minmax(80px, 1fr) 32px 46px 40px 46px 64px;
+        grid-template-columns: minmax(0, 1fr) minmax(124px, auto);
     }
+    .eraldised-table-header,
+    .eraldised-table-panel .table-grid-scroll {
+        width: 100%;
+        min-width: 0;
+    }
+    .eraldised-table-panel .table-grid-hscroll { overflow-x: visible; }
     .teatised-table-header,
     .teatised-row {
         grid-template-columns: minmax(64px, 1fr) 44px minmax(70px, 0.95fr) minmax(68px, 0.95fr) 48px;

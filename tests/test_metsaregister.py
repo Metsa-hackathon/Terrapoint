@@ -45,6 +45,19 @@ class MetsaregisterDataTests(unittest.IsolatedAsyncioTestCase):
             "KD": "kadakas", "TP": "teised põõsaliigid", "PA": "paju", "JP": "jugapuu",
         })
 
+    def test_stock_estimate_keeps_extreme_boniteet_codes_monotonic(self):
+        estimates = {
+            code: metsaregister.estimate_tagavara(code, 25, 60)
+            for code in range(7)
+        }
+
+        self.assertEqual(estimates[0], estimates[1])
+        self.assertEqual(estimates[6], estimates[5])
+        self.assertEqual(
+            list(estimates.values()),
+            sorted(estimates.values(), reverse=True),
+        )
+
     async def test_wfs_get_keeps_successful_empty_response_distinct_from_failure(self):
         with patch("services.metsaregister.httpx.AsyncClient", return_value=FakeAsyncClient(FakeResponse())):
             features = await metsaregister._wfs_get("https://example.test/wfs", retries=0)

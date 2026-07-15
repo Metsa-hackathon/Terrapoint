@@ -283,6 +283,9 @@ class MapContextCoreTests(unittest.IsolatedAsyncioTestCase):
             "vanus": 100,
             "boniteedi_kood": 3,
             "pindala_ha": 1,
+            "tagavara_y_ha": 210,
+            "tagavara_provenance": "official",
+            "korgus": 24,
             "invent_kp": "2024-01-01",
         }]
         with (
@@ -300,6 +303,9 @@ class MapContextCoreTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(feature["properties"]["age_class"], "cutting_age_reached")
         self.assertEqual(feature["properties"]["color"], feature["properties"]["age_class_color"])
         self.assertEqual(feature["properties"]["age_class_provenance"], "Terrapointi tuletis")
+        self.assertEqual(feature["properties"]["tagavara_y_ha"], 210)
+        self.assertEqual(feature["properties"]["tagavara_provenance"], "official")
+        self.assertEqual(feature["properties"]["korgus"], 24)
         self.assertNotIn("id", feature["properties"])
 
     async def test_stands_with_only_unusable_geometries_are_unavailable(self):

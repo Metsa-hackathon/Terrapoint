@@ -2272,6 +2272,9 @@
     function applyMapContextPayload(data, generation, controller, parcelId, themeIds) {
         if (!mapContextRequestOwns(mapWorkspaceState, generation, controller, parcelId, themeIds)) return false;
         clearLegacyMapFallbackLayers();
+        data = Object.assign({}, data, {
+            persistent: mergeMapStandDetails(data.persistent, currentData, parcelId),
+        });
         mapWorkspaceState = applyMapContextResultState(mapWorkspaceState, data, themeIds);
         pendingLegacyMapFallback = null;
         renderMapWorkspaceState();
@@ -2873,8 +2876,8 @@
                 var ageClassColor = p.age_class_color || p.color || 'var(--ink-5)';
                 var ageClassLabel = p.age_class_label || 'Vanuseklass määramata';
                 var ageClassProvenance = p.age_class_provenance || 'Terrapointi tuletis';
-                var popupValue = p.vaartus_hinnang_eur != null ? p.vaartus_hinnang_eur : p.vaartus_eur;
                 var popupValueHa = p.vaartus_hinnang_per_ha != null ? p.vaartus_hinnang_per_ha : p.vaartus_per_ha;
+                var popupScenario = standScenarioHtml(p);
                 var html = '<div style="font-size:13px;min-width:200px">';
                 html += '<div style="font-weight:700;font-size:14px;margin-bottom:6px;color:var(--ink)">' + escHtml(eraldisLabel(p.eraldis_nr)) + '</div>';
                 html += '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:6px"><span style="width:8px;height:8px;border-radius:50%;background:' + escHtml(ageClassColor) + '"></span><strong style="font-size:12px">' + escHtml(ageClassLabel) + '</strong></div>';
@@ -2892,10 +2895,10 @@
                 html += '<div style="margin-top:7px;font-size:10px;color:var(--ink-5)">'
                     + (p.invent_kp ? 'Inventuuri kuupäev: ' + escHtml(p.invent_kp) : 'Inventuuri kuupäev teadmata')
                     + '</div>';
-                if (popupValue != null) {
+                if (popupScenario !== '—') {
                     html += '<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--hair)">';
-                    html += '<div style="font-size:10px;color:var(--ink-4);margin-bottom:2px">Stsenaariumide aritmeetiline keskpunkt</div>';
-                    html += '<div style="font-size:18px;font-weight:800;color:var(--ink)">' + Math.round(popupValue).toLocaleString('et-EE').replace(/,/g, ' ') + ' €</div>';
+                    html += '<div style="font-size:10px;color:var(--ink-4);margin-bottom:2px">Puidustsenaarium</div>';
+                    html += '<div class="map-stand-scenario">' + popupScenario + '</div>';
                     if (popupValueHa != null) html += '<div style="font-size:11px;color:var(--ink-4)">' + Math.round(popupValueHa).toLocaleString('et-EE').replace(/,/g, ' ') + ' €/ha</div>';
                     html += '</div>';
                 }
@@ -2991,6 +2994,73 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         var number = Number(text);
         if (!Number.isSafeInteger(number) || number < 0) return null;
         return String(number);
+    }
+
+    function standScenarioHtml(stand) {
+        stand = stand || {};
+        var midpoint = stand.vaartus_hinnang_eur != null ? stand.vaartus_hinnang_eur : stand.vaartus_eur;
+        var low = stand.vaartus_min_eur;
+        var high = stand.vaartus_max_eur;
+        if (low != null && high != null) {
+            return '<span class="er-value-range">' + formatEur(low)
+                + '<span class="asset-range-separator" aria-hidden="true">–</span><span class="sr-only"> kuni </span>'
+                + formatEur(high) + '</span>'
+                + (midpoint != null ? '<small>Keskpunkt ' + formatEur(midpoint) + '</small>' : '');
+        }
+        return midpoint != null ? '<span class="er-value-range">' + formatEur(midpoint) + '</span>' : '—';
+    }
+
+    function mergeMapStandDetails(persistent, searchData, parcelId) {
+        var stands = persistent && persistent.stands;
+        var searchParcel = searchData && searchData.kataster;
+        var richLayer = searchData && searchData.map_layers && searchData.map_layers.eraldised;
+        if (
+            !stands || !Array.isArray(stands.features)
+            || !searchParcel || searchParcel.number !== parcelId
+            || !richLayer || !Array.isArray(richLayer.features)
+        ) return persistent;
+
+        var detailsByNumber = {};
+        richLayer.features.forEach(function(feature) {
+            var properties = feature && feature.properties;
+            var number = canonicalEraldisNumber(properties && properties.eraldis_nr);
+            if (number !== null) detailsByNumber[number] = properties;
+        });
+        var detailKeys = [
+            'tagavara_y_ha', 'tagavara_provenance', 'korgus',
+            'vaartus_eur', 'vaartus_hinnang_eur', 'vaartus_min_eur', 'vaartus_max_eur',
+            'vaartus_per_ha', 'vaartus_hinnang_per_ha'
+        ];
+        var features = stands.features.map(function(feature) {
+            var properties = feature && feature.properties || {};
+            var details = detailsByNumber[canonicalEraldisNumber(properties.eraldis_nr)];
+            if (!details) return feature;
+            var enriched = Object.assign({}, properties);
+            detailKeys.forEach(function(key) {
+                if (Object.prototype.hasOwnProperty.call(details, key)) enriched[key] = details[key];
+            });
+            return Object.assign({}, feature, {properties: enriched});
+        });
+        return Object.assign({}, persistent, {
+            stands: Object.assign({}, stands, {features: features}),
+        });
+    }
+
+    function enrichVisibleMapStands(parcelId, searchData) {
+        if (
+            mapWorkspaceState.parcelId !== parcelId
+            || !mapWorkspaceState.hasValidPersistentContext
+            || !mapWorkspaceState.persistentContext
+        ) return false;
+        mapWorkspaceState = Object.assign({}, mapWorkspaceState, {
+            persistentContext: mergeMapStandDetails(
+                mapWorkspaceState.persistentContext,
+                searchData,
+                parcelId
+            ),
+        });
+        renderMapWorkspaceState();
+        return true;
     }
 
     function eraldisLabel(value) {
@@ -3384,23 +3454,21 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             // Table
             html += '<div class="table-grid-hscroll">';
             html += '<div class="table-grid-header eraldised-table-header">';
-            html += '<div>Eraldis</div><div>Puuliik</div><div>Vanus</div><div>Tagavara</div><div>Boniteet</div><div>Pindala</div><div style="text-align:right">Stsenaarium</div>';
+            html += '<div>Eraldis ja lähteandmed</div><div style="text-align:right">Puidustsenaarium</div>';
             html += '</div>';
 
             html += '<div class="table-grid-scroll">';
             sortEraldisedForDisplay(data.eraldised).forEach(function(e) {
                 var sp = speciesName(e.puuliik_kood || e.puuliik, e.puuliik);
                 var b = e.boniteet || BONITEET_LABELS[e.boniteedi_kood] || '—';
-                var standEstimate = e.vaartus_hinnang_eur != null ? e.vaartus_hinnang_eur : e.vaartus_eur;
-                var v = standEstimate ? formatEur(standEstimate) : '—';
+                var v = standScenarioHtml(e);
                 var standLabel = eraldisLabel(e.eraldis_nr);
                 html += '<div class="table-grid-row eraldised-row">';
-                html += '<div class="er-number" title="' + escHtml(standLabel) + '" aria-label="' + escHtml(standLabel) + '">' + escHtml(standLabel) + '</div>';
-                html += '<div class="er-species">' + escHtml(sp) + (e.invent_kp ? '<span class="er-inventory">Invent. ' + formatDateEt(e.invent_kp) + '</span>' : '') + '</div>';
-                html += '<div>' + (e.vanus || '—') + '</div>';
-                html += '<div>' + formatNum(e.elus_tagavara_ha != null ? e.elus_tagavara_ha : e.tagavara_y_ha) + '</div>';
-                html += '<div>' + escHtml(b) + '</div>';
-                html += '<div>' + formatNum(e.pindala_ha, 2) + '</div>';
+                html += '<div class="er-stand-summary">';
+                html += '<div class="er-stand-heading"><span class="er-number" title="' + escHtml(standLabel) + '" aria-label="' + escHtml(standLabel) + '">' + escHtml(standLabel) + '</span><span class="er-species">' + escHtml(sp) + '</span></div>';
+                html += '<div class="er-stand-meta"><span>Vanus ' + (e.vanus != null ? escHtml(e.vanus) + ' a' : '—') + '</span><span>Tagavara ' + formatNum(e.elus_tagavara_ha != null ? e.elus_tagavara_ha : e.tagavara_y_ha) + ' m³/ha</span><span>Boniteet ' + escHtml(b) + '</span><span>Pindala ' + formatNum(e.pindala_ha, 2) + ' ha</span></div>';
+                if (e.invent_kp) html += '<span class="er-inventory">Invent. ' + formatDateEt(e.invent_kp) + '</span>';
+                html += '</div>';
                 html += '<div class="er-value">' + v + '</div>';
                 html += '</div>';
             });
@@ -4250,6 +4318,18 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         );
     }
 
+    function hasActiveMapContextRequestForParcel(parcelId) {
+        if (typeof mapWorkspaceState === 'undefined' || !mapWorkspaceState) return false;
+        var requestedParcel = String(parcelId || '').trim();
+        var stateParcel = String(mapWorkspaceState.parcelId || '').trim();
+        return Boolean(
+            requestedParcel
+            && requestedParcel === stateParcel
+            && mapWorkspaceState.requestController
+            && ['loading', 'refreshing'].indexOf(mapWorkspaceState.loadingStatus) !== -1
+        );
+    }
+
     function resetAnalyticalResult(requestId) {
         if (requestId !== parcelSearchSequence) return false;
         currentData = null;
@@ -4984,6 +5064,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             currentData = data;
             recordChatSnapshotReceipt(data, performance.now());
             setLegacyMapFallback(nr, data);
+            enrichVisibleMapStands(nr, data);
 
             window._timberValue = (data.vaartus && data.vaartus.total_value_eur) || 0;
             window._vaartusData = data.vaartus || {};
@@ -5041,7 +5122,10 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             }, 200);
         } catch (err) {
             if (requestId !== parcelSearchSequence) return;
-            if (hasPersistentMapContextForParcel(nr)) resetAnalyticalResult(requestId);
+            if (
+                hasPersistentMapContextForParcel(nr)
+                || hasActiveMapContextRequestForParcel(nr)
+            ) resetAnalyticalResult(requestId);
             else resetParcelResult(requestId);
             hideLoading();
             showDashboard();

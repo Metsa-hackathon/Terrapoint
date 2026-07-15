@@ -182,7 +182,10 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([stand["eraldis_nr"] for stand in summaries], [1, 5, 16])
         self.assertEqual([stand["hinnang_seisuhind"] for stand in summaries], [17.1, 47.6, 45.85])
         self.assertEqual([feature["properties"]["eraldis_nr"] for feature in map_features], [1, 5, 16])
+        summaries_by_number = {stand["eraldis_nr"]: stand for stand in summaries}
         for feature in map_features:
+            properties = feature["properties"]
+            summary = summaries_by_number[properties["eraldis_nr"]]
             label_point = feature["properties"]["label_point"]
             self.assertTrue(shape(feature["geometry"]).covers(Point(*label_point)))
             expected_legacy_color = {
@@ -194,6 +197,9 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(feature["properties"]["color"], expected_legacy_color)
             self.assertEqual(feature["properties"]["age_class_provenance"], "Terrapointi tuletis")
             self.assertIn("age_class_color", feature["properties"])
+            self.assertEqual(properties["vaartus_min_eur"], summary["vaartus_min_eur"])
+            self.assertEqual(properties["vaartus_hinnang_eur"], summary["vaartus_hinnang_eur"])
+            self.assertEqual(properties["vaartus_max_eur"], summary["vaartus_max_eur"])
         for stand in summaries:
             self.assertIn("age_class", stand)
             self.assertIn("age_class_label", stand)
