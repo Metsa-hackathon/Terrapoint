@@ -3,6 +3,8 @@ FOREST_ACT_VALIDITY_URL = "https://www.riigiteataja.ee/akt/109042026002#para11"
 FOREST_INVENTORY_ACCURACY_URL = "https://www.riigiteataja.ee/akt/131052024011#para13"
 LAND_VALUE_URL = "https://maaruum.ee/maakataster-ja-maa-hindamine/maa-hindamine/maa-korraline-hindamine"
 TIMBER_PRICE_URL = "https://erametsaliit.ee/wp-content/uploads/2026/05/puiduhinnad-2026-i-kv.pdf"
+FOREST_ASSORTMENT_METHOD_URL = "https://www.riigiteataja.ee/aktilisa/1180/3202/5002/VV_17m_lisa5.pdf"
+FOREST_HARVEST_COST_METHOD_URL = "https://www.riigiteataja.ee/aktilisa/1180/3202/5002/VV_17m_lisa7.pdf"
 
 
 def _inventory_confidence(
@@ -177,7 +179,7 @@ def build_asset_passports(
         },
         {
             "id": "timber_value",
-            "label": "Kasvava puidu hinnang",
+            "label": "Kasvava puidu stsenaarium",
             "available": timber_available,
             "range": {
                 "low": timber_estimate.get("low_eur") if timber_available else None,
@@ -186,13 +188,18 @@ def build_asset_passports(
             },
             "unit": "€",
             "provenance": "estimate",
-            "provenance_label": "Terrapointi hinnang",
+            "provenance_label": "Terrapointi stsenaarium",
             "source": {"name": "Metsaregister ja Eesti Erametsaliit", "url": TIMBER_PRICE_URL, "as_of": "2026-03"},
-            "derivation": "Iga eraldise elus tagavara × pindala × puuliikide kaalutud kännuraha; eraldiste väärtused liidetakse.",
+            "methodology_sources": [
+                {"label": "Ametlik sortimenteerimise metoodika", "url": FOREST_ASSORTMENT_METHOD_URL},
+                {"label": "Ametlik ülestöötamiskulude metoodika", "url": FOREST_HARVEST_COST_METHOD_URL},
+            ],
+            "derivation": "Iga eraldise elus tagavara × pindala. Alumine piir kasutab küttepuidu ja ülemine piir avaldatud või hinnangulise liigihinna olemasolul palgi kännuraha; toetamata liigile jääb küttepuidu vahemik. Tegelik sortimendijaotus ei ole registri koondandmetest teada.",
             "confidence": value_confidence,
             "limitations": [
-                "Hinnang ei ole ostupakkumine ega kutselise hindaja koostatud turuväärtus.",
-                "Tegelik hind sõltub puidu kvaliteedist, ligipääsust, töömahust ja müügihetke turust.",
+                "Stsenaarium ei ole ostupakkumine ega kutselise hindaja koostatud turuväärtus.",
+                "Tegelik sortimendijaotus sõltub puude diameetrist, kõrgusest, kvaliteedist ja kahjustustest.",
+                "Realiseeritavat väärtust mõjutavad raievalmidus, piirangud, ligipääs, kokkuveokaugus, töömaht ja müügihetke turg.",
             ] + ([f"{estimated_stands} eraldise tagavara on hinnanguline."] if estimated_stands else [])
               + ([f"{unavailable_stands} eraldise tagavara puudub."] if unavailable_stands else []),
             "ai_question": "Selgita kasvava puidu hinnavahemikku, selle arvutuskäiku ja peamisi ebakindlusi selle kinnistu andmete põhjal.",
@@ -213,7 +220,7 @@ def build_asset_passports(
         },
         {
             "id": "property_estimate",
-            "label": "Kinnistu koondhinnang",
+            "label": "Maa ja puidu indikatiivne vahemik",
             "available": property_available,
             "range": {
                 "low": property_estimate.get("low_eur") if property_available else None,
@@ -222,14 +229,16 @@ def build_asset_passports(
             },
             "unit": "€",
             "provenance": "estimate",
-            "provenance_label": "Terrapointi hinnang",
+            "provenance_label": "Terrapointi stsenaarium",
             "source": {"name": "Metsaregister ja Maa- ja Ruumiamet", "url": LAND_VALUE_URL},
-            "derivation": "Kasvava puidu hinnavahemik + maa maksustamishinna ±30% tundlikkusvahemik.",
+            "derivation": "Kasvava puidu sortimendita stsenaariumivahemik + maa maksustamishinna ±30% tundlikkusvahemik. Keskpunkti ei kuvata, sest tehinguvõrdlusi ei kasutata.",
             "confidence": value_confidence,
             "limitations": [
-                "Avalikke võrreldavaid tehinguid koondhinnangus ei kasutata.",
-                "Koondhinnang ei asenda kutselist hindamisakti ega siduvat ostupakkumist.",
+                "Avalikke võrreldavaid tehinguid selles vahemikus ei kasutata.",
+                "Vahemik ei arvesta rahalise koefitsiendina õiguslikku ligipääsu, servituute, piirangute täpset mõju, puidu kvaliteeti ega müügikanali likviidsust.",
+                "Vahemik ei arvesta rahalise koefitsiendina ka raievalmidust, ülestöötamise ja transpordi erikulu ega tuvastamata kahjustusi.",
+                "Vahemik ei asenda kutselist hindamisakti ega siduvat ostupakkumist.",
             ],
-            "ai_question": "Selgita kinnistu koondhinnangut, maa ja puidu osakaalu ning milliseid andmeid tuleks enne müügiotsust kontrollida.",
+            "ai_question": "Selgita maa ja puidu indikatiivset vahemikku, selle osakaale ning milliseid andmeid tuleks enne müügiotsust kontrollida.",
         },
     ]

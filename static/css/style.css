@@ -120,6 +120,18 @@
 
 /* ─── Reset ───────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
 html {
     -webkit-text-size-adjust: 100%;
     -webkit-font-smoothing: antialiased;
@@ -2050,6 +2062,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 
 .asset-ledger {
     margin-bottom: 14px;
+    container-type: inline-size;
 }
 .asset-trust-strip {
     --asset-trust-color: var(--ink-4);
@@ -4053,7 +4066,7 @@ footer {
     .hero-trees { display: none; }
 }
 
-@media (max-width: 520px) {
+@container (max-width: 420px) {
     .asset-trust-strip { display: grid; gap: 6px; }
     .asset-trust-strip p { max-width: none; text-align: left; }
     .asset-passport summary { grid-template-columns: minmax(0, 1fr) 16px; }

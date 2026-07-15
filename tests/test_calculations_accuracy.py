@@ -180,8 +180,8 @@ class TimberPriceTests(unittest.TestCase):
     """Puidu hinnad — Erametsaliit 2026 Q1.
     Test seisuhindade ja halli lepa paranduse kohta."""
 
-    def test_pine_seisuhind_above_70(self):
-        """Mänd seisuhind: Erametsaliit 2026 Q1 = 76-81 €/tm.
+    def test_pine_unknown_assortment_uses_firewood_to_sawlog_scenarios(self):
+        """Männi sortimendita keskpunkt ei käsitle kogu mahtu palgina.
         Vana kood oli 57 €/tm (25-30% liiga madal)."""
         from api.index import _search_core
         # Sisuliselt importime SPECIES_PRICES otse _search_core funktsiooni
@@ -217,22 +217,25 @@ class TimberPriceTests(unittest.TestCase):
 
         result = asyncio.run(main())
         v = result.get("vaartus", {})
-        # Mänd 200 m³/ha × 5 ha = 1000 m³ × 78 €/tm = 78000 €
-        # vana kood: 1000 × 57 = 57000 € (27% vähem)
-        self.assertEqual(v["total_value_eur"], 85800)
-        self.assertEqual(v["base_value_eur"], 78600)
+        # Ilma sortimendiandmeteta ulatub stsenaarium küttepuidust palgini;
+        # keskne komponendireferents on nende piiride keskpunkt, mitte turuhind.
+        self.assertEqual(v["total_value_eur"], 45850)
+        self.assertEqual(v["base_value_eur"], 45850)
         self.assertLess(v["range_low_eur"], v["base_value_eur"])
         self.assertGreater(v["range_high_eur"], v["base_value_eur"])
-        self.assertEqual(v["price_per_m3"], 78)
-        self.assertEqual(v["base_price_per_m3"], 78.6)
-        self.assertEqual(v["methodology"], "Terrapoint standing timber range v2")
+        self.assertEqual(v["price_per_m3"], 45.85)
+        self.assertEqual(v["base_price_per_m3"], 45.85)
+        self.assertEqual(v["methodology"], "Terrapoint unknown-assortment range v3")
         self.assertEqual(v["price_updated"], "2026-Q1")
         self.assertEqual(v["price_as_of"], "2026-03")
         self.assertTrue(v["sources"])
         self.assertFalse(v["property_estimate"]["has_transaction_comparables"])
         self.assertFalse(v["property_estimate"]["land_reference_available"])
-        self.assertEqual(v["maa_turuhind"], 15000)
-        self.assertEqual(v["kinnistu_turuväärtus"], 100800)
+        self.assertIsNone(v["maa_turuhind"])
+        self.assertIsNone(v["kinnistu_turuväärtus"])
+        self.assertTrue(v["legacy_market_value_fields_deprecated"])
+        self.assertEqual(v["range_low_eur"], 10600)
+        self.assertEqual(v["range_high_eur"], 81100)
 
     def test_each_stand_uses_its_own_species_elements(self):
         from api.index import _search_core
@@ -264,9 +267,9 @@ class TimberPriceTests(unittest.TestCase):
 
         result = asyncio.run(main())
         values = result["mets"]["eraldised"]
-        self.assertEqual(values[0]["vaartus_hinnang_eur"], 7860)
-        self.assertEqual(values[1]["vaartus_hinnang_eur"], 2110)
-        self.assertEqual(result["vaartus"]["base_value_eur"], 9970)
+        self.assertEqual(values[0]["vaartus_hinnang_eur"], 4585)
+        self.assertEqual(values[1]["vaartus_hinnang_eur"], 1710)
+        self.assertEqual(result["vaartus"]["base_value_eur"], 6295)
 
 
 if __name__ == "__main__":

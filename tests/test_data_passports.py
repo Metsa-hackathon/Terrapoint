@@ -22,7 +22,7 @@ class AssetPassportTests(unittest.TestCase):
                 "land_reference_available": True,
                 "land_reference_eur": 4_200,
                 "low_eur": 18_800,
-                "base_eur": 22_700,
+                "base_eur": None,
                 "high_eur": 25_200,
                 "has_transaction_comparables": False,
             },
@@ -46,6 +46,7 @@ class AssetPassportTests(unittest.TestCase):
 
         timber = passports[1]
         self.assertEqual(timber["range"], {"low": 16_000, "base": 18_500, "high": 21_000})
+        self.assertEqual(timber["label"], "Kasvava puidu stsenaarium")
         self.assertEqual(timber["confidence"]["score"], 82)
         self.assertEqual(timber["confidence"]["label"], "Kõrge lähteandmete usaldus")
         self.assertEqual(timber["provenance"], "estimate")
@@ -55,6 +56,14 @@ class AssetPassportTests(unittest.TestCase):
         self.assertEqual(land["value"], 4_200)
         self.assertEqual(land["provenance"], "official")
         self.assertIn("maksustamishind", " ".join(land["limitations"]).lower())
+
+        property_value = passports[3]
+        self.assertEqual(property_value["label"], "Maa ja puidu indikatiivne vahemik")
+        self.assertIsNone(property_value["range"]["base"])
+        self.assertIn("tehing", " ".join(property_value["limitations"]).lower())
+        combined_limitations = " ".join(property_value["limitations"]).lower()
+        for factor in ("raievalmidust", "ülestöötamise", "transpordi", "kahjustusi", "likviidsust"):
+            self.assertIn(factor, combined_limitations)
 
     def test_marks_volume_as_mixed_when_any_stand_stock_is_estimated(self):
         passports = build_asset_passports(

@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 
-PUBLISHED_STUMPAGE_RANGES = {
+# Erametsaliidu table 7 values are assortment-specific sawlog stumpage,
+# not a price that can be applied to every cubic metre in a stand. Without
+# element-level diameter and quality data, Annex 5 assortment bucking cannot
+# determine the actual sawlog/pulpwood/firewood split.
+# Source: https://www.riigiteataja.ee/aktilisa/1180/3202/5002/VV_17m_lisa5.pdf
+PUBLISHED_SAWLOG_STUMPAGE_RANGES = {
     "MA": (76.1, 81.1),
     "KU": (79.6, 84.6),
     "KS": (70.5, 75.5),
@@ -31,12 +36,12 @@ FIREWOOD_FALLBACK = (10.6, 15.6)
 
 def _price_range(species_code: str | None) -> tuple[float, float, str]:
     code = (species_code or "").upper()
-    if code in PUBLISHED_STUMPAGE_RANGES:
-        low, high = PUBLISHED_STUMPAGE_RANGES[code]
-        return low, high, "published"
+    if code in PUBLISHED_SAWLOG_STUMPAGE_RANGES:
+        _, sawlog_high = PUBLISHED_SAWLOG_STUMPAGE_RANGES[code]
+        return FIREWOOD_FALLBACK[0], sawlog_high, "published"
     if code in ESTIMATED_STUMPAGE_BASE:
         base = ESTIMATED_STUMPAGE_BASE[code]
-        return base * 0.75, base * 1.25, "estimated"
+        return FIREWOOD_FALLBACK[0], base * 1.25, "estimated"
     return FIREWOOD_FALLBACK[0], FIREWOOD_FALLBACK[1], "fallback"
 
 
@@ -46,7 +51,7 @@ def calculate_stand_value(
     area_ha: float,
     elements: list[dict] | None = None,
 ) -> dict:
-    """Estimate standing timber from live stock and species price ranges."""
+    """Build unknown-assortment bounds from live stock and stumpage prices."""
     stock = max(float(stock_per_ha or 0), 0)
     area = max(float(area_ha or 0), 0)
     usable_elements = [
@@ -69,7 +74,7 @@ def calculate_stand_value(
             weighted.append((component_stock, low, high, quality))
         known_stock = sum(component_stock for component_stock, _, _, _ in weighted)
         missing_stock = max(stock - known_stock, 0)
-        if missing_stock > max(stock * 0.02, 0.1):
+        if missing_stock > 0:
             weighted.append((missing_stock, FIREWOOD_FALLBACK[0], FIREWOOD_FALLBACK[1], "fallback"))
         composition_coverage = min(element_total / stock, 1.0)
     else:
@@ -108,6 +113,8 @@ def calculate_stand_value(
         "price_source_quality": source_quality,
         "estimated_value_share": round(estimated_base_value / total_base_value, 4) if total_base_value else 0,
         "estimated_composition_share": round(estimated_composition_stock / stock, 4) if stock else 0,
+        "valuation_basis": "unknown_assortment_bounds",
+        "assortment_data_available": False,
     }
 
 
@@ -251,7 +258,7 @@ def calculate_property_estimate(land_tax_value: float | None, timber: dict) -> d
     land_high = round(land * 1.3)
     return {
         "low_eur": land_low + round(timber.get("low_eur", 0)),
-        "base_eur": round(land) + round(timber.get("base_eur", 0)),
+        "base_eur": None,
         "high_eur": land_high + round(timber.get("high_eur", 0)),
         "land_reference_eur": round(land),
         "land_low_eur": land_low,
@@ -259,4 +266,5 @@ def calculate_property_estimate(land_tax_value: float | None, timber: dict) -> d
         "land_reference_available": True,
         "land_method": "tax_value_sensitivity",
         "has_transaction_comparables": False,
+        "valuation_basis": "component_sensitivity_range",
     }

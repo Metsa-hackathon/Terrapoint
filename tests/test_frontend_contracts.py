@@ -115,7 +115,8 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("must-revalidate", cache_control)
 
     def test_changed_stylesheet_busts_the_previous_immutable_url(self):
-        self.assertIn('/static/css/style.css?r=jkl112', INDEX_HTML)
+        self.assertIn('/static/css/style.css?r=jkl113', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl112', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl111', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl110', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl109', INDEX_HTML)
@@ -162,6 +163,15 @@ class FrontendContractTests(unittest.TestCase):
         self.assertNotIn("var nextMsg = aiMessageQueue.shift()", INDEX_HTML)
         self.assertNotIn("aiMessageQueue.push(pendingUserMsg)", INDEX_HTML)
         self.assertIn("kõrge: 'Kõrge lähteandmestik'", helper)
+        self.assertIn("Puidustsenaariumide keskpunkt / ha", INDEX_HTML)
+        self.assertIn("Sortimendita keskpunkt", INDEX_HTML)
+        self.assertIn("<div style=\"text-align:right\">Stsenaarium</div>", INDEX_HTML)
+        self.assertNotIn("Puidu keskväärtus / ha", INDEX_HTML)
+        self.assertNotIn("Kaalutud kännuraha", INDEX_HTML)
+        self.assertNotIn("Vaata kinnistu turuväärtust", INDEX_HTML)
+        self.assertIn("Stsenaariumide aritmeetiline keskpunkt", INDEX_HTML)
+        self.assertNotIn("metsa majanduslikku väärtust", INDEX_HTML)
+        self.assertNotIn("kogu kinnistu väärtust eurodes", INDEX_HTML)
 
         script = f"""
             const EUR_FORMATTER = new Intl.NumberFormat('et-EE', {{style:'currency',currency:'EUR',maximumFractionDigits:0}});
@@ -212,6 +222,19 @@ class FrontendContractTests(unittest.TestCase):
             ".asset-passport-origin", ".asset-ai-btn", ".asset-trust-kõrge",
         ):
             self.assertIn(css_class, STYLE_CSS)
+
+        self.assertRegex(
+            STYLE_CSS,
+            r"(?m)^\.sr-only\s*\{[^}]*position:\s*absolute;[^}]*clip:\s*rect\(0, 0, 0, 0\);",
+        )
+        self.assertRegex(
+            STYLE_CSS,
+            r"(?m)^\.asset-ledger\s*\{[^}]*container-type:\s*inline-size;",
+        )
+        self.assertRegex(
+            STYLE_CSS,
+            r"(?s)@container\s*\(max-width:\s*420px\)\s*\{.*?\.asset-passport summary\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 16px;",
+        )
 
     def test_dashboard_uses_desktop_space_without_widening_prose_sections(self):
         self.assertIn("--dashboard-max-w: min(calc(100vw - 48px), 1600px);", STYLE_CSS)
@@ -1185,10 +1208,13 @@ console.log(JSON.stringify({{
         )
         self.assertIsNotNone(orthophoto)
         self.assertIsNotNone(gray_map)
+        self.assertIn("minZoom: 6", init_map)
         self.assertIn("tileSize: 256", orthophoto.group(1))
+        self.assertIn("minZoom: 6", orthophoto.group(1))
         self.assertIn("maxNativeZoom: 18", orthophoto.group(1))
         self.assertIn("maxZoom: 19", orthophoto.group(1))
         self.assertIn("tileSize: 256", gray_map.group(1))
+        self.assertIn("minZoom: 6", gray_map.group(1))
         self.assertIn("maxZoom: 19", gray_map.group(1))
         self.assertIn("maaruumOrthophoto.addTo(map);", init_map)
         self.assertNotIn("esriWorldImagery.addTo(map);", init_map)
@@ -1924,6 +1950,7 @@ console.log(JSON.stringify(mapSourceDetailsHtml({{
 
     def test_map_runtime_is_parallel_isolated_and_uses_legacy_only_as_failure_fallback(self):
         do_search = _extract_js_function("doSearch")
+        apply_payload = _extract_js_function("applyMapContextPayload")
         self.assertIn("var mapContextPromise = requestMapContextForParcel(nr);", do_search)
         self.assertLess(
             do_search.index("requestMapContextForParcel(nr)"),
@@ -1932,6 +1959,10 @@ console.log(JSON.stringify(mapSourceDetailsHtml({{
         self.assertNotIn("loadMapLayers(data.map_layers", do_search)
         self.assertNotIn("deriveClientMapThemes", do_search)
         self.assertIn("setLegacyMapFallback(nr, data);", do_search)
+        self.assertNotIn("hideLoading()", apply_payload)
+        self.assertNotIn("showDashboard()", apply_payload)
+        self.assertLess(do_search.index("safe(renderEudr"), do_search.index("hideLoading()"))
+        self.assertLess(do_search.index("hideLoading()"), do_search.index("showDashboard()"))
 
         fallback = _extract_js_function("applyLegacyMapFallback")
         self.assertIn("mapWorkspaceState.hasValidPersistentContext", fallback)

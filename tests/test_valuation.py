@@ -8,13 +8,15 @@ from calculators.valuation import (
 
 
 class StandValuationTests(unittest.TestCase):
-    def test_pine_uses_published_q1_stumpage_range(self):
+    def test_pine_uses_firewood_floor_and_sawlog_ceiling_when_assortments_are_unknown(self):
         result = calculate_stand_value("MA", stock_per_ha=100, area_ha=1)
 
-        self.assertEqual(result["low_eur"], 7610)
-        self.assertEqual(result["base_eur"], 7860)
+        self.assertEqual(result["low_eur"], 1060)
+        self.assertEqual(result["base_eur"], 4585)
         self.assertEqual(result["high_eur"], 8110)
         self.assertEqual(result["price_source_quality"], "published")
+        self.assertEqual(result["valuation_basis"], "unknown_assortment_bounds")
+        self.assertFalse(result["assortment_data_available"])
 
     def test_species_elements_improve_mixed_stand_estimate(self):
         result = calculate_stand_value(
@@ -27,7 +29,7 @@ class StandValuationTests(unittest.TestCase):
             ],
         )
 
-        self.assertEqual(result["base_eur"], 4985)
+        self.assertEqual(result["base_eur"], 3148)
         self.assertTrue(result["composition_used"])
 
     def test_unknown_species_uses_conservative_firewood_range_not_pine(self):
@@ -45,9 +47,21 @@ class StandValuationTests(unittest.TestCase):
             elements=[{"puuliik_kood": "MA", "tagavara_y_ha": 100}],
         )
 
-        self.assertEqual(result["base_eur"], 9170)
+        self.assertEqual(result["base_eur"], 5895)
+        self.assertEqual(result["low_eur"], 2120)
         self.assertEqual(result["composition_coverage"], 0.5)
         self.assertEqual(result["price_source_quality"], "fallback")
+
+    def test_two_percent_composition_gap_is_not_priced_as_zero(self):
+        result = calculate_stand_value(
+            "MA",
+            stock_per_ha=1000,
+            area_ha=1,
+            elements=[{"puuliik_kood": "MA", "tagavara_y_ha": 980}],
+        )
+
+        self.assertEqual(result["low_eur"], 10_600)
+        self.assertEqual(result["high_eur"], 79_790)
 
     def test_small_estimated_component_reports_proportional_share(self):
         result = calculate_stand_value(
@@ -98,11 +112,12 @@ class ValuationReliabilityTests(unittest.TestCase):
             timber={"low_eur": 70_000, "base_eur": 80_000, "high_eur": 90_000},
         )
 
-        self.assertEqual(result["base_eur"], 180_000)
+        self.assertIsNone(result["base_eur"])
         self.assertEqual(result["low_eur"], 140_000)
         self.assertEqual(result["high_eur"], 220_000)
         self.assertEqual(result["land_method"], "tax_value_sensitivity")
         self.assertFalse(result["has_transaction_comparables"])
+        self.assertEqual(result["valuation_basis"], "component_sensitivity_range")
 
     def test_missing_land_reference_does_not_masquerade_as_property_value(self):
         result = calculate_property_estimate(

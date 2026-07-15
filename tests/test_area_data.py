@@ -97,8 +97,15 @@ class AreaDataTests(unittest.TestCase):
             },
         })
 
-        self.assertIn("Kinnistu automaatne vahemik: 140000–220000 EUR", prompt)
-        self.assertIn("Puidu hinnavahemik: 70000–90000 EUR", prompt)
+        self.assertIn("Maa ja puidu indikatiivne vahemik: 140000–220000 EUR", prompt)
+        self.assertIn("sortimendita puidustsenaarium", prompt)
+        self.assertIn("Puidu sortimendita stsenaarium: 70000–90000 EUR", prompt)
+        for factor in ("raievalmidus", "õiguslikud piirangud", "ligipääs", "transpordi erikulu", "kahjustused", "likviidsus"):
+            self.assertIn(factor, prompt)
+        self.assertIn("--- MAJANDUSLIKUD STSENAARIUMID ---", prompt)
+        self.assertNotIn("--- MAJANDUSLIK VÄÄRTUS ---", prompt)
+        self.assertNotIn("Kinnistu automaatne vahemik", prompt)
+        self.assertNotIn("180000", prompt)
         self.assertIn("Hinnangu usaldus: 55/100 (keskmine)", prompt)
         self.assertIn("Kaugandmete terviseskoor: 84/100", prompt)
         self.assertIn("ei ole ametlik terviseindeks", prompt)
@@ -134,10 +141,11 @@ class AreaDataTests(unittest.TestCase):
             },
         })
 
-        self.assertIn("väärtus 1310 EUR", prompt)
-        self.assertIn("Väärtus ha kohta: 1310 EUR/ha", prompt)
-        self.assertIn("Keskmine hind: 13.1 EUR/m³", prompt)
+        self.assertIn("Stsenaariumide aritmeetiline keskpunkt ha kohta: 1310 EUR/ha", prompt)
+        self.assertIn("Sortimendita stsenaariumide keskpunkt: 13.1 EUR/m³", prompt)
+        self.assertIn("stsenaariumide aritmeetiline keskpunkt 1310 EUR", prompt)
         self.assertNotIn("väärtus 7800 EUR", prompt)
+        self.assertNotIn(", väärtus 1310 EUR", prompt)
 
     def test_ai_prompt_includes_actionable_legacy_subsidy_and_audit_fields(self):
         prompt = build_system_prompt({

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Terrapoint — Eesti metsaandmete analüüs | Metsa väärtus</title>
-    <meta name="description" content="Terrapoint — Eesti tasuta metsaandmete analüüs. Sisesta katastritunnus ja vaata metsa väärtust, eraldisi, süsinikuvaru, riske ja toetusi reaalajas.">
+    <title>Terrapoint — Eesti metsaandmete analüüs | Maa ja puidu stsenaariumid</title>
+    <meta name="description" content="Terrapoint — Eesti tasuta metsaandmete analüüs. Sisesta katastritunnus ja vaata maa referentsi, puidustsenaariume, eraldisi, süsinikuvaru, riske ja toetusi reaalajas.">
     <meta name="keywords" content="Terrapoint, metsa andmed, metsa väärtus, kataster, katastritunnus, metsaeraldised, süsinikuvaru, metsatoetused, kitsendused, Eesti mets, metsa analüüs, maa-amet, metsaregister, puidu hind, metsa omanik, Natura 2000, EL deforestatsioon, metsakaart, kinnistu andmed">
     <meta name="author" content="Terrapoint">
     <meta name="publisher" content="Terrapoint">
@@ -35,7 +35,7 @@
     <link rel="mask-icon" href="/static/favicon.svg" color="#0a3d9e">
     <link rel="manifest" href="/site.webmanifest">
     <meta property="og:title" content="Terrapoint — Eesti metsaandmete analüüs">
-    <meta property="og:description" content="Metsa väärtus, eraldised, süsinikuvaru, riskid ja toetused ühe otsinguga. Tasuta ja reaalajas Eesti riiklikest registritest.">
+    <meta property="og:description" content="Maa referents, puidustsenaariumid, eraldised, süsinikuvaru, riskid ja toetused ühe otsinguga. Tasuta ja reaalajas Eesti riiklikest registritest.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://terrapoint.ee/">
     <meta property="og:site_name" content="Terrapoint">
@@ -46,10 +46,10 @@
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="Terrapoint — Eesti metsaandmete analüüsi tööriist: metsa väärtus, eraldised, süsinikuvaru, riskid ja toetused.">
+    <meta property="og:image:alt" content="Terrapoint — Eesti metsaandmete analüüsi tööriist: maa referents, puidustsenaariumid, eraldised, süsinikuvaru, riskid ja toetused.">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Terrapoint — Eesti metsaandmete analüüs">
-    <meta name="twitter:description" content="Metsa väärtus, eraldised, süsinikuvaru, riskid ja toetused ühe otsinguga. Tasuta ja reaalajas Eesti riiklikest registritest.">
+    <meta name="twitter:description" content="Maa referents, puidustsenaariumid, eraldised, süsinikuvaru, riskid ja toetused ühe otsinguga. Tasuta ja reaalajas Eesti riiklikest registritest.">
     <meta name="twitter:image" content="https://terrapoint.ee/static/og-image.png">
     <meta name="twitter:image:alt" content="Terrapoint — Eesti metsaandmete analüüsi tööriist">
     <meta name="twitter:site" content="@terrapoint">
@@ -64,7 +64,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl034">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl112">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl113">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -80,7 +80,7 @@
           "alternateName": "Terrapoint — Eesti metsaandmete analüüs",
           "url": "https://terrapoint.ee/",
           "inLanguage": "et",
-          "description": "Eesti metsaandmete analüüsi tööriist: metsa väärtus, eraldised, süsinikuvaru, riskid ja toetused.",
+          "description": "Eesti metsaandmete analüüsi tööriist: maa referents, puidustsenaariumid, eraldised, süsinikuvaru, riskid ja toetused.",
           "publisher": { "@id": "https://terrapoint.ee/#organization" },
           "potentialAction": {
             "@type": "SearchAction",
@@ -139,7 +139,7 @@
             "availability": "https://schema.org/InStock"
           },
           "featureList": [
-            "Metsa majanduslik väärtus",
+            "Maa referents ja puidustsenaariumid",
             "Metsaeraldised ja teatised",
             "Süsinikuvaru",
             "Ohutegurid ja üraskirisk",
@@ -167,7 +167,7 @@
               "name": "Mis on Terrapoint?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Terrapoint on Eesti metsaandmete analüüsi veebirakendus, mis koondab riiklikest registritest metsa- ja kinnistuandmed ühte otsingusse. Sisesta katastritunnus või aadress ja vaata oma metsa väärtust, eraldisi, süsinikuvaru, riske ja toetusi."
+                "text": "Terrapoint on Eesti metsaandmete analüüsi veebirakendus, mis koondab riiklikest registritest metsa- ja kinnistuandmed ühte otsingusse. Sisesta katastritunnus või aadress ja vaata maa referentsi, puidustsenaariume, eraldisi, süsinikuvaru, riske ja toetusi."
               }
             },
             {
@@ -183,7 +183,7 @@
               "name": "Milliseid andmeid Terrapoint näitab?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Terrapoint näitab katastriüksuse andmeid, metsaeraldisi, metsa majanduslikku väärtust, süsinikuvaru, metsateatisi, ohutegureid, EL deforestatsiooni-kontrolli, toetusi ja hüvitisi ning kitsendusi ja piiranguid."
+                "text": "Terrapoint näitab katastriüksuse andmeid, metsaeraldisi, maa referentsi ja puidustsenaariume, süsinikuvaru, metsateatisi, ohutegureid, EL deforestatsiooni-kontrolli, toetusi ja hüvitisi ning kitsendusi ja piiranguid."
               }
             },
             {
@@ -196,10 +196,10 @@
             },
             {
               "@type": "Question",
-              "name": "Kuidas arvutatakse metsa majanduslikku väärtust?",
+              "name": "Kuidas kujuneb kasvava puidu stsenaarium?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Metsa väärtus arvutatakse eraldiste puuliikide koosseisu, vanuse, tagavara ja Erametsaliidu puiduhindade põhjal. Tulemus näitab nii iga eraldis kui ka kogu kinnistu väärtust eurodes."
+                "text": "Kasvava puidu vahemik kasutab eraldiste tagavara ja puuliikide hinnapiire. Alumine stsenaarium lähtub küttepuidust ning ülemine toetatud liigi palgist; tulemus ei ole kinnistu turuväärtus ega tehinguhinna prognoos."
               }
             },
             {
@@ -332,7 +332,7 @@
                 Eesti metsaandmed · reaalajas
             </div>
             <h1 class="landing-title">Sinu mets <em>numbrite</em><br>ja <em>kaardi</em> peal.</h1>
-            <p class="landing-sub">Sisesta katastritunnus, aadress või vali kinnistu otse kaardilt. Vaata kinnistu turuväärtust, eraldiste seisukorda, süsinikuvaru, ohutegureid ja võimalike toetusi. Kõik vaid ühe otsingu kaugusel.</p>
+            <p class="landing-sub">Sisesta katastritunnus, aadress või vali kinnistu otse kaardilt. Vaata maa referentsi ja puidustsenaariume, eraldiste seisukorda, süsinikuvaru, ohutegureid ja võimalikke toetusi. Kõik vaid ühe otsingu kaugusel.</p>
             <div class="landing-search">
                 <div class="search-box">
                     <div class="search-icon">
@@ -543,14 +543,14 @@
                     </div>
                     <h3>Metsa vara ja andmete usaldus</h3>
                 </div>
-                <p class="section-desc">Kasvava metsa kogus, väärtus, ametlikud allikad ja arvutuskäik</p>
+                <p class="section-desc">Kasvava metsa kogus, puidustsenaariumid, ametlikud allikad ja arvutuskäik</p>
                 <div id="vaartus-info">
                     <div class="card-placeholder">
                         <div class="ph-eyebrow">Kuvatakse pärast otsingut</div>
                         <ul class="ph-list">
                             <li><span class="ph-label">Ühikhind</span><span class="ph-slot"></span></li>
                             <li><span class="ph-label">Seisuhind</span><span class="ph-slot"></span></li>
-                            <li><span class="ph-label">Koguväärtus</span><span class="ph-slot"></span></li>
+                            <li><span class="ph-label">Puidustsenaarium</span><span class="ph-slot"></span></li>
                             <li><span class="ph-label">Pindala</span><span class="ph-slot"></span></li>
                         </ul>
                     </div>
@@ -711,7 +711,7 @@
                 Meist
             </div>
             <h2 class="about-title">Metsaandmed <em>metsaomaniku</em> heaks.</h2>
-            <p class="about-lead">Terrapoint koondab Eesti avalikud metsa- ja kinnistuandmed ühte otsingusse: sisesta katastritunnus või aadress, vaata oma metsa väärtust, eraldiste seisukorda ja toetusi. Kõik arvutused reaalajas registritest.</p>
+            <p class="about-lead">Terrapoint koondab Eesti avalikud metsa- ja kinnistuandmed ühte otsingusse: sisesta katastritunnus või aadress, vaata maa referentsi, puidustsenaariume, eraldiste seisukorda ja toetusi. Kõik arvutused reaalajas registritest.</p>
 
             <div class="about-photo">
                 <img src="/static/img/team-hackathon-2026.jpg" alt="Terrapoint tiim Metsikult andmetes 2026 häkatoni võitjad: Krister Koger, Kaspar Mälgand, Arle Aron Reidma" loading="lazy" decoding="async">
@@ -1932,7 +1932,7 @@
             + '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/><path d="M12 8l-3 5h2l-2 3h6l-2-3h2l-3-5z" fill="currentColor" stroke="none"/></svg>'
             + 'Analüüsi AI-ga'
             + '</button>'
-            + '<p class="ai-analyze-cta-hint">Saada täielik metsa hinnang: seisukord, väärtus, riskid ja soovitus</p>';
+            + '<p class="ai-analyze-cta-hint">Saada täielik metsaülevaade: seisukord, puidustsenaariumid, riskid ja soovitus</p>';
         msgs.appendChild(wrap);
         var btn = document.getElementById('ai-analyze-btn');
         if (btn) {
@@ -1950,7 +1950,7 @@
         _aiUserScrolledUp = false;
         document.querySelector('.ai-chat-subtitle').textContent = 'Analüüsin katastrit ' + aiCurrentKataster + '...';
         // Auto-send initial analysis request
-        aiSendMessage('Anna mulle täielik metsa hinnang: seisukord, väärtus, riskid ja konkreetne soovitus mida teha. Kasuta kõiki andmeid.');
+        aiSendMessage('Anna mulle täielik metsaülevaade: seisukord, puidustsenaariumid, riskid ja konkreetne soovitus mida teha. Kasuta kõiki andmeid.');
     }
 
     function aiRenderEraldisHints(eraldised) {
@@ -2012,7 +2012,7 @@
             var pind = e.pindala_ha != null ? formatNum(e.pindala_ha, 2) + ' ha' : '';
             var ruhi = e.age_class_label || 'Määramata';
             var estimateValue = e.vaartus_hinnang_eur != null ? e.vaartus_hinnang_eur : e.vaartus_eur;
-            var vaartus = estimateValue ? fmtNum(estimateValue) + ' €' : '';
+            var vaartus = estimateValue ? 'stsenaariumi keskpunkt ' + fmtNum(estimateValue) + ' €' : '';
             var dot = e.age_class_color || 'var(--map-age-unknown)';
             var card = document.createElement('button');
             card.type = 'button';
@@ -2029,7 +2029,7 @@
                 card.disabled = true;
             } else {
                 card.addEventListener('click', function() {
-                    var q = 'Analüüsi eraldist ' + nr + ': anna hinnang selle eraldise seisukorrale, väärtusele ja soovitus (müüa, hoida, hooldusraie). Too välja kõik numbrid. Ära tee midagi drastilist, anna tasakaalustatud hinnang.';
+                    var q = 'Analüüsi eraldist ' + nr + ': selgita selle seisukorda, puidustsenaariumi ja võimalusi (müüa, hoida, hooldusraie). Too välja kõik numbrid ja nimeta ebakindlus. Ära tee midagi drastilist, anna tasakaalustatud hinnang.';
                     aiSendMessage(q);
                     closeEraldisSheet();
                 });
@@ -2278,8 +2278,6 @@
         var controls = document.getElementById('map-controls');
         if (controls) controls.style.display = '';
         dismissMapHint();
-        showDashboard();
-        hideLoading();
         setTimeout(function() {
             if (mapWorkspaceState.parcelId !== parcelId || !mapWorkspaceState.hasValidPersistentContext) return;
             map.invalidateSize();
@@ -2545,7 +2543,7 @@
             // Eemaldame vaikimisi atribuudi ja lisame kokkupandava juhtelemendi;
             // iga aluskiht annab sellele oma pakkuja, toote ja väljavõtte aja.
             attributionControl: false,
-            minZoom: 3,
+            minZoom: 6,
             maxZoom: 19,
         }).setView([58.5, 25.0], 7);
         L.control.zoom({ position: 'topright' }).addTo(map);
@@ -2559,7 +2557,7 @@
         const maaruumOrthophoto = L.tileLayer(
             'https://tiles.maaamet.ee/tm/wmts/1.0.0/foto/default/GMC/{z}/{y}/{x}.jpg?ASUTUS=Terrapoint&KESKKOND=PROD&IS=terrapoint.ee',
             {
-                tileSize: 256, maxNativeZoom: 18, maxZoom: 19, minZoom: 3,
+                tileSize: 256, maxNativeZoom: 18, maxZoom: 19, minZoom: 6,
                 attribution: 'Maa- ja Ruumiameti ortofoto · väljavõte ' + basemapExtractionDateEt + ' · pildistusaeg erineb asukohati',
             }
         );
@@ -2567,7 +2565,7 @@
         const maaruumGrayMap = L.tileLayer(
             'https://tiles.maaamet.ee/tm/wmts/1.0.0/hallkaart/default/GMC/{z}/{y}/{x}.png?ASUTUS=Terrapoint&KESKKOND=PROD&IS=terrapoint.ee',
             {
-                tileSize: 256, maxNativeZoom: 18, maxZoom: 19, minZoom: 3,
+                tileSize: 256, maxNativeZoom: 18, maxZoom: 19, minZoom: 6,
                 attribution: 'Maa- ja Ruumiameti halltoonides kaart · väljavõte ' + basemapExtractionDateEt,
             }
         );
@@ -2896,6 +2894,7 @@
                     + '</div>';
                 if (popupValue != null) {
                     html += '<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--hair)">';
+                    html += '<div style="font-size:10px;color:var(--ink-4);margin-bottom:2px">Stsenaariumide aritmeetiline keskpunkt</div>';
                     html += '<div style="font-size:18px;font-weight:800;color:var(--ink)">' + Math.round(popupValue).toLocaleString('et-EE').replace(/,/g, ' ') + ' €</div>';
                     if (popupValueHa != null) html += '<div style="font-size:11px;color:var(--ink-4)">' + Math.round(popupValueHa).toLocaleString('et-EE').replace(/,/g, ' ') + ' €/ha</div>';
                     html += '</div>';
@@ -3385,7 +3384,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             // Table
             html += '<div class="table-grid-hscroll">';
             html += '<div class="table-grid-header eraldised-table-header">';
-            html += '<div>Eraldis</div><div>Puuliik</div><div>Vanus</div><div>Tagavara</div><div>Boniteet</div><div>Pindala</div><div style="text-align:right">Väärtus</div>';
+            html += '<div>Eraldis</div><div>Puuliik</div><div>Vanus</div><div>Tagavara</div><div>Boniteet</div><div>Pindala</div><div style="text-align:right">Stsenaarium</div>';
             html += '</div>';
 
             html += '<div class="table-grid-scroll">';
@@ -3533,15 +3532,17 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         }
 
         if (!hasAssetPassports || timberValueAvailable) {
-            html += '<div class="info-row"><span class="label">Puidu keskväärtus / ha ' + ddInfo('Puidu keskpunkt jagatud Metsaregistri eraldiste kogupindalaga.') + '</span><span class="value">' + formatEur(data.base_value_per_ha != null ? data.base_value_per_ha : data.value_per_ha) + ' / ha</span></div>';
-            html += '<div class="info-row"><span class="label">Kaalutud kännuraha ' + ddInfo('Raiumata puidu €/m³. Põhiliikidel kasutatakse Erametsaliidu 2026 I kvartali avaldatud min–max kännuraha vahemiku keskpunkti.') + '</span><span class="value">' + formatNum(data.base_price_per_m3 != null ? data.base_price_per_m3 : data.price_per_m3, 2) + ' €/m³</span></div>';
+            var scenarioValuePerHa = data.base_value_per_ha != null ? data.base_value_per_ha : data.value_per_ha;
+            var scenarioMidpointPerM3 = data.base_price_per_m3 != null ? data.base_price_per_m3 : data.price_per_m3;
+            if (scenarioValuePerHa != null) html += '<div class="info-row"><span class="label">Puidustsenaariumide keskpunkt / ha ' + ddInfo('Küttepuidu alumise ja palgi ülemise stsenaariumi aritmeetiline keskpunkt jagatud Metsaregistri eraldiste kogupindalaga. See ei ole turuväärtus.') + '</span><span class="value">' + formatEur(scenarioValuePerHa) + ' / ha</span></div>';
+            if (scenarioMidpointPerM3 != null) html += '<div class="info-row"><span class="label">Sortimendita keskpunkt ' + ddInfo('Küttepuidu alumise ja palgi ülemise kännuraha stsenaariumi aritmeetiline keskpunkt €/m³. Tegelik sortimendijaotus vajab diameetri-, kvaliteedi- ja kahjustusandmeid.') + '</span><span class="value">' + formatNum(scenarioMidpointPerM3, 2) + ' €/m³</span></div>';
         }
         if (!hasAssetPassports) html += '<div class="info-row"><span class="label">Elus puistutagavara ' + ddInfo('Metsaregistri 1. rinde, 2. rinde ja üksikpuude elus tagavara × eraldiste pindala. Surnud ja lamapuit ei kuulu müüdava puidu kogusesse.') + '</span><span class="value">' + formatNum(data.tagavara_m3) + ' m³</span></div>';
         html += '<div class="info-row"><span class="label">Hinnaperiood</span><span class="value">märts 2026</span></div>';
         html += '<div class="info-row"><span class="label">Turu suunainfo</span><span class="value">juuni 2026</span></div>';
 
         html += '<details class="evidence-details"><summary>Kuidas hinnang kujuneb</summary><div class="evidence-body">';
-        html += '<p><strong>Puit:</strong> iga eraldise elus tagavara × pindala × puuliikide kaalutud kännuraha. Kännuraha on lõpplao hinnast juba maha arvestatud keskmine raie ja transpordi kulu.</p>';
+        html += '<p><strong>Puit:</strong> iga eraldise elus tagavara × pindala. Alumine stsenaarium kasutab küttepuidu ja ülemine avaldatud või hinnangulise liigihinna olemasolul palgi kännuraha. Tegelik sortimendijaotus, raievalmidus ja kinnistupõhised kulud vajavad lisandmeid.</p>';
         html += '<p><strong>Maa:</strong> katastri maksustamishind ±30% tundlikkusvahemik. Avalikke võrreldavaid tehinguid selles automaathinnangus veel ei kasutata.</p>';
         if (reliability.reasons && reliability.reasons.length) {
             html += '<h4>Mis usaldust mõjutab</h4><ul>' + reliability.reasons.map(function(reason) { return '<li>' + escHtml(reason) + '</li>'; }).join('') + '</ul>';
@@ -5016,7 +5017,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             if (shouldShowBroadPartialWarning(data.meta)) {
                 showError('Osa andmeallikaid jäi laadimata või oli liiga mahukas. Puuduvad andmed ei tähenda, et piiranguid või metsa ei ole. Proovi otsingut uuesti.');
             } else if (data.mets && shouldShowDetailLimitWarning(data.meta)) {
-                showError('Metsa detailandmete maht või laadimisaeg ületas turvalise piiri. Koosseisu ja väärtuse hinnang põhineb üldisematel registriandmetel.');
+                showError('Metsa detailandmete maht või laadimisaeg ületas turvalise piiri. Koosseis ja puidustsenaarium põhinevad üldisematel registriandmetel.');
             }
 
             // Trigger AI analysis

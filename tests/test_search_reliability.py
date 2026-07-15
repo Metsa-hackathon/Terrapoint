@@ -180,7 +180,7 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         summaries = result["mets"]["eraldised"]
         map_features = result["map_layers"]["eraldised"]["features"]
         self.assertEqual([stand["eraldis_nr"] for stand in summaries], [1, 5, 16])
-        self.assertEqual([stand["hinnang_seisuhind"] for stand in summaries], [21.1, 82.1, 78.6])
+        self.assertEqual([stand["hinnang_seisuhind"] for stand in summaries], [17.1, 47.6, 45.85])
         self.assertEqual([feature["properties"]["eraldis_nr"] for feature in map_features], [1, 5, 16])
         for feature in map_features:
             label_point = feature["properties"]["label_point"]
@@ -199,8 +199,68 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             self.assertIn("age_class_label", stand)
             self.assertIn("age_class_color", stand)
             self.assertEqual(stand["age_class_provenance"], "Terrapointi tuletis")
-        expected_weighted_price = round((78.6 * 10 + 21.1 * 200 + 82.1 * 150) / 360, 2)
+        expected_weighted_price = round((45.85 * 10 + 17.1 * 200 + 47.6 * 150) / 360, 2)
         self.assertEqual(result["vaartus"]["base_price_per_m3"], expected_weighted_price)
+
+    async def test_missing_species_does_not_inherit_pine_assortment_prices(self):
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        kataster = {"number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1}
+        stands = [{
+            "id": 1, "eraldis_nr": 1, "geometry": geometry, "pindala_ha": 1,
+            "puuliik_kood": "MA", "puuliik_kood_raw": None, "puuliik": "mänd", "vanus": 40,
+            "tagavara_y_ha": 100, "tagavara_provenance": "official", "boniteedi_kood": 2,
+        }]
+
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=stands)),
+            patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
+            patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        value = result["vaartus"]
+        self.assertEqual(value["range_low_eur"], 1060)
+        self.assertEqual(value["range_high_eur"], 1560)
+        self.assertEqual(value["base_price_per_m3"], 13.1)
+        self.assertIsNone(value["log_price"])
+        self.assertIsNone(value["pulp_price"])
+
+    async def test_zero_stock_has_no_per_cubic_metre_scenario(self):
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        kataster = {"number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1}
+        stands = [{
+            "id": 1, "eraldis_nr": 1, "geometry": geometry, "pindala_ha": 1,
+            "puuliik_kood": "MA", "puuliik": "mänd", "vanus": 5,
+            "tagavara_y_ha": 0, "tagavara_provenance": "official", "boniteedi_kood": 2,
+        }]
+
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=stands)),
+            patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
+            patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        value = result["vaartus"]
+        self.assertEqual(value["tagavara_m3"], 0)
+        self.assertIsNone(value["price_per_m3"])
+        self.assertIsNone(value["base_price_per_m3"])
+        self.assertIsNone(value["log_price"])
+        self.assertIsNone(value["pulp_price"])
 
     async def test_unavailable_stock_area_suppresses_partial_financial_passports(self):
         geometry = {
