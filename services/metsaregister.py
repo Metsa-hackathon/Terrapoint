@@ -171,7 +171,9 @@ async def query_eraldis(kataster_nr: str) -> list[dict]:
     result = []
     for feat in features:
         props = feat.get("properties", {})
-        kood = props.get("peapuuliik_kood", "MA")
+        raw_kood = props.get("peapuuliik_kood")
+        raw_vanus = props.get("keskm_vanus")
+        kood = raw_kood or "MA"
         # 1., 2. ja üksikpuude rinde tagavarad on eraldi kategooriad, mitte
         # sama väärtuse alias-väljad. Surnud/lamapuitu (_s/_l) elusa puistu
         # turumahu hulka ei liideta.
@@ -186,7 +188,9 @@ async def query_eraldis(kataster_nr: str) -> list[dict]:
             "id": props.get("id"),
             "puuliik": SPECIES_NAMES.get(kood, kood),
             "puuliik_kood": kood,
-            "vanus": props.get("keskm_vanus", 0),
+            "puuliik_kood_raw": raw_kood,
+            "vanus": raw_vanus if raw_vanus is not None else 0,
+            "vanus_raw": raw_vanus,
             # `tagavara_y_ha` stays as a calculated compatibility alias for
             # existing clients; new consumers should use `elus_tagavara_ha`.
             "tagavara_y_ha": tagavara,

@@ -61,7 +61,7 @@ CUTTING_AGE = {
 }
 
 
-def cutting_age_indicator(vanus: int, puuliik_kood: str, boniteedi_kood: int) -> dict:
+def cutting_age_indicator(vanus: int | None, puuliik_kood: str, boniteedi_kood: int) -> dict:
     """Arvuta raievanus indikaator liigi ja boniteedi põhjal.
 
     Boniteedi_kood väärtused 0-6 (WFS metsaregister.eraldis):
@@ -81,6 +81,10 @@ def cutting_age_indicator(vanus: int, puuliik_kood: str, boniteedi_kood: int) ->
             "ratio": 0,
             "status": "unknown",
             "label": "Raievanus pole selle klassifikaatori kirje jaoks määratud",
+            "age_class": "unknown",
+            "age_class_label": "Määramata",
+            "age_class_color": "#6b7280",
+            "age_class_provenance": "Terrapointi tuletis",
         }
     # Tagavara: kui boniteedi_kood on väljaspool 0-6 (nt None või >6),
     # kasutame keskmist boniteeti III (kood 3) — turvaline vaikeväärtus
@@ -88,6 +92,17 @@ def cutting_age_indicator(vanus: int, puuliik_kood: str, boniteedi_kood: int) ->
     if boniteedi_kood not in species:
         boniteedi_kood = 3
     raievanus = species[boniteedi_kood]
+    if vanus is None:
+        return {
+            "raievanus": raievanus,
+            "ratio": 0,
+            "status": "unknown",
+            "label": "Puistu vanus pole määratud",
+            "age_class": "unknown",
+            "age_class_label": "Määramata",
+            "age_class_color": "#6b7280",
+            "age_class_provenance": "Terrapointi tuletis",
+        }
     ratio = vanus / raievanus if raievanus else 0
     if ratio < 0.85:
         status, label = "green", "Hooldusraie"
@@ -95,4 +110,21 @@ def cutting_age_indicator(vanus: int, puuliik_kood: str, boniteedi_kood: int) ->
         status, label = "yellow", "Läheneb raievanusele"
     else:
         status, label = "red", "Raievanus käes"
-    return {"status": status, "label": label, "ratio": round(ratio, 2), "raievanus": raievanus}
+    if ratio < 0.50:
+        age_class, age_class_label, age_class_color = "young", "Noor", "#7aa6c2"
+    elif ratio < 0.85:
+        age_class, age_class_label, age_class_color = "middle_aged", "Keskealine", "#4f7c9b"
+    elif ratio < 1.0:
+        age_class, age_class_label, age_class_color = "maturing", "Valmiv", "#756b9e"
+    else:
+        age_class, age_class_label, age_class_color = "cutting_age_reached", "Raievanus saavutatud", "#5b536b"
+    return {
+        "status": status,
+        "label": label,
+        "ratio": round(ratio, 2),
+        "raievanus": raievanus,
+        "age_class": age_class,
+        "age_class_label": age_class_label,
+        "age_class_color": age_class_color,
+        "age_class_provenance": "Terrapointi tuletis",
+    }

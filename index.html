@@ -64,7 +64,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl034">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl108">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl109">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -448,103 +448,43 @@
                         </div>
                     </div>
                 </div>
-                <div class="map-legend" id="map-legend" style="display:none">
-                    <div class="map-legend-title">Eraldiste legend</div>
-                    <div class="map-legend-section" id="map-legend-colors">
-                        <div class="map-legend-subtitle">Kaardi värvid (raie staatus)</div>
-                        <div class="map-legend-row"><span class="legend-swatch" style="background:var(--map-eraldis-lageraie)"></span><span><strong>Lageraie</strong> — üle raiumisvanuse</span></div>
-                        <div class="map-legend-row"><span class="legend-swatch" style="background:var(--map-eraldis-harvendus)"></span><span><strong>Harvendusraie</strong> — läheneb raievanusele</span></div>
-                        <div class="map-legend-row"><span class="legend-swatch" style="background:var(--map-eraldis-hooldus)"></span><span><strong>Hooldusraie</strong> — keskealine, heas seisus</span></div>
-                        <div class="map-legend-row"><span class="legend-swatch" style="background:var(--map-eraldis-noor)"></span><span><strong>Noor mets</strong> — liiga noor raiumiseks</span></div>
-                    </div>
-                    <button class="map-legend-toggle" id="map-legend-toggle" aria-label="Sulge legend">−</button>
-                </div>
                 <div class="map-controls" id="map-controls">
-                    <button class="map-controls-toggle" id="map-controls-toggle" type="button" aria-label="Sulge kihtide menüü" aria-expanded="true">
-                        <span class="map-controls-toggle-label">Kihid</span>
-                        <span class="map-controls-toggle-icon" aria-hidden="true">−</span>
-                    </button>
-                    <div class="layer-toggle" id="layer-toggle">
-                        <label class="toggle-item toggle-item-kataster" title="Näita katastriüksuste piire ja vajuta kaardil otsimiseks">
-                            <input type="checkbox" id="layer-kataster" data-layer="kataster_wms" checked>
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-kataster);padding-left:4px">Katastriüksused</span>
-                        </label>                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-kaitsealad" data-layer="kaitsealad" checked>
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-kaitseala);padding-left:4px">Kaitsealad</span>
-                        </label>
-                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-piirang" data-layer="piirang">
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-piirang);padding-left:4px">Piiranguv.</span>
-                        </label>
-                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-yrask" data-layer="yrask_eelis">
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-yrask);padding-left:4px">Ürask</span>
-                        </label>
-                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-lageraie" data-layer="lageraiealad">
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-lageraie);padding-left:4px">Lageraie</span>
-                        </label>
-                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-sood" data-layer="sood">
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-sood);padding-left:4px">Sood</span>
-                        </label>
-                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-elupaigad" data-layer="natura_elupaik">
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-elupaik);padding-left:4px">Elupaigad</span>
-                        </label>
-                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-karuputk" data-layer="karuputk">
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-karuputk);padding-left:4px">Karuputk</span>
-                        </label>
-                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-malestised" data-layer="malestised">
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-malestised);padding-left:4px">Mälestised</span>
-                        </label>
-                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-veekogud" data-layer="veekogud">
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-veekogu);padding-left:4px">Järved</span>
-                        </label>
-                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-vooluveed" data-layer="vooluveed">
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-vooluvesi);padding-left:4px">Vooluveed</span>
-                        </label>
-                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-yrask-mke" data-layer="yrask_mke" checked>
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-yrask-mke);padding-left:4px">Surnud puud</span>
-                        </label>
-                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-kotkas" data-layer="kma_kitsendused">
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-kotkas);padding-left:4px">Kotkas (KMA)</span>
-                        </label>
-                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-veekaitse" data-layer="veekaitse">
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-veekaitse);padding-left:4px">Veekaitsevöönd</span>
-                        </label>
-                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-ranna" data-layer="ranna_piirang">
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-ranna);padding-left:4px">Ranna piirang</span>
-                        </label>
-                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-uleujutus" data-layer="uleujutus">
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-uleujutus);padding-left:4px">Üleujutusala</span>
-                        </label>
-                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-kaitsevoond" data-layer="kaitsevoondid">
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-kaitsevoond);padding-left:4px">Kaitsevöönd (MK)</span>
-                        </label>
-                        <label class="toggle-item">
-                            <input type="checkbox" id="layer-piiranguk" data-layer="piirangukeelualad">
-                            <span class="toggle-label" style="border-left:3px solid var(--map-layer-piiranguk);padding-left:4px">Piirangu keeluala</span>
-                        </label>
-                    </div>
-                </div>
-                <div class="map-kiht-legend" id="map-kiht-legend" hidden>
-                    <div class="kiht-legend-header">
-                        <span class="kiht-legend-title">Kihtide legend</span>
-                        <button class="kiht-legend-close" id="kiht-legend-close" type="button" aria-label="Sulge legend">×</button>
-                    </div>
-                    <div class="kiht-legend-body" id="kiht-legend-body">
-                        <!-- Populated by updateKihtLegend() based on which layers are toggled on -->
+                    <div class="map-workspace" id="map-workspace">
+                        <button class="map-workspace-opener map-workspace-button" id="map-workspace-opener" type="button" aria-controls="map-workspace-panel" aria-expanded="false">
+                            <span class="map-workspace-opener-copy">
+                                <span class="map-workspace-eyebrow">Kaardivaade</span>
+                                <strong id="map-workspace-current-view">Ülevaade</strong>
+                            </span>
+                            <span class="map-workspace-opener-status" id="map-workspace-opener-status">Vali esmalt kinnistu</span>
+                        </button>
+                        <div class="map-workspace-panel" id="map-workspace-panel" hidden>
+                            <div class="map-workspace-panel-header">
+                                <div>
+                                    <div class="map-workspace-eyebrow">Kaardi töölaud</div>
+                                    <strong id="map-workspace-panel-title">Ülevaade</strong>
+                                </div>
+                                <button class="map-workspace-close map-workspace-button" id="map-workspace-close" type="button" aria-label="Sulge kaardi töölaud">×</button>
+                            </div>
+                            <div class="map-workspace-panel-body">
+                                <p class="map-workspace-status" id="map-workspace-status" role="status">Vali esmalt kinnistu</p>
+                                <div class="map-view-presets" aria-label="Kaardivaated">
+                                    <button type="button" class="map-view-preset" data-map-view="overview" disabled>Ülevaade</button>
+                                    <button type="button" class="map-view-preset" data-map-view="feasibility" disabled>Teostatavus</button>
+                                    <button type="button" class="map-view-preset" data-map-view="restrictions" disabled>Piirangud</button>
+                                    <button type="button" class="map-view-preset" data-map-view="risks" disabled>Riskid</button>
+                                    <button type="button" class="map-view-preset" data-map-view="subsidies" disabled>Toetused</button>
+                                    <button type="button" class="map-view-preset" data-map-view="history" disabled>Ajalugu</button>
+                                </div>
+                                <div class="map-workspace-section">
+                                    <div class="map-workspace-section-title">Aktiivsed teemad</div>
+                                    <div class="map-theme-controls" id="map-workspace-theme-controls"></div>
+                                </div>
+                                <button class="map-workspace-reset map-workspace-button" id="map-workspace-reset" type="button" disabled>Taasta ülevaade</button>
+                                <div class="map-workspace-legend" id="map-workspace-legend" role="region" aria-label="Kaardi legend">
+                                    <p class="map-workspace-empty">Vali esmalt kinnistu, et näha kaardi tähendusi ja allikaid.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -976,6 +916,775 @@
     var addressFetches = new Map();
     var activeAddressFetch = null;
 
+    // MAP_WORKSPACE_PURE_START
+    const MAP_VIEW_PRESETS = Object.freeze({
+        overview: Object.freeze({
+            id: 'overview',
+            label: 'Ülevaade',
+            themeIds: Object.freeze(['nature_protection', 'species_habitats', 'water_restrictions', 'heritage_other']),
+        }),
+        feasibility: Object.freeze({
+            id: 'feasibility',
+            label: 'Teostatavus',
+            themeIds: Object.freeze(['nature_protection', 'species_habitats', 'water_restrictions', 'heritage_other', 'flood_wetlands']),
+        }),
+        restrictions: Object.freeze({
+            id: 'restrictions',
+            label: 'Piirangud',
+            themeIds: Object.freeze(['nature_protection', 'species_habitats', 'water_restrictions', 'heritage_other', 'flood_wetlands']),
+        }),
+        risks: Object.freeze({
+            id: 'risks',
+            label: 'Riskid',
+            themeIds: Object.freeze(['flood_wetlands', 'forest_health', 'invasive_species']),
+        }),
+        subsidies: Object.freeze({
+            id: 'subsidies',
+            label: 'Toetused',
+            themeIds: Object.freeze(['subsidy_indicators']),
+        }),
+        history: Object.freeze({
+            id: 'history',
+            label: 'Ajalugu',
+            themeIds: Object.freeze(['forest_notices', 'archival_clearcuts']),
+        }),
+    });
+    const MAP_THEME_DEFINITIONS = Object.freeze({
+        nature_protection: Object.freeze({label: 'Looduskaitse', interpretation: 'Kaitstavate objektide ja vööndite kattuvus; tegevuse tingimused vajavad ametlikku kontrolli.', color: '#1b4332'}),
+        species_habitats: Object.freeze({label: 'Liigid ja elupaigad', interpretation: 'Inventuuri- ja registriandmed; ei ole eraldiseisev tegevusluba ega -keeld.', color: '#4f7c67'}),
+        water_restrictions: Object.freeze({label: 'Vesi ja kaldapiirangud', interpretation: 'Veekogude ning ranna ja kalda vööndite kattuvus; tingimused sõltuvad vööndi liigist.', color: '#24788f'}),
+        heritage_other: Object.freeze({label: 'Muinsuskaitse ja muud tegevuspiirangud', interpretation: 'Mälestiste ja muude tegevuspiirangute eelsõel; kontrolli objekti täpset liiki.', color: '#665a86'}),
+        flood_wetlands: Object.freeze({label: 'Üleujutus ja märgalad', interpretation: 'Ametlikud märgala- ja kitsendusalad, mitte konkreetse sündmuse prognoos.', color: '#3f7180'}),
+        forest_health: Object.freeze({label: 'Metsatervise riskid', interpretation: 'Registrivaatlused ja ekspertiisiandmed, mitte reaalajaseire ega prognoos.', color: '#9a594c'}),
+        invasive_species: Object.freeze({label: 'Võõrliigid', interpretation: 'Registreeritud leiukohad; puuduv vaste ei tõenda liigi puudumist looduses.', color: '#89596f'}),
+        subsidy_indicators: Object.freeze({label: 'Toetuse ruumilised indikaatorid', interpretation: 'Ruumiline või andmepõhine indikaator; ei kinnita toetuskõlblikkust.', color: '#80652f'}),
+        forest_notices: Object.freeze({label: 'Metsateatised', interpretation: 'Ametlikud registrisündmused; metsateatis ei kinnita töö teostamist.', color: '#6b5b8e'}),
+        archival_clearcuts: Object.freeze({label: 'Lageraietuvastus 2011–2016', interpretation: 'Arhiivne satelliidituvastus perioodist 2011–2016, mitte tänase metsaseisundi kinnitus.', color: '#6b7280'}),
+    });
+    const MAP_THEME_ORDER = Object.freeze(Object.keys(MAP_THEME_DEFINITIONS));
+    const SERVER_BACKED_MAP_THEMES = Object.freeze([
+        'nature_protection', 'species_habitats', 'water_restrictions', 'heritage_other',
+        'flood_wetlands', 'forest_health', 'invasive_species', 'archival_clearcuts',
+    ]);
+    const MAP_CONTEXT_TIMEOUT_MS = 20000;
+    const BASEMAP_ACCESSED_AT = new Date().toISOString();
+    const MAP_BASEMAP_DEFINITIONS = Object.freeze({
+        'maaruum-orthophoto': Object.freeze({
+            provider: 'Maa- ja Ruumiamet',
+            product: 'ortofoto',
+            status: 'Valitud aluskaart',
+            interpretation: 'Ortofotomosaiigi pildistusaeg erineb asukohati; kohaliku lennu kuupäeva saab kontrollida X-GIS-i metainfost.',
+        }),
+        'maaruum-gray': Object.freeze({
+            provider: 'Maa- ja Ruumiamet',
+            product: 'halltoonides kaart',
+            status: 'Ametlik neutraalne varualuskaart',
+            interpretation: 'Ametlik neutraalne varualuskaart, mida kasutatakse ka ortofoto laadimistõrke korral.',
+        }),
+        'esri-light-gray': Object.freeze({
+            provider: 'Esri',
+            product: 'World Light Gray Canvas',
+            status: 'Sõltumatu neutraalne varualuskaart',
+            interpretation: 'Esri sõltumatu neutraalne aluskaart, mida kasutatakse ainult ametlike aluskaartide laadimistõrke korral.',
+        }),
+        'esri-world-imagery': Object.freeze({
+            provider: 'Esri',
+            product: 'World Imagery',
+            status: 'Valitud aluskaart',
+            interpretation: 'Esri koondatud pildikiht; pildistusaeg ja allikas võivad asukohati erineda.',
+        }),
+        'esri-wayback-2026-02-26': Object.freeze({
+            provider: 'Esri',
+            product: 'World Imagery Wayback (26.02.2026)',
+            status: 'Valitud ajalooline aluskaart',
+            interpretation: 'Esri World Imagery Waybacki 26.02.2026 väljalase; pildistusaeg võib olla väljalaskekuupäevast varasem.',
+        }),
+    });
+
+    function arraysEqual(left, right) {
+        return Array.isArray(left)
+            && Array.isArray(right)
+            && left.length === right.length
+            && left.every(function(value, index) { return value === right[index]; });
+    }
+
+    function createMapWorkspaceState(selectedBasemapId) {
+        return {
+            parcelId: null,
+            viewId: 'overview',
+            customized: false,
+            activeThemeIds: MAP_VIEW_PRESETS.overview.themeIds.slice(),
+            hiddenOverviewMatches: [],
+            selectedBasemapId: selectedBasemapId || 'maaruum-orthophoto',
+            basemapNotice: null,
+            basemapAccessedAt: BASEMAP_ACCESSED_AT,
+            themeResults: {},
+            themeCache: {},
+            persistentContext: null,
+            loadingStatus: 'idle',
+            errorStatus: null,
+            requestGeneration: 0,
+            requestController: null,
+            requestedThemeIds: [],
+            hasValidPersistentContext: false,
+        };
+    }
+
+    function selectMapViewPreset(state, viewId) {
+        var preset = MAP_VIEW_PRESETS[viewId];
+        if (!preset) return state;
+        var themeResults = Object.assign({}, state.themeResults);
+        preset.themeIds.forEach(function(themeId) {
+            if (isValidRetainedThemeResult(state.themeCache && state.themeCache[themeId])) {
+                themeResults[themeId] = state.themeCache[themeId];
+            }
+        });
+        return Object.assign({}, state, {
+            viewId: viewId,
+            customized: false,
+            activeThemeIds: preset.themeIds.slice(),
+            themeResults: themeResults,
+            hiddenOverviewMatches: [],
+            errorStatus: null,
+        });
+    }
+
+    function availableMapThemeIds(state) {
+        return MAP_THEME_ORDER.filter(function(themeId) {
+            return themeId !== 'archival_clearcuts' || (state && state.viewId === 'history');
+        });
+    }
+
+    function toggleMapTheme(state, themeId) {
+        var knownTheme = Object.keys(MAP_VIEW_PRESETS).some(function(viewId) {
+            return MAP_VIEW_PRESETS[viewId].themeIds.indexOf(themeId) !== -1;
+        });
+        if (!knownTheme || availableMapThemeIds(state).indexOf(themeId) === -1) return state;
+
+        var active = state.activeThemeIds.slice();
+        var hidden = state.hiddenOverviewMatches.slice();
+        if (state.viewId === 'overview' && MAP_VIEW_PRESETS.overview.themeIds.indexOf(themeId) !== -1) {
+            var hiddenIndex = hidden.indexOf(themeId);
+            var overviewResult = state.themeResults && state.themeResults[themeId];
+            if (hiddenIndex === -1 && (!overviewResult || overviewResult.match_count < 1)) return state;
+            if (hiddenIndex === -1) hidden.push(themeId);
+            else hidden.splice(hiddenIndex, 1);
+        } else {
+            var activeIndex = active.indexOf(themeId);
+            if (activeIndex === -1) active.push(themeId);
+            else active.splice(activeIndex, 1);
+        }
+        var presetThemes = MAP_VIEW_PRESETS[state.viewId].themeIds;
+        return Object.assign({}, state, {
+            activeThemeIds: active,
+            hiddenOverviewMatches: hidden,
+            customized: hidden.length > 0 || !arraysEqual(active, presetThemes),
+            errorStatus: null,
+        });
+    }
+
+    function mapViewDisplayLabel(state) {
+        var preset = MAP_VIEW_PRESETS[state.viewId] || MAP_VIEW_PRESETS.overview;
+        return preset.label + (state.customized ? ' · kohandatud' : '');
+    }
+
+    function restoreMapOverview(state) {
+        return selectMapViewPreset(state, 'overview');
+    }
+
+    function selectMapBasemap(state, basemapId, notice) {
+        if (!MAP_BASEMAP_DEFINITIONS[basemapId]) return state;
+        return Object.assign({}, state, {
+            selectedBasemapId: basemapId,
+            basemapNotice: notice || null,
+        });
+    }
+
+    function resetMapWorkspaceForParcel(state, parcelId) {
+        var reset = createMapWorkspaceState(state && state.selectedBasemapId);
+        reset.parcelId = parcelId || null;
+        reset.requestGeneration = ((state && state.requestGeneration) || 0) + 1;
+        reset.basemapNotice = state && state.basemapNotice || null;
+        reset.basemapAccessedAt = state && state.basemapAccessedAt || BASEMAP_ACCESSED_AT;
+        return reset;
+    }
+
+    function serverBackedThemeIds(themeIds) {
+        return (Array.isArray(themeIds) ? themeIds : []).filter(function(themeId) {
+            return SERVER_BACKED_MAP_THEMES.indexOf(themeId) !== -1;
+        });
+    }
+
+    function mapContextThemeIdsForState(state) {
+        var requested = serverBackedThemeIds(state && state.activeThemeIds);
+        if (requested.length || (state && state.hasValidPersistentContext)) return requested;
+        return serverBackedThemeIds(MAP_VIEW_PRESETS.overview.themeIds);
+    }
+
+    function beginMapContextRequestState(state, generation, controller, retry, requestedThemeIds) {
+        var requested = (requestedThemeIds || mapContextThemeIdsForState(state)).slice();
+        var results = Object.assign({}, state.themeResults);
+        var hasPriorResults = false;
+        requested.forEach(function(themeId) {
+            var prior = state.themeCache && state.themeCache[themeId];
+            if (!isValidRetainedThemeResult(prior)) return;
+            hasPriorResults = true;
+            results[themeId] = Object.assign({}, prior, {
+                previous_result: true,
+                refreshing: true,
+                refresh_failed: false,
+                stale: false,
+            });
+        });
+        return Object.assign({}, state, {
+            requestGeneration: generation,
+            requestController: controller,
+            requestedThemeIds: requested,
+            themeResults: results,
+            loadingStatus: hasPriorResults ? 'refreshing' : 'loading',
+            errorStatus: null,
+        });
+    }
+
+    function isValidRetainedThemeResult(result) {
+        return Boolean(result && ['matches', 'empty', 'partial'].indexOf(result.state) !== -1 && !result.refresh_failed);
+    }
+
+    function applyMapContextResultState(state, data, themeIds) {
+        var results = Object.assign({}, state.themeResults);
+        var cache = Object.assign({}, state.themeCache);
+        themeIds.forEach(function(themeId) {
+            results[themeId] = data.themes[themeId];
+            cache[themeId] = data.themes[themeId];
+        });
+        return Object.assign({}, state, {
+            themeResults: results,
+            themeCache: cache,
+            persistentContext: data.persistent,
+            loadingStatus: 'success',
+            errorStatus: null,
+            requestController: null,
+            hasValidPersistentContext: true,
+        });
+    }
+
+    function failMapContextRequestState(state, themeIds, message) {
+        var results = Object.assign({}, state.themeResults);
+        themeIds.forEach(function(themeId) {
+            var prior = state.themeCache && state.themeCache[themeId];
+            if (!isValidRetainedThemeResult(prior)) return;
+            results[themeId] = Object.assign({}, prior, {
+                state: 'partial',
+                previous_result: true,
+                refreshing: false,
+                refresh_failed: true,
+                stale: true,
+                sources: (prior.sources || []).map(function(source) {
+                    return Object.assign({}, source, {state: 'partial'});
+                }),
+            });
+        });
+        return Object.assign({}, state, {
+            themeResults: results,
+            loadingStatus: 'error',
+            errorStatus: message || 'Kaardikonteksti laadimine ebaõnnestus.',
+            requestController: null,
+        });
+    }
+
+    function mapContextRequestOwns(state, generation, controller, parcelId, themeIds) {
+        return Boolean(
+            state
+            && state.requestGeneration === generation
+            && state.requestController === controller
+            && state.parcelId === parcelId
+            && arraysEqual(state.requestedThemeIds, themeIds)
+        );
+    }
+
+    function isMapRecord(value) {
+        return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+    }
+
+    function isMapFeature(value) {
+        return Boolean(
+            isMapRecord(value)
+            && value.type === 'Feature'
+            && isMapRecord(value.geometry)
+            && typeof value.geometry.type === 'string'
+            && isMapRecord(value.properties)
+        );
+    }
+
+    function isMapSource(value, withState) {
+        if (!isMapRecord(value) || typeof value.key !== 'string') return false;
+        if (withState && ['matches', 'empty', 'partial', 'unavailable'].indexOf(value.state) === -1) return false;
+        return true;
+    }
+
+    function validateMapContextPayload(data, parcelId, themeIds) {
+        if (!isMapRecord(data) || data.parcel_id !== parcelId || !arraysEqual(data.requested_themes, themeIds)) return false;
+        var persistent = data.persistent;
+        var parcel = isMapRecord(persistent) ? persistent.parcel : null;
+        var stands = isMapRecord(persistent) ? persistent.stands : null;
+        if (
+            !isMapRecord(parcel)
+            || parcel.state !== 'matches'
+            || !isMapFeature(parcel.feature)
+            || !isMapSource(parcel.source, false)
+            || !isMapRecord(stands)
+            || ['matches', 'empty', 'unavailable'].indexOf(stands.state) === -1
+            || !Array.isArray(stands.features)
+            || !stands.features.every(isMapFeature)
+            || !isMapSource(stands.source, false)
+        ) return false;
+        if (!isMapRecord(data.themes) || !arraysEqual(Object.keys(data.themes).sort(), themeIds.slice().sort())) return false;
+        return themeIds.every(function(themeId) {
+            var theme = data.themes[themeId];
+            return Boolean(
+                isMapRecord(theme)
+                && theme.id === themeId
+                && ['matches', 'empty', 'partial', 'unavailable'].indexOf(theme.state) !== -1
+                && Array.isArray(theme.features)
+                && theme.features.every(isMapFeature)
+                && Array.isArray(theme.sources)
+                && theme.sources.every(function(source) { return isMapSource(source, true); })
+            );
+        });
+    }
+
+    function fetchMapContext(katasterNr, themeIds, controller) {
+        var params = new URLSearchParams();
+        themeIds.forEach(function(themeId) { params.append('themes', themeId); });
+        var url = '/api/map-context/' + encodeURIComponent(katasterNr) + '?' + params.toString();
+        var timer = setTimeout(function() { controller.abort(); }, MAP_CONTEXT_TIMEOUT_MS);
+        return fetch(url, { signal: controller.signal, credentials: 'same-origin' }).then(function(response) {
+            if (!response.ok) throw new Error('Kaarditeenus ei vastanud (' + response.status + ').');
+            return response.json();
+        }).then(function(data) {
+            if (!validateMapContextPayload(data, katasterNr, themeIds)) {
+                throw new Error('Kaarditeenus tagastas kontrollimata või vale kinnistu andmed.');
+            }
+            return data;
+        }).finally(function() {
+            clearTimeout(timer);
+        });
+    }
+
+    function mapThemeFallbackStyle(themeId, sourceKey) {
+        var palette = ['#1f6f78', '#80652f', '#6b5b8e', '#9a4f43', '#3f7554', '#506d91'];
+        var seed = String(themeId || '') + ':' + String(sourceKey || 'unknown');
+        var hash = 0;
+        for (var index = 0; index < seed.length; index++) hash = ((hash * 31) + seed.charCodeAt(index)) >>> 0;
+        return { color: palette[hash % palette.length], weight: 3, fillOpacity: 0.28, dash: null };
+    }
+
+    function groupThemeFeaturesBySource(theme) {
+        var sourceRows = {};
+        (Array.isArray(theme && theme.sources) ? theme.sources : []).forEach(function(source) {
+            if (isMapRecord(source) && typeof source.key === 'string') sourceRows[source.key] = source;
+        });
+        var groups = [];
+        var byKey = {};
+        (Array.isArray(theme && theme.features) ? theme.features : []).forEach(function(feature) {
+            if (!isMapFeature(feature)) return;
+            var sourceKey = typeof feature.properties.source_key === 'string' ? feature.properties.source_key : 'unknown';
+            if (!byKey[sourceKey]) {
+                var sourceStyle = sourceRows[sourceKey] && sourceRows[sourceKey].style;
+                var fallback = mapThemeFallbackStyle(theme && theme.id, sourceKey);
+                var style = isMapRecord(sourceStyle) ? {
+                    color: typeof sourceStyle.color === 'string' ? sourceStyle.color : fallback.color,
+                    weight: Number.isFinite(sourceStyle.weight) ? sourceStyle.weight : fallback.weight,
+                    fillOpacity: Number.isFinite(sourceStyle.fillOpacity) ? sourceStyle.fillOpacity : fallback.fillOpacity,
+                    dash: typeof sourceStyle.dash === 'string' ? sourceStyle.dash : null,
+                } : fallback;
+                byKey[sourceKey] = { sourceKey: sourceKey, features: [], style: style };
+                groups.push(byKey[sourceKey]);
+            }
+            byKey[sourceKey].features.push(feature);
+        });
+        return groups;
+    }
+
+    function mapEscapeHtml(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function(character) {
+            return {'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[character];
+        });
+    }
+
+    function formatMapCheckedAt(value) {
+        if (!value) return 'Viimase eduka kontrolli aeg teadmata';
+        var date = new Date(value);
+        if (!Number.isFinite(date.getTime())) return 'Viimase eduka kontrolli aeg teadmata';
+        return 'Viimati edukalt kontrollitud ' + new Intl.DateTimeFormat('et-EE', {
+            dateStyle: 'medium', timeStyle: 'short',
+        }).format(date);
+    }
+
+    function formatMapAttemptedAt(value) {
+        if (!value) return 'Kontrollikatse aeg teadmata';
+        var date = new Date(value);
+        if (!Number.isFinite(date.getTime())) return 'Kontrollikatse aeg teadmata';
+        return 'Kontrollikatse ' + new Intl.DateTimeFormat('et-EE', {
+            dateStyle: 'medium', timeStyle: 'short',
+        }).format(date);
+    }
+
+    function formatMapAccessedAt(value) {
+        if (!value) return 'Väljavõtte aeg teadmata';
+        var date = new Date(value);
+        if (!Number.isFinite(date.getTime())) return 'Väljavõtte aeg teadmata';
+        return 'Väljavõte ' + new Intl.DateTimeFormat('et-EE', { dateStyle: 'medium' }).format(date);
+    }
+
+    function mapSourceDetailsHtml(source) {
+        source = isMapRecord(source) ? source : {};
+        var provider = source.provider || 'Pakkuja teadmata';
+        var label = source.label || source.key || 'Allikas teadmata';
+        var interpretation = source.interpretation || 'Tõlgendus puudub.';
+        var dataAsOf = source.data_as_of ? 'Andmete ajaseis ' + source.data_as_of : 'Andmete ajaseis teadmata';
+        var provenance = source.provenance || (provider === 'Terrapoint' ? 'Terrapointi tuletis' : 'Ametlik andmekiht');
+        var matchCount = Number.isFinite(source.match_count)
+            ? '<div class="map-source-match-count">Kattuvusi: ' + mapEscapeHtml(source.match_count) + '</div>' : '';
+        var freshness = source.accessed_at
+            ? '<div class="map-source-accessed">' + mapEscapeHtml(formatMapAccessedAt(source.accessed_at)) + '</div>'
+            : '<div class="map-source-attempted">' + mapEscapeHtml(formatMapAttemptedAt(source.attempted_at)) + '</div>'
+                + '<div class="map-source-checked">' + mapEscapeHtml(formatMapCheckedAt(source.checked_at)) + '</div>';
+        return '<div class="map-source">'
+            + '<div class="map-source-title">' + mapEscapeHtml(provider) + ' · ' + mapEscapeHtml(label) + '</div>'
+            + '<div class="map-source-provenance">' + mapEscapeHtml(provenance) + '</div>'
+            + '<p>' + mapEscapeHtml(interpretation) + '</p>'
+            + matchCount
+            + '<div class="map-source-as-of">' + mapEscapeHtml(dataAsOf) + '</div>'
+            + freshness
+            + '</div>';
+    }
+
+    function mapOfficialDateTimestamp(value) {
+        var match = /^(\d{4})-(\d{2})-(\d{2})(?:T|$)/.exec(String(value || ''));
+        if (!match) return null;
+        var date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+        if (
+            date.getUTCFullYear() !== Number(match[1])
+            || date.getUTCMonth() !== Number(match[2]) - 1
+            || date.getUTCDate() !== Number(match[3])
+        ) return null;
+        return date.getTime();
+    }
+
+    function formatMapOfficialDate(value) {
+        var timestamp = mapOfficialDateTimestamp(value);
+        if (timestamp === null) return 'Kuupäev teadmata';
+        return new Intl.DateTimeFormat('et-EE', {
+            day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC',
+        }).format(new Date(timestamp));
+    }
+
+    function mapThemeRecordsHtml(theme) {
+        var records = Array.isArray(theme && theme.records) ? theme.records : [];
+        if (!records.length) return '';
+        var items = records.map(function(record) {
+            var label = mapEscapeHtml(record.label || 'Kirje');
+            var provenance = mapEscapeHtml(record.provenance || 'Päritolu teadmata');
+            if (theme.id === 'forest_notices') {
+                var association = record.location_scope === 'stand' && record.eraldis_nr !== null
+                    ? 'Eraldis ' + record.eraldis_nr : 'Asukoht kinnistul määramata';
+                return '<li><strong>' + label + '</strong>'
+                    + '<span>' + mapEscapeHtml(record.event_status_label || 'Staatus määramata') + '</span>'
+                    + '<span>' + mapEscapeHtml(formatMapOfficialDate(record.event_date)) + '</span>'
+                    + '<span>' + provenance + '</span>'
+                    + '<span>' + mapEscapeHtml(association) + '</span></li>';
+            }
+            var extent = record.location_scope === 'parcel'
+                ? 'Kinnistu tasemel'
+                : (record.eraldis_nrs || []).map(function(number) { return 'Eraldis ' + number; }).join(', ');
+            return '<li><strong>' + label + '</strong>'
+                + '<span>' + mapEscapeHtml(extent || 'Asukoht määramata') + '</span>'
+                + '<span>' + provenance + '</span>'
+                + '<span>' + mapEscapeHtml(record.interpretation || 'Tõlgendus puudub.') + '</span></li>';
+        }).join('');
+        return '<ul class="map-theme-records" aria-label="Teema vastete üksikasjad">' + items + '</ul>';
+    }
+
+    function mapResultStatusText(result, kind, loadingStatus) {
+        if (loadingStatus === 'refreshing' && result) {
+            return result.state === 'unavailable' ? 'Laadib' : 'Uuendab';
+        }
+        if (!result) return loadingStatus === 'error' ? 'Allikas ei vasta' : 'Laadib';
+        var count = Number.isFinite(result.match_count) ? result.match_count : 0;
+        if (kind === 'parcel' && result.state === 'matches') return 'Kinnistu leitud';
+        if (kind === 'stands') {
+            if (result.state === 'matches') return 'Leiti ' + count + ' eraldist' + (result.complete === false ? ' · osaline' : '');
+            if (result.state === 'empty') return 'Metsaeraldisi ei leitud';
+        }
+        if (result.state === 'unavailable') return 'Allikas ei vasta';
+        if (result.state === 'partial') return count ? count + ' vastet · osaline' : 'Puudumist ei saa kinnitada · osaline';
+        if (result.state === 'empty') return 'Vasteid ei leitud';
+        if (result.state === 'matches' && kind === 'forest_notices') return 'Sündmused leitud · ' + count;
+        if (result.state === 'matches' && kind === 'subsidy_indicators') return 'Indikaatorid leitud · ' + count;
+        if (result.state === 'matches') return count + ' vastet';
+        return loadingStatus === 'loading' ? 'Laadib' : 'Allikas ei vasta';
+    }
+
+    function mapWorkspaceLegendModel(state) {
+        state = state || createMapWorkspaceState();
+        var basemap = MAP_BASEMAP_DEFINITIONS[state.selectedBasemapId] || MAP_BASEMAP_DEFINITIONS['maaruum-orthophoto'];
+        var rows = [{
+            id: 'basemap',
+            label: basemap.provider + ' · ' + basemap.product,
+            status: state.basemapNotice || basemap.status,
+            color: '#64748b',
+            interpretation: basemap.interpretation,
+            sources: [{
+                key: state.selectedBasemapId,
+                provider: basemap.provider,
+                label: basemap.product,
+                interpretation: basemap.interpretation,
+                provenance: 'Aluskaart',
+                data_as_of: null,
+                accessed_at: state.basemapAccessedAt || BASEMAP_ACCESSED_AT,
+            }],
+        }];
+        var persistent = state.persistentContext || {};
+        var parcelResult = persistent.parcel || null;
+        var standsResult = persistent.stands ? Object.assign({}, persistent.stands, {
+            match_count: Number.isFinite(persistent.stands.count) ? persistent.stands.count : 0,
+        }) : null;
+        if (state.parcelId) {
+            rows.push({
+                id: 'parcel', label: 'Kinnistu piir', status: mapResultStatusText(parcelResult, 'parcel', state.loadingStatus),
+                color: '#b45309', interpretation: 'Valitud katastriüksuse ametlik kehtiv piir.',
+                sources: parcelResult && parcelResult.source ? [parcelResult.source] : [],
+            });
+            rows.push({
+                id: 'stands', label: 'Metsaeraldised', status: mapResultStatusText(standsResult, 'stands', state.loadingStatus),
+                color: 'var(--map-age-middle)', interpretation: persistent.stands && persistent.stands.complete === false
+                    ? 'Leitud ametlikud metsaeraldised on kaardil; osa lähteandmete geomeetriast oli kasutuskõlbmatu. Värv kirjeldab Terrapointi tuletatud vanuseklassi.'
+                    : 'Ametlikud metsaeraldised; värv kirjeldab Terrapointi tuletatud vanuseklassi.',
+                sources: persistent.stands && persistent.stands.source ? [persistent.stands.source] : [], ageLegend: true,
+            });
+        }
+
+        var visibleThemeIds = [];
+        var aggregate = null;
+        if (state.viewId === 'overview' && state.parcelId) {
+            var checks = MAP_VIEW_PRESETS.overview.themeIds.map(function(themeId) {
+                var result = state.themeResults[themeId] || null;
+                var definition = MAP_THEME_DEFINITIONS[themeId];
+                return {
+                    id: themeId, label: (result && result.label) || definition.label,
+                    status: mapResultStatusText(result, themeId, state.loadingStatus), result: result,
+                };
+            });
+            var hasLoading = checks.some(function(check) { return check.status === 'Laadib'; });
+            var hasIncomplete = checks.some(function(check) {
+                return !check.result || ['partial', 'unavailable'].indexOf(check.result.state) !== -1;
+            });
+            var matchedCount = checks.filter(function(check) { return check.result && check.result.match_count > 0; }).length;
+            var aggregateStatus = hasLoading ? 'Laadib'
+                : hasIncomplete ? 'Piirangute kontroll osaline'
+                : matchedCount ? 'Leiti ' + matchedCount + ' olulist teemat'
+                : 'Olulisi kattuvusi ei leitud';
+            aggregate = {
+                checks: checks, hiddenCount: state.hiddenOverviewMatches.length,
+                status: aggregateStatus,
+            };
+            rows.push({
+                id: 'overview_check', label: 'Piirangute kontroll', status: aggregateStatus,
+                color: '#334155', interpretation: 'Ülevaade kontrollib kõiki kohustuslikke piiranguteemasid; nulltulemused ja tõrked on detailis.',
+                checks: checks, hiddenCount: state.hiddenOverviewMatches.length,
+            });
+            checks.forEach(function(check) {
+                if (!check.result || check.result.match_count < 1 || state.hiddenOverviewMatches.indexOf(check.id) !== -1) return;
+                visibleThemeIds.push(check.id);
+                var definition = MAP_THEME_DEFINITIONS[check.id];
+                rows.push({
+                    id: check.id, label: check.label, status: check.status, color: definition.color,
+                    interpretation: definition.interpretation, sources: check.result.sources || [],
+                    records: check.result.records || [], match_count: check.result.match_count,
+                    previous_result: check.result.previous_result, refresh_failed: check.result.refresh_failed,
+                });
+            });
+        } else if (state.parcelId) {
+            state.activeThemeIds.forEach(function(themeId) {
+                var result = state.themeResults[themeId] || null;
+                var definition = MAP_THEME_DEFINITIONS[themeId];
+                if (!definition) return;
+                visibleThemeIds.push(themeId);
+                rows.push({
+                    id: themeId, label: (result && result.label) || definition.label,
+                    status: mapResultStatusText(result, themeId, state.loadingStatus), color: definition.color,
+                    interpretation: definition.interpretation, sources: result && result.sources || [],
+                    records: result && result.records || [], match_count: result && result.match_count,
+                    previous_result: result && result.previous_result, refresh_failed: result && result.refresh_failed,
+                });
+            });
+        }
+        return {rows: rows, aggregate: aggregate, visibleThemeIds: visibleThemeIds};
+    }
+
+    function mapCompartmentNumber(value) {
+        if (value === null || value === undefined || typeof value === 'boolean') return null;
+        var text = String(value).trim();
+        if (!text || !/^\d+(?:\.0+)?$/.test(text)) return null;
+        var number = Number(text);
+        if (!Number.isSafeInteger(number) || number < 0) return null;
+        return String(number);
+    }
+
+    function mapStandFeatures(data) {
+        var mapLayers = isMapRecord(data && data.map_layers) ? data.map_layers : {};
+        var stands = isMapRecord(mapLayers.eraldised) && Array.isArray(mapLayers.eraldised.features)
+            ? mapLayers.eraldised.features
+            : [];
+        return stands.filter(isMapFeature);
+    }
+
+    function mapStandByNumber(data) {
+        var byNumber = {};
+        mapStandFeatures(data).forEach(function(feature) {
+            var number = mapCompartmentNumber(feature.properties.eraldis_nr);
+            if (number !== null && !byNumber[number]) byNumber[number] = feature;
+        });
+        return byNumber;
+    }
+
+    function mapResponseTimestamp(data, key) {
+        if (data && typeof data[key] === 'string') return data[key];
+        if (data && isMapRecord(data.meta) && typeof data.meta[key] === 'string') return data.meta[key];
+        return null;
+    }
+
+    function deriveForestNoticeTheme(data) {
+        var notices = Array.isArray(data && data.teatised) ? data.teatised.filter(isMapRecord) : [];
+        var stands = mapStandByNumber(data);
+        var attemptedAt = mapResponseTimestamp(data, 'attempted_at');
+        var checkedAt = mapResponseTimestamp(data, 'checked_at');
+        var records = [];
+        notices.forEach(function(notice) {
+            var eraldisNr = mapCompartmentNumber(notice.eraldis_nr);
+            var locationScope = notice.location_scope === 'stand' && eraldisNr !== null ? 'stand' : 'parcel_unlocated';
+            var record = {
+                id: String(notice.number || ''),
+                label: String(notice.tyyp || 'Metsateatis'),
+                eraldis_nr: eraldisNr,
+                event_status: typeof notice.event_status === 'string' ? notice.event_status : 'unknown',
+                event_status_label: typeof notice.event_status_label === 'string' ? notice.event_status_label : 'Staatus määramata',
+                event_date: typeof notice.event_date === 'string' ? notice.event_date : null,
+                location_scope: locationScope,
+                provenance: 'Ametlik andmekiht',
+            };
+            records.push(record);
+        });
+        records.sort(function(left, right) {
+            var leftTime = mapOfficialDateTimestamp(left.event_date);
+            var rightTime = mapOfficialDateTimestamp(right.event_date);
+            var leftKnown = leftTime !== null;
+            var rightKnown = rightTime !== null;
+            if (leftKnown !== rightKnown) return leftKnown ? -1 : 1;
+            if (leftKnown && leftTime !== rightTime) return rightTime - leftTime;
+            return left.id.localeCompare(right.id, 'et-EE', {numeric: true, sensitivity: 'base'});
+        });
+        var features = [];
+        records.forEach(function(record) {
+            if (record.location_scope === 'stand' && stands[record.eraldis_nr]) {
+                features.push({
+                    type: 'Feature',
+                    geometry: stands[record.eraldis_nr].geometry,
+                    properties: Object.assign({}, record, { source_key: 'forest_notices' }),
+                });
+            }
+        });
+        var unavailableSources = data && data.meta && Array.isArray(data.meta.unavailable_sources)
+            ? data.meta.unavailable_sources : [];
+        var sourceUnavailable = unavailableSources.some(function(source) {
+            return typeof source === 'string' && source.indexOf('metsaregister.teatis') === 0;
+        });
+        var noticeMeta = isMapRecord(data && data.teatised_meta) ? data.teatised_meta : {};
+        var capped = Number.isFinite(noticeMeta.ridu_kokku)
+            && Number.isFinite(noticeMeta.ridu_kuvatud)
+            && noticeMeta.ridu_kuvatud < noticeMeta.ridu_kokku;
+        var state = sourceUnavailable && !records.length ? 'unavailable'
+            : sourceUnavailable || capped ? 'partial'
+            : records.length ? 'matches' : 'empty';
+        return {
+            id: 'forest_notices',
+            label: 'Metsateatised',
+            state: state,
+            match_count: records.length,
+            records: records,
+            features: features,
+            sources: [{
+                key: 'forest_notices', state: state,
+                label: 'Metsaregistri metsateatised', provider: 'Keskkonnaagentuur',
+                interpretation: 'Ametlikud registrisündmused; metsateatis ei kinnita töö teostamist.',
+                provenance: 'Ametlik andmekiht',
+                data_as_of: null, attempted_at: attemptedAt, checked_at: checkedAt, match_count: records.length,
+                style: { color: '#6b5b8e', weight: 3, fillOpacity: 0.18, dash: '5,4' },
+            }],
+        };
+    }
+
+    function isClearlyIneligibleSubsidy(subsidy) {
+        var status = String(subsidy.eligibility_status || '').trim().toLocaleLowerCase('et-EE');
+        return ['ei sobi teadaolevate andmete põhjal', 'ineligible', 'not_eligible', 'clearly_ineligible'].indexOf(status) !== -1;
+    }
+
+    function deriveSubsidyIndicatorTheme(data) {
+        var subsidies = Array.isArray(data && data.toetused) ? data.toetused.filter(isMapRecord) : [];
+        var stands = mapStandByNumber(data);
+        var attemptedAt = mapResponseTimestamp(data, 'attempted_at');
+        var checkedAt = mapResponseTimestamp(data, 'checked_at');
+        var records = [];
+        var features = [];
+        subsidies.forEach(function(subsidy) {
+            if (isClearlyIneligibleSubsidy(subsidy)) return;
+            var scope = subsidy.match_scope;
+            if (scope !== 'property' && scope !== 'compartment') return;
+            if (scope === 'property' && (subsidy.andmed_piiratud === true || subsidy.limited === true)) return;
+            var eraldisNrs = [];
+            (Array.isArray(subsidy.eraldised_match) ? subsidy.eraldised_match : []).forEach(function(match) {
+                var number = mapCompartmentNumber(match && match.eraldis_nr);
+                if (number !== null && eraldisNrs.indexOf(number) === -1) eraldisNrs.push(number);
+            });
+            if (scope === 'compartment' && !eraldisNrs.length) return;
+            var record = {
+                id: String(subsidy.id || ''),
+                label: String(subsidy.name || subsidy.nimi || 'Toetuse indikaator'),
+                location_scope: scope === 'compartment' ? 'stand' : 'parcel',
+                eraldis_nrs: eraldisNrs,
+                provenance: 'Terrapointi tuletis',
+                interpretation: String(subsidy.eligibility_reason || subsidy.match_reason || 'Ruumiline või andmepõhine indikaator; ei kinnita toetuskõlblikkust.'),
+            };
+            records.push(record);
+            eraldisNrs.forEach(function(eraldisNr) {
+                if (!stands[eraldisNr]) return;
+                features.push({
+                    type: 'Feature',
+                    geometry: stands[eraldisNr].geometry,
+                    properties: Object.assign({}, record, { eraldis_nr: eraldisNr, source_key: 'subsidy_indicators' }),
+                });
+            });
+        });
+        return {
+            id: 'subsidy_indicators',
+            label: 'Toetuse ruumilised indikaatorid',
+            state: records.length ? 'matches' : 'empty',
+            match_count: records.length,
+            records: records,
+            features: features,
+            sources: [{
+                key: 'subsidy_indicators', state: records.length ? 'matches' : 'empty',
+                label: 'Terrapointi toetuste analüüs', provider: 'Terrapoint',
+                interpretation: 'Ruumiline või andmepõhine indikaator; ei kinnita toetuskõlblikkust.',
+                provenance: 'Terrapointi tuletis',
+                data_as_of: null, attempted_at: attemptedAt, checked_at: checkedAt, match_count: records.length,
+                style: { color: '#80652f', weight: 3, fillOpacity: 0.2, dash: '4,3' },
+            }],
+        };
+    }
+    // MAP_WORKSPACE_PURE_END
+
     function fetchAddressResults(value) {
         var key = value.trim().toLocaleLowerCase('et-EE');
         var existing = addressFetches.get(key);
@@ -1013,7 +1722,7 @@
     async function searchParcel(katasterNr, controller) {
         var timer = setTimeout(function() { controller.abort(); }, 40000);
         try {
-            var res = await fetch(API_BASE + '/search/' + encodeURIComponent(katasterNr), {signal: controller.signal});
+            var res = await fetch(API_BASE + '/search/' + encodeURIComponent(katasterNr) + '?include_map_layers=false', {signal: controller.signal});
             clearTimeout(timer);
             var payload = await res.json().catch(function() { return {}; });
             if (!res.ok) {
@@ -1551,13 +2260,10 @@
             var liik = e.puuliik || '';
             var vanus = e.vanus != null ? e.vanus + 'a' : '';
             var pind = e.pindala_ha != null ? formatNum(e.pindala_ha, 2) + ' ha' : '';
-            var ruhi = e.vanuseruhm_label || e.raie_liik || '';
+            var ruhi = e.age_class_label || 'Määramata';
             var estimateValue = e.vaartus_hinnang_eur != null ? e.vaartus_hinnang_eur : e.vaartus_eur;
             var vaartus = estimateValue ? fmtNum(estimateValue) + ' €' : '';
-            var dot = (e.raie_liik === 'Lageraie') ? 'var(--map-eraldis-lageraie)'
-                : (e.raie_liik === 'Harvendusraie') ? 'var(--map-eraldis-harvendus)'
-                : (e.raie_liik === 'Hooldusraie') ? 'var(--map-eraldis-hooldus)'
-                : (e.raie_liik === 'Raievanus määramata') ? 'var(--ink-4)' : 'var(--map-eraldis-noor)';
+            var dot = e.age_class_color || 'var(--map-age-unknown)';
             var card = document.createElement('button');
             card.type = 'button';
             card.className = 'eraldis-sheet-item';
@@ -1637,6 +2343,363 @@
     let mapSelectionSequence = 0;
     let activeMapConfirmCancel = null;
     const overlayLayers = {};
+    var mapWorkspaceState = createMapWorkspaceState('maaruum-orthophoto');
+    var pendingLegacyMapFallback = null;
+    const MAP_CONTEXT_LAYER_PREFIX = 'map-context:';
+    const LEGACY_MAP_FALLBACK_PREFIX = 'legacy-fallback:';
+    var legacyMapFallbackActive = false;
+
+    function clearMapContextThemeLayers() {
+        Object.keys(overlayLayers).forEach(function(name) {
+            if (name.indexOf(MAP_CONTEXT_LAYER_PREFIX) === 0) removeOverlayLayer(name);
+        });
+    }
+
+    function clearLegacyMapFallbackLayers() {
+        if (legacyMapFallbackActive) removeOverlayLayer('eraldised');
+        Object.keys(overlayLayers).forEach(function(name) {
+            if (name.indexOf(LEGACY_MAP_FALLBACK_PREFIX) === 0) removeOverlayLayer(name);
+        });
+        legacyMapFallbackActive = false;
+    }
+
+    function mapStandAgeLegendHtml() {
+        return '<div class="map-age-legend" aria-label="Metsaeraldiste vanuseklassid">'
+            + '<div><span style="--age-color:var(--map-age-young)"></span>Noor</div>'
+            + '<div><span style="--age-color:var(--map-age-middle)"></span>Keskealine</div>'
+            + '<div><span style="--age-color:var(--map-age-maturing)"></span>Valmiv</div>'
+            + '<div><span style="--age-color:var(--map-age-reached)"></span>Raievanus saavutatud</div>'
+            + '<div><span style="--age-color:var(--map-age-unknown)"></span>Määramata</div>'
+            + '</div>';
+    }
+
+    function mapLegendRowHtml(row) {
+        var detailHtml = '<p class="map-legend-interpretation">' + mapEscapeHtml(row.interpretation) + '</p>';
+        if (row.previous_result) {
+            detailHtml += '<p class="map-previous-result">'
+                + (row.refresh_failed ? 'Varasem tulemus · värskendamine ebaõnnestus' : 'Varasem tulemus · värskendamine käib')
+                + '</p>';
+        }
+        if (row.ageLegend) detailHtml += mapStandAgeLegendHtml();
+        detailHtml += mapThemeRecordsHtml(row);
+        if (Array.isArray(row.checks)) {
+            detailHtml += '<div class="map-overview-checks">' + row.checks.map(function(check) {
+                var retry = check.result && ['partial', 'unavailable'].indexOf(check.result.state) !== -1
+                    ? '<button type="button" class="map-inline-retry map-workspace-button" data-map-retry="check:' + mapEscapeHtml(check.id)
+                        + '" aria-label="Proovi uuesti: ' + mapEscapeHtml(check.label) + '">Proovi uuesti</button>' : '';
+                return '<div class="map-overview-check"><span><strong>' + mapEscapeHtml(check.label) + '</strong><small>'
+                    + mapEscapeHtml(check.status) + '</small></span>' + retry + '</div>';
+            }).join('') + '</div>';
+            if (row.hiddenCount) {
+                var hiddenText = row.hiddenCount === 1 ? '1 kattuvus peidetud' : row.hiddenCount + ' kattuvust peidetud';
+                detailHtml += '<p class="map-hidden-count">' + hiddenText + '</p>';
+            }
+        }
+        if (Array.isArray(row.sources) && row.sources.length) {
+            detailHtml += '<div class="map-source-list">' + row.sources.map(mapSourceDetailsHtml).join('') + '</div>';
+        }
+        if (row.status === 'Allikas ei vasta' || row.status.indexOf('osaline') !== -1) {
+            detailHtml += '<button type="button" class="map-inline-retry map-workspace-button" data-map-retry="row:'
+                + mapEscapeHtml(row.id) + '" aria-label="Proovi uuesti: ' + mapEscapeHtml(row.label) + '">Proovi uuesti</button>';
+        }
+        return '<details class="map-legend-row" data-map-row="' + mapEscapeHtml(row.id) + '">'
+            + '<summary><span class="map-legend-symbol" style="--legend-color:' + mapEscapeHtml(row.color) + '"></span>'
+            + '<span class="map-legend-copy"><strong>' + mapEscapeHtml(row.label) + '</strong><small>' + mapEscapeHtml(row.status) + '</small></span>'
+            + '<span class="map-legend-chevron" aria-hidden="true">›</span></summary>'
+            + '<div class="map-legend-detail">' + detailHtml + '</div></details>';
+    }
+
+    function captureMapWorkspaceDomState() {
+        var legend = document.getElementById('map-workspace-legend');
+        var openRows = [];
+        if (legend) {
+            legend.querySelectorAll('details[data-map-row][open]').forEach(function(row) {
+                openRows.push(row.getAttribute('data-map-row'));
+            });
+        }
+        var active = document.activeElement;
+        var focus = null;
+        if (active && typeof active.matches === 'function') {
+            if (active.matches('[data-map-view]')) {
+                focus = {kind: 'view', value: active.getAttribute('data-map-view')};
+            } else if (active.matches('[data-map-theme]')) {
+                focus = {kind: 'theme', value: active.getAttribute('data-map-theme')};
+            } else if (active.id === 'map-workspace-reset') {
+                focus = {kind: 'reset', value: null};
+            } else if (active.matches('[data-map-retry]')) {
+                focus = {kind: 'retry', value: active.getAttribute('data-map-retry')};
+            } else if (active.matches('summary')) {
+                var activeRow = active.closest('[data-map-row]');
+                if (activeRow) focus = {kind: 'summary', value: activeRow.getAttribute('data-map-row')};
+            }
+        }
+        return {openRows: openRows, focus: focus};
+    }
+
+    function restoreMapWorkspaceDomState(state) {
+        if (!state) return;
+        var legend = document.getElementById('map-workspace-legend');
+        if (legend) {
+            legend.querySelectorAll('details[data-map-row]').forEach(function(row) {
+                if (state.openRows.indexOf(row.getAttribute('data-map-row')) !== -1) row.open = true;
+            });
+        }
+        if (!state.focus) return;
+        var target = null;
+        if (state.focus.kind === 'reset') {
+            target = document.getElementById('map-workspace-reset');
+        } else if (state.focus.kind === 'summary' && legend) {
+            legend.querySelectorAll('details[data-map-row]').forEach(function(row) {
+                if (!target && row.getAttribute('data-map-row') === state.focus.value) target = row.querySelector('summary');
+            });
+        } else {
+            var attribute = state.focus.kind === 'view' ? 'data-map-view'
+                : state.focus.kind === 'theme' ? 'data-map-theme'
+                : state.focus.kind === 'retry' ? 'data-map-retry' : null;
+            if (attribute) {
+                document.querySelectorAll('[' + attribute + ']').forEach(function(control) {
+                    if (!target && control.getAttribute(attribute) === state.focus.value) target = control;
+                });
+            }
+        }
+        if (!target && state.focus.kind === 'retry' && legend) {
+            var retryParts = String(state.focus.value || '').split(':');
+            var fallbackRowId = retryParts[0] === 'row' ? retryParts[1] : 'overview_check';
+            legend.querySelectorAll('details[data-map-row]').forEach(function(row) {
+                if (!target && row.getAttribute('data-map-row') === fallbackRowId) target = row.querySelector('summary');
+            });
+        }
+        if (!target || target.disabled || target.isConnected === false || typeof target.focus !== 'function') return;
+        target.focus({preventScroll: true});
+    }
+
+    function renderMapWorkspaceState() {
+        var model = mapWorkspaceLegendModel(mapWorkspaceState);
+        var domState = captureMapWorkspaceDomState();
+        var hasParcel = Boolean(mapWorkspaceState.parcelId);
+        var viewLabel = mapViewDisplayLabel(mapWorkspaceState);
+        var statusText = !hasParcel ? 'Vali esmalt kinnistu'
+            : mapWorkspaceState.loadingStatus === 'refreshing' ? 'Uuendab'
+            : mapWorkspaceState.loadingStatus === 'loading' ? 'Laadib'
+            : mapWorkspaceState.loadingStatus === 'error' ? 'Allikas ei vasta'
+            : mapWorkspaceState.parcelId;
+        var currentView = document.getElementById('map-workspace-current-view');
+        var panelTitle = document.getElementById('map-workspace-panel-title');
+        var openerStatus = document.getElementById('map-workspace-opener-status');
+        var status = document.getElementById('map-workspace-status');
+        var legend = document.getElementById('map-workspace-legend');
+        var themeControls = document.getElementById('map-workspace-theme-controls');
+        var reset = document.getElementById('map-workspace-reset');
+        if (currentView) currentView.textContent = viewLabel;
+        if (panelTitle) panelTitle.textContent = viewLabel;
+        if (openerStatus) openerStatus.textContent = statusText;
+        if (status) status.textContent = statusText;
+        document.querySelectorAll('[data-map-view]').forEach(function(button) {
+            var selected = button.getAttribute('data-map-view') === mapWorkspaceState.viewId;
+            button.disabled = !hasParcel;
+            button.setAttribute('aria-pressed', String(selected));
+        });
+        if (reset) reset.disabled = !hasParcel;
+        if (themeControls) {
+            themeControls.innerHTML = availableMapThemeIds(mapWorkspaceState).map(function(themeId) {
+                var definition = MAP_THEME_DEFINITIONS[themeId];
+                var selected = mapWorkspaceState.activeThemeIds.indexOf(themeId) !== -1
+                    && mapWorkspaceState.hiddenOverviewMatches.indexOf(themeId) === -1;
+                return '<button type="button" class="map-theme-toggle' + (selected ? ' is-active' : '')
+                    + '" data-map-theme="' + mapEscapeHtml(themeId) + '" aria-pressed="' + selected + '"'
+                    + (hasParcel ? '' : ' disabled') + '><span style="--theme-color:' + mapEscapeHtml(definition.color)
+                    + '"></span>' + mapEscapeHtml(definition.label) + '</button>';
+            }).join('');
+        }
+        if (legend) {
+            legend.innerHTML = model.rows.length
+                ? model.rows.map(mapLegendRowHtml).join('')
+                : '<p class="map-workspace-empty">Vali esmalt kinnistu, et näha kaardi tähendusi ja allikaid.</p>';
+        }
+        restoreMapWorkspaceDomState(domState);
+
+        if (typeof map === 'undefined' || !map) return;
+        clearMapContextThemeLayers();
+        if (!mapWorkspaceState.hasValidPersistentContext || !mapWorkspaceState.persistentContext) {
+            removeOverlayLayer('eraldised');
+            return;
+        }
+        var persistent = mapWorkspaceState.persistentContext;
+        if (persistent.parcel && isMapFeature(persistent.parcel.feature)) showParcel(persistent.parcel.feature.geometry);
+        if (persistent.stands && persistent.stands.state === 'matches' && persistent.stands.features.length) {
+            addEraldisedLayer(persistent.stands.features);
+        } else {
+            removeOverlayLayer('eraldised');
+        }
+        model.visibleThemeIds.forEach(function(themeId) {
+            var theme = mapWorkspaceState.themeResults[themeId];
+            if (!theme || ['matches', 'partial'].indexOf(theme.state) === -1 || !theme.features.length) return;
+            groupThemeFeaturesBySource(theme).forEach(function(group, index) {
+                var layerName = MAP_CONTEXT_LAYER_PREFIX + themeId + ':' + index;
+                var layerStyle = Object.assign({}, group.style, { sourceKey: group.sourceKey });
+                addOverlayLayer(layerName, group.features, group.style.color, false, layerStyle);
+            });
+        });
+    }
+
+    function applyMapContextPayload(data, generation, controller, parcelId, themeIds) {
+        if (!mapContextRequestOwns(mapWorkspaceState, generation, controller, parcelId, themeIds)) return false;
+        clearLegacyMapFallbackLayers();
+        mapWorkspaceState = applyMapContextResultState(mapWorkspaceState, data, themeIds);
+        pendingLegacyMapFallback = null;
+        renderMapWorkspaceState();
+        var controls = document.getElementById('map-controls');
+        if (controls) controls.style.display = '';
+        dismissMapHint();
+        showDashboard();
+        hideLoading();
+        setTimeout(function() {
+            if (mapWorkspaceState.parcelId !== parcelId || !mapWorkspaceState.hasValidPersistentContext) return;
+            map.invalidateSize();
+            fitToParcel(data.persistent.parcel.feature.geometry);
+        }, 0);
+        return true;
+    }
+
+    function requestMapContextForParcel(parcelId, options) {
+        options = options || {};
+        if (mapWorkspaceState.parcelId !== parcelId) {
+            if (mapWorkspaceState.requestController) mapWorkspaceState.requestController.abort();
+            clearLegacyMapFallbackLayers();
+            mapWorkspaceState = resetMapWorkspaceForParcel(mapWorkspaceState, parcelId);
+            pendingLegacyMapFallback = null;
+        }
+        var themeIds = mapContextThemeIdsForState(mapWorkspaceState);
+        if (
+            mapWorkspaceState.requestController
+            && !options.retry
+            && arraysEqual(mapWorkspaceState.requestedThemeIds, themeIds)
+        ) {
+            renderMapWorkspaceState();
+            return Promise.resolve(true);
+        }
+        clearLegacyMapFallbackLayers();
+        if (mapWorkspaceState.requestController) mapWorkspaceState.requestController.abort();
+        if (!themeIds.length) {
+            mapWorkspaceState = Object.assign({}, mapWorkspaceState, {
+                loadingStatus: mapWorkspaceState.hasValidPersistentContext ? 'success' : 'idle',
+                errorStatus: null,
+                requestController: null,
+                requestedThemeIds: [],
+            });
+            renderMapWorkspaceState();
+            return Promise.resolve(true);
+        }
+
+        var generation = mapWorkspaceState.requestGeneration + 1;
+        var controller = new AbortController();
+        mapWorkspaceState = beginMapContextRequestState(
+            mapWorkspaceState,
+            generation,
+            controller,
+            Boolean(options.retry),
+            themeIds
+        );
+        renderMapWorkspaceState();
+        return fetchMapContext(parcelId, themeIds, controller).then(function(data) {
+            return applyMapContextPayload(data, generation, controller, parcelId, themeIds);
+        }).catch(function(error) {
+            if (!mapContextRequestOwns(mapWorkspaceState, generation, controller, parcelId, themeIds)) return false;
+            mapWorkspaceState = failMapContextRequestState(
+                mapWorkspaceState,
+                themeIds,
+                error && error.message ? error.message : 'Kaardikonteksti laadimine ebaõnnestus.'
+            );
+            renderMapWorkspaceState();
+            applyLegacyMapFallback();
+            return false;
+        });
+    }
+
+    function selectMapView(viewId) {
+        clearLegacyMapFallbackLayers();
+        pendingLegacyMapFallback = null;
+        mapWorkspaceState = selectMapViewPreset(mapWorkspaceState, viewId);
+        renderMapWorkspaceState();
+        if (mapWorkspaceState.parcelId) return requestMapContextForParcel(mapWorkspaceState.parcelId);
+        return Promise.resolve(false);
+    }
+
+    function toggleMapThemeSelection(themeId) {
+        clearLegacyMapFallbackLayers();
+        pendingLegacyMapFallback = null;
+        mapWorkspaceState = toggleMapTheme(mapWorkspaceState, themeId);
+        renderMapWorkspaceState();
+        if (mapWorkspaceState.parcelId) return requestMapContextForParcel(mapWorkspaceState.parcelId);
+        return Promise.resolve(false);
+    }
+
+    function restoreMapOverviewView() {
+        clearLegacyMapFallbackLayers();
+        pendingLegacyMapFallback = null;
+        mapWorkspaceState = restoreMapOverview(mapWorkspaceState);
+        renderMapWorkspaceState();
+        if (mapWorkspaceState.parcelId) return requestMapContextForParcel(mapWorkspaceState.parcelId);
+        return Promise.resolve(false);
+    }
+
+    function retryMapContext() {
+        if (!mapWorkspaceState.parcelId) return Promise.resolve(false);
+        return requestMapContextForParcel(mapWorkspaceState.parcelId, { retry: true });
+    }
+
+    function deriveClientMapThemes(data) {
+        var history = deriveForestNoticeTheme(data);
+        var subsidies = deriveSubsidyIndicatorTheme(data);
+        var results = Object.assign({}, mapWorkspaceState.themeResults, {
+            forest_notices: history,
+            subsidy_indicators: subsidies,
+        });
+        mapWorkspaceState = Object.assign({}, mapWorkspaceState, {
+            themeResults: results,
+            themeCache: Object.assign({}, mapWorkspaceState.themeCache, {
+                forest_notices: history,
+                subsidy_indicators: subsidies,
+            }),
+        });
+        renderMapWorkspaceState();
+    }
+
+    function setLegacyMapFallback(parcelId, data) {
+        if (!data || !data.kataster || data.kataster.number !== parcelId) return false;
+        if (mapWorkspaceState.viewId !== 'overview' || mapWorkspaceState.customized) return false;
+        pendingLegacyMapFallback = { parcelId: parcelId, viewId: 'overview', data: data };
+        return applyLegacyMapFallback();
+    }
+
+    function applyLegacyMapFallback() {
+        if (!pendingLegacyMapFallback) return false;
+        if (
+            pendingLegacyMapFallback.parcelId !== mapWorkspaceState.parcelId
+            || pendingLegacyMapFallback.viewId !== mapWorkspaceState.viewId
+            || mapWorkspaceState.viewId !== 'overview'
+            || mapWorkspaceState.customized
+            || mapWorkspaceState.hasValidPersistentContext
+        ) {
+            pendingLegacyMapFallback = null;
+            return false;
+        }
+        if (mapWorkspaceState.loadingStatus !== 'error') return false;
+        var data = pendingLegacyMapFallback.data;
+        loadMapLayers(data.map_layers || {});
+        if (data.kataster && data.kataster.geometry) showParcel(data.kataster.geometry);
+        legacyMapFallbackActive = true;
+        return true;
+    }
+
+    window.mapWorkspaceHooks = {
+        getState: function() { return mapWorkspaceState; },
+        selectView: selectMapView,
+        toggleTheme: toggleMapThemeSelection,
+        restoreOverview: restoreMapOverviewView,
+        retry: retryMapContext,
+        render: renderMapWorkspaceState,
+    };
 
     function cancelMapSelection() {
         mapSelectionSequence++;
@@ -1781,18 +2844,15 @@
 
     function initMap() {
         // Kaart töötab Web Mercator (EPSG:3857) projektsioonis — see on
-        // kõigi standardsete satelliit-tile-teenuste (Esri, Bing, OSM)
-        // loomulik CRS. Kataster WMS gsavalik.envir.ee toetab EPSG:3857.
+        // ametliku GMC maatriksi ja teiste aluskaartide loomulik CRS.
+        // Kataster WMS gsavalik.envir.ee toetab samuti EPSG:3857.
         // Eesti põhjalaiustel (59°N) Web Mercatori moonutus on ~1-2%
         // võrreldes LCC-ga — metsakinnistu piiride jaoks aktsepteeritav.
         map = L.map('map', {
             crs: L.CRS.EPSG3857,
             zoomControl: false,
-            // Eemaldame vaikimisi atribuudi — lisame oma, kujundatud
-            // kokkupandavana (väike "i" ikoon nurgas, hover/klõpsuga
-            // avaneb täistekst). Esri ja Maa-ameti atribuudid on
-            // juriidiliselt nõutavad (Esri ToS + CC-BY 4.0) — neid
-            // ei saa täielikult eemaldada, ainult peita kokkupanduna.
+            // Eemaldame vaikimisi atribuudi ja lisame kokkupandava juhtelemendi;
+            // iga aluskiht annab sellele oma pakkuja, toote ja väljavõtte aja.
             attributionControl: false,
             minZoom: 3,
             maxZoom: 19,
@@ -1802,20 +2862,34 @@
         // nõutav kuvada). CSS teeb selle kokkupandavaks.
         L.control.attribution({ position: 'bottomright', prefix: false }).addTo(map);
 
-        // ═══ Aluskaardid: 2 satelliidikihti ═══
-        // 1. Esri World Imagery — värskeim (uusimad lennud/satelliidifotod).
-        //    Vaikimisi.
-        // 2. Esri Wayback 2026-02-26 (timeId 64001) — Esri talvise väljalaske
-        //    ajalooline pilt (2026-02-26). Märkus: Esri World Imagery baas
-        //    on Eesti jaoks valdavalt suvised aerofotod, mistõttu 2026-02-26
-        //    pildil ei pruugi lund näha olla (kinnistu piiride ja metsa
-        //    kontrollimiseks sobib). Päris talvise sat-pildi jaoks
-        //    vajaks NASA GIBS MODIS/VIIRS daily (250-375m, pilved) või
-        //    Sentinel-2 (talve mosaiiki pole vaba tile-teenusena).
-        //    Wayback timeId on valitud kõige uuem talvine väljalase.
-        //
-        // Mõlemad on tasuta, ilma API võtmeta, attribution nõutav.
-        const suviFoto = L.tileLayer(
+        // WMTS mallid ja GMC maatriks: Maa- ja Ruumiameti GetCapabilities.
+        // https://tiles.maaamet.ee/tm/wmts?service=WMTS&version=1.0.0&request=GetCapabilities
+        const basemapExtractionDateEt = new Intl.DateTimeFormat('et-EE').format(new Date(BASEMAP_ACCESSED_AT));
+        const maaruumOrthophoto = L.tileLayer(
+            'https://tiles.maaamet.ee/tm/wmts/1.0.0/foto/default/GMC/{z}/{y}/{x}.jpg?ASUTUS=Terrapoint&KESKKOND=PROD&IS=terrapoint.ee',
+            {
+                tileSize: 256, maxNativeZoom: 18, maxZoom: 19, minZoom: 3,
+                attribution: 'Maa- ja Ruumiameti ortofoto · väljavõte ' + basemapExtractionDateEt + ' · pildistusaeg erineb asukohati',
+            }
+        );
+
+        const maaruumGrayMap = L.tileLayer(
+            'https://tiles.maaamet.ee/tm/wmts/1.0.0/hallkaart/default/GMC/{z}/{y}/{x}.png?ASUTUS=Terrapoint&KESKKOND=PROD&IS=terrapoint.ee',
+            {
+                tileSize: 256, maxNativeZoom: 18, maxZoom: 19, minZoom: 3,
+                attribution: 'Maa- ja Ruumiameti halltoonides kaart · väljavõte ' + basemapExtractionDateEt,
+            }
+        );
+
+        const esriLightGrayCanvas = L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+            {
+                maxNativeZoom: 16, maxZoom: 19, minZoom: 3,
+                attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OpenStreetMap contributors, and the GIS user community',
+            }
+        );
+
+        const esriWorldImagery = L.tileLayer(
             'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
             {
                 maxZoom: 19, minZoom: 3,
@@ -1823,7 +2897,7 @@
             }
         );
 
-        const talveFoto = L.tileLayer(
+        const esriWayback = L.tileLayer(
             'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/64001/{z}/{y}/{x}',
             {
                 maxZoom: 19, minZoom: 3,
@@ -1831,8 +2905,8 @@
             }
         );
 
-        // Vaikimisi: suvine Esri satelliidifoto
-        suviFoto.addTo(map);
+        // Iga lehelaadimine algab ametlikult ortofotolt.
+        maaruumOrthophoto.addTo(map);
 
         // Cadastre WMS overlay (Maa-amet / gsavalik) — katastripiiride
         // kiht, alati sisse lülitatud (kasutaja saab vajadusel eemaldada).
@@ -1865,16 +2939,70 @@
         // Click anywhere on map → reverse-lookup the cadastre at that point → run search
         map.on('click', handleMapClick);
 
-        // Aluskaardi vahetaja — 2 kihti (suvi + Esri Wayback talve väljalase).
-        // Vaikimisi kokkupandud (näitab ainult kihtide ikooni, avaneb klõpsuga).
+        // Vaikimisi kokkupandud aluskaardi valik eristab alati pakkujat ja toodet.
         var baseLayers = {
-            'Esri satelliit (värskeim)': suviFoto,
-            'Esri Wayback 2026-02-26': talveFoto,
+            'Maa- ja Ruumiamet · ortofoto': maaruumOrthophoto,
+            'Maa- ja Ruumiamet · halltoonides kaart': maaruumGrayMap,
+            'Esri · World Light Gray Canvas': esriLightGrayCanvas,
+            'Esri · World Imagery': esriWorldImagery,
+            'Esri · World Imagery Wayback (26.02.2026)': esriWayback,
         };
         var basemapPosition = 'bottomleft';
         var basemapControl = L.control.layers(baseLayers, null, { position: basemapPosition, collapsed: true });
 
         basemapControl.addTo(map);
+        map.on('baselayerchange', function(event) {
+            var basemapId = event.layer === maaruumOrthophoto ? 'maaruum-orthophoto'
+                : event.layer === maaruumGrayMap ? 'maaruum-gray'
+                : event.layer === esriLightGrayCanvas ? 'esri-light-gray'
+                : event.layer === esriWorldImagery ? 'esri-world-imagery'
+                : event.layer === esriWayback ? 'esri-wayback-2026-02-26'
+                : null;
+            if (!basemapId) return;
+            if (basemapId === 'maaruum-orthophoto') orthophotoFallbackUsed = false;
+            if (basemapId === 'maaruum-orthophoto' || basemapId === 'maaruum-gray') grayFallbackUsed = false;
+            mapWorkspaceState = selectMapBasemap(mapWorkspaceState, basemapId, null);
+            renderMapWorkspaceState();
+        });
+
+        // Each official layer can fall back once. The independent layer has no
+        // tileerror handler, so failures cannot create a fallback loop.
+        // https://leafletjs.com/reference.html#gridlayer-tileerror
+        var orthophotoFallbackUsed = false;
+        var grayFallbackUsed = false;
+        function activateOfficialBasemapFallback() {
+            if (orthophotoFallbackUsed || !map.hasLayer(maaruumOrthophoto)) return false;
+            orthophotoFallbackUsed = true;
+            grayFallbackUsed = false;
+            map.removeLayer(maaruumOrthophoto);
+            maaruumGrayMap.addTo(map);
+            mapWorkspaceState = selectMapBasemap(
+                mapWorkspaceState,
+                'maaruum-gray',
+                'Ortofoto ei laadinud; kasutusel on ametlik neutraalne varualuskaart.'
+            );
+            renderMapWorkspaceState();
+            return true;
+        }
+        maaruumOrthophoto.on('tileerror', function() {
+            activateOfficialBasemapFallback();
+        });
+        function activateIndependentNeutralFallback() {
+            if (grayFallbackUsed || !map.hasLayer(maaruumGrayMap)) return false;
+            grayFallbackUsed = true;
+            map.removeLayer(maaruumGrayMap);
+            esriLightGrayCanvas.addTo(map);
+            mapWorkspaceState = selectMapBasemap(
+                mapWorkspaceState,
+                'esri-light-gray',
+                'Ametlik halltoonides kaart ei laadinud; kasutusel on sõltumatu neutraalne Esri aluskaart.'
+            );
+            renderMapWorkspaceState();
+            return true;
+        }
+        maaruumGrayMap.on('tileerror', function() {
+            activateIndependentNeutralFallback();
+        });
 
         // Kui dashboard oli initMap ajal `display: none` (või mõni esivanem
         // 0-laiune), Leaflet suurustab kaardi valesti. invalidateSize
@@ -1961,7 +3089,7 @@
                 };
                 if (opts.dash) style.dashArray = opts.dash;
                 var layerOptions = { style: style };
-                if (name === 'lageraiealad') {
+                if (name === 'lageraiealad' || opts.sourceKey === 'lageraiealad') {
                     layerOptions.onEachFeature = function(feature, layer) {
                         var props = feature.properties || {};
                         var start = props.periood_a;
@@ -2005,33 +3133,12 @@
             map.removeLayer(overlayLayers[name]);
             delete overlayLayers[name];
         }
-        if (name === 'eraldised') {
-            var legend = document.getElementById('map-legend');
-            if (legend) legend.style.display = 'none';
-        }
-    }
-
-    function toggleOverlayLayer(name, visible) {
-        if (visible) {
-            if (overlayLayers[name]) {
-                map.addLayer(overlayLayers[name]);
-            } else {
-                // First time toggle, load from stored API data
-                var mapLayers = window._mapLayersData || {};
-                if (mapLayers[name]) {
-                    addOverlayLayer(name, mapLayers[name].features, mapLayers[name].color, false, mapLayers[name]);
-                }
-            }
-        } else {
-            removeOverlayLayer(name);
-        }
-        updateKihtLegend();
     }
 
 
     function loadMapLayers(mapLayers) {
-        // Clear old overlays
-        Object.keys(overlayLayers).forEach(removeOverlayLayer);
+        clearLegacyMapFallbackLayers();
+        removeOverlayLayer('eraldised');
 
         // Store for lazy loading on toggle
         window._mapLayersData = mapLayers;
@@ -2041,28 +3148,28 @@
             addEraldisedLayer(mapLayers.eraldised.features);
         }
 
-        // Auto-show checked layers
-        var checkboxes = document.querySelectorAll('.layer-toggle input[type=checkbox]');
-        checkboxes.forEach(function(cb) {
-            var key = cb.dataset.layer;
-            if (key && mapLayers[key] && cb.checked) {
-                addOverlayLayer(key, mapLayers[key].features, mapLayers[key].color, false, mapLayers[key]);
+        // Legacy search fallback stays deliberately sparse and never depends on removed controls.
+        ['kaitsealad', 'natura_elupaik'].forEach(function(key) {
+            var layer = mapLayers[key];
+            if (layer && Array.isArray(layer.features) && layer.features.length) {
+                addOverlayLayer(LEGACY_MAP_FALLBACK_PREFIX + key, layer.features, layer.color, false, layer);
             }
         });
-        updateKihtLegend();
     }
 
     function addEraldisedLayer(features) {
         if (typeof map === 'undefined' || !map) return;
+        removeOverlayLayer('eraldised');
         var geojson = { type: 'FeatureCollection', features: features };
         var labels = L.layerGroup();
         var layer = L.geoJSON(geojson, {
             style: function(feature) {
                 var p = feature.properties || {};
+                var ageClassColor = p.age_class_color || p.color || '#047857';
                 return {
-                    fillColor: p.color || '#047857',
+                    fillColor: ageClassColor,
                     fillOpacity: 0.35,
-                    color: p.color || '#047857',
+                    color: ageClassColor,
                     weight: 2,
                     opacity: 0.8,
                 };
@@ -2095,117 +3202,40 @@
                         }).addTo(labels);
                     }
                 }
+                var ageClassColor = p.age_class_color || p.color || 'var(--ink-5)';
+                var ageClassLabel = p.age_class_label || 'Vanuseklass määramata';
+                var ageClassProvenance = p.age_class_provenance || 'Terrapointi tuletis';
                 var popupValue = p.vaartus_hinnang_eur != null ? p.vaartus_hinnang_eur : p.vaartus_eur;
                 var popupValueHa = p.vaartus_hinnang_per_ha != null ? p.vaartus_hinnang_per_ha : p.vaartus_per_ha;
-                var val = popupValue ? Math.round(popupValue).toLocaleString('et-EE').replace(/,/g, ' ') + ' €' : '—';
-                var valHa = popupValueHa ? Math.round(popupValueHa).toLocaleString('et-EE').replace(/,/g, ' ') + ' €/ha' : '';
-                var rColor = p.color || 'var(--map-eraldis-hooldus)';
-                var rLabel = p.raie_liik || '';
-                var vrColors = {noormets:'var(--blue-500)',keskmine:'var(--blue-700)',kups:'var(--blue-900)',vanamets:'var(--danger)'};
-                var vrColor = vrColors[p.vanuseruhm] || 'var(--ink-5)';
                 var html = '<div style="font-size:13px;min-width:200px">';
                 html += '<div style="font-weight:700;font-size:14px;margin-bottom:6px;color:var(--ink)">' + escHtml(eraldisLabel(p.eraldis_nr)) + '</div>';
-                if (rLabel) html += '<div style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;color:white;background:' + rColor + ';margin-bottom:6px">' + escHtml(rLabel) + '</div>';
-                if (p.vanuseruhm_label) html += '<div style="display:inline-flex;align-items:center;gap:4px;margin-bottom:6px;margin-left:4px"><span style="width:8px;height:8px;border-radius:50%;background:' + vrColor + '"></span><strong style="font-size:12px">' + escHtml(p.vanuseruhm_label) + '</strong></div>';
+                html += '<div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:6px"><span style="width:8px;height:8px;border-radius:50%;background:' + escHtml(ageClassColor) + '"></span><strong style="font-size:12px">' + escHtml(ageClassLabel) + '</strong></div>';
+                html += '<div style="font-size:10px;color:var(--ink-5);margin-bottom:6px">' + escHtml(ageClassProvenance) + '</div>';
                 html += '<div style="display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:12px">';
                 html += '<span style="color:var(--ink-4)">Puuliik:</span><strong>' + escHtml(p.puuliik || '?') + '</strong>';
                 html += '<span style="color:var(--ink-4)">Vanus:</span><span>' + (p.vanus || '?') + ' a';
                 if (p.raievanus) html += ' <span style="color:var(--ink-5);font-size:10px">(raievanus ' + p.raievanus + 'a)</span>';
                 html += '</span>';
-                html += '<span style="color:var(--ink-4)">Tagavara:</span><span>' + (p.tagavara_y_ha || '?') + ' m³/ha</span>';
+                if (p.tagavara_y_ha != null) html += '<span style="color:var(--ink-4)">Tagavara:</span><span>' + escHtml(p.tagavara_y_ha) + ' m³/ha</span>';
                 html += '<span style="color:var(--ink-4)">Pindala:</span><span>' + (p.pindala_ha || '?') + ' ha</span>';
                 if (p.boniteet) html += '<span style="color:var(--ink-4)">Boniteet:</span><span>' + escHtml(p.boniteet) + '</span>';
                 if (p.korgus) html += '<span style="color:var(--ink-4)">Kõrgus:</span><span>' + escHtml(p.korgus) + ' m</span>';
                 html += '</div>';
-                if (p.vanuseruhm_desc) html += '<div style="margin-top:6px;font-size:11px;color:var(--ink-4);font-style:italic">' + escHtml(p.vanuseruhm_desc) + '</div>';
-                html += '<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--hair)">';
-                html += '<div style="font-size:18px;font-weight:800;color:var(--ink)">' + val + '</div>';
-                if (valHa) html += '<div style="font-size:11px;color:var(--ink-4)">' + valHa + '</div>';
-                html += '</div>';
+                html += '<div style="margin-top:7px;font-size:10px;color:var(--ink-5)">'
+                    + (p.invent_kp ? 'Inventuuri kuupäev: ' + escHtml(p.invent_kp) : 'Inventuuri kuupäev teadmata')
+                    + '</div>';
+                if (popupValue != null) {
+                    html += '<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--hair)">';
+                    html += '<div style="font-size:18px;font-weight:800;color:var(--ink)">' + Math.round(popupValue).toLocaleString('et-EE').replace(/,/g, ' ') + ' €</div>';
+                    if (popupValueHa != null) html += '<div style="font-size:11px;color:var(--ink-4)">' + Math.round(popupValueHa).toLocaleString('et-EE').replace(/,/g, ' ') + ' €/ha</div>';
+                    html += '</div>';
+                }
                 html += '<div style="font-size:10px;color:var(--ink-5);margin-top:4px">Klikka mujal sulgemiseks</div>';
                 html += '</div>';
                 layer.bindPopup(html);
             },
         });
         overlayLayers['eraldised'] = L.layerGroup([layer, labels]).addTo(map);
-        updateMapLegend(features);
-    }
-
-    function updateMapLegend(features) {
-        var legend = document.getElementById('map-legend');
-        if (!legend) return;
-        if (!features || features.length === 0) {
-            legend.style.display = 'none';
-            return;
-        }
-        legend.style.display = '';
-    }
-
-    // ═══ Kihtide legend — näitab kaardil aktiivsete kihtide värve ja
-    // joonestusstiile. Uuendatakse iga kord kui kasutaja lülitab kihi
-    // sisse/välja või laeb andmed. Näitab ainult neid kihte, millel
-    // on tegelikult tunnuseid (features) selles pargitud otsingus.
-    // Kui ühtegi kihti pole sisse lülitatud või ühelgi pole featuseid,
-    // peidetakse legend. ═══
-    function updateKihtLegend() {
-        var el = document.getElementById('map-kiht-legend');
-        var body = document.getElementById('kiht-legend-body');
-        if (!el || !body) return;
-
-        // Kogume kõik sisselülitatud kihid, millel on andmeid
-        var rows = [];
-        var checkboxes = document.querySelectorAll('.layer-toggle input[type=checkbox]');
-        checkboxes.forEach(function(cb) {
-            if (!cb.checked) return;
-            var key = cb.dataset.layer;
-            if (!key || key === 'kataster_wms') return; // kataster on eraldi
-            var data = (window._mapLayersData || {})[key];
-            if (!data || !data.features || data.features.length === 0) return;
-            // Leiame label-i kas cb.textContent-st või mapLayers label-st
-            var label = (cb.parentElement && cb.parentElement.querySelector('.toggle-label')) ?
-                        cb.parentElement.querySelector('.toggle-label').textContent.trim() :
-                        (data.label || key);
-            rows.push({
-                key: key,
-                label: label,
-                color: data.color || '#888',
-                dash: data.dash,
-                weight: data.weight || 2,
-                fillOpacity: data.fillOpacity != null ? data.fillOpacity : 0.3,
-            });
-        });
-
-        if (rows.length === 0) {
-            el.hidden = true;
-            body.innerHTML = '';
-            return;
-        }
-        el.hidden = false;
-
-        // Sorteerime alfabeetiliselt label-i järgi
-        rows.sort(function(a, b) { return a.label.localeCompare(b.label, 'et'); });
-
-        body.innerHTML = rows.map(function(r) {
-            // Eristame joone stiili: solid / dashed / dotted
-            var lineStyle;
-            if (r.dash === '2,3') lineStyle = 'dotted';
-            else if (r.dash) lineStyle = 'dashed';
-            else lineStyle = 'solid';
-            // Swatch: 14x14 kast, kujutab layer-i stiili
-            // Solid: täis värv, Dashed: lai joon katkendlik, Dotted: punktiir
-            var swatchStyle = 'background:' + r.color + ';';
-            if (lineStyle === 'dashed') {
-                swatchStyle = 'background:repeating-linear-gradient(90deg,' + r.color + ' 0 4px,transparent 4px 7px);border:1px solid ' + r.color + ';';
-            } else if (lineStyle === 'dotted') {
-                swatchStyle = 'background:repeating-linear-gradient(90deg,' + r.color + ' 0 1.5px,transparent 1.5px 4px);border:1px solid ' + r.color + ';';
-            } else {
-                swatchStyle += 'border:1.5px solid ' + r.color + ';';
-            }
-            return '<div class="kiht-legend-row">' +
-                   '<span class="kiht-legend-swatch" style="' + swatchStyle + '"></span>' +
-                   '<span class="kiht-legend-label">' + r.label + '</span>' +
-                   '</div>';
-        }).join('');
     }
 
     // ═══ dashboard.js ═══
@@ -3024,7 +4054,31 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         if (!data || data.length === 0) { el.innerHTML = '<p class="muted">Metsateatisi pole registreeritud</p>'; return; }
 
         // Kaardista API staatus -> badge klass ja silt
-        function teatisedStatusBadge(staatus, active, archived) {
+        function teatisedStatusBadge(eventStatus, eventStatusLabel, staatus, active, archived) {
+            if (typeof eventStatus === 'string' && eventStatus.trim()) {
+                var canonicalStatus = eventStatus.trim().toLowerCase();
+                var canonicalLabels = {
+                    permitted_current: 'Kehtiv lubatud töö',
+                    not_permitted: 'Töö ei ole lubatud',
+                    registered: 'Registreeritud',
+                    archived: 'Arhiivitud sündmus',
+                    not_current: 'Ei ole praegu kehtiv',
+                    unknown: 'Staatus määramata',
+                };
+                var canonicalClasses = {
+                    permitted_current: 'status-kehtiv status-permitted-current',
+                    not_permitted: 'status-kehtetu status-not-permitted',
+                    registered: 'status-registreeritud status-registered',
+                    archived: 'status-muud status-archived',
+                    not_current: 'status-kehtetu status-not-current',
+                    unknown: 'status-muud status-unknown',
+                };
+                var canonicalLabel = typeof eventStatusLabel === 'string' && eventStatusLabel.trim()
+                    ? eventStatusLabel.trim()
+                    : (canonicalLabels[canonicalStatus] || 'Staatus määramata');
+                var canonicalClass = canonicalClasses[canonicalStatus] || canonicalClasses.unknown;
+                return '<span class="teatised-status ' + canonicalClass + '">' + escHtml(canonicalLabel) + '</span>';
+            }
             var s = (staatus || '').toUpperCase().trim();
             if (archived) {
                 return '<span class="teatised-status status-muud">Arhiiv</span>';
@@ -3074,7 +4128,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             if (t.parast_inventuuri) noticeMeta.push('inventuurist hilisem');
             html += '<div class="teatised-type" data-label="Tüüp"><div class="teatised-type-value">' + escHtml(t.tyyp || '—') + (noticeMeta.length ? '<span>' + escHtml(noticeMeta.join(' · ')) + '</span>' : '') + '</div></div>';
             html += '<div class="teatised-eraldis" data-label="Eraldis">' + eraldisCell + '</div>';
-            html += '<div data-label="Staatus">' + teatisedStatusBadge(t.staatus, t.active, t.arhiiv) + '</div>';
+            html += '<div data-label="Staatus">' + teatisedStatusBadge(t.event_status, t.event_status_label, t.staatus, t.active, t.arhiiv) + '</div>';
             html += '<div data-label="Kehtiv kuni">' + escHtml(formatDateEt(t.kehtiv_kuni)) + '</div>';
             html += '<div data-label="Pindala">' + (t.pindala_ha ? formatNum(t.pindala_ha, 2) + ' ha' : '—') + '</div>';
             html += '</div>';
@@ -3378,26 +4432,29 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         );
     }
 
-    function resetParcelResult(requestId) {
-        if (requestId !== parcelSearchSequence) return false;
+    function hasPersistentMapContextForParcel(parcelId) {
+        if (typeof mapWorkspaceState === 'undefined' || !mapWorkspaceState) return false;
+        var requestedParcel = String(parcelId || '').trim();
+        var stateParcel = String(mapWorkspaceState.parcelId || '').trim();
+        var persistent = mapWorkspaceState.persistentContext;
+        return Boolean(
+            requestedParcel
+            && requestedParcel === stateParcel
+            && mapWorkspaceState.hasValidPersistentContext
+            && persistent
+            && persistent.parcel
+            && persistent.parcel.state === 'matches'
+            && isMapFeature(persistent.parcel.feature)
+        );
+    }
 
-        cancelMapSelection();
+    function resetAnalyticalResult(requestId) {
+        if (requestId !== parcelSearchSequence) return false;
         currentData = null;
         aiSnapshotReceipt = null;
         window._timberValue = 0;
         window._vaartusData = {};
         clearParcelPanels();
-
-        if (parcelLayer) {
-            if (map && map.hasLayer(parcelLayer)) map.removeLayer(parcelLayer);
-            parcelLayer = null;
-        }
-        Object.keys(overlayLayers).forEach(removeOverlayLayer);
-        window._mapLayersData = {};
-        updateMapLegend([]);
-        updateKihtLegend();
-        if (map) map.closePopup();
-
         aiShowUnavailableData();
         aiRenderEraldisHints([]);
         _aiUserScrolledUp = false;
@@ -3406,6 +4463,28 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         closeEraldisSheet(true);
         var restrictionsLink = document.getElementById('kitsendused-link');
         if (restrictionsLink) restrictionsLink.style.display = 'none';
+        return true;
+    }
+
+    function resetParcelResult(requestId) {
+        if (requestId !== parcelSearchSequence) return false;
+
+        cancelMapSelection();
+        if (typeof mapWorkspaceState !== 'undefined') {
+            if (mapWorkspaceState.requestController) mapWorkspaceState.requestController.abort();
+            mapWorkspaceState = resetMapWorkspaceForParcel(mapWorkspaceState, null);
+            pendingLegacyMapFallback = null;
+        }
+        resetAnalyticalResult(requestId);
+
+        if (parcelLayer) {
+            if (map && map.hasLayer(parcelLayer)) map.removeLayer(parcelLayer);
+            parcelLayer = null;
+        }
+        Object.keys(overlayLayers).forEach(removeOverlayLayer);
+        window._mapLayersData = {};
+        renderMapWorkspaceState();
+        if (map) map.closePopup();
         return true;
     }
 
@@ -3434,6 +4513,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
     function beginParcelReplacement() {
         var requestId = ++parcelSearchSequence;
+        closeMapWorkspaceOnMobile(false);
         if (activeParcelSearch) activeParcelSearch.abort();
         activeParcelSearch = null;
         activeAddressResolution = null;
@@ -3491,14 +4571,70 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         if (mapHint) mapHint.classList.add('hidden');
     }
 
-    function collapseMapLegendOnMobile() {
+    function openMapWorkspace() {
+        var workspace = document.getElementById('map-workspace');
+        var panel = document.getElementById('map-workspace-panel');
+        var opener = document.getElementById('map-workspace-opener');
+        if (!workspace || !panel || !opener) return;
+        var mapSection = window.matchMedia('(max-width: 640px)').matches ? workspace.closest('.map-section') : null;
+        panel.hidden = false;
+        workspace.classList.add('is-open');
+        opener.setAttribute('aria-expanded', 'true');
+        if (mapSection) requestAnimationFrame(function() {
+            window.scrollTo(0, window.scrollY + mapSection.getBoundingClientRect().top - 64);
+        });
+    }
+
+    function closeMapWorkspace(restoreFocus) {
+        var workspace = document.getElementById('map-workspace');
+        var panel = document.getElementById('map-workspace-panel');
+        var opener = document.getElementById('map-workspace-opener');
+        if (!workspace || !panel || !opener) return;
+        panel.hidden = true;
+        workspace.classList.remove('is-open');
+        opener.setAttribute('aria-expanded', 'false');
+        if (restoreFocus) opener.focus();
+    }
+
+    function closeMapWorkspaceOnMobile(restoreFocus) {
         if (!window.matchMedia('(max-width: 640px)').matches) return;
-        var mapLegend = document.getElementById('map-legend');
-        var mapLegendToggle = document.getElementById('map-legend-toggle');
-        if (!mapLegend || !mapLegendToggle) return;
-        mapLegend.classList.add('collapsed');
-        mapLegendToggle.textContent = '+';
-        mapLegendToggle.setAttribute('aria-label', 'Ava legend');
+        var workspace = document.getElementById('map-workspace');
+        if (!workspace || !workspace.classList.contains('is-open')) return;
+        closeMapWorkspace(Boolean(restoreFocus));
+    }
+
+    function initMapWorkspaceControls() {
+        var workspace = document.getElementById('map-workspace');
+        var opener = document.getElementById('map-workspace-opener');
+        var close = document.getElementById('map-workspace-close');
+        var reset = document.getElementById('map-workspace-reset');
+        if (!workspace || !opener || !close) return;
+        opener.setAttribute('aria-expanded', 'false');
+        opener.addEventListener('click', function() {
+            if (workspace.classList.contains('is-open')) closeMapWorkspace(false);
+            else openMapWorkspace();
+        });
+        close.addEventListener('click', function() { closeMapWorkspace(true); });
+        if (reset) reset.addEventListener('click', function() { restoreMapOverviewView(); });
+        workspace.addEventListener('click', function(event) {
+            var viewButton = event.target.closest('[data-map-view]');
+            if (viewButton && !viewButton.disabled) {
+                selectMapView(viewButton.getAttribute('data-map-view'));
+                return;
+            }
+            var themeButton = event.target.closest('[data-map-theme]');
+            if (themeButton && !themeButton.disabled) {
+                toggleMapThemeSelection(themeButton.getAttribute('data-map-theme'));
+                return;
+            }
+            if (event.target.closest('[data-map-retry]')) retryMapContext();
+        });
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && workspace.classList.contains('is-open')) {
+                closeMapWorkspace(true);
+                opener.focus();
+            }
+        });
     }
 
     function showDashboard() {
@@ -3534,6 +4670,8 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
     document.addEventListener('DOMContentLoaded', function() {
         initMap();
+        initMapWorkspaceControls();
+        renderMapWorkspaceState();
         aiInitScrollTracking();
 
         // ── Landing wiring ──
@@ -3769,46 +4907,6 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             else if (navInput) navInput.focus();
         }
 
-        // Map legend collapse toggle
-        var legend = document.getElementById('map-legend');
-        var legendBtn = document.getElementById('map-legend-toggle');
-        if (legend && legendBtn) {
-            legendBtn.addEventListener('click', function() {
-                var collapsed = legend.classList.toggle('collapsed');
-                legendBtn.textContent = collapsed ? '+' : '−';
-                legendBtn.setAttribute('aria-label', collapsed ? 'Ava legend' : 'Sulge legend');
-            });
-        }
-
-        // Kihtide legend close (kasutaja võib legendi sulgeda x nupust)
-        var kihtLegendClose = document.getElementById('kiht-legend-close');
-        if (kihtLegendClose) {
-            kihtLegendClose.addEventListener('click', function() {
-                var el = document.getElementById('map-kiht-legend');
-                if (el) el.hidden = true;
-            });
-        }
-
-        // Map controls (layers) collapse toggle
-        var mapCtrls = document.getElementById('map-controls');
-        var mapCtrlsBtn = document.getElementById('map-controls-toggle');
-        if (mapCtrls && mapCtrlsBtn) {
-            var mapCtrlsIcon = mapCtrlsBtn.querySelector('.map-controls-toggle-icon');
-            // Default collapsed on phones for less visual clutter
-            if (window.matchMedia('(max-width: 640px)').matches) {
-                mapCtrls.classList.add('collapsed');
-                if (mapCtrlsIcon) mapCtrlsIcon.textContent = '+';
-                mapCtrlsBtn.setAttribute('aria-expanded', 'false');
-                mapCtrlsBtn.setAttribute('aria-label', 'Ava kihtide menüü');
-            }
-            mapCtrlsBtn.addEventListener('click', function() {
-                var collapsed = mapCtrls.classList.toggle('collapsed');
-                if (mapCtrlsIcon) mapCtrlsIcon.textContent = collapsed ? '+' : '−';
-                mapCtrlsBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-                mapCtrlsBtn.setAttribute('aria-label', collapsed ? 'Ava kihtide menüü' : 'Sulge kihtide menüü');
-            });
-        }
-
         // Map hint dismiss (×) and auto-hide once user has clicked the map
         var mapHint = document.getElementById('map-hint');
         var mapHintClose = document.getElementById('map-hint-close');
@@ -3888,22 +4986,6 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 var v = (document.getElementById('kataster-input').value || '').trim();
                 if (v) navSmartSubmit(v);
             }
-        });
-
-        document.querySelectorAll('.layer-toggle input[type=checkbox]').forEach(function(cb) {
-            cb.addEventListener('change', function(e) {
-                var key = e.target.dataset.layer;
-                if (key === 'kataster_wms') {
-                    if (!katasterWmsLayer) return;
-                    if (e.target.checked) {
-                        if (!map.hasLayer(katasterWmsLayer)) map.addLayer(katasterWmsLayer);
-                    } else {
-                        if (map.hasLayer(katasterWmsLayer)) map.removeLayer(katasterWmsLayer);
-                    }
-                    return;
-                }
-                if (key) toggleOverlayLayer(key, e.target.checked);
-            });
         });
 
         // AI Chat input
@@ -4087,6 +5169,8 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         if (landSearchBox) landSearchBox.classList.add('is-searching');
 
         showLoading();
+        var mapContextPromise = requestMapContextForParcel(nr);
+        void mapContextPromise;
 
         try {
             var data = await searchParcel(nr, controller);
@@ -4096,6 +5180,8 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             }
             currentData = data;
             recordChatSnapshotReceipt(data, performance.now());
+            deriveClientMapThemes(data);
+            setLegacyMapFallback(nr, data);
 
             window._timberValue = (data.vaartus && data.vaartus.total_value_eur) || 0;
             window._vaartusData = data.vaartus || {};
@@ -4121,17 +5207,8 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             safe(renderToetused, data.toetused, 'toetused');
             safe(renderEudr, data, 'eudr');
 
-            // Replace all parcel-scoped map state before revealing the result.
-            loadMapLayers(data.map_layers || {});
-            if (data.kataster.geometry) {
-                showParcel(data.kataster.geometry);
-            } else if (parcelLayer) {
-                if (map && map.hasLayer(parcelLayer)) map.removeLayer(parcelLayer);
-                parcelLayer = null;
-            }
             document.getElementById('map-controls').style.display = '';
             dismissMapHint();
-            collapseMapLegendOnMobile();
 
             hideLoading();
             showDashboard();
@@ -4162,7 +5239,8 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             }, 200);
         } catch (err) {
             if (requestId !== parcelSearchSequence) return;
-            resetParcelResult(requestId);
+            if (hasPersistentMapContextForParcel(nr)) resetAnalyticalResult(requestId);
+            else resetParcelResult(requestId);
             hideLoading();
             showDashboard();
             renderErrorState(err.message);

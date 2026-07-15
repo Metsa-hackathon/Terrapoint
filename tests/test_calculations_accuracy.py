@@ -68,6 +68,36 @@ class CuttingAgeTests(unittest.TestCase):
         self.assertEqual(mature["status"], "yellow")
         self.assertEqual(ripe["status"], "red")
 
+    def test_neutral_age_class_boundaries_are_additive(self):
+        expected = {
+            49: ("young", "Noor"),
+            50: ("middle_aged", "Keskealine"),
+            84: ("middle_aged", "Keskealine"),
+            85: ("maturing", "Valmiv"),
+            99: ("maturing", "Valmiv"),
+            100: ("cutting_age_reached", "Raievanus saavutatud"),
+        }
+
+        for age, (class_id, label) in expected.items():
+            with self.subTest(age=age):
+                result = cutting_age_indicator(age, "MA", 3)
+                self.assertEqual(result["age_class"], class_id)
+                self.assertEqual(result["age_class_label"], label)
+                self.assertRegex(result["age_class_color"], r"^#[0-9a-fA-F]{6}$")
+                self.assertEqual(result["age_class_provenance"], "Terrapointi tuletis")
+                self.assertIn("status", result)
+                self.assertIn("label", result)
+                self.assertIn("ratio", result)
+                self.assertIn("raievanus", result)
+
+    def test_neutral_age_class_is_unknown_when_age_or_cutting_age_is_unknown(self):
+        for age, species in ((None, "MA"), (40, "SP")):
+            with self.subTest(age=age, species=species):
+                result = cutting_age_indicator(age, species, 3)
+                self.assertEqual(result["age_class"], "unknown")
+                self.assertEqual(result["age_class_label"], "Määramata")
+                self.assertEqual(result["age_class_provenance"], "Terrapointi tuletis")
+
     def test_classifier_codes_are_not_mistaken_for_other_species(self):
         self.assertIn("SD", CUTTING_AGE)  # seedermänd
         self.assertNotIn("SP", CUTTING_AGE)  # sarapuu

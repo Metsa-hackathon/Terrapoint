@@ -424,7 +424,84 @@ class AreaDataTests(unittest.TestCase):
         })
 
         self.assertIn("Vana aktiivne lageraie", prompt)
-        self.assertIn("Aktiivseid metsateatiseid: 2", prompt)
+        self.assertIn("Kehtivaid lubatud metsateatiseid: 2", prompt)
+
+    def test_ai_prompt_uses_event_status_for_current_work_counts_and_labels(self):
+        notices = [
+            {
+                "number": "PERMITTED",
+                "tyyp": "Lubatud lageraie",
+                "active": True,
+                "event_status": "permitted_current",
+                "event_status_label": "Kehtiv lubatud töö",
+                "kehtiv_kuni": "2099-01-01",
+                "maht": 10,
+            },
+            {
+                "number": "DENIED",
+                "tyyp": "Keelduv otsus",
+                "active": True,
+                "event_status": "not_permitted",
+                "event_status_label": "Otsus ei luba tööd",
+                "kehtiv_kuni": "2099-01-01",
+                "maht": 100,
+            },
+            {
+                "number": "REGISTERED",
+                "tyyp": "Registreeritud töö",
+                "active": True,
+                "event_status": "registered",
+                "event_status_label": "Registreeritud teatis",
+                "kehtiv_kuni": "2099-01-01",
+                "maht": 200,
+            },
+            {
+                "number": "MALFORMED",
+                "tyyp": "Vigane otsus",
+                "active": True,
+                "event_status": "unknown",
+                "event_status_label": "Staatus määramata",
+                "kehtiv_kuni": "2099-01-01",
+                "maht": 300,
+            },
+            {
+                "number": "ARCHIVED",
+                "tyyp": "Arhiivitud töö",
+                "active": False,
+                "event_status": "archived",
+                "event_status_label": "Arhiivitud sündmus",
+                "maht": 400,
+            },
+            {
+                "number": "EXPIRED",
+                "tyyp": "Aegunud töö",
+                "active": False,
+                "event_status": "not_current",
+                "event_status_label": "Mittekehtiv või kehtivus teadmata",
+                "maht": 500,
+            },
+        ]
+
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 20},
+            "teatised": notices,
+        })
+
+        self.assertIn(
+            "Kehtivaid lubatud metsateatiseid: 1, kehtivaid lubatud eraldiseridu 1, kavandatud maht kokku 10 m³",
+            prompt,
+        )
+        for label in (
+            "Otsus ei luba tööd",
+            "Registreeritud teatis",
+            "Staatus määramata",
+            "Arhiivitud sündmus",
+            "Mittekehtiv või kehtivus teadmata",
+        ):
+            self.assertIn(label, prompt)
+        self.assertNotIn("Keelduv otsus: aktiivne", prompt)
+        self.assertNotIn("Registreeritud töö: aktiivne", prompt)
+        self.assertNotIn("Vigane otsus: aktiivne", prompt)
 
     def test_ai_prompt_prioritizes_newest_damage_and_reports_omitted_records(self):
         old_damage = [

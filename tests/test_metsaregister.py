@@ -154,6 +154,24 @@ class MetsaregisterDataTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(eraldised[0]["juurdekasv"], 4.2)
         self.assertEqual(eraldised[0]["kasvukoht_kood"], "MD")
 
+    async def test_missing_age_and_species_remain_available_to_classifiers_as_none(self):
+        features = [{
+            "properties": {
+                "id": 1,
+                "tagavara_1_ha": 0,
+                "boniteedi_kood": 3,
+                "pindala": 1,
+            },
+        }]
+
+        with patch("services.metsaregister._wfs_get", new=AsyncMock(return_value=features)):
+            stands = await query_eraldis("78404:409:0113")
+
+        self.assertEqual(stands[0]["vanus"], 0)
+        self.assertEqual(stands[0]["puuliik_kood"], "MA")
+        self.assertIsNone(stands[0]["vanus_raw"])
+        self.assertIsNone(stands[0]["puuliik_kood_raw"])
+
     async def test_notices_merge_current_and_archive_and_prefer_current_duplicate(self):
         current = [{"id": "teatis.1", "properties": {
             "teatise_nr": "A", "eraldise_nr": 1, "too_kood": "LR",

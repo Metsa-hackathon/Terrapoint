@@ -12,15 +12,18 @@ import base64
 import hashlib
 import hmac
 import inspect
+import logging
 import math
 import os
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
+from typing import Annotated
 import httpx
 import orjson
 from shapely.geometry import shape
-from fastapi import FastAPI, Request
+from shapely.ops import unary_union
+from fastapi import FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -36,7 +39,16 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from services.kataster import query_kataster
 from services.metsaregister import SPECIES_NAMES, MetsaregisterWFSError, query_eraldis, query_eraldis_element, query_natura_2000, query_teatised, query_kahjustused
 from services.validation import _validate_kataster_nr_or_400
-from services.layers import LAYER_CONFIGS, query_all_layers
+from services.layers import (
+    KPOIS_SPECIALIZED_KEYS,
+    LAYER_CONFIGS,
+    SOURCE_REGISTRY,
+    THEME_REGISTRY,
+    deduplicate_kpois_sources,
+    query_all_layers,
+    query_layers,
+    reduce_theme,
+)
 from services.subsidies import check_subsidies
 from calculators.carbon import carbon_potential
 from calculators.cutting_age import cutting_age_indicator
@@ -54,6 +66,9 @@ from calculators.valuation import (
 from spatial.bbox import calculate_bbox, bbox_to_wfs_string
 import config
 from api.cache import search_cache, wfs_cache
+
+
+logger = logging.getLogger(__name__)
 
 
 # ── Pydantic schemas ──────────────────────────────────────────────
@@ -101,6 +116,7 @@ CHAT_RATE_WINDOW_SECONDS = 60
 SEARCH_TIMEOUT_SECONDS = 20.0
 KATASTER_TIMEOUT_SECONDS = 6.0
 PRIMARY_SOURCE_TIMEOUT_SECONDS = 8.0
+MAP_LAYER_SOURCE_TIMEOUT_SECONDS = 7.0
 ADDRESS_UPSTREAM_TIMEOUT_SECONDS = 4.0
 ADDRESS_UPSTREAM_ATTEMPTS = 2
 _rate_limit_buckets: dict[tuple[str, str], list[float]] = {}
@@ -110,6 +126,34 @@ XGIS_ALLOWED_LAYERS = {"EESTIFOTO", "HYBRID", "nCHM2017"}
 XGIS_ALLOWED_SRS = {"EPSG:3301"}
 XGIS_ALLOWED_VERSIONS = {"1.1.1"}
 JS_SAFE_INTEGER_MAX = 9_007_199_254_740_991
+DEFAULT_MAP_THEMES = (
+    "nature_protection",
+    "species_habitats",
+    "water_restrictions",
+    "heritage_other",
+)
+# Sources consumed by legacy non-map analysis: spatial status, restrictions,
+# beetle risk, invasive-species risk, and historical clearcut evidence.
+ANALYTICAL_LAYER_KEYS = (
+    "kaitsealad",
+    "yrask_eelis",
+    "yrask_mke",
+    "piirang",
+    "karuputk",
+    "sood",
+    "lageraiealad",
+    "malestised",
+    "piirangukeelualad",
+    "kaitsevoondid",
+    "uleujutus",
+    "veekaitse",
+    "ranna_piirang",
+    "vaetiste_keeld",
+    "kma_kitsendused",
+    "katsealad",
+)
+MAP_CONTEXT_CLIENT_RATE_LIMIT = 120
+MAP_CONTEXT_RESOURCE_RATE_LIMIT = 30
 
 
 def _parse_source_date(value) -> date | None:
@@ -123,6 +167,26 @@ def _parse_source_date(value) -> date | None:
         return date.fromisoformat(str(value)[:10])
     except (TypeError, ValueError):
         return None
+
+
+def _is_iso_date_string(value) -> bool:
+    if not isinstance(value, str) or not value:
+        return False
+    try:
+        date.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
+
+
+def _is_iso_datetime_string(value) -> bool:
+    if not isinstance(value, str) or not value:
+        return False
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return parsed.tzinfo is not None
 
 
 def _completed_years(value, today: date | None = None) -> int | None:
@@ -175,14 +239,67 @@ def _normalize_eraldis_nr(value) -> int | None:
     return int(number)
 
 
-def _geometry_label_point(geometry) -> list[float] | None:
-    """Return an interior map-label point in GeoJSON [lon, lat] order."""
+SUPPORTED_GEOJSON_GEOMETRY_TYPES = frozenset({
+    "Point",
+    "MultiPoint",
+    "LineString",
+    "MultiLineString",
+    "Polygon",
+    "MultiPolygon",
+    "GeometryCollection",
+})
+
+
+def _coordinates_are_finite(value) -> bool:
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, (int, float)):
+        try:
+            return math.isfinite(value)
+        except OverflowError:
+            return False
+    if isinstance(value, (list, tuple)):
+        return all(_coordinates_are_finite(item) for item in value)
+    return False
+
+
+def _validated_geojson_shape(geometry):
+    """Return a usable Shapely geometry for a strict GeoJSON geometry mapping."""
     if not isinstance(geometry, dict):
+        return None
+    geometry_type = geometry.get("type")
+    if geometry_type not in SUPPORTED_GEOJSON_GEOMETRY_TYPES:
+        return None
+    try:
+        if geometry_type == "GeometryCollection":
+            geometries = geometry.get("geometries")
+            if not isinstance(geometries, list) or any(
+                _validated_geojson_shape(item) is None for item in geometries
+            ):
+                return None
+        elif "coordinates" not in geometry or not _coordinates_are_finite(geometry["coordinates"]):
+            return None
+    except RecursionError:
         return None
     try:
         geometry_shape = shape(geometry)
-        if geometry_shape.is_empty or not geometry_shape.is_valid:
-            return None
+    except Exception:
+        return None
+    if (
+        geometry_shape.geom_type not in SUPPORTED_GEOJSON_GEOMETRY_TYPES
+        or geometry_shape.is_empty
+        or not geometry_shape.is_valid
+    ):
+        return None
+    return geometry_shape
+
+
+def _geometry_label_point(geometry) -> list[float] | None:
+    """Return an interior map-label point in GeoJSON [lon, lat] order."""
+    geometry_shape = _validated_geojson_shape(geometry)
+    if geometry_shape is None:
+        return None
+    try:
         point = geometry_shape.representative_point()
         coordinates = [float(point.x), float(point.y)]
         return coordinates if all(math.isfinite(value) for value in coordinates) else None
@@ -416,11 +533,35 @@ def _attach_chat_snapshot(data: dict, now: float | None = None) -> dict:
     return response_data
 
 
+def _notice_is_permitted_current(notice: dict) -> bool:
+    event_status = notice.get("event_status")
+    if event_status is not None:
+        return event_status == "permitted_current"
+    return bool(notice.get("active"))
+
+
+def _notice_status_label(notice: dict) -> str:
+    label = notice.get("event_status_label")
+    if label:
+        return str(label)
+    event_status = notice.get("event_status")
+    if event_status:
+        return {
+            "permitted_current": "Kehtiv lubatud töö",
+            "not_permitted": "Otsus ei luba tööd",
+            "registered": "Registreeritud teatis",
+            "archived": "Arhiivitud sündmus",
+            "not_current": "Mittekehtiv või kehtivus teadmata",
+            "unknown": "Staatus määramata",
+        }.get(event_status, "Staatus määramata")
+    return "Kehtiv lubatud töö" if notice.get("active") else "Mitteaktiivne või staatus teadmata"
+
+
 def _prioritize_notice_rows(notices: list[dict], limit: int) -> list[dict]:
     """Keep active and distinct notices visible before repeated stand rows."""
     sorted_notices = sorted(
         notices,
-        key=lambda notice: (bool(notice.get("active")), notice.get("otsus_kinnitatud_kp") or ""),
+        key=lambda notice: (_notice_is_permitted_current(notice), notice.get("otsus_kinnitatud_kp") or ""),
         reverse=True,
     )
     first_rows = []
@@ -597,6 +738,10 @@ def _check_rate_limit(identifier: str, bucket: str, limit: int, window_seconds: 
         for old_key in list(_rate_limit_buckets.keys())[:256]:
             _rate_limit_buckets.pop(old_key, None)
     return True, 0
+
+
+def _map_context_rate_scope(kataster_nr: str, themes: list[str]) -> str:
+    return f"map-context:{kataster_nr}:{','.join(sorted(set(themes)))}"
 
 
 async def _read_limited_json(request: Request, max_bytes: int) -> dict:
@@ -856,8 +1001,529 @@ def _search_proxy_response(response: httpx.Response, expected_kataster_nr: str) 
     return json_response(signed_data, headers=headers)
 
 
+def _map_context_proxy_response(
+    response: httpx.Response,
+    expected_kataster_nr: str,
+    expected_themes: list[str],
+) -> Response:
+    headers = {"Cache-Control": "private, no-store"}
+    retry_after = getattr(response, "headers", {}).get("retry-after")
+    if retry_after:
+        headers["Retry-After"] = retry_after
+    if response.status_code != 200:
+        return Response(
+            content=response.content,
+            status_code=response.status_code,
+            media_type="application/json",
+            headers=headers,
+        )
+    try:
+        data = orjson.loads(response.content)
+    except orjson.JSONDecodeError:
+        data = None
+
+    def valid_feature(feature) -> bool:
+        return (
+            isinstance(feature, dict)
+            and feature.get("type") == "Feature"
+            and _validated_geojson_shape(feature.get("geometry")) is not None
+            and isinstance(feature.get("properties"), dict)
+        )
+
+    def valid_overlap_details(
+        item,
+        *,
+        geometry_available: bool = True,
+        stand_geometry_available: bool = True,
+    ) -> bool:
+        if not geometry_available and (
+            "approximate_parcel_overlap_percent" in item
+            or "affected_stand_numbers" in item
+        ):
+            return False
+        if not stand_geometry_available and "affected_stand_numbers" in item:
+            return False
+        if "approximate_parcel_overlap_percent" in item:
+            overlap = item["approximate_parcel_overlap_percent"]
+            try:
+                valid_overlap = (
+                    not isinstance(overlap, bool)
+                    and isinstance(overlap, (int, float))
+                    and math.isfinite(overlap)
+                    and 0 <= overlap <= 100
+                )
+            except OverflowError:
+                valid_overlap = False
+            if not valid_overlap:
+                return False
+        if "affected_stand_numbers" in item:
+            numbers = item["affected_stand_numbers"]
+            if (
+                not isinstance(numbers, list)
+                or any(
+                    isinstance(number, bool)
+                    or not isinstance(number, int)
+                    or not 0 <= number <= JS_SAFE_INTEGER_MAX
+                    for number in numbers
+                )
+                or numbers != sorted(set(numbers))
+            ):
+                return False
+        return True
+
+    def valid_source(source, *, with_state: bool, parent_state: str | None = None) -> bool:
+        required = ("key", "label", "provider", "interpretation", "data_as_of")
+        if not isinstance(source, dict) or not all(key in source for key in required):
+            return False
+        data_as_of = source["data_as_of"]
+        if data_as_of is not None and not _is_iso_date_string(data_as_of):
+            return False
+        if with_state and (
+            source.get("state") not in {"matches", "empty", "partial", "unavailable"}
+            or isinstance(source.get("match_count"), bool)
+            or not isinstance(source.get("match_count"), int)
+            or source["match_count"] < 0
+        ):
+            return False
+        source_state = source.get("state") if with_state else parent_state
+        if source_state == "unavailable":
+            if "checked_at" in source or not _is_iso_datetime_string(source.get("attempted_at")):
+                return False
+        elif "attempted_at" in source or not _is_iso_datetime_string(source.get("checked_at")):
+            return False
+        return valid_overlap_details(
+            source,
+            geometry_available=source_state != "unavailable",
+            stand_geometry_available=stand_geometry_available,
+        )
+
+    persistent = data.get("persistent") if isinstance(data, dict) else None
+    parcel = persistent.get("parcel") if isinstance(persistent, dict) else None
+    stands = persistent.get("stands") if isinstance(persistent, dict) else None
+    stand_geometry_available = (
+        isinstance(stands, dict) and stands.get("state") != "unavailable"
+    )
+    themes = data.get("themes") if isinstance(data, dict) else None
+    valid_persistent = (
+        isinstance(parcel, dict)
+        and parcel.get("state") == "matches"
+        and valid_feature(parcel.get("feature"))
+        and valid_source(parcel.get("source"), with_state=False, parent_state=parcel.get("state"))
+        and isinstance(stands, dict)
+        and stands.get("state") in {"matches", "empty", "unavailable"}
+        and type(stands.get("complete")) is bool
+        and (stands["state"] != "empty" or stands["complete"])
+        and (stands["state"] != "unavailable" or not stands["complete"])
+        and type(stands.get("count")) is int
+        and stands["count"] >= 0
+        and isinstance(stands.get("features"), list)
+        and stands["count"] == len(stands["features"])
+        and all(valid_feature(feature) for feature in stands["features"])
+        and valid_source(stands.get("source"), with_state=False, parent_state=stands.get("state"))
+    )
+    valid_themes = isinstance(themes, dict) and set(themes) == set(expected_themes)
+    if valid_themes:
+        for theme_id in expected_themes:
+            theme = themes.get(theme_id)
+            if (
+                not isinstance(theme, dict)
+                or theme.get("id") != theme_id
+                or not isinstance(theme.get("label"), str)
+                or theme.get("state") not in {"matches", "empty", "partial", "unavailable"}
+                or type(theme.get("match_count")) is not int
+                or theme["match_count"] < 0
+                or not isinstance(theme.get("features"), list)
+                or theme["match_count"] != len(theme["features"])
+                or not all(valid_feature(feature) for feature in theme["features"])
+                or not isinstance(theme.get("sources"), list)
+                or not all(valid_source(source, with_state=True) for source in theme["sources"])
+                or not valid_overlap_details(
+                    theme,
+                    geometry_available=theme.get("state") != "unavailable",
+                    stand_geometry_available=stand_geometry_available,
+                )
+            ):
+                valid_themes = False
+                break
+    if (
+        not isinstance(data, dict)
+        or data.get("parcel_id") != expected_kataster_nr
+        or data.get("requested_themes") != expected_themes
+        or not _is_iso_datetime_string(data.get("checked_at"))
+        or not valid_persistent
+        or not valid_themes
+    ):
+        return json_response(
+            {"error": "Kaarditeenus tagastas puudulikud andmed. Proovi uuesti.", "code": "UPSTREAM_SCHEMA"},
+            502,
+            headers,
+        )
+    return json_response(data, headers=headers)
+
+
+def _normalize_map_themes(themes: list[str] | None) -> list[str]:
+    requested = list(DEFAULT_MAP_THEMES if themes is None else themes)
+    if any(theme_id not in THEME_REGISTRY for theme_id in requested):
+        raise HTTPException(status_code=400, detail="Tundmatu kaarditeema")
+    return list(dict.fromkeys(requested))
+
+
+def _map_source_row(
+    source_key: str,
+    state: str,
+    match_count: int,
+    checked_at: str,
+    attempted_at: str | None = None,
+    overlap_details: dict | None = None,
+) -> dict:
+    source = SOURCE_REGISTRY[source_key]
+    row = {
+        "key": source.key,
+        "label": source.source_label,
+        "provider": source.provider,
+        "interpretation": source.interpretation,
+        "state": state,
+        "match_count": match_count,
+        "data_as_of": None,
+    }
+    if state == "unavailable":
+        row["attempted_at"] = attempted_at or checked_at
+    else:
+        row["checked_at"] = checked_at
+    if overlap_details:
+        row.update(overlap_details)
+    if source.style is not None:
+        row["style"] = {
+            "label": source.style.label,
+            "color": source.style.color,
+            "dash": source.style.dash,
+            "weight": source.style.weight,
+            "fillOpacity": source.style.fill_opacity,
+        }
+    return row
+
+
+def _map_overlap_details(
+    features: list[dict],
+    parcel_shape,
+    stand_shapes: list[tuple[int, object]] | None,
+) -> dict:
+    if parcel_shape.area <= 0:
+        return {}
+    intersections = []
+    for feature in features:
+        feature_shape = _validated_geojson_shape(feature.get("geometry"))
+        if feature_shape is None:
+            continue
+        try:
+            intersection = feature_shape.intersection(parcel_shape)
+        except Exception:
+            continue
+        if not intersection.is_empty:
+            intersections.append(intersection)
+    try:
+        overlap_area = unary_union(intersections).area if intersections else 0.0
+    except Exception:
+        return {}
+    overlap_percent = round(min(100.0, max(0.0, overlap_area / parcel_shape.area * 100)), 2)
+    details = {"approximate_parcel_overlap_percent": overlap_percent}
+    if stand_shapes is not None:
+        affected = {
+            stand_number
+            for stand_number, stand_shape in stand_shapes
+            if any(intersection.intersects(stand_shape) for intersection in intersections)
+        }
+        details["affected_stand_numbers"] = sorted(affected)
+    return details
+
+
+async def _map_context_core(kataster_nr: str, requested_themes: list[str]) -> dict:
+    attempted_at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    kataster_data = await asyncio.wait_for(query_kataster(kataster_nr), timeout=KATASTER_TIMEOUT_SECONDS)
+    if not kataster_data:
+        raise HTTPException(status_code=404, detail="Krunti ei leitud")
+
+    parcel_geometry = kataster_data.get("geometry")
+    parcel_shape = _validated_geojson_shape(parcel_geometry)
+    try:
+        if parcel_shape is None:
+            raise ValueError("invalid parcel geometry")
+        bbox_str = bbox_to_wfs_string(calculate_bbox(parcel_geometry))
+    except Exception:
+        raise HTTPException(status_code=502, detail="Kinnistu geomeetria ei ole saadaval") from None
+
+    source_keys = list(dict.fromkeys(
+        source_key
+        for theme_id in requested_themes
+        for source_key in THEME_REGISTRY[theme_id].source_keys
+    ))
+    if "kma_kitsendused" in source_keys:
+        source_keys.extend(
+            source_key
+            for source_key in KPOIS_SPECIALIZED_KEYS
+            if source_key not in source_keys
+        )
+    stands_result, layers_result = await asyncio.gather(
+        asyncio.wait_for(query_eraldis(kataster_nr), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS),
+        query_layers(
+            bbox_str,
+            source_keys,
+            source_timeout=MAP_LAYER_SOURCE_TIMEOUT_SECONDS,
+        ),
+        return_exceptions=True,
+    )
+    checked_at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+    stand_source = {
+        "key": "metsaregister.eraldised",
+        "label": "Metsaregistri metsaeraldised",
+        "provider": "Keskkonnaagentuur",
+        "interpretation": "Ametlikud metsaregistri eraldised.",
+        "data_as_of": None,
+    }
+    stand_features = []
+    stand_shapes: list[tuple[int, object]] | None = None
+    if isinstance(stands_result, Exception):
+        stands_state = "unavailable"
+        stands_complete = False
+    else:
+        invalid_stand_geometries = 0
+        stand_shapes = []
+        for stand in stands_result:
+            geometry = stand.get("geometry")
+            if not geometry:
+                invalid_stand_geometries += 1
+                continue
+            stand_shape = _validated_geojson_shape(geometry)
+            if stand_shape is None:
+                invalid_stand_geometries += 1
+                continue
+            stand_number = _normalize_eraldis_nr(stand.get("eraldis_nr"))
+            if stand_number is not None:
+                stand_shapes.append((stand_number, stand_shape))
+            classifier_age = stand.get("vanus_raw", stand.get("vanus"))
+            classifier_species = stand.get(
+                "puuliik_kood_raw", stand.get("puuliik_kood")
+            )
+            age = cutting_age_indicator(
+                classifier_age,
+                classifier_species or "",
+                stand.get("boniteedi_kood", 3),
+            )
+            stand_features.append({
+                "type": "Feature",
+                "geometry": geometry,
+                "properties": {
+                    "eraldis_nr": stand_number,
+                    "label_point": _geometry_label_point(geometry),
+                    "puuliik": stand.get("puuliik"),
+                    "puuliik_kood": stand.get("puuliik_kood"),
+                    "vanus": stand.get("vanus"),
+                    "pindala_ha": stand.get("pindala_ha"),
+                    "boniteet": stand.get("boniteet"),
+                    "invent_kp": stand.get("invent_kp"),
+                    "registreerimise_kp": stand.get("registreerimise_kp"),
+                    "raievanus": age["raievanus"],
+                    "ratio": age["ratio"],
+                    "age_class": age["age_class"],
+                    "age_class_label": age["age_class_label"],
+                    "age_class_color": age["age_class_color"],
+                    "age_class_provenance": age["age_class_provenance"],
+                    "age_source_available": classifier_age is not None,
+                    "species_source_available": classifier_species is not None,
+                    "color": age["age_class_color"],
+                    "source_key": stand_source["key"],
+                    "source_label": stand_source["label"],
+                    "source_provider": stand_source["provider"],
+                },
+            })
+        stand_features.sort(key=lambda feature: _eraldis_sort_key(feature["properties"].get("eraldis_nr")))
+        stands_complete = invalid_stand_geometries == 0
+        if stand_features:
+            stands_state = "matches"
+        elif stands_result:
+            stands_state = "unavailable"
+            stand_shapes = None
+        else:
+            stands_state = "empty"
+    stand_source[
+        "attempted_at" if stands_state == "unavailable" else "checked_at"
+    ] = attempted_at if stands_state == "unavailable" else checked_at
+
+    if isinstance(layers_result, Exception):
+        source_features = {source_key: [] for source_key in source_keys}
+        unavailable_keys = list(source_keys)
+        truncated_keys = []
+    else:
+        source_features, unavailable_keys, truncated_keys = layers_result
+
+    filtered_features = {}
+    incomplete_keys = set()
+    for source_key in source_keys:
+        filtered, incomplete = _filter_features_by_geometry_with_status(
+            source_features.get(source_key, []),
+            parcel_geometry,
+        )
+        source = SOURCE_REGISTRY[source_key]
+        filtered_features[source_key] = [
+            {
+                **feature,
+                "properties": {
+                    **(feature.get("properties") if isinstance(feature.get("properties"), dict) else {}),
+                    "source_key": source.key,
+                    "source_label": source.source_label,
+                    "source_provider": source.provider,
+                    "source_interpretation": source.interpretation,
+                },
+            }
+            for feature in filtered
+        ]
+        if incomplete:
+            incomplete_keys.add(source_key)
+
+    filtered_features = deduplicate_kpois_sources(filtered_features)
+    partial_keys = list(dict.fromkeys([*truncated_keys, *incomplete_keys]))
+    if "kma_kitsendused" in source_keys and any(
+        source_key in unavailable_keys or source_key in partial_keys
+        for source_key in KPOIS_SPECIALIZED_KEYS
+    ):
+        partial_keys.append("kma_kitsendused")
+    themes = {}
+    for theme_id in requested_themes:
+        definition = THEME_REGISTRY[theme_id]
+        reduced = reduce_theme(theme_id, filtered_features, unavailable_keys, partial_keys)
+        theme_features = list(reduced.features)
+        theme_result = {
+            "id": definition.id,
+            "label": definition.label,
+            "state": reduced.state,
+            "match_count": reduced.match_count,
+            "features": theme_features,
+            "sources": [
+                _map_source_row(
+                    source_state.key,
+                    source_state.state,
+                    source_state.match_count,
+                    checked_at,
+                    attempted_at,
+                    _map_overlap_details(
+                        filtered_features.get(source_state.key, []),
+                        parcel_shape,
+                        stand_shapes,
+                    ) if source_state.state != "unavailable" else None,
+                )
+                for source_state in reduced.source_states
+            ],
+        }
+        if reduced.state != "unavailable":
+            theme_result.update(
+                _map_overlap_details(theme_features, parcel_shape, stand_shapes)
+            )
+        themes[theme_id] = theme_result
+
+    return {
+        "parcel_id": kataster_nr,
+        "requested_themes": requested_themes,
+        "checked_at": checked_at,
+        "persistent": {
+            "parcel": {
+                "state": "matches",
+                "feature": {
+                    "type": "Feature",
+                    "geometry": parcel_geometry,
+                    "properties": {key: value for key, value in kataster_data.items() if key != "geometry"},
+                },
+                "source": {
+                    "key": "kataster.ky_kehtiv",
+                    "label": "Kehtiv katastriüksus",
+                    "provider": "Maa- ja Ruumiamet",
+                    "interpretation": "Ametlik kehtiva katastriüksuse piir.",
+                    "data_as_of": None,
+                    "checked_at": checked_at,
+                },
+            },
+            "stands": {
+                "state": stands_state,
+                "complete": stands_complete,
+                "count": len(stand_features),
+                "features": stand_features,
+                "source": stand_source,
+            },
+        },
+        "themes": themes,
+    }
+
+
+@app.get("/api/map-context/{kataster_nr:path}")
+async def map_context(
+    kataster_nr: str,
+    request: Request,
+    themes: Annotated[list[str] | None, Query()] = None,
+):
+    try:
+        _validate_kataster_nr_or_400(kataster_nr)
+        requested_themes = _normalize_map_themes(themes)
+    except HTTPException as exc:
+        exc.headers = {**(exc.headers or {}), "Cache-Control": "private, no-store"}
+        raise
+    allowed, retry_after = _check_rate_limit(
+        _client_identifier(request),
+        "map-context",
+        MAP_CONTEXT_CLIENT_RATE_LIMIT,
+        60,
+    )
+    if not allowed:
+        return json_response(
+            {"error": "Liiga palju päringuid. Proovi uuesti mõne sekundi pärast."},
+            429,
+            {"Retry-After": str(retry_after), "Cache-Control": "private, no-store"},
+        )
+    allowed, retry_after = _check_rate_limit(
+        _client_identifier(request),
+        _map_context_rate_scope(kataster_nr, requested_themes),
+        MAP_CONTEXT_RESOURCE_RATE_LIMIT,
+        60,
+    )
+    if not allowed:
+        return json_response(
+            {"error": "Liiga palju päringuid. Proovi uuesti mõne sekundi pärast."},
+            429,
+            {"Retry-After": str(retry_after), "Cache-Control": "private, no-store"},
+        )
+    if os.environ.get("VERCEL"):
+        try:
+            params = [("themes", theme_id) for theme_id in requested_themes]
+            async with httpx.AsyncClient(timeout=25.0) as client:
+                response = await client.get(f"{VPS_API}/map-context/{kataster_nr}", params=params)
+            return _map_context_proxy_response(response, kataster_nr, requested_themes)
+        except Exception:
+            logger.exception("Map-context VPS proxy failed")
+            return json_response(
+                {"error": "Kaarditeenusega ei õnnestu hetkel ühendust saada. Proovi uuesti."},
+                502,
+                {"Cache-Control": "private, no-store"},
+            )
+    try:
+        data = await _map_context_core(kataster_nr, requested_themes)
+        return json_response(data, headers={"Cache-Control": "private, no-store"})
+    except HTTPException as exc:
+        exc.headers = {**(exc.headers or {}), "Cache-Control": "private, no-store"}
+        raise
+    except Exception:
+        logger.exception("Map-context request failed")
+        return json_response(
+            {"error": "Kaardiandmete laadimine ebaõnnestus. Proovi uuesti."},
+            500,
+            {"Cache-Control": "private, no-store"},
+        )
+
+
 @app.get("/api/search/{kataster_nr:path}")
-async def search(kataster_nr: str, request: Request):
+async def search(
+    kataster_nr: str,
+    request: Request,
+    include_map_layers: bool = Query(True),
+):
     # Kõigepealt valideeri formaat — kaitseb path-traversal SSRF-i eest
     # Vercel→VPS proxy kaudu (nt "/api/search/../api/chat").
     _validate_kataster_nr_or_400(kataster_nr)
@@ -869,13 +1535,16 @@ async def search(kataster_nr: str, request: Request):
     if os.environ.get("VERCEL"):
         try:
             async with httpx.AsyncClient(timeout=25.0) as client:
-                resp = await client.get(f"{VPS_API}/search/{kataster_nr}")
+                resp = await client.get(
+                    f"{VPS_API}/search/{kataster_nr}",
+                    params={"include_map_layers": str(include_map_layers).lower()},
+                )
                 return _search_proxy_response(resp, kataster_nr)
         except Exception as exc:
             print(f"[search] VPS proxy error: {type(exc).__name__}", flush=True)
             return json_response({"error": "Otsinguteenusega ei õnnestu hetkel ühendust saada. Proovi uuesti."}, 502)
     try:
-        return await _search(kataster_nr)
+        return await _search(kataster_nr, include_map_layers=include_map_layers)
     except HTTPException:
         raise
     except Exception as exc:
@@ -888,35 +1557,27 @@ def _filter_features_by_geometry_with_status(features, parcel_geom) -> tuple[lis
     """Filter parcel intersections and report when any geometry was unreadable."""
     if not isinstance(features, list):
         return [], True
-    if not parcel_geom:
+    parcel_shape = _validated_geojson_shape(parcel_geom)
+    if parcel_shape is None:
         return [], True
-    try:
-        parcel_shape = shape(parcel_geom)
-        if not parcel_shape.is_valid:
-            return [], True
-        if parcel_shape.is_empty:
-            return [], True
-        if not features:
-            return [], False
-        filtered = []
-        incomplete = False
-        for f in features:
-            try:
-                feat_shape = shape(f.get("geometry", {}))
-                if not feat_shape.is_valid:
-                    incomplete = True
-                    continue
-                if feat_shape.is_empty:
-                    incomplete = True
-                    continue
-                if feat_shape.intersects(parcel_shape):
-                    filtered.append(f)
-            except Exception:
-                incomplete = True
-                continue
-        return filtered, incomplete
-    except Exception:
-        return [], True
+    if not features:
+        return [], False
+    filtered = []
+    incomplete = False
+    for feature in features:
+        if not isinstance(feature, dict):
+            incomplete = True
+            continue
+        feature_shape = _validated_geojson_shape(feature.get("geometry"))
+        if feature_shape is None:
+            incomplete = True
+            continue
+        try:
+            if feature_shape.intersects(parcel_shape):
+                filtered.append(feature)
+        except Exception:
+            incomplete = True
+    return filtered, incomplete
 
 
 def _filter_features_by_geometry(features, parcel_geom):
@@ -1005,7 +1666,11 @@ async def _gather_in_batches(tasks: list, batch_size: int = 20, overall_timeout:
     return results
 
 
-async def _search_core(kataster_nr: str, start: float) -> dict:
+async def _search_core(
+    kataster_nr: str,
+    start: float,
+    include_map_layers: bool = True,
+) -> dict:
     """Sisemine otsinguloogika — eraldatud, et saaks timeout-i panna."""
     kataster_data = await asyncio.wait_for(query_kataster(kataster_nr), timeout=KATASTER_TIMEOUT_SECONDS)
     if not kataster_data:
@@ -1016,7 +1681,14 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
 
     results = await asyncio.gather(
         asyncio.wait_for(query_eraldis(kataster_nr), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS),
-        asyncio.wait_for(query_all_layers(bbox_str), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS),
+        (
+            asyncio.wait_for(query_all_layers(bbox_str), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS)
+            if include_map_layers
+            else asyncio.wait_for(
+                query_layers(bbox_str, ANALYTICAL_LAYER_KEYS),
+                timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS,
+            )
+        ),
         asyncio.wait_for(query_teatised(kataster_nr), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS),
         asyncio.wait_for(query_natura_2000(bbox_str), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS),
         return_exceptions=True,
@@ -1030,7 +1702,12 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             {**stand, "eraldis_nr": _normalize_eraldis_nr(stand.get("eraldis_nr"))}
             for stand in eraldised
         ]
-    layers_data, unavailable_layers, truncated_layers = results[1] if not isinstance(results[1], Exception) else ({}, [key for key, _, _ in LAYER_CONFIGS], [])
+    queried_layer_keys = (
+        [key for key, _, _ in LAYER_CONFIGS]
+        if include_map_layers
+        else list(ANALYTICAL_LAYER_KEYS)
+    )
+    layers_data, unavailable_layers, truncated_layers = results[1] if not isinstance(results[1], Exception) else ({}, queried_layer_keys, [])
     filtered_layers = {}
     for key, features in layers_data.items():
         filtered, geometry_incomplete = _filter_features_by_geometry_with_status(
@@ -1382,7 +2059,10 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         for index, e in enumerate(eraldised):
             geom = e.get("geometry")
             kood = e.get("puuliik_kood", "MA")
-            vanus = e.get("vanus") or 0
+            raw_vanus = e.get("vanus")
+            vanus = raw_vanus or 0
+            classifier_vanus = e.get("vanus_raw", raw_vanus)
+            classifier_kood = e.get("puuliik_kood_raw", kood)
             tagavara = e.get("tagavara_y_ha") or 0
             e_pindala = e.get("pindala_ha") or 0
             boniteet_kood = e.get("boniteedi_kood", 3)
@@ -1403,23 +2083,32 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             legacy_value_per_ha = round(legacy_value / e_pindala) if e_pindala > 0 else 0
 
             # Per-eraldis cutting age analysis
-            e_raie = cutting_age_indicator(vanus, kood, boniteet_kood)
+            e_raie = cutting_age_indicator(
+                classifier_vanus,
+                classifier_kood or "",
+                boniteet_kood,
+            )
             raie_ratio = e_raie.get("ratio", 0)
             if e_raie.get("status") == "unknown":
                 raie_liik = "Raievanus määramata"
-                raie_color = "#6b7280"
             elif raie_ratio >= 1.0:
                 raie_liik = "Lageraie"
-                raie_color = "#e63946"  # red
             elif raie_ratio >= 0.85:
                 raie_liik = "Harvendusraie"
-                raie_color = "#ffc107"  # yellow
             elif raie_ratio >= 0.5:
                 raie_liik = "Hooldusraie"
-                raie_color = "#28a745"  # green
             else:
                 raie_liik = "Noor mets"
-                raie_color = "#17a2b8"  # teal — too young for any cutting
+            if e_raie["status"] == "unknown":
+                raie_color = "#6b7280"
+            elif raie_ratio < 0.5:
+                raie_color = "#17a2b8"
+            elif raie_ratio < 0.85:
+                raie_color = "#28a745"
+            elif raie_ratio < 1.0:
+                raie_color = "#ffc107"
+            else:
+                raie_color = "#e63946"
 
             # Vanuserühm metsaomaniku jaoks
             if vanus <= 20:
@@ -1454,6 +2143,12 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
                 "raie_ratio": raie_ratio,
                 "raie_status": e_raie.get("status"),
                 "raie_liik": raie_liik,
+                "age_class": e_raie["age_class"],
+                "age_class_label": e_raie["age_class_label"],
+                "age_class_color": e_raie["age_class_color"],
+                "age_class_provenance": e_raie["age_class_provenance"],
+                "age_source_available": classifier_vanus is not None,
+                "species_source_available": classifier_kood is not None,
                 "kuivendatud": kuivendatud,
                 "vaartus_eur": legacy_value,
                 "vaartus_hinnang_eur": estimated_stand_value,
@@ -1493,8 +2188,15 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
                         "korgus": e.get("korgus"),
                         "color": raie_color,
                         "raie_liik": raie_liik,
+                        "raie_status": e_raie.get("status"),
                         "raie_ratio": raie_ratio,
                         "raievanus": e_raie.get("raievanus"),
+                        "age_class": e_raie["age_class"],
+                        "age_class_label": e_raie["age_class_label"],
+                        "age_class_color": e_raie["age_class_color"],
+                        "age_class_provenance": e_raie["age_class_provenance"],
+                        "age_source_available": classifier_vanus is not None,
+                        "species_source_available": classifier_kood is not None,
                         "vaartus_eur": legacy_value,
                         "vaartus_hinnang_eur": estimated_stand_value,
                         "vaartus_per_ha": legacy_value_per_ha,
@@ -1689,7 +2391,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             "eraldis_nr": stand.get("eraldis_nr"),
             "puuliik": stand.get("puuliik"),
             "puuliik_kood": stand.get("puuliik_kood"),
-            "vanus": stand.get("vanus"),
+            "vanus": stand.get("vanus_raw", stand.get("vanus")),
             "pindala_ha": stand.get("pindala_ha"),
             "kuivendatud": bool(stand.get("kuivendatud", False)),
         }
@@ -1705,7 +2407,7 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         "metsaregister.eraldised" not in unavailable_sources
         and all(
             stand.get("eraldis_nr") is not None
-            and stand.get("vanus") is not None
+            and stand.get("vanus_raw", stand.get("vanus")) is not None
             and stand.get("pindala_ha") is not None
             for stand in eraldised
         )
@@ -1826,7 +2528,23 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         otsus = p.get("otsus") or ""
         kehtiv = p.get("kehtiv_kuni") or ""
         expiry_date = _parse_source_date(kehtiv)
-        active = bool(expiry_date and expiry_date >= date.today() and not p.get("arhiiv"))
+        normalized_decision = str(otsus).strip().upper()
+        archived = bool(p.get("arhiiv"))
+        if archived:
+            event_status, event_status_label = "archived", "Arhiivitud sündmus"
+        elif normalized_decision == "EI":
+            event_status, event_status_label = "not_permitted", "Otsus ei luba tööd"
+        elif normalized_decision == "REGISTREERITUD":
+            event_status, event_status_label = "registered", "Registreeritud teatis"
+        elif normalized_decision == "JAH" and (
+            expiry_date is None or expiry_date < date.today()
+        ):
+            event_status, event_status_label = "not_current", "Mittekehtiv või kehtivus teadmata"
+        elif normalized_decision == "JAH":
+            event_status, event_status_label = "permitted_current", "Kehtiv lubatud töö"
+        else:
+            event_status, event_status_label = "unknown", "Staatus määramata"
+        active = bool(expiry_date and expiry_date >= date.today() and not archived)
         raw_eraldis = p.get("eraldise_nr")
         normalized_raw_eraldis = _normalize_eraldis_nr(raw_eraldis)
         area = round(float(p.get("pindala") or 0), 2)
@@ -1845,9 +2563,10 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         ) if normalized_raw_eraldis is not None else False
         association_method = "eraldise_nr" if valid_raw_stand and eraldis_nr is not None else ("pindala" if eraldis_nr is not None else None)
         decision_date = p.get("otsus_kinnitatud_kp") or ""
+        parsed_event_date = _parse_source_date(decision_date)
         reference_inventory = inventory_by_eraldis.get(str(eraldis_nr)) if eraldis_nr is not None else None
         chronology_unknown_reason = None
-        if otsus.upper() != "JAH":
+        if normalized_decision != "JAH":
             after_inventory = None
         elif not decision_date:
             after_inventory = None
@@ -1877,7 +2596,11 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
             "otsuse_pohjendus": (p.get("otsuse_pohjendus") or p.get("otsuse_pojendus") or "")[:200],
             "otsus_kinnitatud_kp": str(decision_date).replace("Z", "")[:10],
             "active": active,
-            "arhiiv": bool(p.get("arhiiv")),
+            "arhiiv": archived,
+            "event_status": event_status,
+            "event_status_label": event_status_label,
+            "event_date": parsed_event_date.isoformat() if parsed_event_date else None,
+            "location_scope": "stand" if association_method == "eraldise_nr" else "parcel_unlocated",
             "parast_inventuuri": after_inventory,
             "eraldise_seose_meetod": association_method,
             "inventuuri_seose_pohjus": chronology_unknown_reason,
@@ -1986,17 +2709,18 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
         "karuputk":        {"label": "Karuputk",        "color": "#d63384", "dash": "2,3",   "weight": 2.5, "fillOpacity": 0.40},
         "lageraiealad":    {"label": "Lageraiealad",    "color": "#6c757d", "dash": "8,4",   "weight": 3, "fillOpacity": 0.30},
     }
-    for key, meta in LAYER_MAP.items():
-        features = layers_data.get(key, [])
-        if features:
-            map_layers[key] = {
-                "label": meta["label"],
-                "color": meta["color"],
-                "dash": meta.get("dash"),
-                "weight": meta.get("weight", 2),
-                "fillOpacity": meta.get("fillOpacity", 0.25),
-                "features": features,
-            }
+    if include_map_layers:
+        for key, meta in LAYER_MAP.items():
+            features = layers_data.get(key, [])
+            if features:
+                map_layers[key] = {
+                    "label": meta["label"],
+                    "color": meta["color"],
+                    "dash": meta.get("dash"),
+                    "weight": meta.get("weight", 2),
+                    "fillOpacity": meta.get("fillOpacity", 0.25),
+                    "features": features,
+                }
 
     # Add eraldised as a map layer (colored by species)
     if eraldised_features:
@@ -2042,10 +2766,25 @@ async def _search_core(kataster_nr: str, start: float) -> dict:
     return result
 
 
-async def _search_uncached(kataster_nr: str) -> tuple[dict, int]:
+def _search_cache_key(kataster_nr: str, include_map_layers: bool) -> str:
+    return kataster_nr if include_map_layers else f"{kataster_nr}|map-layers=0"
+
+
+async def _search_uncached(
+    kataster_nr: str,
+    include_map_layers: bool = True,
+) -> tuple[dict, int]:
     start = time.time()
     try:
-        data = await asyncio.wait_for(_search_core(kataster_nr, start), timeout=SEARCH_TIMEOUT_SECONDS)
+        search_coro = (
+            _search_core(kataster_nr, start)
+            if include_map_layers
+            else _search_core(kataster_nr, start, include_map_layers=False)
+        )
+        data = await asyncio.wait_for(
+            search_coro,
+            timeout=SEARCH_TIMEOUT_SECONDS,
+        )
     except asyncio.TimeoutError:
         elapsed = round((time.time() - start) * 1000)
         return {
@@ -2058,11 +2797,15 @@ async def _search_uncached(kataster_nr: str) -> tuple[dict, int]:
         return data, data.pop("_status", 404)
 
     if not data.get("meta", {}).get("partial"):
-        search_cache.set(kataster_nr, data, ttl=300)
+        search_cache.set(
+            _search_cache_key(kataster_nr, include_map_layers),
+            data,
+            ttl=300,
+        )
     return data, 200
 
 
-async def _search(kataster_nr: str) -> Response:
+async def _search(kataster_nr: str, include_map_layers: bool = True) -> Response:
     """Täielik kinnistu päring: kataster + eraldised + kihid + teatised.
 
     Kogub kõik andmed paralleelselt ja tagastab JSON-vastuse.
@@ -2072,20 +2815,21 @@ async def _search(kataster_nr: str) -> Response:
     global _search_cache_hits, _search_cache_misses
 
     # Check cache — store data dict, not Response (Response body is consumed once)
-    cached_data = search_cache.get(kataster_nr)
+    cache_key = _search_cache_key(kataster_nr, include_map_layers)
+    cached_data = search_cache.get(cache_key)
     if cached_data is not None:
         _search_cache_hits += 1
         return json_response(
             _attach_chat_snapshot(cached_data),
             headers={"Cache-Control": "private, no-store"},
         )
-    task = _search_in_flight.get(kataster_nr)
+    task = _search_in_flight.get(cache_key)
     if task is None:
         _search_cache_misses += 1
-        task = asyncio.create_task(_search_uncached(kataster_nr))
-        _search_in_flight[kataster_nr] = task
+        task = asyncio.create_task(_search_uncached(kataster_nr, include_map_layers))
+        _search_in_flight[cache_key] = task
 
-        def clear_in_flight(completed: asyncio.Task, key: str = kataster_nr) -> None:
+        def clear_in_flight(completed: asyncio.Task, key: str = cache_key) -> None:
             if _search_in_flight.get(key) is completed:
                 _search_in_flight.pop(key, None)
             if not completed.cancelled():
@@ -2093,7 +2837,7 @@ async def _search(kataster_nr: str) -> Response:
 
         task.add_done_callback(clear_in_flight)
 
-    _search_waiters[kataster_nr] = _search_waiters.get(kataster_nr, 0) + 1
+    _search_waiters[cache_key] = _search_waiters.get(cache_key, 0) + 1
     try:
         data, status = await asyncio.shield(task)
         return json_response(
@@ -2102,14 +2846,14 @@ async def _search(kataster_nr: str) -> Response:
             {"Cache-Control": "private, no-store"},
         )
     finally:
-        remaining = _search_waiters.get(kataster_nr, 1) - 1
+        remaining = _search_waiters.get(cache_key, 1) - 1
         if remaining > 0:
-            _search_waiters[kataster_nr] = remaining
+            _search_waiters[cache_key] = remaining
         else:
-            _search_waiters.pop(kataster_nr, None)
+            _search_waiters.pop(cache_key, None)
             if not task.done():
-                if _search_in_flight.get(kataster_nr) is task:
-                    _search_in_flight.pop(kataster_nr, None)
+                if _search_in_flight.get(cache_key) is task:
+                    _search_in_flight.pop(cache_key, None)
                 task.cancel()
 
 
@@ -2479,17 +3223,17 @@ def build_system_prompt(data: dict) -> str:
                 f"Kokku {_prompt_number(teatised_meta.get('teatisi_kokku', len(teatised)))} teatist, "
                 f"{_prompt_number(teatised_meta.get('ridu_kokku', len(teatised)))} eraldiseridu"
             )
-        active_notices = [notice for notice in teatised if notice.get("active")]
+        active_notices = [notice for notice in teatised if _notice_is_permitted_current(notice)]
         active_volume = sum(_prompt_number(notice.get("maht")) for notice in active_notices)
         lines.append(
-            f"Aktiivseid metsateatiseid: {_distinct_notice_count(active_notices)}, "
-            f"aktiivseid eraldiseridu {len(active_notices)}, kavandatud maht kokku {active_volume} m³"
+            f"Kehtivaid lubatud metsateatiseid: {_distinct_notice_count(active_notices)}, "
+            f"kehtivaid lubatud eraldiseridu {len(active_notices)}, kavandatud maht kokku {active_volume} m³"
         )
         prompt_notices = _prioritize_notice_rows(teatised, 10)
         for t in prompt_notices:
-            aktiivne = "aktiivne" if t.get("active") else "mitteaktiivne"
+            status_label = _notice_status_label(t)
             rida = (
-                f"  {_prompt_text(t.get('tyyp', '?'), 100)}: {aktiivne}, "
+                f"  {_prompt_text(t.get('tyyp', '?'), 100)}: {_prompt_text(status_label, 80)}, "
                 f"kehtib kuni {_prompt_text(t.get('kehtiv_kuni', 'N/A'), 40)}"
             )
             if t.get("otsus_kinnitatud_kp"):
