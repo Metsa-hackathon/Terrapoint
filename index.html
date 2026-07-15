@@ -3426,7 +3426,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         function passportValue(passport) {
             if (passport.available === false) return '<strong class="asset-passport-missing">Andmed puuduvad</strong>';
             if (passport.range) {
-                return '<strong>' + formatEur(passport.range.low) + '<span class="asset-range-separator">–</span><span class="sr-only"> kuni </span>' + formatEur(passport.range.high) + '</strong>'
+                return '<strong>' + formatEur(passport.range.low) + '<span class="asset-range-separator" aria-hidden="true">–</span><span class="sr-only"> kuni </span>' + formatEur(passport.range.high) + '</strong>'
                     + (passport.range.base != null ? '<small>Keskpunkt ' + formatEur(passport.range.base) + '</small>' : '');
             }
             var value = passport.unit === '€' ? formatEur(passport.value) : formatNum(passport.value);

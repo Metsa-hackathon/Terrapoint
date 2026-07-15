@@ -148,7 +148,7 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("data-ai-question", helper)
         self.assertIn("document.getElementById('dashboard').addEventListener('click'", INDEX_HTML)
         self.assertIn("aiSendMessage(question)", INDEX_HTML)
-        self.assertIn('<span class="sr-only"> kuni </span>', helper)
+        self.assertIn('<span class="asset-range-separator" aria-hidden="true">–</span><span class="sr-only"> kuni </span>', helper)
         self.assertIn('<span class="asset-passport-heading">', helper)
         self.assertNotIn('<div class="asset-passport-heading">', helper)
         self.assertIn('id="ai-chat-status" class="sr-only" aria-live="polite"', INDEX_HTML)
