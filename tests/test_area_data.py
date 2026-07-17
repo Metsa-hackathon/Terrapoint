@@ -3,9 +3,52 @@ import unittest
 from unittest.mock import patch
 
 from api.index import MAX_CHAT_PROMPT_CHARS, _chat_evidence_digest, _forest_area_ha, _prioritize_notice_rows, build_system_prompt
+from api import index as api
 
 
 class AreaDataTests(unittest.TestCase):
+    def test_historical_clearcut_status_distinguishes_absence_partial_and_outage(self):
+        match = {"periood_algus": 2013, "periood_lopp": 2015}
+
+        self.assertEqual(api._historical_clearcut_status([], [])["state"], "empty")
+        self.assertEqual(
+            api._historical_clearcut_status([], ["layers.lageraiealad"])["state"],
+            "unavailable",
+        )
+        self.assertEqual(api._historical_clearcut_status([match], [])["state"], "matches")
+        self.assertEqual(
+            api._historical_clearcut_status([match], ["layers.lageraiealad"])["state"],
+            "matches_partial",
+        )
+        self.assertEqual(
+            api._historical_clearcut_status([], [], incomplete=True)["state"],
+            "incomplete",
+        )
+        self.assertEqual(
+            api._historical_clearcut_status([match], [], incomplete=True)["state"],
+            "matches_partial",
+        )
+
+    def test_historical_clearcut_periods_report_malformed_archive_records(self):
+        periods, incomplete = api._historical_clearcut_periods(
+            [
+                {"properties": {"periood_a": 2013, "periood_o": 2015}},
+                {"properties": None},
+                {"properties": {"periood_a": 2014, "periood_o": "unknown"}},
+                {"properties": {"periood_a": 2016, "periood_o": 2011}},
+                {"properties": {"periood_a": 2010, "periood_o": 2012}},
+                {"properties": {"periood_a": 2015, "periood_o": 2017}},
+            ],
+            today=api.date(2026, 7, 17),
+        )
+
+        self.assertEqual(periods, [{
+            "periood_algus": 2013,
+            "periood_lopp": 2015,
+            "vanus_vahemalt_a": 10,
+        }])
+        self.assertTrue(incomplete)
+
     def test_subsidy_age_uses_derived_age_when_raw_register_age_is_missing(self):
         from api.index import _subsidy_stand_age
 
@@ -41,6 +84,64 @@ class AreaDataTests(unittest.TestCase):
 
         self.assertIn("Metsamaa pindala: 20.17 ha", prompt)
         self.assertNotIn("Metsamaa pindala: 1.28 ha", prompt)
+
+    def test_ai_prompt_keeps_land_assessment_model_and_validity_distinct(self):
+        prompt = build_system_prompt({
+            "kataster": {
+                "number": "10501:001:0001",
+                "pindala_ha": 4.75,
+                "maks_hind": 7073,
+                "maks_hind_meta": {
+                    "state": "available",
+                    "assessment_year": 2022,
+                    "assessment_time": "2025-12-17",
+                    "valid_from": "2025-12-17",
+                    "valid_until": None,
+                    "basis": "Alusandmete uuendamine",
+                },
+            },
+        })
+
+        self.assertIn("Maksustamishinna hindamismudel: 2022. a", prompt)
+        self.assertIn("Maksustamishind kehtib alates: 2025-12-17", prompt)
+        self.assertIn("Maksustamishind arvutati: 2025-12-17", prompt)
+        self.assertNotIn("2025. a hindamismudel", prompt)
+
+    def test_ai_prompt_marks_missing_age_species_and_clearcut_check_as_unknown(self):
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113", "pindala_ha": 1},
+            "mets": {
+                "puuliik": "mänd",
+                "liigiandmed_taielikud": False,
+                "vanus": 0,
+                "vanuseandmed_taielikud": False,
+                "eraldised": [{
+                    "eraldis_nr": 1,
+                    "puuliik": "mänd",
+                    "species_source_available": False,
+                    "vanus": 0,
+                    "age_source_available": False,
+                    "pindala_ha": 1,
+                    "tagavara_provenance": "unavailable",
+                }],
+            },
+            "riskid": {
+                "ajaloolised_lageraiealad": [],
+                "ajaloolise_lageraide_kontroll": {
+                    "state": "incomplete",
+                    "period_start": 2011,
+                    "period_end": 2016,
+                    "source_name": "Testarhiiv",
+                },
+            },
+        })
+
+        self.assertIn("Peapuuliik: andmed puudulikud", prompt)
+        self.assertIn("Keskmine vanus: andmed puudulikud", prompt)
+        self.assertNotIn("Keskmine vanus: 0 a", prompt)
+        self.assertNotIn("mänd, 0 a", prompt)
+        self.assertIn("Ajaloolise lageraie kontroll: osaline", prompt)
+        self.assertIn("puudumist ei saa kinnitada", prompt)
 
     def test_ai_prompt_describes_freshness_and_historical_cutting_without_claiming_execution(self):
         prompt = build_system_prompt({

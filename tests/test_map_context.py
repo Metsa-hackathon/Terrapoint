@@ -36,14 +36,16 @@ def parcel():
 class MapContextCoreTests(unittest.IsolatedAsyncioTestCase):
     async def test_queries_only_sources_required_by_requested_theme(self):
         selected_query = AsyncMock(return_value=({"natura_elupaik": []}, [], []))
+        parcel_query = AsyncMock(return_value=parcel())
         with (
-            patch("api.index.query_kataster", new=AsyncMock(return_value=parcel())),
+            patch("api.index.query_kataster", new=parcel_query),
             patch("api.index.query_eraldis", new=AsyncMock(return_value=[])),
             patch("api.index.query_layers", new=selected_query),
         ):
             result = await api._map_context_core(KATASTER_NR, ["species_habitats"])
 
         selected_query.assert_awaited_once()
+        parcel_query.assert_awaited_once_with(KATASTER_NR)
         self.assertEqual(selected_query.await_args.args[1], ["natura_elupaik"])
         self.assertEqual(result["requested_themes"], ["species_habitats"])
         self.assertEqual(set(result["themes"]), {"species_habitats"})

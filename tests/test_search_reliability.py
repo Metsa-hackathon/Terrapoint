@@ -692,10 +692,11 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
         }
         all_layers = AsyncMock(return_value=({}, [], []))
+        parcel_query = AsyncMock(return_value={
+            "number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1,
+        })
         with (
-            patch("api.index.query_kataster", new=AsyncMock(return_value={
-                "number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1,
-            })),
+            patch("api.index.query_kataster", new=parcel_query),
             patch("api.index.query_eraldis", new=AsyncMock(return_value=[])),
             patch("api.index.query_all_layers", new=all_layers),
             patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
@@ -704,6 +705,39 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             await api._search_core("78404:409:0113", api.time.time())
 
         all_layers.assert_awaited_once()
+        parcel_query.assert_awaited_once_with(
+            "78404:409:0113",
+            include_valuation_metadata=True,
+        )
+
+    async def test_search_marks_truncated_clearcut_archive_as_partial(self):
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        cut = {
+            "type": "Feature",
+            "geometry": geometry,
+            "properties": {"periood_a": 2013, "periood_o": 2015},
+        }
+        for features, expected_state in (([cut], "matches_partial"), ([], "incomplete")):
+            with self.subTest(expected_state=expected_state):
+                with (
+                    patch("api.index.query_kataster", new=AsyncMock(return_value={
+                        "number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1,
+                    })),
+                    patch("api.index.query_eraldis", new=AsyncMock(return_value=[])),
+                    patch(
+                        "api.index.query_all_layers",
+                        new=AsyncMock(return_value=({"lageraiealad": features}, [], ["lageraiealad"])),
+                    ),
+                    patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+                    patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+                ):
+                    result = await api._search_core("78404:409:0113", api.time.time())
+
+                status = result["riskid"]["ajaloolise_lageraide_kontroll"]
+                self.assertEqual(status["state"], expected_state)
 
     async def test_missing_source_age_and_species_keep_legacy_display_but_unknown_class(self):
         geometry = {
@@ -740,6 +774,8 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         feature = result["map_layers"]["eraldised"]["features"][0]["properties"]
         self.assertEqual(summary["vanus"], 0)
         self.assertEqual(summary["puuliik_kood"], "MA")
+        self.assertFalse(result["mets"]["vanuseandmed_taielikud"])
+        self.assertFalse(result["mets"]["liigiandmed_taielikud"])
         self.assertEqual(summary["age_class_label"], "Määramata")
         self.assertEqual(feature["age_class_label"], "Määramata")
         climate = next(

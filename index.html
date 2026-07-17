@@ -64,7 +64,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl034">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl114">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl116">
     <style>
       .eraldised-panel[open] summary::-webkit-details-marker { display: none; }
       .eraldised-panel summary::marker { display: none; content: ''; }
@@ -1413,6 +1413,8 @@
     var aiLastSendAt = 0;
     var aiRecentSendTimes = [];
     var aiQueueTimer = null;
+    var aiLastLocalFactId = null;
+    var aiLastLocalFactAt = 0;
 
     function aiSetStatus(message) {
         var status = document.getElementById('ai-chat-status');
@@ -1435,26 +1437,42 @@
     function aiRejectQueue(message) {
         if (aiQueueTimer) clearTimeout(aiQueueTimer);
         aiQueueTimer = null;
+        var localFacts = [];
         while (aiMessageQueue.length) {
             var queued = aiMessageQueue.shift();
+            if (queued.factAnswer) {
+                localFacts.push(queued);
+                continue;
+            }
             if (queued.statusBubble && queued.statusBubble.isConnected) {
                 queued.statusBubble.innerHTML = '<span style="color:var(--danger)">' + escHtml(message) + '</span>';
             }
         }
-        aiSetStatus(message);
+        Array.prototype.push.apply(aiMessageQueue, localFacts);
+        if (localFacts.length) {
+            aiSetStatus('Kinnistuandmete vastused koostatakse ilma AI-ta.');
+            aiDrainQueue();
+        } else {
+            aiSetStatus(message);
+        }
     }
 
     function aiDrainQueue() {
         if (aiQueueTimer) clearTimeout(aiQueueTimer);
         aiQueueTimer = null;
         if (aiStreaming || !aiMessageQueue.length || !aiCurrentKataster) return;
+        var next = aiMessageQueue[0];
+        if (next.factAnswer) {
+            aiSetStatus('Järgmine vastus koostatakse kinnistuandmetest.');
+            aiSendMessage(next.message, next);
+            return;
+        }
         var waitMs = aiQueueWaitMs(Date.now());
         if (waitMs > 0) {
             aiSetStatus('Järgmine küsimus ootab saatmist.');
             aiQueueTimer = setTimeout(aiDrainQueue, waitMs + 25);
             return;
         }
-        var next = aiMessageQueue[0];
         aiSetStatus('Järgmine küsimus saadetakse AI-le.');
         aiSendMessage(next.message, next);
     }
@@ -1609,21 +1627,290 @@
         return trimmed;
     }
 
+    function aiResolveFactQuestion(message, data) {
+        if (!data || !data.kataster) return null;
+        var question = String(message || '')
+            .toLocaleLowerCase('et-EE')
+            .replace(/[?!.,:;()]+/g, ' ')
+            .replace(/[-–—]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        if (!question) return null;
+
+        var kataster = data.kataster || {};
+        var mets = data.mets || {};
+        var vaartus = data.vaartus || {};
+        var passports = Array.isArray(vaartus.andmepassid) ? vaartus.andmepassid : [];
+        function finiteNumber(value) {
+            return typeof value === 'number' && Number.isFinite(value);
+        }
+        function answer(factId, text, sourceName) {
+            return {
+                factId: factId,
+                text: text,
+                sourceLabel: 'Kinnistuandmetest',
+                sourceName: sourceName,
+            };
+        }
+        function passport(id) {
+            return passports.find(function(item) { return item && item.id === id; });
+        }
+        function matchesQuestion(patterns) {
+            return patterns.some(function(pattern) { return pattern.test(question); });
+        }
+
+        function volumeProvenance(passportData) {
+            var text = ' Päritolu: ' + String(passportData.provenance_label || 'päritolu vajab kontrolli') + '.';
+            var limitations = Array.isArray(passportData.limitations) ? passportData.limitations : [];
+            var estimateLimitation = limitations.find(function(item) {
+                return /hinnanguline|heuristik/.test(String(item).toLocaleLowerCase('et-EE'));
+            });
+            if (estimateLimitation) text += ' ' + String(estimateLimitation);
+            return text;
+        }
+
+        var asksTaxableValue = matchesQuestion([
+            /^(?:mis|milline|kui suur) (?:on )?maa (?:maksustamishind|maksuhind)$/,
+            /^(?:mis|millise) hinna pealt maad maksustatakse$/,
+            /^maa ja ruumiameti (?:andmetel|järgi) (?:mis|milline|kui suur) (?:on )?maa (?:maksustamishind|maksuhind)$/,
+        ]);
+        var asksForestArea = matchesQuestion([
+            /^(?:mis|kui suur) (?:on )?(?:metsamaa|metsa) pindala$/,
+            /^kui palju (?:on )?metsamaad$/,
+        ]);
+        var asksParcelArea = matchesQuestion([
+            /^(?:mis|kui suur) (?:on )?(?:kinnistu|krundi|katastriüksuse) pindala$/,
+        ]);
+        var asksMainSpecies = matchesQuestion([
+            /^(?:mis|milline) (?:on )?(?:kinnistu )?peapuuliik$/,
+            /^(?:mis|milline) puuliik (?:on )?(?:siin )?(?:peamine|valdav)$/,
+        ]);
+        var asksAverageAge = matchesQuestion([
+            /^(?:mis|milline) (?:on )?metsa keskmine vanus$/,
+            /^kui vana (?:on )?mets keskmiselt(?: on)?$/,
+        ]);
+        var asksStandCount = matchesQuestion([
+            /^mitu (?:metsa)?eraldist(?: siin| kinnistul)? on$/,
+            /^mis (?:on )?eraldiste arv$/,
+        ]);
+        var asksLiveStock = matchesQuestion([
+            /^(?:mis|kui suur) (?:on )?(?:elus puistutagavara|tagavara) (?:ha|hektari) kohta$/,
+        ]);
+        var asksTotalVolume = matchesQuestion([
+            /^(?:mis|kui suur) (?:on )?(?:metsa kogumaht|puidu kogumaht|kasvava metsa kogumaht|kogumaht|kogutagavara)$/,
+        ]);
+        var asksTimberValue = matchesQuestion([
+            /^(?:mis|milline|kui suur) (?:on )?kasvava puidu (?:hinnavahemik|hind|väärtus)$/,
+        ]);
+        var matchedIntents = [
+            asksTaxableValue,
+            asksForestArea,
+            asksParcelArea,
+            asksMainSpecies,
+            asksAverageAge,
+            asksStandCount,
+            asksLiveStock,
+            asksTotalVolume,
+            asksTimberValue,
+        ].filter(Boolean);
+        if (matchedIntents.length !== 1) return null;
+
+        if (asksTaxableValue && finiteNumber(kataster.maks_hind)) {
+            var valuationMeta = kataster.maks_hind_meta || {};
+            var timing = '';
+            if (valuationMeta.state === 'available' && valuationMeta.assessment_year) {
+                timing = ' See põhineb ' + valuationMeta.assessment_year + '. a hindamismudelil';
+                if (valuationMeta.valid_from) {
+                    timing += ' ja väärtus kehtib alates ' + formatDateEt(valuationMeta.valid_from);
+                }
+                timing += '.';
+            } else {
+                timing = ' Hindamise ajakontekst ei ole praegu ametlikust allikast kinnitatud.';
+            }
+            return answer(
+                'land_taxable_value',
+                '**Maa maksustamishind on ' + formatEur(kataster.maks_hind) + '.**'
+                    + timing
+                    + ' Maksustamishind ei ole aastane maamaks ega kinnistu turuväärtus.',
+                'Maa- ja Ruumiamet'
+            );
+        }
+
+        if (asksForestArea && finiteNumber(kataster.mets_pindala_ha)) {
+            return answer(
+                'forest_area',
+                '**Metsamaa pindala on ' + formatNum(kataster.mets_pindala_ha, 2) + ' ha.** See on Metsaregistri eraldiste kogupindala.',
+                'Metsaregister'
+            );
+        }
+        if (asksParcelArea && finiteNumber(kataster.pindala_ha)) {
+            return answer(
+                'parcel_area',
+                '**Kinnistu pindala on ' + formatNum(kataster.pindala_ha, 2) + ' ha.**',
+                'Maa- ja Ruumiamet'
+            );
+        }
+        if (
+            asksMainSpecies
+            && mets.liigiandmed_taielikud === true
+            && typeof mets.puuliik === 'string'
+            && mets.puuliik.trim()
+            && mets.puuliik.length <= 80
+        ) {
+            return answer(
+                'main_species',
+                '**Peapuuliik on ' + mets.puuliik.trim() + '.** Peapuuliik on Terrapointi koonduses suurima elus tagavaraga liik.',
+                'Metsaregister'
+            );
+        }
+        if (
+            asksAverageAge
+            && mets.vanuseandmed_taielikud === true
+            && finiteNumber(mets.vanus)
+            && mets.vanus > 0
+        ) {
+            return answer(
+                'average_age',
+                '**Metsa pindalaga kaalutud keskmine vanus on ' + formatNum(mets.vanus) + ' aastat.** Kontrolli kõrval ka inventeerimise kuupäeva.',
+                'Metsaregister'
+            );
+        }
+        if (asksStandCount && finiteNumber(mets.eraldisi_kokku)) {
+            return answer(
+                'stand_count',
+                '**Kinnistul on ' + formatNum(mets.eraldisi_kokku) + ' metsaeraldist.**',
+                'Metsaregister'
+            );
+        }
+        var volume = passport('forest_volume');
+        if (
+            asksLiveStock
+            && finiteNumber(mets.elus_tagavara_ha)
+            && volume
+            && volume.available !== false
+        ) {
+            return answer(
+                'live_stock_per_ha',
+                '**Elus puistutagavara on keskmiselt ' + formatNum(mets.elus_tagavara_ha, 1) + ' m³/ha.**'
+                    + volumeProvenance(volume)
+                    + ' See ei ole automaatselt raiutav kogus.',
+                (volume.source && volume.source.name) || 'Päritolu vajab kontrolli'
+            );
+        }
+        if (
+            asksTotalVolume
+            && finiteNumber(vaartus.tagavara_m3)
+            && volume
+            && volume.available !== false
+        ) {
+            return answer(
+                'total_volume',
+                '**Kasvava metsa kogumaht on ' + formatNum(vaartus.tagavara_m3) + ' m³.**'
+                    + volumeProvenance(volume)
+                    + ' See ei ole automaatselt raiutav ega müüdav puidukogus.',
+                (volume.source && volume.source.name) || 'Päritolu vajab kontrolli'
+            );
+        }
+        var timber = passport('timber_value');
+        if (
+            asksTimberValue
+            && timber
+            && timber.available !== false
+            && timber.range
+            && finiteNumber(timber.range.low)
+            && finiteNumber(timber.range.high)
+            && timber.range.low <= timber.range.high
+        ) {
+            var timberConfidence = timber.confidence && timber.confidence.label
+                ? ' Andmete usaldus: ' + String(timber.confidence.label) + '.'
+                : '';
+            return answer(
+                'timber_value_range',
+                '**Kasvava puidu indikatiivne hinnavahemik on '
+                    + formatEur(timber.range.low) + '–' + formatEur(timber.range.high) + '.**'
+                    + timberConfidence
+                    + ' See ei ole ostupakkumine ega kinnistu turuväärtus.',
+                (timber.source && timber.source.name) || 'Metsaregister ja Eesti Erametsaliit'
+            );
+        }
+        return null;
+    }
+
     async function aiSendMessage(message, queuedEntry) {
         if (!aiCurrentKataster) {
             aiAppendMessage('assistant', '<span style="color:var(--ink-4);font-style:italic">Otsi esmalt ülevalt katastri number või aadress — seejärel saan su metsa kohta küsimustele vastata.</span>');
             aiSetStatus('Otsi esmalt kinnistu, et AI-le küsimus saata.');
             return;
         }
-        if (!hasFreshChatSnapshot(currentData, performance.now())) {
-            aiShowUnavailableData('AI kinnistuandmed aegusid. Otsi kinnistu uuesti.');
-            if (queuedEntry) aiRejectQueue('Küsimus jäi saatmata, sest AI kinnistuandmed aegusid.');
-            return;
-        }
         if (!message.trim()) return;
 
         message = message.trim().slice(0, 600);
         var input = document.getElementById('ai-chat-input');
+
+        var factAnswer = queuedEntry && queuedEntry.factAnswer
+            ? queuedEntry.factAnswer
+            : aiResolveFactQuestion(message, currentData);
+        if (!queuedEntry && factAnswer) {
+            var factNow = Date.now();
+            if (aiLastLocalFactId === factAnswer.factId && factNow - aiLastLocalFactAt < 1000) {
+                aiClearSubmittedInput(input, message);
+                aiSetStatus('Sama vastus on juba kuvatud.');
+                return;
+            }
+            if (aiStreaming || aiMessageQueue.length) {
+                if (aiMessageQueue.length >= 5) {
+                    aiSetStatus('Küsimuste järjekord on täis.');
+                    return;
+                }
+                aiLastLocalFactId = factAnswer.factId;
+                aiLastLocalFactAt = factNow;
+                aiAppendMessage('user', message);
+                var factStatusBubble = aiAppendMessage('assistant', '<span style="color:var(--ink-4);font-style:italic">Vastus lisatud järjekorda...</span>');
+                aiMessageQueue.push({message: message, statusBubble: factStatusBubble, factAnswer: factAnswer});
+                aiClearSubmittedInput(input, message);
+                aiSetStatus('Vastus lisatud järjekorda.');
+                aiDrainQueue();
+                return;
+            }
+            aiLastLocalFactId = factAnswer.factId;
+            aiLastLocalFactAt = factNow;
+        }
+        if (factAnswer) {
+            if (queuedEntry) {
+                if (aiMessageQueue[0] !== queuedEntry) return;
+                aiMessageQueue.shift();
+            } else {
+                aiClearSubmittedInput(input, message);
+                aiAppendMessage('user', message);
+            }
+            aiChatHistory.push({role: 'user', content: message});
+            var factMarkup = '<span class="ai-answer-source">'
+                + escHtml(factAnswer.sourceLabel + ' · ' + factAnswer.sourceName)
+                + '</span>'
+                + aiFormatResponse(factAnswer.text);
+            if (queuedEntry && queuedEntry.statusBubble && queuedEntry.statusBubble.isConnected) {
+                queuedEntry.statusBubble.innerHTML = factMarkup;
+            } else {
+                aiAppendMessage('assistant', factMarkup);
+            }
+            aiChatHistory.push({role: 'assistant', content: factAnswer.text});
+            if (aiChatHistory.length > 20) aiChatHistory = aiChatHistory.slice(-20);
+            document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + '. Küsi lisaküsimusi';
+            aiSetStatus('Vastus kinnistuandmetest on valmis.');
+            if (queuedEntry) aiDrainQueue();
+            return;
+        }
+
+        if (!hasFreshChatSnapshot(currentData, performance.now())) {
+            var snapshotMessage = 'AI kinnistuandmed aegusid. Otsi kinnistu uuesti, et AI-lt avatud küsimusi küsida.';
+            if (queuedEntry) {
+                aiRejectQueue('Küsimus jäi saatmata, sest AI kinnistuandmed aegusid.');
+            } else {
+                aiAppendMessage('assistant', '<span style="color:var(--ink-4);font-style:italic">' + escHtml(snapshotMessage) + '</span>');
+                aiSetStatus(snapshotMessage);
+            }
+            return;
+        }
 
         if (!queuedEntry && (aiStreaming || aiMessageQueue.length)) {
             if (aiMessageQueue.length >= 5) {
@@ -1829,7 +2116,11 @@
                     delete currentData.chat_snapshot_expires_at;
                     delete currentData.chat_snapshot_ttl_seconds;
                 }
-                aiShowUnavailableData(err.message || 'AI kinnistuandmed aegusid. Otsi kinnistu uuesti.');
+                var snapshotError = err.message || 'AI kinnistuandmed aegusid. Kinnistu fakte saab siiski küsida.';
+                if (liveBubble) {
+                    liveBubble.innerHTML = '<span style="color:var(--danger)">' + escHtml(snapshotError) + '</span>';
+                }
+                aiSetStatus(snapshotError);
             } else if (aiOwnsStream(streamGeneration, controller, streamKataster) && liveBubble) {
                 var msg = err.name === 'AbortError' ? 'AI vastus aegus. Proovi lühemat küsimust.' : err.message;
                 liveBubble.innerHTML = '<span style="color:var(--danger)">' + escHtml(msg) + '</span>';
@@ -1871,6 +2162,8 @@
         if (aiQueueTimer) { clearTimeout(aiQueueTimer); aiQueueTimer = null; }
         aiMessageQueue.length = 0;
         aiStreaming = false;
+        aiLastLocalFactId = null;
+        aiLastLocalFactAt = 0;
         document.getElementById('ai-chat-send').disabled = false;
         var msgs = document.getElementById('ai-chat-messages');
         if (msgs) msgs.innerHTML = '';
@@ -1889,6 +2182,32 @@
         aiShowAnalyzeButton();
     }
 
+    function aiPrepareFactQuestions(katasterNr, message) {
+        aiStreamGeneration++;
+        if (aiAbortController) aiAbortController.abort();
+        aiAbortController = null;
+        if (aiQueueTimer) { clearTimeout(aiQueueTimer); aiQueueTimer = null; }
+        aiStreaming = false;
+        aiMessageQueue.length = 0;
+        aiCurrentKataster = katasterNr;
+        aiLastAnalyzedKataster = null;
+        aiChatHistory = [];
+        aiLastLocalFactId = null;
+        aiLastLocalFactAt = 0;
+        var inputArea = document.getElementById('ai-chat-input-area');
+        var input = document.getElementById('ai-chat-input');
+        var send = document.getElementById('ai-chat-send');
+        if (inputArea) inputArea.style.display = '';
+        if (input) input.disabled = false;
+        if (send) send.disabled = false;
+        var notice = message || 'AI analüüs ei ole praegu saadaval. Kinnistu fakte saab siiski küsida.';
+        var messages = document.getElementById('ai-chat-messages');
+        if (messages) messages.innerHTML = '<div class="ai-welcome">' + escHtml(notice) + '</div>';
+        var subtitle = document.querySelector('.ai-chat-subtitle');
+        if (subtitle) subtitle.textContent = 'Kataster ' + katasterNr + ' laaditud. Küsi kinnistu fakte.';
+        aiSetStatus(notice);
+    }
+
     function aiShowUnavailableData(message) {
         aiStreamGeneration++;
         if (aiAbortController) aiAbortController.abort();
@@ -1899,6 +2218,8 @@
         aiCurrentKataster = null;
         aiLastAnalyzedKataster = null;
         aiChatHistory = [];
+        aiLastLocalFactId = null;
+        aiLastLocalFactAt = 0;
         var input = document.getElementById('ai-chat-input');
         var send = document.getElementById('ai-chat-send');
         if (input) input.disabled = true;
@@ -2591,6 +2912,14 @@
         maaruumOrthophoto.addTo(map);
         var orthophotoTileErrors = 0;
         var orthophotoTileLoads = 0;
+        var orthophotoRetryAttempts = 0;
+        var orthophotoRetryTimer = null;
+        function resetOrthophotoRetries() {
+            orthophotoRetryAttempts = 0;
+            if (orthophotoRetryTimer) clearTimeout(orthophotoRetryTimer);
+            orthophotoRetryTimer = null;
+        }
+        map.on('zoomstart movestart', resetOrthophotoRetries);
         maaruumOrthophoto.on('loading', function() {
             orthophotoTileErrors = 0;
             orthophotoTileLoads = 0;
@@ -2605,8 +2934,16 @@
             var nextNotice = mapWorkspaceState.basemapNotice;
             if (orthophotoTileErrors >= 3) {
                 nextNotice = 'Ortofoto ei ole hetkel saadaval. Proovi kaarti mõne hetke pärast uuesti.';
+                if (orthophotoRetryAttempts < 2 && !orthophotoRetryTimer) {
+                    orthophotoRetryAttempts += 1;
+                    orthophotoRetryTimer = setTimeout(function() {
+                        orthophotoRetryTimer = null;
+                        maaruumOrthophoto.redraw();
+                    }, orthophotoRetryAttempts * 650);
+                }
             } else if (orthophotoTileLoads >= 3 && orthophotoTileErrors === 0) {
                 nextNotice = null;
+                resetOrthophotoRetries();
             }
             if (nextNotice === mapWorkspaceState.basemapNotice) return;
             mapWorkspaceState = selectMapBasemap(mapWorkspaceState, 'maaruum-orthophoto', nextNotice);
@@ -3215,7 +3552,13 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         // Keep the official land reference separate from the combined estimate.
         var maaMaksuhind = data.maks_hind || 0;
         if (maaMaksuhind > 0) {
-            html += '<div class="info-row"><span class="label">Maa maksustamishind ' + ddInfo('Katastris olev maa masshindamise tulemus. See ei sisalda kasvavat metsa ega ole sama mis kinnistu tehinguhind.') + '</span><span class="value">' + formatEur(maaMaksuhind) + '</span></div>';
+            var valuationMeta = data.maks_hind_meta || {};
+            var valuationTiming = 'Hindamise ajakontekst teadmata';
+            if (valuationMeta.state === 'available' && valuationMeta.assessment_year) {
+                valuationTiming = valuationMeta.assessment_year + '. a hindamismudel';
+                if (valuationMeta.valid_from) valuationTiming += ' · kehtib alates ' + formatDateEt(valuationMeta.valid_from);
+            }
+            html += '<div class="info-row"><span class="label">Maa maksustamishind ' + ddInfo('Katastris olev maa masshindamise tulemus. Hindamismudeli aasta ja väärtuse kehtivuse algus pärinevad Maa- ja Ruumiameti hindamisinfosüsteemist. See ei sisalda kasvavat metsa ega ole aastane maamaks või kinnistu tehinguhind.') + '</span><span class="value value-with-detail"><strong>' + formatEur(maaMaksuhind) + '</strong><small>' + escHtml(valuationTiming) + '</small></span></div>';
         }
         el.innerHTML = html;
     }
@@ -3545,8 +3888,19 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             html += '<span class="asset-passport-value">' + passportValue(passport) + '</span><span class="asset-passport-toggle" aria-hidden="true"></span></summary>';
             html += '<div class="asset-passport-body">';
             html += '<dl><div><dt>Allikas</dt><dd>' + sourceLink(source) + '</dd></div>';
-            var asOf = sourceDate(source);
-            if (asOf) html += '<div><dt>Andmete kuupäev</dt><dd>' + asOf + '</dd></div>';
+            var hasValuationTiming = source.assessment_year || source.valid_from || source.assessed_at;
+            if (source.assessment_year) html += '<div><dt>Hindamismudel</dt><dd>' + escHtml(source.assessment_year) + '. a</dd></div>';
+            if (source.valid_from) {
+                var validity = formatDateEt(source.valid_from);
+                if (source.valid_until) validity += '–' + formatDateEt(source.valid_until);
+                html += '<div><dt>Kehtib alates</dt><dd>' + validity + '</dd></div>';
+            }
+            if (source.assessed_at) html += '<div><dt>Arvutatud</dt><dd>' + formatDateEt(source.assessed_at) + '</dd></div>';
+            if (source.basis) html += '<div><dt>Arvutuse alus</dt><dd>' + escHtml(source.basis) + '</dd></div>';
+            if (!hasValuationTiming) {
+                var asOf = sourceDate(source);
+                if (asOf) html += '<div><dt>Andmete kuupäev</dt><dd>' + asOf + '</dd></div>';
+            }
             html += '<div><dt>Arvutuskäik</dt><dd>' + escHtml(passport.derivation || 'Arvutuskäik puudub.') + '</dd></div>';
             if (confidence.label) html += '<div><dt>Usaldus</dt><dd>' + escHtml(confidence.label) + '</dd></div>';
             html += '</dl>';
@@ -3831,6 +4185,56 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         }
     }
 
+    function historicalClearcutPresentation(status) {
+        var state = status && status.state;
+        var periodStart = status && Number.isInteger(status.period_start) ? status.period_start : 2011;
+        var periodEnd = status && Number.isInteger(status.period_end) ? status.period_end : 2016;
+        var periodLabel = periodStart + '–' + periodEnd;
+        var sourceName = status && status.source_name
+            ? String(status.source_name)
+            : 'Keskkonnaagentuuri Veeveebi arhiivikiht';
+        if (state === 'matches') {
+            return {
+                label: 'Arhiivivaste leitud',
+                tone: 'found',
+                detail: sourceName + ' ei kinnita tänast metsaseisundit ega täpset raieaastat.',
+            };
+        }
+        if (state === 'matches_partial') {
+            return {
+                label: 'Vasted leitud · kontroll osaline',
+                tone: 'partial',
+                detail: 'Leitud perioodid on nähtavad, kuid allika täielikkust ei saanud kinnitada.',
+            };
+        }
+        if (state === 'empty') {
+            return {
+                label: periodLabel + ' arhiivikihis vastet ei leitud',
+                tone: 'empty',
+                detail: sourceName + ' ei näidanud kattuvust; raiet võis olla muul ajal.',
+            };
+        }
+        if (state === 'incomplete') {
+            return {
+                label: 'Kontroll osaline · puudumist ei saa kinnitada',
+                tone: 'partial',
+                detail: sourceName + ' tulemus oli kärbitud või osaliselt kasutuskõlbmatu. Proovi otsingut uuesti.',
+            };
+        }
+        if (state === 'unavailable') {
+            return {
+                label: 'Kontroll ebaõnnestus · puudumist ei saa kinnitada',
+                tone: 'unavailable',
+                detail: sourceName + ' ei vastanud. Proovi otsingut uuesti.',
+            };
+        }
+        return {
+            label: 'Kontrolli olek teadmata · puudumist ei saa kinnitada',
+            tone: 'unavailable',
+            detail: 'Arhiivikihi tulemi täielikkust ei saanud kontrollida.',
+        };
+    }
+
     function renderRiskid(data) {
         var el = document.getElementById('riskid-info');
         if (!data) { el.innerHTML = '<p class="muted">Riskiandmeid pole</p>'; return; }
@@ -3875,16 +4279,22 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         html += karuputk ? '<span style="color:var(--danger);font-weight:600">Leitud</span></div>' : '<span style="color:var(--success)">Puudub</span></div>';
         // Veeveebi kiht on ajalooline satelliidituvastus, mitte praegune ohutegur.
         var clearcuts = data.ajaloolised_lageraiealad || [];
-        html += '<div class="info-row"><span class="label">Ajalooline lageraie tuvastus ' + ddInfo('Keskkonnaagentuuri Veeveebi satelliidikiht katab ainult perioodi 2011–2016. Periood näitab vaatlusvahemikku, mitte täpset raieaastat, ning seda ei arvestata tänase terviseindeksi ohutegurina. Metsaseaduse § 25 järgi peab mets üldjuhul olema uuenenud 5 aasta jooksul; loo, siirdesoo, madalsoo, raba, osja, tarna ja lodu kasvukohatüüpides 10 aasta jooksul, kui tähtaega pole pikendatud.') + '</span>';
+        var clearcutStatus = data.ajaloolise_lageraide_kontroll || {state: clearcuts.length ? 'matches' : 'unknown'};
+        var clearcutPresentation = historicalClearcutPresentation(clearcutStatus);
+        var clearcutCoverage = (clearcutStatus.period_start || 2011) + '–' + (clearcutStatus.period_end || 2016);
+        var clearcutSource = clearcutStatus.source_name || 'Keskkonnaagentuuri Veeveebi satelliidikiht';
+        html += '<div class="info-row clearcut-row"><span class="label">Ajalooline lageraie tuvastus ' + ddInfo(clearcutSource + ' katab ainult perioodi ' + clearcutCoverage + '. Periood näitab vaatlusvahemikku, mitte täpset raieaastat, ning seda ei arvestata tänase terviseindeksi ohutegurina. Metsaseaduse § 25 järgi peab mets üldjuhul olema uuenenud 5 aasta jooksul; loo, siirdesoo, madalsoo, raba, osja, tarna ja lodu kasvukohatüüpides 10 aasta jooksul, kui tähtaega pole pikendatud.') + '</span>';
         if (clearcuts.length) {
             var cutLabels = clearcuts.map(function(cut) {
                 var period = cut.periood_algus ? cut.periood_algus + '–' + cut.periood_lopp : 'kuni ' + cut.periood_lopp;
                 return period + ' (vähemalt ' + cut.vanus_vahemalt_a + ' a tagasi)';
             });
-            html += '<span class="value clearcut-period">' + escHtml(cutLabels.join(', ')) + '</span></div>';
+            html += '<span class="value value-with-detail clearcut-period"><strong>' + escHtml(cutLabels.join(', ')) + '</strong>';
         } else {
-            html += '<span class="value">Ei kattu kihiga</span></div>';
+            html += '<span class="value value-with-detail">';
         }
+        html += '<small class="clearcut-status clearcut-status-' + escHtml(clearcutPresentation.tone) + '">' + escHtml(clearcutPresentation.label) + '</small>';
+        html += '<small class="clearcut-explanation">' + escHtml(clearcutPresentation.detail) + '</small></span></div>';
         el.innerHTML = html || '<p class="muted">Riskiandmeid pole</p>';
     }
 
@@ -4544,6 +4954,17 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         if (!landingWasVisible) requestAnimationFrame(scrollToDashboard);
     }
 
+    function scrollToContact(event) {
+        if (event) event.preventDefault();
+        var contact = document.getElementById('kontakt');
+        if (!contact) return;
+        var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (window.location.hash !== '#kontakt' && window.history && window.history.pushState) {
+            window.history.pushState(null, '', '#kontakt');
+        }
+        contact.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+    }
+
     // ═══ app.js ═══
     var currentData = null;
 
@@ -4810,6 +5231,9 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         sidebarOverlay.addEventListener('click', closeSidebar);
         sidebar.querySelectorAll('.sidebar-nav a').forEach(function(link) {
             link.addEventListener('click', closeSidebar);
+        });
+        document.querySelectorAll('a[href="#kontakt"]').forEach(function(link) {
+            link.addEventListener('click', scrollToContact);
         });
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && sidebar.classList.contains('open')) {
@@ -5108,10 +5532,11 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             if (data.kataster && data.meta && data.meta.ai_analysis_available === true && hasFreshChatSnapshot(data, performance.now())) {
                 aiAnalyzeKataster(data.kataster.number, data.mets ? data.mets.eraldised : null);
             } else {
-                aiShowUnavailableData(
+                aiPrepareFactQuestions(
+                    data.kataster.number,
                     data.meta && data.meta.ai_analysis_available === true
                         ? 'AI turvakontroll ei ole hetkel saadaval. Proovi otsingut uuesti.'
-                        : null
+                        : 'Metsa AI-analüüs ei ole nende andmetega saadaval. Kinnistu fakte saab siiski küsida.'
                 );
             }
 

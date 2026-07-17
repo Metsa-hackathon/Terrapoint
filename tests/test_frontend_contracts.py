@@ -76,6 +76,11 @@ class FrontendContractTests(unittest.TestCase):
         self.assertEqual(section.count('<article class="source-card"'), 4)
         self.assertIn("Täiendavad kontrollallikad", section)
         self.assertNotIn("Eesti <em>riiklikud registrid</em>", section)
+        self.assertNotIn(".source-flow-step span {", STYLE_CSS)
+        self.assertRegex(
+            STYLE_CSS,
+            r"(?s)\.source-flow-number\s*\{[^}]*display:\s*grid;[^}]*line-height:\s*1;",
+        )
 
     def test_map_lookup_recovers_identifier_from_adob_id(self):
         helper = "async " + _extract_js_function("findKatasterAtPoint")
@@ -227,7 +232,9 @@ async function fetch(url) {{
         self.assertIn("must-revalidate", cache_control)
 
     def test_changed_stylesheet_busts_the_previous_immutable_url(self):
-        self.assertIn('/static/css/style.css?r=jkl114', INDEX_HTML)
+        self.assertIn('/static/css/style.css?r=jkl116', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl115', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl114', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl113', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl112', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl111', INDEX_HTML)
@@ -322,7 +329,9 @@ async function fetch(url) {{
                 {
                     "id": "land_reference", "label": "Maa maksustamishind", "available": True,
                     "value": 16349, "unit": "€", "provenance": "official", "provenance_label": "Maa- ja Ruumiamet",
-                    "source": {"name": "Vale", "url": "javascript:alert(1)"}, "derivation": "Puudub",
+                    "source": {"name": "Vale", "url": "javascript:alert(1)", "assessment_year": 2022,
+                               "valid_from": "2025-12-17", "assessed_at": "2025-12-17",
+                               "basis": "Alusandmete uuendamine"}, "derivation": "Puudub",
                     "confidence": {"label": "Ametlik referentsväärtus", "reasons": []}, "limitations": [], "ai_question": "Selgita"
                 },
                 {
@@ -356,6 +365,12 @@ async function fetch(url) {{
         self.assertNotIn("€–kuni", visible_text)
         self.assertNotIn("Andmed puuduvad", html)
         self.assertIn("Lähteandmed ei vastanud &lt;kontrolli&gt;", html)
+        self.assertIn("Hindamismudel", html)
+        self.assertIn("2022. a", html)
+        self.assertIn("Kehtib alates", html)
+        self.assertIn("17.12.2025", html)
+        self.assertIn("Arvutatud", html)
+        self.assertIn("Alusandmete uuendamine", html)
         self.assertIn("Selgita &amp; kontrolli", html)
         self.assertIn("asset-trust-madal", html)
         self.assertNotIn("javascript:", html)
@@ -379,6 +394,329 @@ async function fetch(url) {{
             STYLE_CSS,
             r"(?s)@container\s*\(max-width:\s*420px\)\s*\{.*?\.asset-passport summary\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 16px;",
         )
+
+    def test_simple_property_questions_resolve_from_loaded_facts_before_ai(self):
+        resolver = _extract_js_function("aiResolveFactQuestion")
+        send_start = INDEX_HTML.index("async function aiSendMessage")
+        send_end = INDEX_HTML.index("function aiAnalyzeKataster", send_start)
+        send_message = INDEX_HTML[send_start:send_end]
+        script = f"""
+            function formatEur(value) {{ return Number(value).toLocaleString('et-EE') + ' €'; }}
+            function formatNum(value, decimals) {{ return Number(value).toFixed(decimals || 0).replace('.', ','); }}
+            function formatDateEt(value) {{ return value === '2025-12-17' ? '17.12.2025' : value; }}
+            {resolver}
+            const data = {{
+              kataster: {{
+                maks_hind: 4200, pindala_ha: 21.65, mets_pindala_ha: 20.17,
+                maks_hind_meta: {{state:'available', assessment_year:2022, valid_from:'2025-12-17'}}
+              }},
+              mets: {{
+                puuliik:'mänd', liigiandmed_taielikud:true,
+                vanus:65, vanuseandmed_taielikud:true,
+                elus_tagavara_ha:180, eraldisi_kokku:3
+              }},
+              vaartus: {{tagavara_m3:3631, andmepassid:[
+                {{
+                  id:'forest_volume', available:true, provenance:'derived',
+                  provenance_label:'Arvutatud Metsaregistri andmetest',
+                  source:{{name:'Metsaregister'}}, limitations:[]
+                }},
+                {{
+                  id:'timber_value', available:true, range:{{low:70000, high:90000}},
+                  confidence:{{label:'Kõrge lähteandmete usaldus'}}, limitations:[],
+                  source:{{name:'Metsaregister ja Eesti Erametsaliit', as_of:'2026-03'}}
+                }}
+              ]}}
+            }};
+            const estimated = JSON.parse(JSON.stringify(data));
+            estimated.vaartus.andmepassid[0] = {{
+              id:'forest_volume', available:true, provenance:'estimate',
+              provenance_label:'Hinnatud Metsaregistri andmete põhjal',
+              source:{{name:'Metsaregistri sisendid ja Terrapointi hinnang'}},
+              limitations:['1 eraldise tagavara on hinnanguline, sest registritagavara puudus.']
+            }};
+            const questions = [
+              'Mis hinna pealt maad maksustatakse?',
+              'Kui suur on kinnistu pindala?',
+              'Kui palju on metsamaad?',
+              'Mis on peapuuliik?',
+              'Kui vana mets keskmiselt on?',
+              'Mitu eraldist siin on?',
+              'Mis on elus puistutagavara hektari kohta?',
+              'Kui suur on metsa kogumaht?',
+              'Mis on kasvava puidu hinnavahemik?'
+            ];
+            console.log(JSON.stringify({{
+              answers: questions.map(question => aiResolveFactQuestion(question, data)),
+              annualTax: aiResolveFactQuestion('Kui palju ma aastas maamaksu maksan?', data),
+              missing: aiResolveFactQuestion('Mis on peapuuliik?', {{kataster:data.kataster}}),
+              missingAge: aiResolveFactQuestion('Kui vana mets keskmiselt on?', {{
+                kataster:data.kataster, mets:{{vanus:0, vanuseandmed_taielikud:false}}
+              }}),
+              planting: aiResolveFactQuestion('Mis puuliik sobiks siia istutada?', data),
+              compound: aiResolveFactQuestion('Mis on kinnistu pindala ja maa maksustamishind?', data),
+              compoundUnsupported: aiResolveFactQuestion('Kui suur on kinnistu pindala ja millised piirangud siin kehtivad?', data),
+              plantingCompound: aiResolveFactQuestion('Mis on peapuuliik ja mida siia istutada?', data),
+              advisorySpecies: aiResolveFactQuestion('Kas peapuuliik sobib siia istutamiseks?', data),
+              compoundNing: aiResolveFactQuestion('Kui suur on kinnistu pindala ning kas seal on kaitseala?', data),
+              sourcedTaxableValue: aiResolveFactQuestion('Maa- ja Ruumiameti järgi mis on maa maksustamishind?', data),
+              missingSpeciesSource: aiResolveFactQuestion('Mis on peapuuliik?', {{
+                kataster:data.kataster,
+                mets:{{puuliik:'mänd', liigiandmed_taielikud:false}}
+              }}),
+              malformedSpecies: aiResolveFactQuestion('Mis on peapuuliik?', {{
+                kataster:data.kataster,
+                mets:{{puuliik:{{name:'mänd'}}, liigiandmed_taielikud:true}}
+              }}),
+              booleanValue: aiResolveFactQuestion('Mis on maa maksustamishind?', {{
+                kataster:{{maks_hind:true}}
+              }}),
+              estimatedVolume: aiResolveFactQuestion('Kui suur on metsa kogumaht?', estimated),
+              malformedLimitations: aiResolveFactQuestion('Kui suur on metsa kogumaht?', {{
+                ...estimated,
+                vaartus:{{...estimated.vaartus, andmepassid:[{{
+                  ...estimated.vaartus.andmepassid[0], limitations:{{unexpected:true}}
+                }}]}}
+              }})
+            }}));
+        """
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertEqual(
+            [answer["factId"] for answer in state["answers"]],
+            [
+                "land_taxable_value", "parcel_area", "forest_area", "main_species",
+                "average_age", "stand_count", "live_stock_per_ha", "total_volume",
+                "timber_value_range",
+            ],
+        )
+        self.assertTrue(all(answer["sourceLabel"] == "Kinnistuandmetest" for answer in state["answers"]))
+        self.assertIn("2022. a hindamismudel", state["answers"][0]["text"])
+        self.assertIn("kehtib alates 17.12.2025", state["answers"][0]["text"])
+        self.assertIn("ei ole aastane maamaks ega kinnistu turuväärtus", state["answers"][0]["text"])
+        self.assertIsNone(state["annualTax"])
+        self.assertIsNone(state["missing"])
+        self.assertIsNone(state["missingAge"])
+        self.assertIsNone(state["planting"])
+        self.assertIsNone(state["compound"])
+        self.assertIsNone(state["compoundUnsupported"])
+        self.assertIsNone(state["plantingCompound"])
+        self.assertIsNone(state["advisorySpecies"])
+        self.assertIsNone(state["compoundNing"])
+        self.assertEqual(state["sourcedTaxableValue"]["factId"], "land_taxable_value")
+        self.assertIsNone(state["missingSpeciesSource"])
+        self.assertIsNone(state["malformedSpecies"])
+        self.assertIsNone(state["booleanValue"])
+        self.assertIn("Terrapointi hinnang", state["estimatedVolume"]["sourceName"])
+        self.assertIn("hinnanguline", state["estimatedVolume"]["text"])
+        self.assertEqual(state["malformedLimitations"]["factId"], "total_volume")
+        self.assertLess(send_message.index("aiResolveFactQuestion"), send_message.index("hasFreshChatSnapshot"))
+        self.assertLess(send_message.index("aiResolveFactQuestion"), send_message.index("fetch(`${AI_API_BASE}/chat`"))
+        self.assertIn("ai-answer-source", send_message)
+        self.assertIn(".ai-answer-source", STYLE_CSS)
+
+    def test_historical_clearcut_copy_never_conflates_empty_with_unavailable(self):
+        presenter = _extract_js_function("historicalClearcutPresentation")
+        script = f"""
+            {presenter}
+            const states = ['empty', 'incomplete', 'unavailable', 'matches', 'matches_partial'];
+            console.log(JSON.stringify({{
+              defaults: states.map(state => historicalClearcutPresentation({{state}})),
+              custom: historicalClearcutPresentation({{
+                state:'empty', period_start:2012, period_end:2014, source_name:'Testarhiiv'
+              }})
+            }}));
+        """
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+        empty, incomplete, unavailable, matches, partial = state["defaults"]
+
+        self.assertEqual(empty["label"], "2011–2016 arhiivikihis vastet ei leitud")
+        self.assertEqual(unavailable["label"], "Kontroll ebaõnnestus · puudumist ei saa kinnitada")
+        self.assertEqual(incomplete["label"], "Kontroll osaline · puudumist ei saa kinnitada")
+        self.assertEqual(matches["label"], "Arhiivivaste leitud")
+        self.assertEqual(partial["label"], "Vasted leitud · kontroll osaline")
+        self.assertEqual(state["custom"]["label"], "2012–2014 arhiivikihis vastet ei leitud")
+        self.assertIn("Testarhiiv", state["custom"]["detail"])
+        self.assertNotIn("Ei kattu kihiga", INDEX_HTML)
+
+    def test_contact_navigation_centers_target_and_respects_reduced_motion(self):
+        helper = _extract_js_function("scrollToContact")
+
+        self.assertIn("block: 'center'", helper)
+        self.assertIn("prefers-reduced-motion: reduce", helper)
+        self.assertIn("behavior: reduceMotion ? 'auto' : 'smooth'", helper)
+        self.assertIn("document.querySelectorAll('a[href=\"#kontakt\"]')", INDEX_HTML)
+        self.assertRegex(
+            STYLE_CSS,
+            r"(?s)@media \(prefers-reduced-motion: reduce\) \{.*?html\s*\{\s*scroll-behavior:\s*auto;",
+        )
+
+    def test_loaded_parcel_keeps_local_facts_available_without_ai_snapshot(self):
+        prepare = _extract_js_function("aiPrepareFactQuestions")
+        search_flow = INDEX_HTML[INDEX_HTML.index("async function doSearch"):]
+        script = f"""
+            let aiStreamGeneration = 0;
+            let aiAbortController = null;
+            let aiQueueTimer = null;
+            let aiStreaming = true;
+            let aiMessageQueue = [{{message:'old'}}];
+            let aiCurrentKataster = null;
+            let aiLastAnalyzedKataster = 'old';
+            let aiChatHistory = [{{role:'user', content:'old'}}];
+            let aiLastLocalFactId = 'old';
+            let aiLastLocalFactAt = 1;
+            const nodes = {{
+              'ai-chat-input-area': {{style:{{display:'none'}}}},
+              'ai-chat-input': {{disabled:true}},
+              'ai-chat-send': {{disabled:true}},
+              'ai-chat-messages': {{innerHTML:''}}
+            }};
+            const subtitle = {{textContent:''}};
+            const document = {{
+              getElementById: id => nodes[id] || null,
+              querySelector: selector => selector === '.ai-chat-subtitle' ? subtitle : null
+            }};
+            function clearTimeout() {{}}
+            function escHtml(value) {{ return String(value); }}
+            function aiSetStatus(message) {{ nodes.status = message; }}
+            {prepare}
+            aiPrepareFactQuestions('10501:001:0001', 'AI ei ole saadaval.');
+            console.log(JSON.stringify({{
+              kataster: aiCurrentKataster,
+              inputDisabled: nodes['ai-chat-input'].disabled,
+              sendDisabled: nodes['ai-chat-send'].disabled,
+              inputAreaDisplay: nodes['ai-chat-input-area'].style.display,
+              queueLength: aiMessageQueue.length,
+              historyLength: aiChatHistory.length,
+              subtitle: subtitle.textContent
+            }}));
+        """
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertEqual(state["kataster"], "10501:001:0001")
+        self.assertFalse(state["inputDisabled"])
+        self.assertFalse(state["sendDisabled"])
+        self.assertEqual(state["inputAreaDisplay"], "")
+        self.assertEqual(state["queueLength"], 0)
+        self.assertEqual(state["historyLength"], 0)
+        self.assertIn("10501:001:0001", state["subtitle"])
+        self.assertRegex(
+            search_flow,
+            r"aiPrepareFactQuestions\(\s*data\.kataster\.number,",
+        )
+
+    def test_local_fact_submission_is_deduplicated_and_queued_without_ai_request(self):
+        resolver = _extract_js_function("aiResolveFactQuestion")
+        clear_input = _extract_js_function("aiClearSubmittedInput")
+        queue_wait = _extract_js_function("aiQueueWaitMs")
+        reject_queue = _extract_js_function("aiRejectQueue")
+        drain_queue = _extract_js_function("aiDrainQueue")
+        send_start = INDEX_HTML.index("async function aiSendMessage")
+        send_end = INDEX_HTML.index("function aiAnalyzeKataster", send_start)
+        send_message = INDEX_HTML[send_start:send_end]
+        script = f"""
+            let aiChatHistory = [];
+            let aiCurrentKataster = '10501:001:0001';
+            let aiStreaming = false;
+            let aiMessageQueue = [];
+            let aiLastLocalFactId = null;
+            let aiLastLocalFactAt = 0;
+            let aiQueueTimer = null;
+            let aiLastSendAt = 0;
+            let aiRecentSendTimes = [];
+            const currentData = {{kataster:{{pindala_ha:4.75}}}};
+            const messages = [];
+            const input = {{value:'Kui suur on kinnistu pindala?', disabled:false, focus(){{}}}};
+            const subtitle = {{textContent:''}};
+            const document = {{
+              getElementById: id => id === 'ai-chat-input' ? input : {{disabled:false}},
+              querySelector: () => subtitle
+            }};
+            let fetchCount = 0;
+            async function fetch() {{ fetchCount++; throw new Error('unexpected AI request'); }}
+            function aiAppendMessage(role, html) {{
+              const bubble = {{role, innerHTML:html, isConnected:true}};
+              messages.push(bubble);
+              return bubble;
+            }}
+            function aiSetStatus(message) {{ globalThis.lastStatus = message; }}
+            function aiFormatResponse(text) {{ return text; }}
+            function escHtml(value) {{ return String(value); }}
+            function formatEur(value) {{ return value + ' €'; }}
+            function formatNum(value) {{ return String(value); }}
+            function formatDateEt(value) {{ return value; }}
+            function hasFreshChatSnapshot() {{ throw new Error('snapshot check must be bypassed'); }}
+            {resolver}
+            {clear_input}
+            {queue_wait}
+            {reject_queue}
+            {drain_queue}
+            {send_message}
+            (async function() {{
+              await aiSendMessage('Kui suur on kinnistu pindala?');
+              input.value = 'Kui suur on kinnistu pindala?';
+              await aiSendMessage('Kui suur on kinnistu pindala?');
+              const direct = {{
+                messages: messages.length,
+                history: aiChatHistory.length,
+                fetchCount,
+                status: globalThis.lastStatus
+              }};
+
+              messages.length = 0;
+              aiChatHistory = [];
+              aiMessageQueue.length = 0;
+              aiLastLocalFactId = null;
+              aiLastLocalFactAt = 0;
+              aiStreaming = true;
+              input.value = 'Kui suur on kinnistu pindala?';
+              await aiSendMessage('Kui suur on kinnistu pindala?');
+              const queuedBeforeDrain = aiMessageQueue.length;
+              aiStreaming = false;
+              aiDrainQueue();
+
+              messages.length = 0;
+              aiChatHistory = [];
+              aiMessageQueue.length = 0;
+              const modelBubble = {{innerHTML:'AI ootab', isConnected:true}};
+              aiAppendMessage('user', 'Kui suur on kinnistu pindala?');
+              const localBubble = aiAppendMessage('assistant', 'Kohalik vastus ootab');
+              aiMessageQueue.push(
+                {{message:'Selgita riske', statusBubble:modelBubble}},
+                {{
+                  message:'Kui suur on kinnistu pindala?',
+                  statusBubble:localBubble,
+                  factAnswer:aiResolveFactQuestion('Kui suur on kinnistu pindala?', currentData)
+                }}
+              );
+              aiRejectQueue('AI ebaõnnestus.');
+              console.log(JSON.stringify({{
+                direct,
+                queuedBeforeDrain,
+                failureQueueAfterDrain: aiMessageQueue.length,
+                failureHistory: aiChatHistory.length,
+                modelBubbleHtml:modelBubble.innerHTML,
+                localBubbleHtml:localBubble.innerHTML,
+                fetchCount
+              }}));
+            }})();
+        """
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertEqual(state["direct"]["messages"], 2)
+        self.assertEqual(state["direct"]["history"], 2)
+        self.assertEqual(state["direct"]["fetchCount"], 0)
+        self.assertEqual(state["direct"]["status"], "Sama vastus on juba kuvatud.")
+        self.assertEqual(state["queuedBeforeDrain"], 1)
+        self.assertEqual(state["failureQueueAfterDrain"], 0)
+        self.assertEqual(state["failureHistory"], 2)
+        self.assertIn("AI ebaõnnestus", state["modelBubbleHtml"])
+        self.assertIn("Kinnistuandmetest", state["localBubbleHtml"])
+        self.assertEqual(state["fetchCount"], 0)
 
     def test_dashboard_uses_desktop_space_without_widening_prose_sections(self):
         self.assertIn("--dashboard-max-w: min(calc(100vw - 48px), 1600px);", STYLE_CSS)
@@ -1535,9 +1873,11 @@ function makeLayer(url) {{
   const layer = {{
     url,
     handlers: {{}},
+    redrawCount: 0,
     addTo(target) {{ target.layers.add(this); return this; }},
     on(name, handler) {{ this.handlers[name] = handler; return this; }},
     fire(name) {{ if (this.handlers[name]) this.handlers[name](); }},
+    redraw() {{ this.redrawCount += 1; return this; }},
   }};
   createdLayers.push(layer);
   return layer;
@@ -1565,8 +1905,9 @@ const L = {{
 const window = {{addEventListener() {{}}}};
 const BASEMAP_ACCESSED_AT = '2026-07-15T00:00:00Z';
 const requestAnimationFrame = function() {{}};
-const setTimeout = function() {{ return 1; }};
-const clearTimeout = function() {{}};
+const timers = [];
+const setTimeout = function(callback) {{ timers.push(callback); return timers.length; }};
+const clearTimeout = function(timer) {{ if (timer) timers[timer - 1] = null; }};
 let map;
 let katasterWmsLayer;
 let mapWorkspaceState = {{selectedBasemapId: 'maaruum-orthophoto', basemapNotice: null}};
@@ -1578,6 +1919,7 @@ function renderMapWorkspaceState() {{ renderCount += 1; }}
 function handleMapClick() {{}}
 {init_map}
 initMap();
+timers.length = 0;
 const orthophoto = createdLayers.find(layer => layer.url.includes('/foto/'));
 const gray = createdLayers.find(layer => layer.url.includes('/hallkaart/'));
 orthophoto.fire('loading');
@@ -1587,6 +1929,9 @@ orthophoto.fire('tileerror');
 orthophoto.fire('load');
 const outageNotice = mapWorkspaceState.basemapNotice;
 const selectedAfterErrors = mapWorkspaceState.selectedBasemapId;
+const retryScheduled = timers.filter(Boolean).length;
+timers.filter(Boolean).forEach(callback => callback());
+const redrawCount = orthophoto.redrawCount;
 orthophoto.fire('loading');
 orthophoto.fire('tileload');
 orthophoto.fire('load');
@@ -1602,6 +1947,8 @@ console.log(JSON.stringify({{
   orthophotoActive: mapStub.hasLayer(orthophoto),
   outageNotice,
   selectedAfterErrors,
+  retryScheduled,
+  redrawCount,
   noticeAfterOneLateTile,
   noticeAfterLoad: mapWorkspaceState.basemapNotice,
   renderCount,
@@ -1615,6 +1962,8 @@ console.log(JSON.stringify({{
         self.assertTrue(state["orthophotoActive"])
         self.assertIn("Ortofoto ei ole hetkel saadaval", state["outageNotice"])
         self.assertEqual(state["selectedAfterErrors"], "maaruum-orthophoto")
+        self.assertEqual(state["retryScheduled"], 1)
+        self.assertEqual(state["redrawCount"], 1)
         self.assertIn("Ortofoto ei ole hetkel saadaval", state["noticeAfterOneLateTile"])
         self.assertIsNone(state["noticeAfterLoad"])
         self.assertEqual(state["renderCount"], 2)

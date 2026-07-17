@@ -1966,6 +1966,26 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     text-wrap: pretty;
 }
 .info-row .value strong { font-weight: 600; }
+.info-row .value-with-detail {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+.info-row .value-with-detail small {
+    color: var(--ink-4);
+    font-family: var(--ff-sans);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.35;
+}
+.clearcut-row { align-items: flex-start; }
+.clearcut-status { font-weight: 700 !important; }
+.clearcut-status-found { color: var(--blue-700) !important; }
+.clearcut-status-empty { color: var(--success) !important; }
+.clearcut-status-partial { color: var(--warn) !important; }
+.clearcut-status-unavailable { color: var(--danger) !important; }
+.clearcut-explanation { max-width: 42ch; }
 
 /* ═══ BIG NUMBERS ═══════════════════════════════════════════════════════════ */
 .big-number {
@@ -2534,6 +2554,16 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 }
 .ai-bubble p { margin: 0 0 6px; }
 .ai-bubble p:last-child { margin-bottom: 0; }
+.ai-answer-source {
+    display: inline-flex;
+    margin-bottom: 6px;
+    color: var(--blue-700);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
 .ai-bubble strong { font-weight: 600; color: var(--ink-2); }
 .user-message .ai-bubble strong { color: var(--white); }
 .ai-bubble h2, .ai-bubble h3, .ai-bubble h4 {
@@ -4367,6 +4397,7 @@ footer {
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
     *, *::before, *::after {
         animation-duration: 0.01ms !important;
         transition-duration: 0.01ms !important;
@@ -4616,10 +4647,10 @@ footer {
     color: rgba(255, 255, 255, 0.72);
     font-size: 11px;
     font-weight: 700;
+    line-height: 1;
     font-variant-numeric: tabular-nums;
 }
-.source-flow-step strong,
-.source-flow-step span {
+.source-flow-step strong {
     display: block;
 }
 .source-flow-step strong {
@@ -4628,6 +4659,7 @@ footer {
     line-height: 1.3;
 }
 .source-flow-step div > span {
+    display: block;
     max-width: 48ch;
     color: rgba(255, 255, 255, 0.7);
     font-size: 13.5px;

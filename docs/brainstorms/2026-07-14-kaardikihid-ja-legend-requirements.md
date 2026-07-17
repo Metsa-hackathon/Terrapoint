@@ -1,5 +1,6 @@
 ---
 date: 2026-07-14
+updated: 2026-07-17
 topic: kaardikihid-ja-legend
 ---
 
@@ -7,7 +8,7 @@ topic: kaardikihid-ja-legend
 
 ## Summary
 
-Terrapointi kaart saab metsaomaniku otsustest lähtuvad vaated, rahuliku vaikeseisu ja ühe ühise legendi. Kaart seab esikohale ametlikud metsa- ja piiranguandmed, eristab selgelt fakti, hinnangut ja ebakindlust ning jätab detailsemad kihid kasutaja valikul avatavaks.
+Terrapoint säilitab rahuliku, ametlikele allikatele toetuva kaardi ning lisab tulemuste lehele faktipõhised kiirvastused, õigesti nimetatud andmeajastuse ja selged arhiivikihi olekud. Kasutaja saab lehel juba nähtava fakti kohta kohese vastuse ilma AI-analüüsi ootamata ning näeb, millise aja, allika ja tõlgenduspiiriga number kehtib.
 
 ---
 
@@ -18,6 +19,12 @@ Praegune kaart kuvab suure hulga eri allikatest pärinevaid kihte ühe pika lül
 Kahel eraldi legendil on erinev loogika. Eraldiste värvid nimetavad raieliike, kuigi värv tuleneb peamiselt puistu vanusest ja raievanusest, ning metsateatis ei tõenda töö teostamist. See võib muuta registriandmetel põhineva hinnangu näiliselt kindlamaks ja tegevussoovituse konkreetsemaks, kui alusandmed lubavad.
 
 Mobiilis võtavad eraldi juhtpaneelid ja legendid piiratud kaardipinnast ebaproportsionaalselt palju ruumi. Samal ajal laetakse kinnistu avamisel ka valikuliste kihtide andmeid, kuigi kasutaja ei pruugi neid vaadata ja mõne välise allika tõrge ei peaks põhivaadet takistama.
+
+Tulemuste lehel kuvatakse mitu konkreetset registrifakti, kuid nende ajakontekst ei ole ühtlane. Maa maksustamishinna juures puudub hindamismudeli aasta ja väärtuse kehtivuse algus; päringu või Terrapointi kontrolli aega ei tohi esitada andmete enda kuupäevana.
+
+AI-nõustaja saadab ka lehel juba nähtava numbri küsimuse pika mudelianalüüsi kaudu. Näiteks maa maksustamishinna kordamine ei vaja uut järeldust, kuid kasutaja näeb vastust oodates sama „Mõtleb” olekut nagu keerulise metsandussoovituse puhul.
+
+Ajaloolise lageraie nähtav olek „Ei kattu kihiga” ei ütle, millist perioodi kontrolliti, ning võib praegu varjata ka allika tõrget. Kontaktlingi tavaline ankrukerimine jätab väikese kontaktiploki vaate ülaserva, kuigi selle keskne paigutus oleks loetavam.
 
 ---
 
@@ -50,6 +57,27 @@ Mobiilis võtavad eraldi juhtpaneelid ja legendid piiratud kaardipinnast ebaprop
   - **Steps:** Ühine legend näitab teema allikaid, ajaseisu ja tõlgenduspiiri; täielik nulltulemus, osaline tulemus, allika tõrge ja kärbitud tulemus on üksteisest eristatavad; valikulise allika tõrge ei takista ülejäänud kaardi kasutamist.
   - **Outcome:** Kasutaja ei tõlgenda tehnilist puudujääki ekslikult piirangu, riski või ajaloolise sündmuse puudumisena.
   - **Covered by:** R7, R8, R10, R11, R12, R13
+
+- F4. Lehel nähtava fakti küsimine
+  - **Trigger:** A1 küsib AI-nõustajalt üheselt vastatavat kinnistufakti, mis on otsingutulemuses juba olemas.
+  - **Actors:** A1
+  - **Steps:** Terrapoint tunneb ära toetatud faktiküsimuse; vastab samast laaditud kinnistuandmest ilma mudelianalüüsita; näitab vastuse päritolu, ühikut ja olulist tõlgenduspiiri; säilitab küsimuse vestluse ajaloos.
+  - **Outcome:** A1 saab kontrollitava vastuse praktiliselt kohe ja eristab selle AI koostatud analüüsist.
+  - **Covered by:** R19, R20, R21, R22
+
+- F5. Ajaloolise lageraie tulemuse tõlgendamine
+  - **Trigger:** A1 vaatab tulemuste lehel ajaloolise lageraie kontrolli.
+  - **Actors:** A1, A2
+  - **Steps:** Terrapoint näitab kontrollitud perioodi; eristab leitud vaste, täieliku nulltulemuse, osalise kontrolli ja allika tõrke; selgitab, et arhiivikiht ei tõenda lageraie puudumist muul ajal ega tänast metsaseisundit.
+  - **Outcome:** A1 ei tõlgenda piiratud arhiivikihti täieliku raieajaloo ega allikatõrget nulltulemusena.
+  - **Covered by:** R23, R24
+
+- F6. Kontaktini liikumine
+  - **Trigger:** A1 valib päise või mobiilimenüü kontaktlingi.
+  - **Actors:** A1
+  - **Steps:** Menüü sulgub vajadusel; leht kerib kontaktiploki nähtava vaate keskossa, arvestades kleepuvat päist ja kasutaja vähendatud liikumise eelistust.
+  - **Outcome:** Kontaktiploki pealkiri, selgitus ja e-posti link on korraga nähtavad.
+  - **Covered by:** R25
 
 ---
 
@@ -128,6 +156,24 @@ Eri õigusliku või praktilise tähendusega kattuvused jäävad eraldi teemadeks
 - R15. Juhtimine peab töötama klaviatuuri, puute ja hiirega. Mobiilis on vaatevalik ja legend vaikimisi kompaktsed ning suletavad, valitud kinnistu peab jääma jälgitavaks ja peamised puutealad olema vähemalt 44 × 44 CSS-pikslit. Avatud juhtpaneeli saab sulgeda paoklahviga, fookus naaseb avamisnupule ning värv ei tohi olla ainus tähenduse kandja; tekstipõhine kinnistuotsing on klaviatuuriga kasutatav alternatiiv kaardiklikile.
 - R16. Ümberkujundus peab säilitama kinnistu kaardilt valimise, eraldiste numbrid, eraldiste detailvaate, kaardi suumimise ja olemasoleva tulemuste lehe ülejäänud funktsioonid. Vaated muudavad ainult kaardi ülekatteid, juhtimist ja legendi; need ei filtreeri ega kirjuta ümber lehe „Riskide”, „Toetuste”, „Metsateatiste”, väärtuse ega AI-nõustaja sisu.
 
+**Faktide ajakontekst ja kiirvastused**
+
+- R17. Iga tulemuses kuvatav ajamärge peab nimetama oma tegeliku tähenduse: allika avaldatud või inventeerimise kuupäev, hindamismudeli aasta, väärtuse kehtivuse algus, arvutamise aeg või Terrapointi kontrolli aeg. Neid ei tohi koondada üheks üldiseks „andmeaastaks”.
+- R18. Maa maksustamishind peab võimaluse korral näitama ametlikust hindamisinfosüsteemist saadud hindamismudeli aastat ja väärtuse kehtivuse algust; detailis võib näidata arvutamise aega ning alust. Kui metaandmeid ei saa usaldusväärselt siduda kuvatava väärtusega, jääb ajaseis teadmata ja seda ei tuletata katastrikihi muutmis- ega päringuajast.
+- R19. Kui kasutaja küsimus vastab toetatud, juba laaditud ja üheselt tõlgendatavale kinnistufaktile, peab Terrapoint vastama ilma generatiivset AI-mudelit käivitamata. Kiirtee hõlmab vähemalt maa maksustamishinda, kinnistu ja metsamaa pindala, peapuuliiki, metsa keskmist vanust, eraldiste arvu, elus puistutagavara ning olemasolevaid mahu- ja hinnavahemikke.
+- R20. Kiirvastus peab sisaldama fakti inimkeelset nimetust, väärtust, ühikut, päritolu ning otsust mõjutavat piirangut. Maa maksustamishinna vastus peab ütlema, et see ei ole aastane maamaks ega turuväärtus, ning lisama R18 ajakonteksti, kui see on saadaval.
+- R21. Mitmetähenduslik, arvutust nõudev, puuduva väärtusega või toetamata küsimus peab jätkama olemasolevasse AI-analüüsi voogu. Kiirtee ei tohi märksõna põhjal vastata aastase maamaksu summale ega muule faktile, mida otsingutulemus ei sisalda.
+- R22. Kasutaja peab nägema, kas vastus pärineb otse kinnistuandmetest või AI-analüüsist. Kiirvastus lisatakse samasse vestlusesse ja säilib järgmiste küsimuste kontekstina, kuid ei käivita AI laadimisolekut ega kuluta AI päringupiirangut.
+
+**Ajaloolise lageraie selgus**
+
+- R23. Ajaloolise lageraie kontrollil peavad olema eraldi olekud „Arhiivivaste leitud”, „2011–2016 arhiivikihis vastet ei leitud”, „Vasted leitud · kontroll osaline”, „Kontroll osaline · puudumist ei saa kinnitada” ja „Kontroll ebaõnnestus · puudumist ei saa kinnitada”. Kärbitud või osaliselt kasutuskõlbmatu vastus peab olema eristatav allika tõrkest ning kummalgi juhul ei tohi näidata täielikku nulltulemust.
+- R24. Ajaloolise lageraie selgitus peab nimetama Keskkonnaagentuuri Veeveebi 2011–2016 vaatlusperioodi ning ütlema, et nulltulemus ei välista raiet muul ajal ja tuvastus ei kinnita tänast metsaseisundit ega töö täpset aastat.
+
+**Lehesisene navigeerimine**
+
+- R25. Kõik `#kontakt` lingid peavad viima sama kontaktiploki juurde nii, et ploki põhisisu paikneb võimalusel vaate keskosas; väikese vaate või vähendatud liikumise eelistuse korral peab kogu sisu jääma loetavaks ja kleepuv päis ei tohi seda katta.
+
 ---
 
 ## Acceptance Examples
@@ -147,6 +193,13 @@ Eri õigusliku või praktilise tähendusega kattuvused jäävad eraldi teemadeks
 - AE13. **Covers R7, R10.** Kui metsateatis kuulub kinnistule, kuid selle usaldusväärne geomeetria või eraldiseseos puudub, loendab „Ajalugu” selle vastena ja näitab detailis „Asukoht kinnistul määramata”, kuid ei lisa kaardile oletuslikku sümbolit ega muuda tulemuste lehe metsateatiste järjekorda.
 - AE14. **Covers R4, R5, R8, R12.** Kui „Ülevaate” kontroll leiab looduskaitse kattuvuse, veeteema vastab täieliku nulliga ja muinsuskaitse allikas ei vasta, näitab kaart looduskaitse ülekatet ning koondrida „Piirangute kontroll osaline”. Muinsuskaitse tõrge on detailis uuesti proovitav; looduskaitse ülekatte peitmisel jääb koondreale „1 kattuvus peidetud”.
 - AE15. **Covers R4, R7, R11, R16.** Kui toetuse signaal kehtib terve kinnistu kohta ilma täpse geomeetriata ja teine signaal on tuletatud ühe eraldise tunnustest, näitab „Toetused” esimest legendi detailis „Kinnistu tasemel” ning teist vastava eraldise juures „Terrapointi tuletisena”. Teema ütleb „Indikaatorid leitud”, ei kinnita toetuskõlblikkust ega muuda tulemuste lehe toetuste hinnanguid.
+- AE16. **Covers R17, R18, R20.** Kui maksustamishind on 4200 eurot, ametlik hindamismudel on 2022 ja väärtus kehtib alates 17.12.2025, näitab Terrapoint neid eri tähendustega; ta ei nimeta 17.12.2025 päringu kuupäevaks ega kogu väärtust 2022. aasta andmeteks.
+- AE17. **Covers R18.** Kui hindamise metaandmete allikas ei vasta või tagastab kuvatava maksustamishinnaga vastuolus oleva väärtuse, jääb 4200-eurone katastriväärtus nähtavaks, kuid selle juurde ei lisata kontrollimata hindamisaega.
+- AE18. **Covers R19, R20, R22.** Kui kasutaja küsib „Mis hinna pealt maad maksustatakse?” ja laaditud maksustamishind on 4200 eurot, ilmub kuni ühe sekundi jooksul „Kinnistuandmetest” vastus 4200 euro, ajakonteksti ning maamaksu ja turuväärtuse piiranguga; AI mudelipäringut ei alustata.
+- AE19. **Covers R21.** Kui kasutaja küsib „Kui palju ma aastas maamaksu maksan?”, ei esita kiirtee maksustamishinda aastase maksusummana, vaid küsimus jätkub AI voogu või selgitab vajalike maksumäära ja soodustuste puudumist.
+- AE20. **Covers R23, R24.** Kui lageraie arhiivikiht vastab täielikult nulltulemusega, näeb kasutaja „2011–2016 arhiivikihis vastet ei leitud” ja selgitust perioodi piirangu kohta. Kui vastus on kärbitud või osaliselt kasutuskõlbmatu, näeb ta „Kontroll osaline · puudumist ei saa kinnitada”; kui sama allikas ei vasta, näeb ta „Kontroll ebaõnnestus · puudumist ei saa kinnitada”.
+- AE21. **Covers R23, R24.** Kui arhiivikihist leitakse vaste, kuid osa allikatulemusest on kasutuskõlbmatu, jääb periood nähtavaks olekuga „Vasted leitud · kontroll osaline” ega muutu täielikuks kinnituseks.
+- AE22. **Covers R25.** Kui kasutaja valib kontaktlingi laua- või mobiilivaates, on kerimise järel korraga nähtavad kontaktiploki pealkiri, selgitus ja e-posti link ning plokk ei jää kleepuva päise alla.
 
 ---
 
@@ -159,6 +212,10 @@ Eri õigusliku või praktilise tähendusega kattuvused jäävad eraldi teemadeks
 - Vaikekaart muutub kasutatavaks ka siis, kui mõni mitteaktiivne või valikuline allikas on aeglane või kättesaamatu.
 - Laua- ja mobiilivaates ei kata juhtimine püsivalt kaardi otsustamiseks vajalikku ala ning kõik funktsioonid on kasutatavad ilma ainult värvile tuginemata.
 - Planeerija saab sellest dokumendist tuletada deterministlikud kasutusvood ja kontrollstsenaariumid ilma toote käitumist või ulatust juurde leiutamata.
+- Toetatud lihtsa faktiküsimuse vastus ilmub tavakasutuses kuni ühe sekundi jooksul ja selle jaoks ei tehta generatiivse AI teenuse päringut.
+- Maa maksustamishinna juures on ametliku allika olemasolul nähtav hindamismudeli aasta ja kehtivuse algus, ilma et neid aetaks segamini andmete päringuajaga.
+- Ajaloolise lageraie nulltulemus, osaline kontroll ja allikatõrge on eri tekstiga ning ükski tõrge ei paista kasutajale vaste puudumisena.
+- Kontaktlink jätab kontaktiploki põhisisu laua- ja mobiilivaates loetavasse vaateossa.
 
 ---
 
@@ -170,6 +227,9 @@ Eri õigusliku või praktilise tähendusega kattuvused jäävad eraldi teemadeks
 - Ümberkujundus ei laiene kogu tulemuste lehe, väärtusarvutuse või AI-nõustaja visuaalsele ümbertegemisele.
 - Esimesse versiooni ei kuulu kontopõhised salvestatud vaated ega vaadete jagamine.
 - Ajaloolist 2011–2016 lageraietuvastust ei taastata silmapaistva põhikihi ega tänase metsaseisundi signaalina.
+- Esimesse versiooni ei kuulu uus satelliidi- või ortofotopõhine lageraietuvastus ega 2011–2016 perioodist laiem ajalookatvus.
+- Kiirvastused ei arvuta aastast maamaksu, turuväärtust ega muid puuduvaid fakte ning ei asenda keeruliste küsimuste AI-analüüsi.
+- Muudatus ei kujunda AI-nõustaja ega tulemuste lehe visuaalset struktuuri tervikuna ümber.
 
 ---
 
@@ -180,6 +240,9 @@ Eri õigusliku või praktilise tähendusega kattuvused jäävad eraldi teemadeks
 - Üks allikateadlik legend: sümbol, tähendus ja andmeusaldus kuuluvad samasse kohta.
 - Raievanuse suhtarv ei ole raietsoovitus: puistu vanuseklass, metsateatis ja ajalooline tuvastus jäävad eraldi mõisteteks.
 - Dubleerivate piiranguallikate koondamine: kasutaja näeb asjaolu tähendust, säilitades võimaluse kontrollida selle ametlikke allikaid.
+- Faktipõhine kiirtee mudeli kiirendamise asemel: lehel juba olemasoleva numbri kordamine peab olema deterministlik, allikapõhine ja mudeli latentsusest sõltumatu.
+- Semantiline ajakontekst üldise aasta asemel: „hindamismudel”, „kehtib alates”, „inventeeritud” ja „kontrollitud” jäävad eraldi mõisteteks.
+- Olemasoleva lageraie arhiivkihi selgitamine uue tuvastuse asemel: esimene väärtus tuleb õigest tõlgendusest ja ausast allikaolekust.
 
 ---
 
@@ -189,6 +252,8 @@ Eri õigusliku või praktilise tähendusega kattuvused jäävad eraldi teemadeks
 - Valitud kinnistu geomeetria võimaldab määrata, kas piirang või riskisignaal alaga kattub; allika ruumiline täpsus võib siiski erineda.
 - Kõik välised teenused ei avalda usaldusväärset andmestiku kuupäeva, mistõttu tuleb andmete ajaseis ja Terrapointi viimane kontroll selgelt lahus hoida.
 - Kaardil kuvatav nulltulemus ei ole piisav tõend asjaolu puudumise kohta, kui allika kättesaadavus või tulemuse täielikkus pole kinnitatud.
+- Maa- ja Ruumiameti hindamisinfosüsteem tagastab katastritunnuse kohta hindamismudeli aasta, arvutusaja ja kehtivusvahemiku ning jääb tootmiskasutuseks kättesaadavaks. Selle tõrge ei tohi blokeerida katastri põhiandmeid.
+- Kiirvastuse tuvastus põhineb piiratud, kontrollitaval faktide ja küsimusvormide hulgal; kahtluse korral eelistatakse olemasolevat AI voogu vale faktivastuse asemel.
 
 ---
 

@@ -40,7 +40,136 @@ class FakeAsyncClient:
         return self.response
 
 
+class SlowFakeAsyncClient(FakeAsyncClient):
+    async def get(self, url):
+        await kataster.asyncio.sleep(1)
+        return self.response
+
+
 class KatasterDataTests(unittest.IsolatedAsyncioTestCase):
+    async def test_land_valuation_metadata_normalizes_official_latest_assessment(self):
+        response = FakeResponse({
+            "status": "OK",
+            "message": {
+                "assessment": {
+                    "cadastreId": "10501:001:0001",
+                    "totalValue": 7073,
+                    "assessmentYear": 2022,
+                    "assessmentTime": "2025-12-17T14:24:41.453627",
+                    "validFrom": "2025-12-17",
+                    "validUntil": None,
+                    "basis": "Alusandmete uuendamine",
+                }
+            },
+        })
+
+        with patch("services.kataster.httpx.AsyncClient", return_value=FakeAsyncClient(response)):
+            result = await kataster.query_land_valuation_metadata("10501:001:0001")
+
+        self.assertEqual(result, {
+            "state": "available",
+            "total_value": 7073,
+            "assessment_year": 2022,
+            "assessment_time": "2025-12-17",
+            "valid_from": "2025-12-17",
+            "valid_until": None,
+            "basis": "Alusandmete uuendamine",
+        })
+
+    async def test_land_valuation_metadata_rejects_non_object_payload(self):
+        with patch(
+            "services.kataster.httpx.AsyncClient",
+            return_value=FakeAsyncClient(FakeResponse([])),
+        ):
+            result = await kataster.query_land_valuation_metadata("10501:001:0001")
+
+        self.assertIsNone(result)
+
+    async def test_land_valuation_metadata_enforces_total_deadline(self):
+        with (
+            patch(
+                "services.kataster.httpx.AsyncClient",
+                return_value=SlowFakeAsyncClient(FakeResponse({})),
+            ),
+            patch("services.kataster.LAND_VALUATION_TIMEOUT_SECONDS", 0.01),
+        ):
+            result = await kataster.query_land_valuation_metadata("10501:001:0001")
+
+        self.assertIsNone(result)
+
+    async def test_query_kataster_attaches_metadata_only_to_matching_value(self):
+        feature = {
+            "properties": {
+                "tunnus": "10501:001:0001",
+                "pindala": 47_489,
+                "maks_hind": 7073,
+            },
+            "geometry": {"type": "Polygon", "coordinates": []},
+        }
+        matching = {
+            "state": "available",
+            "total_value": 7073,
+            "assessment_year": 2022,
+            "assessment_time": "2025-12-17",
+            "valid_from": "2025-12-17",
+            "valid_until": None,
+            "basis": "Alusandmete uuendamine",
+        }
+
+        with (
+            patch("services.kataster._wfs_get", new=AsyncMock(return_value=[feature])),
+            patch(
+                "services.kataster.query_land_valuation_metadata",
+                new=AsyncMock(return_value=matching),
+            ),
+        ):
+            result = await kataster.query_kataster(
+                "10501:001:0001",
+                include_valuation_metadata=True,
+            )
+
+        self.assertEqual(result["maks_hind_meta"]["assessment_year"], 2022)
+        self.assertEqual(result["maks_hind_meta"]["valid_from"], "2025-12-17")
+
+        mismatching = {**matching, "total_value": 8000}
+        with (
+            patch("services.kataster._wfs_get", new=AsyncMock(return_value=[feature])),
+            patch(
+                "services.kataster.query_land_valuation_metadata",
+                new=AsyncMock(return_value=mismatching),
+            ),
+        ):
+            result = await kataster.query_kataster(
+                "10501:001:0001",
+                include_valuation_metadata=True,
+            )
+
+        self.assertEqual(result["maks_hind"], 7073)
+        self.assertEqual(result["maks_hind_meta"], {"state": "unavailable"})
+
+    async def test_query_kataster_skips_valuation_metadata_by_default(self):
+        feature = {
+            "properties": {
+                "tunnus": "10501:001:0001",
+                "pindala": 47_489,
+                "maks_hind": 7073,
+            },
+            "geometry": {"type": "Polygon", "coordinates": []},
+        }
+
+        with (
+            patch("services.kataster._wfs_get", new=AsyncMock(return_value=[feature])),
+            patch(
+                "services.kataster.query_land_valuation_metadata",
+                new=AsyncMock(),
+            ) as valuation_query,
+        ):
+            result = await kataster.query_kataster("10501:001:0001")
+
+        valuation_query.assert_not_awaited()
+        self.assertEqual(result["maks_hind"], 7073)
+        self.assertEqual(result["maks_hind_meta"], {"state": "unavailable"})
+
     async def test_wfs_get_rejects_malformed_features_container(self):
         response = FakeResponse({"features": None})
 

@@ -6,6 +6,32 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > domain). `terrapoint.vercel.app` on sama projekti alias — push master
 > branchi uuendab mõlemat korraga.
 
+## [Määramata] - 2026-07-17
+
+### Added
+- **Kinnistuandmete kiirvastused** — üheksa täpselt piiritletud pindala-,
+  puuliigi-, vanuse-, tagavara- ja hinnaküsimust saavad vastuse otse laaditud
+  andmetest ilma AI päringuta. Vastus näitab allikat ning hinnangulise tagavara
+  puhul ka Terrapointi arvutuslikku päritolu.
+- **Maksustamishinna ajakontekst** — Maa- ja Ruumiameti ametlik hindamismudeli
+  aasta, arvutamise kuupäev ja kehtivuse algus on eraldi väljad nii
+  andmepassis, kiirvastuses kui AI tõendiplokis.
+
+### Changed
+- **Ajaloolise lageraie kontroll** eristab täielikku nulltulemust, leitud
+  vastet, kärbitud või kasutuskõlbmatut osalist kontrolli ning allika tõrget.
+  Väljaspool 2011–2016 vahemikku või pööratud aastatega kirjeid ei esitata
+  enam kehtiva arhiivivastena.
+- **Puudulikud metsaandmed jäävad teadmata olekusse** — registrist puuduva
+  liigi või vanuse asemel ei näidata kiirvastuses ega AI tõendites vaikimisi
+  mändi või null aastat.
+
+### Fixed
+- **Kontaktlink** kerib väikese kontaktiploki vaate keskele ja järgib süsteemi
+  vähendatud liikumise eelistust.
+- **Ortofoto ajutised paanivead** käivitavad piiratud korduskatse ning kuvavad
+  selge olekuteate ilma ametlikku aluskaarti vahetamata.
+
 ## [Määramata] - 2026-07-15
 
 ### Changed

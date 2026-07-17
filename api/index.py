@@ -642,10 +642,11 @@ def _historical_clearcut_periods(
     features: list[dict],
     eraldised: list[dict] | None = None,
     today: date | None = None,
-) -> list[dict]:
+) -> tuple[list[dict], bool]:
     current = today or date.today()
     periods_by_key = {}
     parsed_stands = []
+    incomplete = False
     for index, stand in enumerate(eraldised or []):
         if not stand.get("geometry"):
             continue
@@ -655,16 +656,25 @@ def _historical_clearcut_periods(
             continue
         parsed_stands.append((index, stand, stand_geometry, stand_geometry.bounds))
     for feature in features:
-        props = feature.get("properties", {})
+        props = feature.get("properties")
+        if not isinstance(props, dict):
+            incomplete = True
+            continue
         start = props.get("periood_a")
         end = props.get("periood_o")
         try:
             start = int(start) if start is not None else None
             end = int(end) if end is not None else None
         except (TypeError, ValueError):
+            incomplete = True
             continue
         key = (start, end)
-        if end is None:
+        if (
+            end is None
+            or not 2011 <= end <= 2016
+            or (start is not None and not 2011 <= start <= end)
+        ):
+            incomplete = True
             continue
         if key not in periods_by_key:
             periods_by_key[key] = {
@@ -710,7 +720,29 @@ def _historical_clearcut_periods(
         matched_stands = period.pop("_matched_stands", None)
         if matched_stands is not None:
             period["kattuvaid_eraldisi"] = len(matched_stands)
-    return periods
+    return periods, incomplete
+
+
+def _historical_clearcut_status(
+    periods: list[dict],
+    unavailable_sources: list[str],
+    incomplete: bool = False,
+) -> dict:
+    source_unavailable = "layers.lageraiealad" in unavailable_sources
+    if periods:
+        state = "matches_partial" if source_unavailable or incomplete else "matches"
+    elif source_unavailable:
+        state = "unavailable"
+    elif incomplete:
+        state = "incomplete"
+    else:
+        state = "empty"
+    return {
+        "state": state,
+        "period_start": 2011,
+        "period_end": 2016,
+        "source_name": "Keskkonnaagentuuri Veeveebi arhiivikiht",
+    }
 
 
 def _client_identifier(request: Request) -> str:
@@ -1723,7 +1755,10 @@ async def _search_core(
     include_map_layers: bool = True,
 ) -> dict:
     """Sisemine otsinguloogika — eraldatud, et saaks timeout-i panna."""
-    kataster_data = await asyncio.wait_for(query_kataster(kataster_nr), timeout=KATASTER_TIMEOUT_SECONDS)
+    kataster_data = await asyncio.wait_for(
+        query_kataster(kataster_nr, include_valuation_metadata=True),
+        timeout=KATASTER_TIMEOUT_SECONDS,
+    )
     if not kataster_data:
         return {"error": "Krunti ei leitud", "_status": 404}
 
@@ -1981,6 +2016,18 @@ async def _search_core(
         )
 
         # Weighted average tagavara and vanus
+        age_data_complete = all(
+            not isinstance(e.get("vanus"), bool)
+            and isinstance(e.get("vanus"), (int, float))
+            and math.isfinite(e["vanus"])
+            and e["vanus"] > 0
+            for e in eraldised
+        )
+        species_data_complete = all(
+            isinstance(e.get("puuliik_kood_raw"), str)
+            and e["puuliik_kood_raw"] in SPECIES_NAMES
+            for e in eraldised
+        )
         if total_pindala > 0:
             avg_tagavara = sum((e.get("tagavara_y_ha") or 0) * (e.get("pindala_ha") or 0) for e in eraldised) / total_pindala
             avg_vanus = sum((e.get("vanus") or 0) * (e.get("pindala_ha") or 0) for e in eraldised) / total_pindala
@@ -2277,7 +2324,9 @@ async def _search_core(
         mets_result = {
             "puuliik": puuliik_nimi_map.get(puuliik, primary.get("puuliik", puuliik)),
             "puuliik_kood": puuliik,
+            "liigiandmed_taielikud": species_data_complete,
             "vanus": int(avg_vanus),
+            "vanuseandmed_taielikud": age_data_complete,
             "tagavara_y_ha": round(avg_tagavara, 1) if stock_complete else None,
             "elus_tagavara_ha": round(avg_tagavara, 1) if stock_complete else None,
             "boniteet": primary.get("boniteet"),
@@ -2499,12 +2548,20 @@ async def _search_core(
     riskid = {}
     # Always check layer-based risks (even without forest data)
     has_karuputk = bool(layers_data.get("karuputk"))
-    historical_clearcuts = _historical_clearcut_periods(
+    historical_clearcuts, clearcut_records_incomplete = _historical_clearcut_periods(
         layers_data.get("lageraiealad", []),
         eraldised,
     )
     riskid["karuputk"] = has_karuputk
     riskid["ajaloolised_lageraiealad"] = historical_clearcuts
+    riskid["ajaloolise_lageraide_kontroll"] = _historical_clearcut_status(
+        historical_clearcuts,
+        unavailable_sources,
+        incomplete=(
+            clearcut_records_incomplete
+            or "lageraiealad" in truncated_layers
+        ),
+    )
 
     if eraldised:
         # Ürask risk scoring — kuusekooreürask ohustab ainult kuuske.
@@ -2738,6 +2795,7 @@ async def _search_core(
                 timber_estimate,
                 property_estimate,
                 total_m3,
+                kataster_data.get("maks_hind_meta"),
             ),
         })
         health_assessment = calculate_health_assessment(
@@ -3054,6 +3112,27 @@ def build_system_prompt(data: dict) -> str:
     lines.append(f"Sihtotstarve: {_prompt_text(k.get('sihtotstarve', 'N/A'), 100)}")
     lines.append(f"Omandivorm: {_prompt_text(k.get('omvorm', 'N/A'), 100)}")
     lines.append(f"Maksustamishind: {_prompt_number(k.get('maks_hind'), 'N/A')} EUR")
+    valuation_meta = k.get("maks_hind_meta") or {}
+    if valuation_meta.get("state") == "available":
+        lines.append(
+            "Maksustamishinna hindamismudel: "
+            f"{_prompt_number(valuation_meta.get('assessment_year'), 'teadmata')}. a"
+        )
+        if valuation_meta.get("valid_from"):
+            validity = _prompt_text(valuation_meta["valid_from"], 20)
+            if valuation_meta.get("valid_until"):
+                validity += f" kuni {_prompt_text(valuation_meta['valid_until'], 20)}"
+            lines.append(f"Maksustamishind kehtib alates: {validity}")
+        if valuation_meta.get("assessment_time"):
+            lines.append(
+                "Maksustamishind arvutati: "
+                f"{_prompt_text(valuation_meta['assessment_time'], 20)}"
+            )
+        if valuation_meta.get("basis"):
+            lines.append(
+                "Maksustamishinna arvutuse alus: "
+                f"{_prompt_text(valuation_meta['basis'], 160)}"
+            )
     lines.append(f"Metsamaa pindala: {mets_pindala} ha")
 
     unavailable_sources = meta.get("unavailable_sources") or []
@@ -3105,8 +3184,18 @@ def build_system_prompt(data: dict) -> str:
     if m:
         lines.append("")
         lines.append("--- METSA ERALDISED ---")
-        lines.append(f"Peapuuliik: {_prompt_text(m.get('puuliik', 'N/A'), 60)}")
-        lines.append(f"Keskmine vanus: {_prompt_number(m.get('vanus'))} a")
+        species_complete = m.get("liigiandmed_taielikud") is not False
+        age_complete = m.get("vanuseandmed_taielikud") is not False
+        lines.append(
+            f"Peapuuliik: {_prompt_text(m.get('puuliik', 'N/A'), 60)}"
+            if species_complete
+            else "Peapuuliik: andmed puudulikud"
+        )
+        lines.append(
+            f"Keskmine vanus: {_prompt_number(m.get('vanus'))} a"
+            if age_complete
+            else "Keskmine vanus: andmed puudulikud"
+        )
         raw_tagavara = next(
             (value for value in (m.get('elus_tagavara_ha'), m.get('tagavara_y_ha'), m.get('tagavara')) if value is not None),
             None,
@@ -3136,9 +3225,10 @@ def build_system_prompt(data: dict) -> str:
             lines.append("Liikide koosseis:")
             for l in koosseis[:10]:
                 ltag = _prompt_number(l.get('tagavara_y_ha') or l.get('tagavara'))
+                species_age = f"vanus {_prompt_number(l.get('vanus'))} a" if age_complete else "vanus teadmata"
                 lines.append(
                     f"  {_prompt_text(l.get('puuliik', '?'), 60)} {_prompt_number(l.get('osakaal'))}%, "
-                    f"{ltag} m³/ha, vanus {_prompt_number(l.get('vanus'))} a"
+                    f"{ltag} m³/ha, {species_age}"
                 )
             if len(koosseis) > 10:
                 lines.append(f"  ... ja veel {len(koosseis) - 10} liiki")
@@ -3152,18 +3242,40 @@ def build_system_prompt(data: dict) -> str:
                 vaartus_str = f", stsenaariumide aritmeetiline keskpunkt {vaartus} EUR" if vaartus else ""
                 etag = "tagavara puudub" if stock_unavailable else f"{_prompt_number(e.get('tagavara_y_ha') or e.get('tagavara'))} m³/ha"
                 eha = _prompt_number(e.get('pindala_ha') or e.get('pindala'))
+                stand_species = (
+                    _prompt_text(e.get('puuliik', '?'), 60)
+                    if e.get("species_source_available") is not False
+                    else "puuliik teadmata"
+                )
+                stand_age = (
+                    f"{_prompt_number(e.get('vanus'))} a"
+                    if e.get("age_source_available") is not False
+                    else "vanus teadmata"
+                )
                 lines.append(
                     f"  Eraldis {_prompt_text(e.get('eraldis_nr','?'), 30)}: "
-                    f"{_prompt_text(e.get('puuliik','?'), 60)}, {_prompt_number(e.get('vanus'))} a, "
+                    f"{stand_species}, {stand_age}, "
                     f"{etag}, {eha} ha{vaartus_str}"
                 )
             if len(eraldised) > 5:
-                compact_stands = "; ".join(
-                    f"eraldis {_prompt_text(e.get('eraldis_nr', '?'), 30)}: "
-                    f"{_prompt_text(e.get('puuliik', '?'), 40)}, {_prompt_number(e.get('vanus'))} a, "
-                    f"{_prompt_number(e.get('pindala_ha') or e.get('pindala'))} ha"
-                    for e in eraldised[5:50]
-                )
+                compact_rows = []
+                for e in eraldised[5:50]:
+                    compact_species = (
+                        _prompt_text(e.get("puuliik", "?"), 40)
+                        if e.get("species_source_available") is not False
+                        else "puuliik teadmata"
+                    )
+                    compact_age = (
+                        f"{_prompt_number(e.get('vanus'))} a"
+                        if e.get("age_source_available") is not False
+                        else "vanus teadmata"
+                    )
+                    compact_rows.append(
+                        f"eraldis {_prompt_text(e.get('eraldis_nr', '?'), 30)}: "
+                        f"{compact_species}, {compact_age}, "
+                        f"{_prompt_number(e.get('pindala_ha') or e.get('pindala'))} ha"
+                    )
+                compact_stands = "; ".join(compact_rows)
                 lines.append(f"Ülejäänud eraldised (kompaktne): {compact_stands}")
                 if len(eraldised) > 50:
                     lines.append(f"  ... ja veel {len(eraldised) - 50} eraldist")
@@ -3383,6 +3495,22 @@ def build_system_prompt(data: dict) -> str:
             lines.append("Terviseskoor ei ole ametlik terviseindeks ega asenda kohapealset metsaseisundi kontrolli.")
         if riskid.get("karuputk"):
             lines.append("Karuputk: leitud")
+        clearcut_status = riskid.get("ajaloolise_lageraide_kontroll") or {}
+        if clearcut_status:
+            clearcut_state = clearcut_status.get("state")
+            clearcut_label = {
+                "matches": "vaste leitud",
+                "matches_partial": "vasted leitud, kontroll osaline",
+                "empty": "täielik kontroll, vastet ei leitud",
+                "incomplete": "osaline; puudumist ei saa kinnitada",
+                "unavailable": "ebaõnnestus; puudumist ei saa kinnitada",
+            }.get(clearcut_state, "olek teadmata; puudumist ei saa kinnitada")
+            lines.append(
+                "Ajaloolise lageraie kontroll: "
+                f"{clearcut_label}; periood {_prompt_number(clearcut_status.get('period_start'), 2011)}–"
+                f"{_prompt_number(clearcut_status.get('period_end'), 2016)}; "
+                f"allikas {_prompt_text(clearcut_status.get('source_name', 'teadmata'), 100)}"
+            )
         for clearcut in riskid.get("ajaloolised_lageraiealad", [])[:5]:
             period = (
                 f"{_prompt_text(clearcut.get('periood_algus'), 20)}–{_prompt_text(clearcut.get('periood_lopp'), 20)}"

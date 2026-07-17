@@ -101,6 +101,7 @@ def build_asset_passports(
     timber_estimate: dict,
     property_estimate: dict,
     total_volume_m3: float,
+    land_reference_meta: dict | None = None,
 ) -> list[dict]:
     official_stands = sum(stand.get("tagavara_provenance") == "official" for stand in stands)
     estimated_stands = sum(stand.get("tagavara_provenance") == "estimated" for stand in stands)
@@ -175,6 +176,16 @@ def build_asset_passports(
         property_unavailable_label = "Puidu hinnavahemiku lähteandmed puuduvad"
     else:
         property_unavailable_label = "Kinnistu hinnavahemiku lähteandmed puuduvad"
+
+    land_source = {"name": "Maa- ja Ruumiamet", "url": LAND_VALUE_URL}
+    if isinstance(land_reference_meta, dict) and land_reference_meta.get("state") == "available":
+        land_source.update({
+            "assessment_year": land_reference_meta.get("assessment_year"),
+            "valid_from": land_reference_meta.get("valid_from"),
+            "valid_until": land_reference_meta.get("valid_until"),
+            "assessed_at": land_reference_meta.get("assessment_time"),
+            "basis": land_reference_meta.get("basis"),
+        })
 
     return [
         {
@@ -252,7 +263,7 @@ def build_asset_passports(
             "unit": "€",
             "provenance": "official",
             "provenance_label": "Maa- ja Ruumiamet",
-            "source": {"name": "Maa- ja Ruumiamet", "url": LAND_VALUE_URL},
+            "source": land_source,
             "derivation": "Katastriüksuse kehtiv maksustamishind; Terrapoint seda väärtust ümber ei arvuta.",
             "confidence": {"level": "official", "label": "Ametlik referentsväärtus", "reasons": []},
             "limitations": ["Maksustamishind ei ole kinnistu turuhind ega tõenda võimalikku müügihinda."],

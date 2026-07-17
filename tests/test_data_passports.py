@@ -73,6 +73,38 @@ class AssetPassportTests(unittest.TestCase):
         for factor in ("raievalmidust", "ülestöötamise", "transpordi", "kahjustusi", "likviidsust"):
             self.assertIn(factor, combined_limitations)
 
+    def test_land_reference_keeps_assessment_year_and_validity_semantics_separate(self):
+        passports = build_asset_passports(
+            stands=[{"eraldis_nr": 1, "tagavara_provenance": "official"}],
+            inventory={"staatus": "värske"},
+            reliability={"score": 80, "level": "kõrge", "reasons": []},
+            timber_estimate={"low_eur": 1_000, "base_eur": 1_500, "high_eur": 2_000},
+            property_estimate={
+                "land_reference_available": True,
+                "land_reference_eur": 4_200,
+                "low_eur": 3_940,
+                "base_eur": None,
+                "high_eur": 7_460,
+            },
+            total_volume_m3=100,
+            land_reference_meta={
+                "state": "available",
+                "total_value": 4_200,
+                "assessment_year": 2022,
+                "assessment_time": "2025-12-17",
+                "valid_from": "2025-12-17",
+                "valid_until": None,
+                "basis": "Alusandmete uuendamine",
+            },
+        )
+
+        land = next(passport for passport in passports if passport["id"] == "land_reference")
+        self.assertEqual(land["source"]["assessment_year"], 2022)
+        self.assertEqual(land["source"]["valid_from"], "2025-12-17")
+        self.assertEqual(land["source"]["assessed_at"], "2025-12-17")
+        self.assertEqual(land["source"]["basis"], "Alusandmete uuendamine")
+        self.assertNotIn("as_of", land["source"])
+
     def test_marks_volume_as_mixed_when_any_stand_stock_is_estimated(self):
         passports = build_asset_passports(
             stands=[

@@ -1,6 +1,9 @@
 from __future__ import annotations
 import re
 import asyncio
+import math
+from datetime import date
+from urllib.parse import quote
 import httpx
 from fastapi import HTTPException
 import config
@@ -13,6 +16,8 @@ _ADOB_RESOLVE_SEMAPHORE = asyncio.Semaphore(8)
 ADOB_RESOLVE_ATTEMPTS = 4
 ADOB_RESOLVE_TIMEOUT_SECONDS = 2.5
 ADOB_RESOLVE_DEADLINE_SECONDS = 8.5
+LAND_VALUATION_URL = "https://hindamine.kataster.ee/api/latest"
+LAND_VALUATION_TIMEOUT_SECONDS = 1.5
 
 
 class KatasterWFSError(Exception):
@@ -26,6 +31,74 @@ def _validate_kataster_nr(kataster_nr: str) -> str:
         # ja tulevasi XSS-mustreid, kui veateade peaks kunagi HTML-i jõudma.
         raise HTTPException(status_code=400, detail="Vigane katastritunnus")
     return kataster_nr
+
+
+def _normalized_date(value: object) -> str | None:
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        return date.fromisoformat(value[:10]).isoformat()
+    except ValueError:
+        return None
+
+
+async def query_land_valuation_metadata(kataster_nr: str) -> dict | None:
+    """Fetch optional valuation timing without making cadastral data depend on it."""
+    kataster_nr = _validate_kataster_nr(kataster_nr)
+    url = f"{LAND_VALUATION_URL}/{quote(kataster_nr, safe='')}"
+    try:
+        async with asyncio.timeout(LAND_VALUATION_TIMEOUT_SECONDS):
+            timeout = httpx.Timeout(LAND_VALUATION_TIMEOUT_SECONDS)
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                response = await client.get(url)
+            response.raise_for_status()
+            payload = response.json()
+    except (TimeoutError, httpx.HTTPError, TypeError, ValueError):
+        return None
+
+    if not isinstance(payload, dict):
+        return None
+    message = payload.get("message")
+    assessment = message.get("assessment") if isinstance(message, dict) else None
+    if payload.get("status") != "OK" or not isinstance(assessment, dict):
+        return None
+    if assessment.get("cadastreId") != kataster_nr:
+        return None
+
+    total_value = assessment.get("totalValue")
+    assessment_year = assessment.get("assessmentYear")
+    assessment_time = _normalized_date(assessment.get("assessmentTime"))
+    valid_from = _normalized_date(assessment.get("validFrom"))
+    valid_until_raw = assessment.get("validUntil")
+    valid_until = _normalized_date(valid_until_raw) if valid_until_raw else None
+    if (
+        isinstance(total_value, bool)
+        or not isinstance(total_value, (int, float))
+        or not math.isfinite(total_value)
+        or total_value < 0
+        or isinstance(assessment_year, bool)
+        or not isinstance(assessment_year, int)
+        or not 1900 <= assessment_year <= 2100
+        or assessment_time is None
+        or valid_from is None
+        or (valid_until_raw and valid_until is None)
+    ):
+        return None
+
+    basis = assessment.get("basis")
+    if isinstance(basis, str):
+        basis = re.sub(r"[\x00-\x1f\x7f]+", " ", basis).strip()[:160] or None
+    else:
+        basis = None
+    return {
+        "state": "available",
+        "total_value": int(total_value) if float(total_value).is_integer() else round(total_value, 2),
+        "assessment_year": assessment_year,
+        "assessment_time": assessment_time,
+        "valid_from": valid_from,
+        "valid_until": valid_until,
+        "basis": basis,
+    }
 
 
 async def _wfs_get(url: str, timeout: float = 6.0, retries: int = 5) -> list[dict]:
@@ -67,7 +140,10 @@ async def _wfs_get(url: str, timeout: float = 6.0, retries: int = 5) -> list[dic
     raise KatasterWFSError(f"WFS failed after {retries + 1} attempts: {last_exc}")
 
 
-async def query_kataster(kataster_nr: str) -> dict | None:
+async def query_kataster(
+    kataster_nr: str,
+    include_valuation_metadata: bool = False,
+) -> dict | None:
     """Fetch kataster record. Returns None if no match, raises on WFS error."""
     kataster_nr = _validate_kataster_nr(kataster_nr)
     url = (
@@ -76,14 +152,42 @@ async def query_kataster(kataster_nr: str) -> dict | None:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&CQL_FILTER=tunnus%3D%27{kataster_nr}%27"
     )
-    try:
-        features = await _wfs_get(url, timeout=10.0, retries=3)
-    except KatasterWFSError:
+    if include_valuation_metadata:
+        features_result, valuation_result = await asyncio.gather(
+            _wfs_get(url, timeout=10.0, retries=3),
+            query_land_valuation_metadata(kataster_nr),
+            return_exceptions=True,
+        )
+    else:
+        valuation_result = None
+        try:
+            features_result = await _wfs_get(url, timeout=10.0, retries=3)
+        except KatasterWFSError as exc:
+            features_result = exc
+    if isinstance(features_result, KatasterWFSError):
         raise HTTPException(status_code=502, detail="Katastri WFS ei vasta, proovi uuesti")
+    if isinstance(features_result, Exception):
+        raise features_result
+    features = features_result
     if not features:
         return None
     props = features[0].get("properties", {})
     geom = features[0].get("geometry")
+    taxable_value = props.get("maks_hind")
+    valuation_meta = {"state": "unavailable"}
+    if isinstance(valuation_result, dict) and valuation_result.get("state") == "available":
+        official_value = valuation_result.get("total_value")
+        try:
+            values_match = (
+                not isinstance(taxable_value, bool)
+                and taxable_value is not None
+                and math.isfinite(float(taxable_value))
+                and float(taxable_value) == float(official_value)
+            )
+        except (TypeError, ValueError):
+            values_match = False
+        if values_match:
+            valuation_meta = valuation_result
     return {
         "number": props.get("tunnus", kataster_nr),
         "pindala_ha": round(props.get("pindala", 0) / 10000, 2),
@@ -92,7 +196,8 @@ async def query_kataster(kataster_nr: str) -> dict | None:
         "mk_nimi": props.get("mk_nimi", ""),
         "ov_nimi": props.get("ov_nimi", ""),
         "l_aadress": props.get("l_aadress", ""),
-        "maks_hind": props.get("maks_hind"),
+        "maks_hind": taxable_value,
+        "maks_hind_meta": valuation_meta,
         "geometry": geom,
     }
 

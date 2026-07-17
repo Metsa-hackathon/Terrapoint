@@ -33,12 +33,13 @@ class ForestDataQualityTests(unittest.TestCase):
         self.assertEqual(summary["oiguslikult_aegunud_eraldisi"], 1)
 
     def test_historical_clearcut_period_reports_age_without_claiming_exact_year(self):
-        periods = api._historical_clearcut_periods([
+        periods, incomplete = api._historical_clearcut_periods([
             {"properties": {"periood_a": 2013, "periood_o": 2015}},
             {"properties": {"periood_a": 2013, "periood_o": 2015}},
             {"properties": {"periood_a": None, "periood_o": 2016}},
         ], today=dt.date(2026, 7, 13))
 
+        self.assertFalse(incomplete)
         self.assertEqual(periods, [
             {"periood_algus": 2013, "periood_lopp": 2015, "vanus_vahemalt_a": 10},
             {"periood_algus": None, "periood_lopp": 2016, "vanus_vahemalt_a": 9},
@@ -60,9 +61,10 @@ class ForestDataQualityTests(unittest.TestCase):
             },
         ]
 
-        periods = api._historical_clearcut_periods([cut], stands, today=dt.date(2026, 7, 13))
+        periods, incomplete = api._historical_clearcut_periods([cut], stands, today=dt.date(2026, 7, 13))
 
         self.assertEqual(periods[0]["kattuvaid_eraldisi"], 1)
+        self.assertFalse(incomplete)
         self.assertTrue(periods[0]["inventuurist_hilisem"])
 
     def test_clearcut_touching_only_stand_boundary_does_not_match(self):
@@ -75,9 +77,10 @@ class ForestDataQualityTests(unittest.TestCase):
             "invent_kp": "2012-01-01Z",
         }
 
-        periods = api._historical_clearcut_periods([cut], [touching_stand], today=dt.date(2026, 7, 13))
+        periods, incomplete = api._historical_clearcut_periods([cut], [touching_stand], today=dt.date(2026, 7, 13))
 
         self.assertEqual(periods[0]["kattuvaid_eraldisi"], 0)
+        self.assertFalse(incomplete)
         self.assertFalse(periods[0]["inventuurist_hilisem"])
 
     def test_notice_is_post_inventory_only_when_approval_is_newer(self):
