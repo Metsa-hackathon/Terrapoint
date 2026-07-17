@@ -11,7 +11,7 @@ STYLE_CSS = (PROJECT_ROOT / "static/css/style.css").read_text(encoding="utf-8")
 FONT_SIZES_CSS = (PROJECT_ROOT / "static/css/font-sizes.css").read_text(encoding="utf-8")
 API_PY = (PROJECT_ROOT / "api/index.py").read_text(encoding="utf-8")
 VERCEL_CONFIG = json.loads((PROJECT_ROOT / "vercel.json").read_text(encoding="utf-8"))
-PYPROJECT_TOML = (PROJECT_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+VERCEL_APP_PY = (PROJECT_ROOT / "api/app.py").read_text(encoding="utf-8")
 PYTHON_VERSION = (PROJECT_ROOT / ".python-version").read_text(encoding="utf-8").strip()
 
 
@@ -66,9 +66,9 @@ def _extract_js_function(name):
 
 
 class FrontendContractTests(unittest.TestCase):
-    def test_vercel_uses_explicit_fastapi_entrypoint_and_python_version(self):
-        self.assertIn('[tool.vercel]', PYPROJECT_TOML)
-        self.assertIn('entrypoint = "api.index:app"', PYPROJECT_TOML)
+    def test_vercel_uses_canonical_fastapi_entrypoint_and_python_version(self):
+        self.assertIn("from api.index import app", VERCEL_APP_PY)
+        self.assertIn('__all__ = ["app"]', VERCEL_APP_PY)
         self.assertEqual(PYTHON_VERSION, "3.12")
 
     def test_sources_explain_registry_inputs_before_terrapoint_calculations(self):
