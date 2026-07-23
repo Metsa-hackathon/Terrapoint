@@ -16,7 +16,8 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 ### Changed
 - **Home-serveri juurutus on deklaratiivne** — piiratud Traefik ingress,
   loopback API sild ning viieminutiline systemd deploy-timer asendavad VPS-i
-  croni ja vana Docker-võrgu aadressid.
+  croni ja vana Docker-võrgu aadressid. Ingress kasutab taastatavuse jaoks
+  lokaalset, muutumatu nimega socat image'i.
 
 ## [Määramata] - 2026-07-17
 

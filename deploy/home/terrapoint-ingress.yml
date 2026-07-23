@@ -2,7 +2,8 @@ name: terrapoint-ingress
 
 services:
   socat:
-    image: alpine/socat@sha256:4e625a62c9ea40ccbce93b9a4fcc6b41740a9f308389c216f34c88ce3abb275b
+    image: local/vps-socat:cutover-20260723
+    pull_policy: never
     container_name: terrapoint-ingress-socat
     network_mode: host
     restart: unless-stopped
