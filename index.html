@@ -403,7 +403,7 @@
                     <div class="map-workspace" id="map-workspace">
                         <button class="map-workspace-opener map-workspace-button" id="map-workspace-opener" type="button" aria-controls="map-workspace-panel" aria-expanded="false">
                             <span class="map-workspace-opener-copy">
-                                <span class="map-workspace-eyebrow">Kaardikihid</span>
+                                <span class="map-workspace-eyebrow">Kaardi vaade</span>
                                 <strong id="map-workspace-current-view">Ülevaade</strong>
                             </span>
                             <span class="map-workspace-opener-status" id="map-workspace-opener-status">Vali kinnistu</span>
@@ -411,10 +411,10 @@
                         <div class="map-workspace-panel" id="map-workspace-panel" hidden>
                             <div class="map-workspace-panel-header">
                                 <div>
-                                    <div class="map-workspace-eyebrow">Kaardikihid</div>
+                                    <div class="map-workspace-eyebrow">Kaardi vaade</div>
                                     <strong id="map-workspace-panel-title">Ülevaade</strong>
                                 </div>
-                                <button class="map-workspace-close map-workspace-button" id="map-workspace-close" type="button" aria-label="Sulge kaardikihid">×</button>
+                                <button class="map-workspace-close map-workspace-button" id="map-workspace-close" type="button" aria-label="Sulge kaardi vaade">×</button>
                             </div>
                             <div class="map-workspace-panel-body">
                                 <p class="map-workspace-status" id="map-workspace-status" role="status">Vali kinnistu</p>
@@ -423,7 +423,8 @@
                                     <button type="button" class="map-view-preset" data-map-view="restrictions" disabled>Piirangud</button>
                                     <button type="button" class="map-view-preset" data-map-view="risks" disabled>Riskid</button>
                                 </div>
-                                <div class="map-workspace-section-title map-workspace-legend-title">Kaardil</div>
+                                <p class="map-workspace-view-description" id="map-workspace-view-description">Olulised kattuvused ja kinnistu põhikontekst.</p>
+                                <div class="map-workspace-section-title map-workspace-legend-title">Nähtavad kihid</div>
                                 <div class="map-workspace-legend" id="map-workspace-legend" role="region" aria-label="Kaardi legend">
                                     <p class="map-workspace-empty">Vali kinnistu, et näha kaardi sisu.</p>
                                 </div>
@@ -903,16 +904,19 @@
         overview: Object.freeze({
             id: 'overview',
             label: 'Ülevaade',
+            description: 'Olulised kattuvused ja kinnistu põhikontekst.',
             themeIds: Object.freeze(['nature_protection', 'species_habitats', 'water_restrictions', 'heritage_other']),
         }),
         restrictions: Object.freeze({
             id: 'restrictions',
             label: 'Piirangud',
+            description: 'Kaitse-, vee-, muinsus- ja märgala piirangud.',
             themeIds: Object.freeze(['nature_protection', 'species_habitats', 'water_restrictions', 'heritage_other', 'flood_wetlands']),
         }),
         risks: Object.freeze({
             id: 'risks',
             label: 'Riskid',
+            description: 'Üleujutus, metsakahjustused ja võõrliigid.',
             themeIds: Object.freeze(['flood_wetlands', 'forest_health', 'invasive_species']),
         }),
     });
@@ -929,6 +933,14 @@
         'nature_protection', 'species_habitats', 'water_restrictions', 'heritage_other',
         'flood_wetlands', 'forest_health', 'invasive_species',
     ]);
+    const MAP_SOURCE_DEFAULT_GEOMETRY_KINDS = Object.freeze({
+        vooluveed: Object.freeze(['line']),
+        malestised: Object.freeze(['area', 'line', 'point']),
+        kaitsevoondid: Object.freeze(['area', 'point']),
+        uleujutus: Object.freeze(['area', 'line']),
+        yrask_eelis: Object.freeze(['area', 'point']),
+        karuputk: Object.freeze(['area', 'line']),
+    });
     const MAP_CONTEXT_TIMEOUT_MS = 20000;
     const BASEMAP_ACCESSED_AT = new Date().toISOString();
     const MAP_BASEMAP_IDS = Object.freeze(['maaruum-orthophoto']);
@@ -945,6 +957,7 @@
             parcelId: null,
             viewId: 'overview',
             activeThemeIds: MAP_VIEW_PRESETS.overview.themeIds.slice(),
+            focusedThemeId: null,
             selectedBasemapId: selectedBasemapId || 'maaruum-orthophoto',
             basemapNotice: null,
             themeResults: {},
@@ -971,14 +984,46 @@
         return Object.assign({}, state, {
             viewId: viewId,
             activeThemeIds: preset.themeIds.slice(),
+            focusedThemeId: null,
             themeResults: themeResults,
             errorStatus: null,
         });
     }
 
-    function mapViewDisplayLabel(state) {
-        var preset = MAP_VIEW_PRESETS[state.viewId] || MAP_VIEW_PRESETS.overview;
-        return preset.label;
+    function setMapThemeFocus(state, themeId) {
+        if (themeId === null) return Object.assign({}, state, {focusedThemeId: null});
+        if (!state || state.activeThemeIds.indexOf(themeId) === -1) return state;
+        return Object.assign({}, state, {focusedThemeId: themeId});
+    }
+
+    function mapThemeHasRenderableFeatures(result) {
+        return Boolean(
+            result
+            && ['matches', 'partial'].indexOf(result.state) !== -1
+            && Array.isArray(result.features)
+            && result.features.some(function(feature) {
+                return isMapFeature(feature) && mapGeometryKinds(feature.geometry).length;
+            })
+        );
+    }
+
+    function mapThemeLayerStyle(style, themeId, focusedThemeId) {
+        var base = Object.assign({weight: 3, fillOpacity: 0.28, dash: null}, style || {});
+        if (!focusedThemeId) return Object.assign({}, base, {opacity: 0.9, pane: 'map-theme-normal'});
+        if (themeId === focusedThemeId) {
+            return Object.assign({}, base, {
+                weight: base.weight + 1,
+                opacity: 1,
+                fillOpacity: Math.min(0.58, Math.max(0.18, base.fillOpacity * 1.15)),
+                pane: 'map-theme-focused',
+            });
+        }
+        return Object.assign({}, base, {
+            weight: Math.max(1, base.weight * 0.65),
+            opacity: 0.2,
+            fillOpacity: Math.min(0.06, base.fillOpacity * 0.18),
+            pane: 'map-theme-dimmed',
+        });
     }
 
     function selectMapBasemap(state, basemapId, notice) {
@@ -1045,9 +1090,18 @@
             results[themeId] = data.themes[themeId];
             cache[themeId] = data.themes[themeId];
         });
+        var focusedThemeId = state.focusedThemeId;
+        if (
+            focusedThemeId
+            && themeIds.indexOf(focusedThemeId) !== -1
+            && !mapThemeHasRenderableFeatures(data.themes[focusedThemeId])
+        ) {
+            focusedThemeId = null;
+        }
         return Object.assign({}, state, {
             themeResults: results,
             themeCache: cache,
+            focusedThemeId: focusedThemeId,
             persistentContext: data.persistent,
             loadingStatus: 'success',
             errorStatus: null,
@@ -1167,6 +1221,55 @@
         return { color: palette[hash % palette.length], weight: 3, fillOpacity: 0.28, dash: null };
     }
 
+    function mapSourceStyle(themeId, source) {
+        source = isMapRecord(source) ? source : {};
+        var fallback = mapThemeFallbackStyle(themeId, source.key);
+        var sourceStyle = source.style;
+        if (!isMapRecord(sourceStyle)) return fallback;
+        return {
+            color: typeof sourceStyle.color === 'string' ? sourceStyle.color : fallback.color,
+            weight: Number.isFinite(sourceStyle.weight) ? sourceStyle.weight : fallback.weight,
+            fillOpacity: Number.isFinite(sourceStyle.fillOpacity) ? sourceStyle.fillOpacity : fallback.fillOpacity,
+            dash: typeof sourceStyle.dash === 'string' ? sourceStyle.dash : null,
+        };
+    }
+
+    function mapGeometryKinds(geometry) {
+        if (!isMapRecord(geometry)) return [];
+        if (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon') return ['area'];
+        if (geometry.type === 'LineString' || geometry.type === 'MultiLineString') return ['line'];
+        if (geometry.type === 'Point' || geometry.type === 'MultiPoint') return ['point'];
+        if (geometry.type !== 'GeometryCollection' || !Array.isArray(geometry.geometries)) return [];
+        var childKinds = geometry.geometries.reduce(function(kinds, childGeometry) {
+            return kinds.concat(mapGeometryKinds(childGeometry));
+        }, []);
+        return ['area', 'line', 'point'].filter(function(kind) { return childKinds.indexOf(kind) !== -1; });
+    }
+
+    function mapSourceGeometryKinds(theme, sourceKey) {
+        var kinds = (Array.isArray(theme && theme.features) ? theme.features : []).filter(function(feature) {
+            return isMapFeature(feature) && feature.properties.source_key === sourceKey;
+        }).reduce(function(allKinds, feature) {
+            return allKinds.concat(mapGeometryKinds(feature.geometry));
+        }, []);
+        var detected = ['area', 'line', 'point'].filter(function(kind) { return kinds.indexOf(kind) !== -1; });
+        return detected.length ? detected : (MAP_SOURCE_DEFAULT_GEOMETRY_KINDS[sourceKey] || ['area']).slice();
+    }
+
+    function mapLegendSourceRows(theme) {
+        return (Array.isArray(theme && theme.sources) ? theme.sources : []).filter(function(source) {
+            return isMapRecord(source) && typeof source.key === 'string';
+        }).map(function(source) {
+            var style = mapSourceStyle(theme && theme.id, source);
+            var mapSymbols = mapSourceGeometryKinds(theme, source.key).map(function(kind) {
+                return Object.assign({kind: kind}, style);
+            });
+            return Object.assign({}, source, {
+                mapSymbols: mapSymbols,
+            });
+        });
+    }
+
     function groupThemeFeaturesBySource(theme) {
         var sourceRows = {};
         (Array.isArray(theme && theme.sources) ? theme.sources : []).forEach(function(source) {
@@ -1178,15 +1281,13 @@
             if (!isMapFeature(feature)) return;
             var sourceKey = typeof feature.properties.source_key === 'string' ? feature.properties.source_key : 'unknown';
             if (!byKey[sourceKey]) {
-                var sourceStyle = sourceRows[sourceKey] && sourceRows[sourceKey].style;
-                var fallback = mapThemeFallbackStyle(theme && theme.id, sourceKey);
-                var style = isMapRecord(sourceStyle) ? {
-                    color: typeof sourceStyle.color === 'string' ? sourceStyle.color : fallback.color,
-                    weight: Number.isFinite(sourceStyle.weight) ? sourceStyle.weight : fallback.weight,
-                    fillOpacity: Number.isFinite(sourceStyle.fillOpacity) ? sourceStyle.fillOpacity : fallback.fillOpacity,
-                    dash: typeof sourceStyle.dash === 'string' ? sourceStyle.dash : null,
-                } : fallback;
-                byKey[sourceKey] = { sourceKey: sourceKey, features: [], style: style };
+                var source = sourceRows[sourceKey] || {key: sourceKey};
+                byKey[sourceKey] = {
+                    sourceKey: sourceKey,
+                    source: source,
+                    features: [],
+                    style: mapSourceStyle(theme && theme.id, source),
+                };
                 groups.push(byKey[sourceKey]);
             }
             byKey[sourceKey].features.push(feature);
@@ -1225,8 +1326,49 @@
         return 'Väljavõte ' + new Intl.DateTimeFormat('et-EE', { dateStyle: 'medium' }).format(date);
     }
 
+    function mapSourceSymbolHtml(symbol) {
+        if (!isMapRecord(symbol)) return '';
+        var kind = ['area', 'line', 'point'].indexOf(symbol.kind) !== -1 ? symbol.kind : 'area';
+        var color = typeof symbol.color === 'string' ? symbol.color : '#64748b';
+        var weight = Number.isFinite(symbol.weight) ? symbol.weight : 2;
+        var fillOpacity = Number.isFinite(symbol.fillOpacity) ? symbol.fillOpacity : 0.28;
+        var dash = typeof symbol.dash === 'string' && symbol.dash ? symbol.dash : null;
+        var dashAttribute = dash ? ' stroke-dasharray="' + mapEscapeHtml(dash) + '"' : '';
+        var shape = kind === 'point'
+            ? '<circle cx="12" cy="7" r="4.75" fill="' + mapEscapeHtml(color) + '" stroke="#fff" stroke-width="2.5"></circle>'
+            : kind === 'line'
+                ? '<line x1="1" y1="7" x2="23" y2="7" stroke="' + mapEscapeHtml(color)
+                    + '" stroke-width="' + mapEscapeHtml(weight) + '"' + dashAttribute + '></line>'
+                : '<rect x="2" y="2" width="20" height="10" rx="2" fill="' + mapEscapeHtml(color)
+                    + '" fill-opacity="' + mapEscapeHtml(fillOpacity) + '" stroke="' + mapEscapeHtml(color)
+                    + '" stroke-width="' + mapEscapeHtml(weight) + '"' + dashAttribute + '></rect>';
+        return '<svg class="map-source-symbol" viewBox="0 0 24 14" focusable="false" aria-hidden="true">' + shape + '</svg>';
+    }
+
+    function mapLegendSymbolsHtml(row) {
+        var symbols = Array.isArray(row && row.symbols) ? row.symbols.slice(0, 2) : [];
+        if (!symbols.length) {
+            return '<span class="map-legend-symbol" style="--legend-color:' + mapEscapeHtml(row.color) + '"></span>';
+        }
+        var extra = row.symbols.length > symbols.length
+            ? '<span class="map-legend-symbol-extra">+' + mapEscapeHtml(row.symbols.length - symbols.length) + '</span>' : '';
+        return '<span class="map-legend-symbols" aria-hidden="true">'
+            + symbols.map(mapSourceSymbolHtml).join('') + extra + '</span>';
+    }
+
+    function mapSourceStateText(source) {
+        if (source.state === 'unavailable') return 'Allikas ei vasta';
+        if (source.state === 'partial') return 'Osaline vastus';
+        if (source.state === 'empty') return 'Vasteid ei leitud';
+        if (source.state === 'matches') return Number.isFinite(source.match_count)
+            ? source.match_count + ' kattuvust' : 'Vasted leitud';
+        return '';
+    }
+
     function mapSourceDetailsHtml(source) {
         source = isMapRecord(source) ? source : {};
+        var mapSymbols = Array.isArray(source.mapSymbols) ? source.mapSymbols : [];
+        var sourceSymbolsHtml = mapSymbols.map(mapSourceSymbolHtml).join('');
         var provider = source.provider || 'Pakkuja teadmata';
         var label = source.label || source.key || 'Allikas teadmata';
         var interpretation = source.interpretation || 'Tõlgendus puudub.';
@@ -1234,15 +1376,27 @@
         var provenance = source.provenance || (provider === 'Terrapoint' ? 'Terrapointi tuletis' : 'Ametlik andmekiht');
         var matchCount = Number.isFinite(source.match_count)
             ? '<div class="map-source-match-count">Kattuvusi: ' + mapEscapeHtml(source.match_count) + '</div>' : '';
+        var sourceState = mapSourceStateText(source);
+        var overlap = mapSymbols.some(function(symbol) { return symbol && symbol.kind === 'area'; })
+            && Number.isFinite(source.approximate_parcel_overlap_percent)
+            && source.approximate_parcel_overlap_percent > 0
+            ? '<div class="map-source-overlap">Kattub ligikaudu ' + mapEscapeHtml(source.approximate_parcel_overlap_percent) + '% kinnistust</div>' : '';
+        var affectedStands = Array.isArray(source.affected_stand_numbers) && source.affected_stand_numbers.length
+            ? '<div class="map-source-stands">Puudutab eraldisi ' + source.affected_stand_numbers.map(mapEscapeHtml).join(', ') + '</div>' : '';
         var freshness = source.accessed_at
             ? '<div class="map-source-accessed">' + mapEscapeHtml(formatMapAccessedAt(source.accessed_at)) + '</div>'
             : '<div class="map-source-attempted">' + mapEscapeHtml(formatMapAttemptedAt(source.attempted_at)) + '</div>'
                 + '<div class="map-source-checked">' + mapEscapeHtml(formatMapCheckedAt(source.checked_at)) + '</div>';
         return '<div class="map-source">'
-            + '<div class="map-source-title">' + mapEscapeHtml(provider) + ' · ' + mapEscapeHtml(label) + '</div>'
+            + '<div class="map-source-heading">' + sourceSymbolsHtml
+            + '<div><div class="map-source-title">' + mapEscapeHtml(label) + '</div>'
+            + '<div class="map-source-provider">' + mapEscapeHtml(provider) + '</div></div></div>'
+            + (sourceState ? '<div class="map-source-state">' + mapEscapeHtml(sourceState) + '</div>' : '')
             + '<div class="map-source-provenance">' + mapEscapeHtml(provenance) + '</div>'
             + '<p>' + mapEscapeHtml(interpretation) + '</p>'
             + matchCount
+            + overlap
+            + affectedStands
             + '<div class="map-source-as-of">' + mapEscapeHtml(dataAsOf) + '</div>'
             + freshness
             + '</div>';
@@ -1264,6 +1418,36 @@
         if (result.state === 'empty') return 'Vasteid ei leitud';
         if (result.state === 'matches') return count + ' vastet';
         return loadingStatus === 'loading' ? 'Laadib' : 'Allikas ei vasta';
+    }
+
+    function mapThemeLegendRow(state, themeId, result, label, status) {
+        var definition = MAP_THEME_DEFINITIONS[themeId];
+        var sources = mapLegendSourceRows(result);
+        var featureSourceKeys = (Array.isArray(result && result.features) ? result.features : []).map(function(feature) {
+            return isMapFeature(feature) ? feature.properties.source_key : null;
+        }).filter(Boolean);
+        var matchingSources = sources.filter(function(source) {
+            return featureSourceKeys.indexOf(source.key) !== -1;
+        });
+        var symbolSources = matchingSources.length ? matchingSources : sources;
+        var symbols = symbolSources.reduce(function(allSymbols, source) {
+            return allSymbols.concat(source.mapSymbols || []);
+        }, []);
+        var focusable = mapThemeHasRenderableFeatures(result);
+        return {
+            id: themeId,
+            label: label || (result && result.label) || definition.label,
+            status: status || mapResultStatusText(result, themeId, state.loadingStatus),
+            color: definition.color,
+            interpretation: definition.interpretation,
+            sources: sources,
+            symbols: symbols,
+            previous_result: result && result.previous_result,
+            refresh_failed: result && result.refresh_failed,
+            isTheme: true,
+            focusable: focusable,
+            focused: focusable && state.focusedThemeId === themeId,
+        };
     }
 
     function mapWorkspaceLegendModel(state) {
@@ -1321,13 +1505,7 @@
             checks.forEach(function(check) {
                 if (!check.result || check.result.match_count < 1) return;
                 visibleThemeIds.push(check.id);
-                var definition = MAP_THEME_DEFINITIONS[check.id];
-                rows.push({
-                    id: check.id, label: check.label, status: check.status, color: definition.color,
-                    interpretation: definition.interpretation, sources: check.result.sources || [],
-                    match_count: check.result.match_count,
-                    previous_result: check.result.previous_result, refresh_failed: check.result.refresh_failed,
-                });
+                rows.push(mapThemeLegendRow(state, check.id, check.result, check.label, check.status));
             });
         } else if (state.parcelId) {
             state.activeThemeIds.forEach(function(themeId) {
@@ -1335,16 +1513,13 @@
                 var definition = MAP_THEME_DEFINITIONS[themeId];
                 if (!definition) return;
                 visibleThemeIds.push(themeId);
-                rows.push({
-                    id: themeId, label: (result && result.label) || definition.label,
-                    status: mapResultStatusText(result, themeId, state.loadingStatus), color: definition.color,
-                    interpretation: definition.interpretation, sources: result && result.sources || [],
-                    match_count: result && result.match_count,
-                    previous_result: result && result.previous_result, refresh_failed: result && result.refresh_failed,
-                });
+                rows.push(mapThemeLegendRow(state, themeId, result));
             });
         }
-        return {rows: rows, aggregate: aggregate, visibleThemeIds: visibleThemeIds};
+        var focusedThemeId = rows.some(function(row) {
+            return row.id === state.focusedThemeId && row.focusable;
+        }) ? state.focusedThemeId : null;
+        return {rows: rows, aggregate: aggregate, visibleThemeIds: visibleThemeIds, focusedThemeId: focusedThemeId};
     }
 
     // MAP_WORKSPACE_PURE_END
@@ -2407,6 +2582,7 @@
     const CADASTRE_FALLBACK_TIMEOUT_MS = 13000;
     const overlayLayers = {};
     var mapWorkspaceState = createMapWorkspaceState('maaruum-orthophoto');
+    var mapThemeFocusIntent = 0;
     var pendingLegacyMapFallback = null;
     const MAP_CONTEXT_LAYER_PREFIX = 'map-context:';
     const LEGACY_MAP_FALLBACK_PREFIX = 'legacy-fallback:';
@@ -2438,6 +2614,9 @@
 
     function mapLegendRowHtml(row) {
         var detailHtml = '<p class="map-legend-interpretation">' + mapEscapeHtml(row.interpretation) + '</p>';
+        if (row.focusable) {
+            detailHtml = '<p class="map-theme-focus-help">Rea avamine tõstab selle teema kaardil esile.</p>' + detailHtml;
+        }
         if (row.previous_result) {
             detailHtml += '<p class="map-previous-result">'
                 + (row.refresh_failed ? 'Varasem tulemus · värskendamine ebaõnnestus' : 'Varasem tulemus · värskendamine käib')
@@ -2460,10 +2639,13 @@
             detailHtml += '<button type="button" class="map-inline-retry map-workspace-button" data-map-retry="row:'
                 + mapEscapeHtml(row.id) + '" aria-label="Proovi uuesti: ' + mapEscapeHtml(row.label) + '">Proovi uuesti</button>';
         }
-        return '<details class="map-legend-row" data-map-row="' + mapEscapeHtml(row.id) + '">'
-            + '<summary><span class="map-legend-symbol" style="--legend-color:' + mapEscapeHtml(row.color) + '"></span>'
+        var classes = 'map-legend-row' + (row.isTheme ? ' map-legend-theme-row' : '') + (row.focused ? ' is-focused' : '');
+        var themeAttribute = row.focusable ? ' data-map-theme="' + mapEscapeHtml(row.id) + '"' : '';
+        var focusBadge = row.focused ? '<span class="map-legend-focus-badge">Fookuses</span>' : '';
+        return '<details class="' + classes + '" data-map-row="' + mapEscapeHtml(row.id) + '"' + themeAttribute + '>'
+            + '<summary>' + mapLegendSymbolsHtml(row)
             + '<span class="map-legend-copy"><strong>' + mapEscapeHtml(row.label) + '</strong><small>' + mapEscapeHtml(row.status) + '</small></span>'
-            + '<span class="map-legend-chevron" aria-hidden="true">›</span></summary>'
+            + focusBadge + '<span class="map-legend-chevron" aria-hidden="true">›</span></summary>'
             + '<div class="map-legend-detail">' + detailHtml + '</div></details>';
     }
 
@@ -2482,6 +2664,8 @@
                 focus = {kind: 'view', value: active.getAttribute('data-map-view')};
             } else if (active.matches('[data-map-retry]')) {
                 focus = {kind: 'retry', value: active.getAttribute('data-map-retry')};
+            } else if (active.matches('[data-map-focus-clear]')) {
+                focus = {kind: 'clearFocus', value: active.getAttribute('data-map-focus-clear')};
             } else if (active.matches('summary')) {
                 var activeRow = active.closest('[data-map-row]');
                 if (activeRow) focus = {kind: 'summary', value: activeRow.getAttribute('data-map-row')};
@@ -2504,6 +2688,15 @@
             legend.querySelectorAll('details[data-map-row]').forEach(function(row) {
                 if (!target && row.getAttribute('data-map-row') === state.focus.value) target = row.querySelector('summary');
             });
+        } else if (state.focus.kind === 'clearFocus') {
+            document.querySelectorAll('[data-map-focus-clear]').forEach(function(control) {
+                if (!target && control.getAttribute('data-map-focus-clear') === state.focus.value) target = control;
+            });
+            if (!target && legend) {
+                legend.querySelectorAll('details[data-map-row]').forEach(function(row) {
+                    if (!target && row.getAttribute('data-map-row') === state.focus.value) target = row.querySelector('summary');
+                });
+            }
         } else {
             var attribute = state.focus.kind === 'view' ? 'data-map-view'
                 : state.focus.kind === 'retry' ? 'data-map-retry' : null;
@@ -2520,6 +2713,20 @@
                 if (!target && row.getAttribute('data-map-row') === fallbackRowId) target = row.querySelector('summary');
             });
         }
+        if (!target && state.focus.kind === 'clearFocus' && legend) {
+            target = legend.querySelector('details[data-map-row="overview_check"] summary')
+                || legend.querySelector('summary');
+        }
+        if (!target && state.focus.kind === 'clearFocus') {
+            var selectedView = document.querySelector('[data-map-view][aria-pressed="true"]');
+            if (selectedView && !selectedView.disabled) target = selectedView;
+        }
+        if (!target && state.focus.kind === 'clearFocus') {
+            var workspace = document.getElementById('map-workspace');
+            target = workspace && workspace.classList.contains('is-open')
+                ? document.getElementById('map-workspace-close')
+                : document.getElementById('map-workspace-opener');
+        }
         if (!target || target.disabled || target.isConnected === false || typeof target.focus !== 'function') return;
         target.focus({preventScroll: true});
     }
@@ -2528,7 +2735,9 @@
         var model = mapWorkspaceLegendModel(mapWorkspaceState);
         var domState = captureMapWorkspaceDomState();
         var hasParcel = Boolean(mapWorkspaceState.parcelId);
-        var viewLabel = mapViewDisplayLabel(mapWorkspaceState);
+        var viewPreset = MAP_VIEW_PRESETS[mapWorkspaceState.viewId] || MAP_VIEW_PRESETS.overview;
+        var viewLabel = viewPreset.label;
+        var viewDescription = viewPreset.description;
         var statusText = mapWorkspaceState.basemapNotice || (!hasParcel ? 'Vali kinnistu'
             : mapWorkspaceState.loadingStatus === 'refreshing' ? 'Uuendab'
             : mapWorkspaceState.loadingStatus === 'loading' ? 'Laadib'
@@ -2538,9 +2747,11 @@
         var panelTitle = document.getElementById('map-workspace-panel-title');
         var openerStatus = document.getElementById('map-workspace-opener-status');
         var status = document.getElementById('map-workspace-status');
+        var description = document.getElementById('map-workspace-view-description');
         var legend = document.getElementById('map-workspace-legend');
         if (currentView) currentView.textContent = viewLabel;
         if (panelTitle) panelTitle.textContent = viewLabel;
+        if (description) description.textContent = viewDescription;
         if (openerStatus) openerStatus.textContent = statusText;
         if (status) {
             status.textContent = statusText;
@@ -2552,8 +2763,13 @@
             button.setAttribute('aria-pressed', String(selected));
         });
         if (legend) {
+            var focusedRow = model.rows.find(function(row) { return row.id === model.focusedThemeId; });
+            var focusHtml = focusedRow
+                ? '<div class="map-layer-focus-status" role="status"><span><small>Fookuses</small><strong>'
+                    + mapEscapeHtml(focusedRow.label) + '</strong></span><button type="button" class="map-focus-clear map-workspace-button" data-map-focus-clear="'
+                    + mapEscapeHtml(focusedRow.id) + '">Kõik nähtavad</button></div>' : '';
             legend.innerHTML = model.rows.length
-                ? model.rows.map(mapLegendRowHtml).join('')
+                ? focusHtml + model.rows.map(mapLegendRowHtml).join('')
                 : '<p class="map-workspace-empty">Vali kinnistu, et näha kaardi sisu.</p>';
         }
         restoreMapWorkspaceDomState(domState);
@@ -2567,7 +2783,7 @@
         var persistent = mapWorkspaceState.persistentContext;
         if (persistent.parcel && isMapFeature(persistent.parcel.feature)) showParcel(persistent.parcel.feature.geometry);
         if (persistent.stands && persistent.stands.state === 'matches' && persistent.stands.features.length) {
-            addEraldisedLayer(persistent.stands.features);
+            addEraldisedLayer(persistent.stands.features, Boolean(model.focusedThemeId));
         } else {
             removeOverlayLayer('eraldised');
         }
@@ -2576,8 +2792,16 @@
             if (!theme || ['matches', 'partial'].indexOf(theme.state) === -1 || !theme.features.length) return;
             groupThemeFeaturesBySource(theme).forEach(function(group, index) {
                 var layerName = MAP_CONTEXT_LAYER_PREFIX + themeId + ':' + index;
-                var layerStyle = Object.assign({}, group.style, { sourceKey: group.sourceKey });
-                addOverlayLayer(layerName, group.features, group.style.color, false, layerStyle);
+                var layerStyle = Object.assign(
+                    {},
+                    mapThemeLayerStyle(group.style, themeId, model.focusedThemeId),
+                    {
+                        sourceKey: group.sourceKey,
+                        sourceLabel: group.source.label || group.sourceKey,
+                        themeLabel: MAP_THEME_DEFINITIONS[themeId].label,
+                    }
+                );
+                addOverlayLayer(layerName, group.features, layerStyle.color, false, layerStyle);
             });
         });
     }
@@ -2659,6 +2883,9 @@
 
     function selectMapView(viewId) {
         if (!MAP_VIEW_PRESETS[viewId]) return Promise.resolve(false);
+        document.querySelectorAll('#map-workspace-legend details[data-map-theme][open]').forEach(function(row) {
+            row.open = false;
+        });
         clearLegacyMapFallbackLayers();
         pendingLegacyMapFallback = null;
         mapWorkspaceState = selectMapViewPreset(mapWorkspaceState, viewId);
@@ -2892,6 +3119,12 @@
             minZoom: 6,
             maxZoom: 19,
         }).setView([58.5, 25.0], 7);
+        var dimmedThemePane = map.createPane('map-theme-dimmed');
+        var normalThemePane = map.createPane('map-theme-normal');
+        var focusedThemePane = map.createPane('map-theme-focused');
+        dimmedThemePane.style.zIndex = '410';
+        normalThemePane.style.zIndex = '420';
+        focusedThemePane.style.zIndex = '430';
         L.control.zoom({ position: 'topright' }).addTo(map);
         // Leaflet atribuut ilma "Leaflet" prefix'ita (Leaflet pole
         // nõutav kuvada). CSS teeb selle kokkupandavaks.
@@ -3025,9 +3258,51 @@
         }
     }
 
+    function positionMapLayerTooltip(layer, event) {
+        if (!map || !layer || !event || !event.containerPoint || typeof layer.getTooltip !== 'function') return;
+        var tooltip = layer.getTooltip();
+        var element = tooltip && tooltip.getElement();
+        if (!tooltip || !element) return;
+        var mapSize = map.getSize();
+        element.style.maxWidth = Math.max(80, Math.min(280, mapSize.x - 24)) + 'px';
+        tooltip.update();
+
+        var bounds = element.getBoundingClientRect();
+        var point = event.containerPoint;
+        var padding = 8;
+        var offsetX = 0;
+        var offsetY = 0;
+        var verticalSpace = Math.max(point.y, mapSize.y - point.y);
+        if (verticalSpace >= bounds.height + 12) {
+            tooltip.options.direction = point.y >= mapSize.y / 2 ? 'top' : 'bottom';
+            var halfWidth = bounds.width / 2;
+            var minCenterX = padding + halfWidth;
+            var maxCenterX = mapSize.x - padding - halfWidth;
+            if (minCenterX <= maxCenterX) {
+                offsetX = Math.min(maxCenterX, Math.max(minCenterX, point.x)) - point.x;
+            }
+        } else {
+            tooltip.options.direction = point.x >= mapSize.x / 2 ? 'left' : 'right';
+            var halfHeight = bounds.height / 2;
+            var minCenterY = padding + halfHeight;
+            var maxCenterY = mapSize.y - padding - halfHeight;
+            if (minCenterY <= maxCenterY) {
+                offsetY = Math.min(maxCenterY, Math.max(minCenterY, point.y)) - point.y;
+            }
+        }
+        tooltip.options.offset = L.point(offsetX, offsetY);
+        tooltip.update();
+    }
+
     function addOverlayLayer(name, features, color, isMarker, styleOpts) {
         removeOverlayLayer(name);
         if (!features || features.length === 0) return;
+        const opts = styleOpts || {};
+        const sourceLabel = opts.sourceLabel || '';
+        const themeLabel = opts.themeLabel || '';
+        const tooltipHtml = sourceLabel
+            ? '<div class="map-layer-tooltip"><strong>' + mapEscapeHtml(sourceLabel) + '</strong>'
+                + (themeLabel ? '<span>' + mapEscapeHtml(themeLabel) + '</span>' : '') + '</div>' : '';
         if (isMarker) {
             const markers = features.map(f => {
                 const coords = f.geometry && f.geometry.coordinates;
@@ -3045,67 +3320,63 @@
             }).filter(Boolean);
             overlayLayers[name] = L.layerGroup(markers).addTo(map);
         } else {
-            // Eristatakse geometry tüüp: Point → kohandatud värviline marker
-            // (kihi värviga), Polygon/LineString → stiilitud jooned/täidised.
-            // Nii näevad ka punktkihid (nt karuputk, mälestised) välja sama
-            // legendi värviga, mitte ei lähe Leaflet'i vaikimisi sinise markerina.
-            const opts = styleOpts || {};
-            const hasPoints = features.some(f => f.geometry && f.geometry.type === 'Point');
-            const hasPolygons = features.some(f => f.geometry && (
-                f.geometry.type === 'Polygon' ||
-                f.geometry.type === 'MultiPolygon' ||
-                f.geometry.type === 'LineString' ||
-                f.geometry.type === 'MultiLineString'
+            const renderableFeatures = features.filter(f => (
+                f.geometry && mapGeometryKinds(f.geometry).length
             ));
+            if (!renderableFeatures.length) return;
 
-            if (hasPolygons) {
-                // Polygonide/joonte stiil: weight, värv, dash, fillOpacity
-                const style = {
-                    color: opts.color || color,
-                    weight: opts.weight != null ? opts.weight : 3,
-                    opacity: 0.9,
-                    fillColor: opts.color || color,
-                    fillOpacity: opts.fillOpacity != null ? opts.fillOpacity : 0.30,
-                };
-                if (opts.dash) style.dashArray = opts.dash;
-                var layerOptions = { style: style };
-                if (name === 'lageraiealad' || opts.sourceKey === 'lageraiealad') {
-                    layerOptions.onEachFeature = function(feature, layer) {
-                        var props = feature.properties || {};
-                        var start = props.periood_a;
-                        var end = props.periood_o;
-                        var period = start && end ? start + '–' + end : (end ? 'kuni ' + end : 'aeg teadmata');
-                        layer.bindPopup('<b>Ajalooline lageraie tuvastus</b><br>Satelliidivaatluse periood: ' + escapeHtml(period) + '<br><small>Kiht katab ainult aastaid 2011–2016. Mets peab üldjuhul olema uuenenud 5 aasta jooksul; seaduses loetletud kasvukohatüüpides 10 aasta jooksul.</small>');
-                    };
-                }
-                overlayLayers[name] = L.geoJSON({ type: 'FeatureCollection', features }, layerOptions).addTo(map);
-            } else if (hasPoints) {
-                // Ainult punktid → kohandatud värviline ring-marker
-                const c = opts.color || color;
-                const markers = features.map(f => {
-                    const coords = f.geometry.coordinates;
-                    if (!coords) return null;
-                    const props = f.properties || {};
-                    const label = props.nimi || props.nimetus || props.eesnimi || name;
-                    return L.marker([coords[1], coords[0]], {
+            const style = {
+                color: opts.color || color,
+                weight: opts.weight != null ? opts.weight : 3,
+                opacity: opts.opacity != null ? opts.opacity : 0.9,
+                fillColor: opts.color || color,
+                fillOpacity: opts.fillOpacity != null ? opts.fillOpacity : 0.30,
+            };
+            if (opts.dash) style.dashArray = opts.dash;
+            var layerOptions = {
+                pane: opts.pane || 'overlayPane',
+                style: style,
+                bubblingMouseEvents: true,
+                pointToLayer: function(feature, latlng) {
+                    var pointProps = feature.properties || {};
+                    var pointLabel = pointProps.nimi || pointProps.nimetus || pointProps.eesnimi || name;
+                    return L.marker(latlng, {
+                        pane: opts.pane || 'markerPane',
+                        opacity: opts.opacity != null ? opts.opacity : 1,
+                        bubblingMouseEvents: false,
                         icon: L.divIcon({
                             className: 'kiht-marker',
-                            html: '<div style="background:' + c + ';width:13px;height:13px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>',
+                            html: '<div style="background:' + (opts.color || color) + ';width:13px;height:13px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>',
                             iconSize: [13, 13],
                             iconAnchor: [6, 6],
                         }),
-                    }).bindPopup('<b>' + escapeHtml(label) + '</b>');
-                }).filter(Boolean);
-                overlayLayers[name] = L.layerGroup(markers).addTo(map);
-            } else {
-                // Tundmatu geometry — jäta vahele
-                return;
-            }
+                    }).bindPopup('<b>' + mapEscapeHtml(pointLabel) + '</b>'
+                        + (sourceLabel ? '<br><small>' + mapEscapeHtml(sourceLabel) + '</small>' : ''));
+                },
+                onEachFeature: function(feature, layer) {
+                    if (tooltipHtml) {
+                        layer.bindTooltip(tooltipHtml, {
+                            sticky: true,
+                            direction: 'auto',
+                            className: 'map-layer-tooltip-wrap',
+                        });
+                        layer.on('mouseover mousemove', function(event) {
+                            positionMapLayerTooltip(layer, event);
+                        });
+                    }
+                    if (name !== 'lageraiealad' && opts.sourceKey !== 'lageraiealad') return;
+                    var props = feature.properties || {};
+                    var start = props.periood_a;
+                    var end = props.periood_o;
+                    var period = start && end ? start + '–' + end : (end ? 'kuni ' + end : 'aeg teadmata');
+                    layer.bindPopup('<b>Ajalooline lageraie tuvastus</b><br>Satelliidivaatluse periood: ' + mapEscapeHtml(period) + '<br><small>Kiht katab ainult aastaid 2011–2016. Mets peab üldjuhul olema uuenenud 5 aasta jooksul; seaduses loetletud kasvukohatüüpides 10 aasta jooksul.</small>');
+                },
+            };
+            overlayLayers[name] = L.geoJSON(
+                {type: 'FeatureCollection', features: renderableFeatures},
+                layerOptions
+            ).addTo(map);
         }
-    }
-
-    function escapeHtml(s) {
-        return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
     }
 
     function removeOverlayLayer(name) {
@@ -3137,7 +3408,7 @@
         });
     }
 
-    function addEraldisedLayer(features) {
+    function addEraldisedLayer(features, dimmed) {
         if (typeof map === 'undefined' || !map) return;
         removeOverlayLayer('eraldised');
         var geojson = { type: 'FeatureCollection', features: features };
@@ -3148,10 +3419,10 @@
                 var ageClassColor = p.age_class_color || p.color || '#047857';
                 return {
                     fillColor: ageClassColor,
-                    fillOpacity: 0.35,
+                    fillOpacity: dimmed ? 0.08 : 0.35,
                     color: ageClassColor,
                     weight: 2,
-                    opacity: 0.8,
+                    opacity: dimmed ? 0.35 : 0.8,
                 };
             },
             onEachFeature: function(feature, layer) {
@@ -3171,7 +3442,7 @@
                         try { center = layer.getBounds().getCenter(); } catch (_) {}
                     }
                     if (center) {
-                        L.marker(center, {
+                        var marker = L.marker(center, {
                             icon: L.divIcon({
                                 className: 'eraldis-label-wrap',
                                 html: '<div class="eraldis-label">' + escHtml(eraldisNr) + '</div>',
@@ -3179,7 +3450,9 @@
                             }),
                             interactive: false,
                             keyboard: false,
-                        }).addTo(labels);
+                        });
+                        marker.setOpacity(dimmed ? 0.35 : 1);
+                        marker.addTo(labels);
                     }
                 }
                 var ageClassColor = p.age_class_color || p.color || 'var(--ink-5)';
@@ -4913,10 +5186,43 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         workspace.addEventListener('click', function(event) {
             var viewButton = event.target.closest('[data-map-view]');
             if (viewButton && !viewButton.disabled) {
+                mapThemeFocusIntent += 1;
                 selectMapView(viewButton.getAttribute('data-map-view'));
                 return;
             }
-            if (event.target.closest('[data-map-retry]')) retryMapContext();
+            var clearFocus = event.target.closest('[data-map-focus-clear]');
+            if (clearFocus) {
+                mapThemeFocusIntent += 1;
+                var focusedDetails = workspace.querySelector(
+                    'details[data-map-theme="' + mapWorkspaceState.focusedThemeId + '"]'
+                );
+                if (focusedDetails) focusedDetails.open = false;
+                mapWorkspaceState = setMapThemeFocus(mapWorkspaceState, null);
+                renderMapWorkspaceState();
+                return;
+            }
+            if (event.target.closest('[data-map-retry]')) {
+                retryMapContext();
+                return;
+            }
+            var summary = event.target.closest('summary');
+            var themeRow = summary && summary.closest('details[data-map-theme]');
+            if (!themeRow) return;
+            var themeId = themeRow.getAttribute('data-map-theme');
+            var focusIntent = ++mapThemeFocusIntent;
+            setTimeout(function() {
+                if (focusIntent !== mapThemeFocusIntent) return;
+                var currentThemeRow = themeRow.isConnected ? themeRow : workspace.querySelector(
+                    'details[data-map-theme="' + themeId + '"]'
+                );
+                if (!currentThemeRow) return;
+                if (currentThemeRow.open) {
+                    mapWorkspaceState = setMapThemeFocus(mapWorkspaceState, themeId);
+                } else if (mapWorkspaceState.focusedThemeId === themeId) {
+                    mapWorkspaceState = setMapThemeFocus(mapWorkspaceState, null);
+                }
+                renderMapWorkspaceState();
+            }, 0);
         });
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape' && workspace.classList.contains('is-open')) {

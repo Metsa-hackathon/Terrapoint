@@ -888,12 +888,10 @@ console.log(JSON.stringify({{
         self.assertNotIn("(i + 1)", forest_render.group(0))
 
     def test_map_labels_prefer_server_point_with_old_backend_fallback(self):
-        map_render = re.search(r'function addEraldisedLayer\(features\).*?\n    }', INDEX_HTML, re.DOTALL)
+        source = _extract_js_function("addEraldisedLayer")
         label_css = re.search(r'(?m)^\.eraldis-label \{([^}]*)\}', STYLE_CSS)
-        self.assertIsNotNone(map_render)
         self.assertIsNotNone(label_css)
 
-        source = map_render.group(0)
         self.assertIn("canonicalEraldisNumber(p.eraldis_nr)", source)
         self.assertIn("Object.prototype.hasOwnProperty.call(p, 'label_point')", source)
         self.assertIn("[p.label_point[1], p.label_point[0]]", source)
@@ -1782,7 +1780,7 @@ let mutationBlocked = false;
 try {{ MAP_VIEW_PRESETS.overview.themeIds.push('parcel'); }} catch (_) {{ mutationBlocked = true; }}
 let state = createMapWorkspaceState('session-basemap');
 state = selectMapViewPreset(state, 'risks');
-const selectedLabel = mapViewDisplayLabel(state);
+const selectedLabel = MAP_VIEW_PRESETS[state.viewId].label;
 const restored = selectMapViewPreset(state, 'overview');
 const populated = Object.assign({{}}, restored, {{
   parcelId: 'old', themeResults: {{nature_protection: {{state: 'matches'}}}},
@@ -1825,6 +1823,361 @@ console.log(JSON.stringify({{
         self.assertEqual(state["reset"]["requestGeneration"], 8)
         self.assertIsNone(state["reset"]["requestController"])
         self.assertEqual(state["initialContextThemes"], state["expected"]["overview"])
+
+    def test_map_theme_focus_is_visual_and_resets_with_context(self):
+        source = _marked_js_source("// MAP_WORKSPACE_PURE_START", "// MAP_WORKSPACE_PURE_END")
+        script = f"""
+{source}
+let state = createMapWorkspaceState('base');
+const focused = setMapThemeFocus(state, 'water_restrictions');
+const cleared = setMapThemeFocus(focused, null);
+const rejected = setMapThemeFocus(state, 'not-active');
+const switched = selectMapViewPreset(focused, 'risks');
+const reset = resetMapWorkspaceForParcel(focused, '78404:409:0113');
+const baseStyle = {{color: '#24788f', weight: 4, fillOpacity: 0.4, dash: '4,3'}};
+const emphasized = mapThemeLayerStyle(baseStyle, 'water_restrictions', 'water_restrictions');
+const muted = mapThemeLayerStyle(baseStyle, 'nature_protection', 'water_restrictions');
+const normal = mapThemeLayerStyle(baseStyle, 'nature_protection', null);
+const withResult = Object.assign({{}}, focused, {{
+  parcelId: '78404:409:0113',
+  viewId: 'restrictions',
+  activeThemeIds: ['water_restrictions'],
+  focusedThemeId: 'water_restrictions',
+  themeResults: {{water_restrictions: {{id: 'water_restrictions', state: 'matches', match_count: 1, features: [{{}}], sources: []}}}},
+}});
+const emptied = applyMapContextResultState(withResult, {{
+  themes: {{water_restrictions: {{id: 'water_restrictions', state: 'empty', match_count: 0, features: [], sources: []}}}},
+  persistent: {{}},
+}}, ['water_restrictions']);
+const emptyModel = mapWorkspaceLegendModel(emptied);
+console.log(JSON.stringify({{focused, cleared, rejected, switched, reset, emphasized, muted, normal, emptied, emptyModel}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertEqual(state["focused"]["focusedThemeId"], "water_restrictions")
+        self.assertIsNone(state["cleared"]["focusedThemeId"])
+        self.assertIsNone(state["rejected"]["focusedThemeId"])
+        self.assertIsNone(state["switched"]["focusedThemeId"])
+        self.assertIsNone(state["reset"]["focusedThemeId"])
+        self.assertGreater(state["emphasized"]["weight"], state["normal"]["weight"])
+        self.assertEqual(state["emphasized"]["opacity"], 1)
+        self.assertEqual(state["emphasized"]["pane"], "map-theme-focused")
+        self.assertEqual(state["muted"]["pane"], "map-theme-dimmed")
+        self.assertEqual(state["normal"]["pane"], "map-theme-normal")
+        self.assertNotIn("dimmed", state["emphasized"])
+        self.assertLess(state["muted"]["opacity"], state["normal"]["opacity"])
+        self.assertLess(state["muted"]["fillOpacity"], state["normal"]["fillOpacity"])
+        self.assertIsNone(state["emptied"]["focusedThemeId"])
+        self.assertIsNone(state["emptyModel"]["focusedThemeId"])
+
+    def test_map_source_symbols_share_the_rendered_source_style(self):
+        source = _marked_js_source("// MAP_WORKSPACE_PURE_START", "// MAP_WORKSPACE_PURE_END")
+        script = f"""
+{source}
+const theme = {{
+  id: 'water_restrictions',
+  sources: [
+    {{key: 'area', label: 'Veekaitsevöönd', match_count: 1, style: {{color: '#0ea5e9', weight: 3, fillOpacity: 0.2, dash: '5,4'}}}},
+    {{key: 'point', label: 'Vaatluspunkt', match_count: 1, style: {{color: '#d63384', weight: 2, fillOpacity: 0.3, dash: null}}}},
+    {{key: 'line', label: 'Vooluveekogu', match_count: 1}},
+    {{key: 'vooluveed', label: 'Vooluveekogu', match_count: 0}},
+    {{key: 'yrask_eelis', label: 'Üraski vaatlused', match_count: 0}},
+  ],
+  features: [
+    {{type: 'Feature', geometry: {{type: 'Polygon', coordinates: []}}, properties: {{source_key: 'area'}}}},
+    {{type: 'Feature', geometry: {{type: 'LineString', coordinates: []}}, properties: {{source_key: 'area'}}}},
+    {{type: 'Feature', geometry: {{type: 'Point', coordinates: [24, 59]}}, properties: {{source_key: 'point'}}}},
+    {{type: 'Feature', geometry: {{type: 'LineString', coordinates: []}}, properties: {{source_key: 'line'}}}},
+  ],
+}};
+const rows = mapLegendSourceRows(theme);
+const groups = groupThemeFeaturesBySource(theme);
+const emptyRow = mapThemeLegendRow(
+  {{loadingStatus: 'success', focusedThemeId: null}},
+  'water_restrictions',
+  {{id: 'water_restrictions', state: 'empty', match_count: 0, features: [], sources: theme.sources.slice(3)}}
+);
+const areaHtml = mapSourceSymbolHtml(rows[0].mapSymbols[0]);
+const stackHtml = mapLegendSymbolsHtml({{symbols: [rows[0].mapSymbols[0], rows[1].mapSymbols[0], rows[2].mapSymbols[0]]}});
+console.log(JSON.stringify({{rows, groups, emptyRow, areaHtml, stackHtml}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        rendered = json.loads(result.stdout)
+
+        self.assertEqual([row["mapSymbols"][0]["kind"] for row in rendered["rows"]], [
+            "area", "point", "line", "line", "area",
+        ])
+        self.assertEqual(rendered["rows"][0]["mapSymbols"][0], {
+            "kind": "area", "color": "#0ea5e9", "weight": 3,
+            "fillOpacity": 0.2, "dash": "5,4",
+        })
+        self.assertEqual(
+            [symbol["kind"] for symbol in rendered["rows"][0]["mapSymbols"]],
+            ["area", "line"],
+        )
+        self.assertEqual(
+            [symbol["kind"] for symbol in rendered["rows"][4]["mapSymbols"]],
+            ["area", "point"],
+        )
+        self.assertEqual(
+            rendered["rows"][0]["mapSymbols"][0],
+            {**rendered["groups"][0]["style"], "kind": "area"},
+        )
+        self.assertEqual(
+            rendered["rows"][2]["mapSymbols"][0]["color"],
+            rendered["groups"][2]["style"]["color"],
+        )
+        self.assertEqual(len(rendered["emptyRow"]["symbols"]), 3)
+        self.assertEqual(
+            [symbol["kind"] for symbol in rendered["emptyRow"]["symbols"]],
+            ["line", "area", "point"],
+        )
+        self.assertIn('stroke-dasharray="5,4"', rendered["areaHtml"])
+        self.assertIn('stroke-width="3"', rendered["areaHtml"])
+        self.assertEqual(rendered["stackHtml"].count("<svg"), 2)
+        self.assertIn("+1", rendered["stackHtml"])
+
+    def test_map_source_details_only_report_area_overlap_for_area_geometry(self):
+        source = _marked_js_source("// MAP_WORKSPACE_PURE_START", "// MAP_WORKSPACE_PURE_END")
+        script = f"""
+{source}
+const base = {{
+  key: 'source', label: 'Allikas', provider: 'Amet', interpretation: 'Selgitus',
+  state: 'matches', match_count: 1, approximate_parcel_overlap_percent: 0,
+  affected_stand_numbers: [2, 7], checked_at: '2026-07-23T12:00:00Z',
+}};
+const area = mapSourceDetailsHtml(Object.assign({{}}, base, {{mapSymbols: [{{kind: 'area', color: '#123456'}}]}}));
+const line = mapSourceDetailsHtml(Object.assign({{}}, base, {{mapSymbols: [{{kind: 'line', color: '#123456'}}]}}));
+const point = mapSourceDetailsHtml(Object.assign({{}}, base, {{mapSymbols: [{{kind: 'point', color: '#123456'}}]}}));
+const partial = mapSourceDetailsHtml(Object.assign({{}}, base, {{
+  state: 'partial', approximate_parcel_overlap_percent: 12.5,
+  mapSymbols: [{{kind: 'area', color: '#123456'}}],
+}}));
+console.log(JSON.stringify({{area, line, point, partial}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        rendered = json.loads(result.stdout)
+
+        self.assertNotIn("Kattub ligikaudu 0%", rendered["area"])
+        self.assertNotIn("Kattub ligikaudu", rendered["line"])
+        self.assertNotIn("Kattub ligikaudu", rendered["point"])
+        self.assertIn("Kattub ligikaudu 12.5%", rendered["partial"])
+        self.assertIn("Osaline vastus", rendered["partial"])
+        self.assertIn("Puudutab eraldisi 2, 7", rendered["partial"])
+
+    def test_map_layer_focus_controls_and_exact_symbols_are_exposed(self):
+        render = _extract_js_function("renderMapWorkspaceState")
+        controls = _extract_js_function("initMapWorkspaceControls")
+        overlay = _extract_js_function("addOverlayLayer")
+        restore = _extract_js_function("restoreMapWorkspaceDomState")
+        tooltip_position = _extract_js_function("positionMapLayerTooltip")
+
+        self.assertIn("Kõik nähtavad", render)
+        self.assertIn("data-map-focus-clear", render)
+        self.assertIn("mapThemeLayerStyle", render)
+        self.assertIn("data-map-theme", controls)
+        self.assertIn("setMapThemeFocus", controls)
+        self.assertIn("focusedDetails.open = false", controls)
+        self.assertIn("themeRow.isConnected", controls)
+        self.assertIn('class="map-source-symbol"', INDEX_HTML)
+        self.assertIn("bubblingMouseEvents: true", overlay)
+        self.assertIn("pointToLayer", overlay)
+        self.assertIn("MultiPoint", _extract_js_function("mapGeometryKinds"))
+        self.assertIn("map-layer-tooltip", overlay)
+        self.assertIn("pane: opts.pane", overlay)
+        self.assertIn("map.createPane('map-theme-dimmed')", _extract_js_function("initMap"))
+        self.assertIn("details[data-map-theme][open]", _extract_js_function("selectMapView"))
+        self.assertIn(
+            "querySelectorAll('[data-map-focus-clear]')",
+            restore,
+        )
+        self.assertIn(
+            'details[data-map-row="overview_check"] summary',
+            restore,
+        )
+        self.assertIn("!selectedView.disabled", restore)
+        self.assertIn("map-workspace-close", restore)
+        self.assertIn("slice(0, 2)", _extract_js_function("mapLegendSymbolsHtml"))
+        self.assertIn("padding: 0 !important", STYLE_CSS)
+        self.assertIn("text-shadow: none !important", STYLE_CSS)
+        self.assertIn("white-space: normal", STYLE_CSS)
+        self.assertIn("overflow-wrap: anywhere", STYLE_CSS)
+        self.assertIn("overflow: visible", STYLE_CSS)
+        tooltip_css = re.search(r"\.map-layer-tooltip-wrap\.leaflet-tooltip \{([^}]*)\}", STYLE_CSS)
+        self.assertIsNotNone(tooltip_css)
+        self.assertIn("width: max-content", tooltip_css.group(1))
+        self.assertIn("direction: 'auto'", overlay)
+        self.assertIn("tooltip.options.offset = L.point", tooltip_position)
+        self.assertIn("map.getSize()", tooltip_position)
+        self.assertIn("tooltip.update()", tooltip_position)
+        self.assertIn(".leaflet-map-theme-focused-pane > svg", STYLE_CSS)
+        self.assertIn("max-width: none;", STYLE_CSS)
+        self.assertIn(
+            "addEraldisedLayer(persistent.stands.features, Boolean(model.focusedThemeId))",
+            render,
+        )
+        stands = _extract_js_function("addEraldisedLayer")
+        self.assertIn("dimmed ? 0.08 : 0.35", stands)
+        self.assertIn("marker.setOpacity(dimmed ? 0.35 : 1)", stands)
+
+    def test_map_workspace_focus_controls_ignore_stale_rows_and_clear_in_one_click(self):
+        controls = _extract_js_function("initMapWorkspaceControls")
+        focus = _extract_js_function("setMapThemeFocus")
+        script = f"""
+const listeners = {{}};
+const focusedDetails = {{open: true}};
+const timers = [];
+const workspace = {{
+  classList: {{contains() {{ return false; }}}},
+  addEventListener(type, listener) {{ listeners[type] = listener; }},
+  querySelector() {{ return focusedDetails; }},
+}};
+const opener = {{setAttribute() {{}}, addEventListener() {{}}, focus() {{}}}};
+const close = {{addEventListener() {{}}}};
+const document = {{
+  getElementById(id) {{ return {{'map-workspace': workspace, 'map-workspace-opener': opener, 'map-workspace-close': close}}[id] || null; }},
+  addEventListener() {{}},
+}};
+const window = {{
+  matchMedia() {{ return {{matches: false}}; }},
+}};
+const setTimeout = callback => {{ timers.push(callback); return timers.length; }};
+let mapWorkspaceState = {{activeThemeIds: ['nature_protection'], focusedThemeId: 'nature_protection'}};
+let mapThemeFocusIntent = 0;
+let renderCount = 0;
+function renderMapWorkspaceState() {{ renderCount += 1; }}
+function selectMapView() {{}}
+function retryMapContext() {{}}
+function closeMapWorkspace() {{}}
+function openMapWorkspace() {{}}
+{focus}
+{controls}
+initMapWorkspaceControls();
+
+const clearControl = {{}};
+listeners.click({{
+  target: {{closest(selector) {{ return selector === '[data-map-focus-clear]' ? clearControl : null; }}}},
+}});
+const afterClear = {{focusedThemeId: mapWorkspaceState.focusedThemeId, detailsOpen: focusedDetails.open, renderCount}};
+
+focusedDetails.open = true;
+const staleRow = {{
+  open: true,
+  isConnected: false,
+  getAttribute() {{ return 'nature_protection'; }},
+}};
+const staleSummary = {{closest() {{ return staleRow; }}}};
+listeners.click({{
+  target: {{closest(selector) {{ return selector === 'summary' ? staleSummary : null; }}}},
+}});
+timers.shift()();
+const afterStale = {{focusedThemeId: mapWorkspaceState.focusedThemeId, renderCount}};
+
+const liveRow = {{
+  open: false,
+  isConnected: true,
+  getAttribute() {{ return 'nature_protection'; }},
+}};
+const liveSummary = {{closest() {{ return liveRow; }}}};
+listeners.click({{
+  target: {{closest(selector) {{ return selector === 'summary' ? liveSummary : null; }}}},
+}});
+timers.shift()();
+const liveFocus = mapWorkspaceState.focusedThemeId;
+
+focusedDetails.open = true;
+listeners.click({{
+  target: {{closest(selector) {{ return selector === 'summary' ? staleSummary : null; }}}},
+}});
+listeners.click({{
+  target: {{closest(selector) {{ return selector === '[data-map-focus-clear]' ? clearControl : null; }}}},
+}});
+timers.shift()();
+console.log(JSON.stringify({{afterClear, afterStale, liveFocus, afterQueuedClear: mapWorkspaceState.focusedThemeId, renderCount}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertIsNone(state["afterClear"]["focusedThemeId"])
+        self.assertFalse(state["afterClear"]["detailsOpen"])
+        self.assertEqual(state["afterClear"]["renderCount"], 1)
+        self.assertEqual(state["afterStale"]["renderCount"], 2)
+        self.assertEqual(state["afterStale"]["focusedThemeId"], "nature_protection")
+        self.assertIsNone(state["liveFocus"])
+        self.assertIsNone(state["afterQueuedClear"])
+        self.assertEqual(state["renderCount"], 4)
+
+    def test_map_overlay_keeps_mixed_geometry_in_the_focus_pane_and_bubbles_clicks(self):
+        overlay = _extract_js_function("addOverlayLayer")
+        record = _extract_js_function("isMapRecord")
+        geometry_kinds = _extract_js_function("mapGeometryKinds")
+        script = f"""
+const overlayLayers = {{}};
+const map = {{}};
+const markerOptions = [];
+const markers = [];
+let captured = null;
+function removeOverlayLayer(name) {{ delete overlayLayers[name]; }}
+function mapEscapeHtml(value) {{ return String(value); }}
+function markerStub(options) {{
+  const marker = {{
+    options,
+    popup: null,
+    bindPopup(html) {{ this.popup = html; return this; }},
+    bindTooltip() {{ return this; }},
+  }};
+  markers.push(marker);
+  return marker;
+}}
+const L = {{
+  divIcon(options) {{ return options; }},
+  marker(latlng, options) {{ markerOptions.push(options); return markerStub(options); }},
+  layerGroup() {{
+    return {{addTo() {{ return this; }}}};
+  }},
+  geoJSON(collection, options) {{
+    captured = {{collection, options}};
+    options.pointToLayer(collection.features[0], {{lat: 59, lng: 24}});
+    options.pointToLayer(collection.features[1], {{lat: 59, lng: 24}});
+    return {{addTo() {{ return this; }}}};
+  }},
+}};
+{record}
+{geometry_kinds}
+{overlay}
+const features = [
+  {{type: 'Feature', geometry: {{type: 'Point', coordinates: [24, 59]}}, properties: {{}}}},
+  {{type: 'Feature', geometry: {{type: 'MultiPoint', coordinates: [[24, 59], [25, 59]]}}, properties: {{}}}},
+  {{type: 'Feature', geometry: {{type: 'Polygon', coordinates: []}}, properties: {{}}}},
+  {{type: 'Feature', geometry: {{type: 'GeometryCollection', geometries: [
+    {{type: 'Point', coordinates: [24, 59]}},
+    {{type: 'LineString', coordinates: [[24, 59], [25, 59]]}},
+  ]}}, properties: {{}}}},
+];
+addOverlayLayer('theme', features, '#123456', false, {{
+  color: '#123456', weight: 4, opacity: 1, fillOpacity: 0.4, dash: '5,4',
+  pane: 'map-theme-focused', sourceLabel: 'Allikas', themeLabel: 'Teema',
+}});
+console.log(JSON.stringify({{
+  geometryTypes: captured.collection.features.map(feature => feature.geometry.type),
+  pane: captured.options.pane,
+  bubbles: captured.options.bubblingMouseEvents,
+  style: captured.options.style,
+  markerOptions,
+  markerPopups: markers.map(marker => marker.popup),
+}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertEqual(state["geometryTypes"], ["Point", "MultiPoint", "Polygon", "GeometryCollection"])
+        self.assertEqual(state["pane"], "map-theme-focused")
+        self.assertTrue(state["bubbles"])
+        self.assertEqual(state["style"]["dashArray"], "5,4")
+        self.assertTrue(all(not options["bubblingMouseEvents"] for options in state["markerOptions"]))
+        self.assertTrue(all(options["pane"] == "map-theme-focused" for options in state["markerOptions"]))
+        self.assertTrue(all(popup for popup in state["markerPopups"]))
 
     def test_official_maaruum_orthophoto_uses_verified_wmts_contract_and_default(self):
         init_map = _extract_js_function("initMap")
@@ -1894,6 +2247,7 @@ const mapStub = {{
   layers: new Set(),
   setView() {{ return this; }},
   on() {{ return this; }},
+  createPane() {{ return {{style: {{}}}}; }},
   hasLayer(layer) {{ return this.layers.has(layer); }},
   getContainer() {{ return {{}}; }},
   invalidateSize() {{}},
@@ -2035,7 +2389,9 @@ console.log(JSON.stringify({{
         self.assertIn('Vali kinnistu', source)
         self.assertNotIn('id="map-workspace-theme-controls"', source)
         self.assertNotIn('id="map-workspace-reset"', source)
-        self.assertIn('Kaardil', source)
+        self.assertIn('Kaardi vaade', source)
+        self.assertIn('id="map-workspace-view-description"', source)
+        self.assertIn('Nähtavad kihid', source)
         self.assertEqual(INDEX_HTML.count('role="region" aria-label="Kaardi legend"'), 1)
         self.assertEqual(source.count('role="region" aria-label="Kaardi legend"'), 1)
         self.assertEqual(
@@ -2139,7 +2495,9 @@ console.log(JSON.stringify({{
             "2 vastet · osaline", "Puudumist ei saa kinnitada · osaline",
             "Allikas ei vasta", "Laadib",
         ])
-        self.assertIn("Keskkonnaagentuur · EELIS: ametlik kiht", rendered["sourceHtml"])
+        self.assertIn('class="map-source-title">EELIS: ametlik kiht', rendered["sourceHtml"])
+        self.assertIn('class="map-source-provider">Keskkonnaagentuur', rendered["sourceHtml"])
+        self.assertIn('class="map-source-state">Vasteid ei leitud', rendered["sourceHtml"])
         self.assertIn("Registrikanne ei ole tegevusluba.", rendered["sourceHtml"])
         self.assertIn('class="map-source-as-of">Andmete ajaseis teadmata', rendered["sourceHtml"])
         self.assertIn('class="map-source-checked">Viimati edukalt kontrollitud ', rendered["sourceHtml"])
@@ -2175,7 +2533,9 @@ console.log(JSON.stringify({{
         self.assertIn("setAttribute('aria-expanded'", init)
         self.assertIn("map-workspace-close", init)
         self.assertIn("data-map-view", init)
-        self.assertNotIn("data-map-theme", init)
+        self.assertIn("data-map-theme", init)
+        self.assertIn("data-map-focus-clear", init)
+        self.assertIn("setMapThemeFocus", init)
         self.assertIn("retryMapContext()", init)
         self.assertIn("<details", row)
         self.assertIn("<summary", row)
@@ -2193,13 +2553,15 @@ console.log(JSON.stringify({{
     def test_map_workspace_css_is_restrained_scrollable_and_mobile_sheet(self):
         desktop = re.search(r"(?m)^\.map-workspace \{([^}]*)\}", STYLE_CSS)
         self.assertIsNotNone(desktop)
-        self.assertIn("width: min(340px, calc(100vw - 24px));", desktop.group(1))
+        self.assertIn("width: min(372px, calc(100vw - 24px));", desktop.group(1))
         self.assertIn("max-height: calc(100% - 24px);", desktop.group(1))
         self.assertIn("overflow: hidden;", desktop.group(1))
         self.assertIn(".map-workspace-panel-body { overflow-y: auto;", STYLE_CSS)
         self.assertRegex(STYLE_CSS, r"@media \(max-width: 640px\) \{[\s\S]*?\.map-workspace-panel \{[^}]*position: fixed;[^}]*max-height: 72vh;[^}]*overflow: hidden;")
         self.assertIn(".map-workspace-button:focus-visible", STYLE_CSS)
         self.assertIn(".map-view-preset:focus-visible", STYLE_CSS)
+        self.assertIn(".map-source-symbol {", STYLE_CSS)
+        self.assertIn('class="map-source-symbol"', INDEX_HTML)
         self.assertNotIn(".map-theme-toggle", STYLE_CSS)
 
     def test_map_age_legend_and_ai_picker_use_neutral_age_classes(self):
@@ -2468,6 +2830,7 @@ let pendingLegacyMapFallback = null;
 let legacyMapFallbackActive = false;
 const overlayLayers = {{}};
 const window = {{}};
+const document = {{querySelectorAll() {{ return []; }}}};
 function removeOverlayLayer(name) {{ delete overlayLayers[name]; }}
 function addEraldisedLayer(features) {{ overlayLayers.eraldised = {{features}}; }}
 function addOverlayLayer(name, features) {{ overlayLayers[name] = {{features}}; }}
