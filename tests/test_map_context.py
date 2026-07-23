@@ -965,6 +965,50 @@ class SearchEndpointLayerOptionTests(unittest.TestCase):
         self.assertEqual(response.status_code, 422)
         search.assert_not_awaited()
 
+    def test_backend_api_url_defaults_to_home_server(self):
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(
+                api._backend_api_url(),
+                "https://terrapoint.arleserver.cfd/api",
+            )
+
+    def test_backend_api_url_treats_blank_override_as_unset(self):
+        with patch.dict(
+            os.environ,
+            {"TERRAPOINT_BACKEND_API_URL": "   "},
+            clear=True,
+        ):
+            self.assertEqual(
+                api._backend_api_url(),
+                "https://terrapoint.arleserver.cfd/api",
+            )
+
+    def test_backend_api_url_rejects_unsafe_overrides(self):
+        unsafe_urls = (
+            "http://backend.example/api",
+            "backend.example/api",
+            "https://user:password@backend.example/api",
+            "https://backend.example/",
+            "https://backend.example/api?debug=1",
+            "https://backend.example/api#fragment",
+            "https://terrapoint.ee/api",
+            "https://terrapoint.ee./api",
+            "https://%74errapoint.ee/api",
+            "https://terrapoint.46-62-230-110.sslip.io/api",
+        )
+
+        for unsafe_url in unsafe_urls:
+            with self.subTest(url=unsafe_url), patch.dict(
+                os.environ,
+                {"TERRAPOINT_BACKEND_API_URL": unsafe_url},
+                clear=True,
+            ):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    "TERRAPOINT_BACKEND_API_URL",
+                ):
+                    api._backend_api_url()
+
     def test_vercel_proxy_forwards_false_option(self):
         captured = {}
 
@@ -989,7 +1033,14 @@ class SearchEndpointLayerOptionTests(unittest.TestCase):
                 return UpstreamResponse()
 
         with (
-            patch.dict(os.environ, {"VERCEL": "1"}, clear=False),
+            patch.dict(
+                os.environ,
+                {
+                    "VERCEL": "1",
+                    "TERRAPOINT_BACKEND_API_URL": "https://terrapoint.arleserver.cfd:443/api/",
+                },
+                clear=False,
+            ),
             patch("api.index.httpx.AsyncClient", FakeClient),
             patch(
                 "api.index._search_proxy_response",
@@ -1002,7 +1053,10 @@ class SearchEndpointLayerOptionTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(captured["params"], {"include_map_layers": "false"})
-        self.assertTrue(captured["url"].endswith(f"/search/{KATASTER_NR}"))
+        self.assertEqual(
+            captured["url"],
+            f"https://terrapoint.arleserver.cfd:443/api/search/{KATASTER_NR}",
+        )
 
 
 if __name__ == "__main__":

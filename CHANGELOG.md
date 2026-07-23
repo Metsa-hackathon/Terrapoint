@@ -6,6 +6,18 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > domain). `terrapoint.vercel.app` on sama projekti alias — push master
 > branchi uuendab mõlemat korraga.
 
+## [Määramata] - 2026-07-23
+
+### Fixed
+- **Pikad tootmispäringud kasutavad home-serverit** — Verceli otsingu- ja
+  kaardikonteksti proxy ei sõltu enam suletud VPS-i `sslip.io` aadressist.
+  Backendi HTTPS-aadress on kontrollitud ja keskkonnamuutujaga seadistatav.
+
+### Changed
+- **Home-serveri juurutus on deklaratiivne** — piiratud Traefik ingress,
+  loopback API sild ning viieminutiline systemd deploy-timer asendavad VPS-i
+  croni ja vana Docker-võrgu aadressid.
+
 ## [Määramata] - 2026-07-17
 
 ### Added

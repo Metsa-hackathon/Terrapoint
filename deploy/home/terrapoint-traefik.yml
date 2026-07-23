@@ -1,0 +1,17 @@
+http:
+  routers:
+    terrapoint-home:
+      rule: "Host(`terrapoint.arleserver.cfd`) && (PathPrefix(`/api/search/`) || PathPrefix(`/api/map-context/`))"
+      entryPoints:
+        - https
+      service: terrapoint-home
+      tls: {}
+  services:
+    terrapoint-home:
+      loadBalancer:
+        healthCheck:
+          path: /api/health
+          interval: 10s
+          timeout: 3s
+        servers:
+          - url: http://172.20.0.1:8001

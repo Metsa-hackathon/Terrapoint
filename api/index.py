@@ -19,6 +19,7 @@ import re
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Annotated
+from urllib.parse import urlsplit
 import httpx
 import orjson
 from shapely.geometry import shape
@@ -1000,7 +1001,37 @@ async def cadastral_object(adob_id: str, request: Request):
     return json_response({"katastri_nr": katastri_nr})
 
 
-VPS_API = "https://terrapoint.46-62-230-110.sslip.io/api"
+DEFAULT_BACKEND_API_URL = "https://terrapoint.arleserver.cfd/api"
+BACKEND_HOSTS = {"terrapoint.arleserver.cfd"}
+
+
+def _backend_api_url() -> str:
+    value = os.environ.get("TERRAPOINT_BACKEND_API_URL", "").strip()
+    value = (value or DEFAULT_BACKEND_API_URL).rstrip("/")
+    parsed = urlsplit(value)
+    try:
+        hostname = parsed.hostname
+        parsed.port
+    except ValueError:
+        hostname = None
+    canonical_hostname = hostname.rstrip(".") if hostname else None
+    if (
+        parsed.scheme != "https"
+        or not canonical_hostname
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.path != "/api"
+        or parsed.query
+        or parsed.fragment
+        or any(char.isspace() for char in parsed.netloc)
+        or "%" in parsed.netloc
+        or canonical_hostname not in BACKEND_HOSTS
+        or parsed.port not in (None, 443)
+    ):
+        raise RuntimeError(
+            "TERRAPOINT_BACKEND_API_URL must be an HTTPS origin ending in /api"
+        )
+    return value
 
 
 def _has_canonical_spatial_status(data: dict) -> bool:
@@ -1577,7 +1608,10 @@ async def map_context(
         try:
             params = [("themes", theme_id) for theme_id in requested_themes]
             async with httpx.AsyncClient(timeout=25.0) as client:
-                response = await client.get(f"{VPS_API}/map-context/{kataster_nr}", params=params)
+                response = await client.get(
+                    f"{_backend_api_url()}/map-context/{kataster_nr}",
+                    params=params,
+                )
             return _map_context_proxy_response(response, kataster_nr, requested_themes)
         except Exception:
             logger.exception("Map-context VPS proxy failed")
@@ -1619,7 +1653,7 @@ async def search(
         try:
             async with httpx.AsyncClient(timeout=25.0) as client:
                 resp = await client.get(
-                    f"{VPS_API}/search/{kataster_nr}",
+                    f"{_backend_api_url()}/search/{kataster_nr}",
                     params={"include_map_layers": str(include_map_layers).lower()},
                 )
                 return _search_proxy_response(resp, kataster_nr)

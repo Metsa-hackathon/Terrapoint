@@ -31,8 +31,10 @@ Metsa väärtuse ja andmete analüüsi veebirakendus. FastAPI backend + HTML/CSS
   mis `terrapoint.vercel.app` — mõlemad on sama Vercel deployment, push
   master branchi → mõlemad värskenevad kohe)
 - Vercel hostib frontend: `terrapoint.ee` (primary), `terrapoint.vercel.app` (alias)
-- Traefik proxyb backendi: 10.0.4.1:8099
-- Docker võrgud: coolify gateway 10.0.1.1, n8n 10.0.1.9
+- Vercel proxyb pikad päringud `terrapoint.arleserver.cfd` home-serveri API-le
+- Backendi URL-i saab muuta `TERRAPOINT_BACKEND_API_URL` keskkonnamuutujaga
+- Traefik proxyb backendi Docker bridge'i `172.20.0.1:8001` kaudu
+- Home-serveri API kuulab ainult `127.0.0.1:8099`; socat ingress on `deploy/home/`
 
 ## Olulised reeglid
 - Kõik peab olema Verceliga ühilduv — frontend deployitakse Vercelile

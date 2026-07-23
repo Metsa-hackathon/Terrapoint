@@ -1,0 +1,8 @@
+[Unit]
+Description=Update Terrapoint API from origin/master
+After=network-online.target terrapoint-api.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/root/projects/terrapoint/deploy.sh
