@@ -7,7 +7,7 @@ from __future__ import annotations
 # not a price that can be applied to every cubic metre in a stand. Without
 # element-level diameter and quality data, Annex 5 assortment bucking cannot
 # determine the actual sawlog/pulpwood/firewood split.
-# Source: https://www.riigiteataja.ee/aktilisa/1180/3202/5002/VV_17m_lisa5.pdf
+# Source: https://erametsaliit.ee/wp-content/uploads/2026/05/puiduhinnad-2026-i-kv.pdf
 PUBLISHED_SAWLOG_STUMPAGE_RANGES = {
     "MA": (76.1, 81.1),
     "KU": (79.6, 84.6),

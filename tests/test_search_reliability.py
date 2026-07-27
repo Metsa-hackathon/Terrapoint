@@ -327,6 +327,7 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(unavailable_stand["tagavara_y_ha"])
         self.assertIsNone(unavailable_stand["vaartus_hinnang_eur"])
         self.assertIsNone(result["mets"]["tagavara_y_ha"])
+        self.assertFalse(result["mets"]["peapuuliigi_andmed_taielikud"])
         self.assertIsNone(result["vaartus"]["tagavara_m3"])
         self.assertIsNone(result["vaartus"]["base_value_eur"])
         self.assertIsNone(result["sinik"]["co2_tons_total"])
@@ -778,12 +779,57 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result["mets"]["liigiandmed_taielikud"])
         self.assertEqual(summary["age_class_label"], "Määramata")
         self.assertEqual(feature["age_class_label"], "Määramata")
+        self.assertEqual(result["raie"]["status"], "unknown")
+        self.assertIsNone(result["raie"]["raievanus"])
         climate = next(
             item for item in result["toetused"]
             if item["id"] == "kliimakindla-metsa-kujundamine"
         )
         self.assertEqual(climate["eligibility_status"], "Vajab kontrolli")
         self.assertTrue(climate["andmed_piiratud"])
+
+    async def test_invalid_stand_geometry_is_omitted_and_marked_partial(self):
+        parcel_geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        stands = [{
+            "id": 1,
+            "eraldis_nr": 1,
+            "geometry": {"type": "Point", "coordinates": [24.05, 59.05]},
+            "pindala_ha": 1,
+            "puuliik_kood": "MA",
+            "puuliik_kood_raw": "MA",
+            "puuliik": "mänd",
+            "vanus": 40,
+            "vanus_raw": 40,
+            "tagavara_y_ha": 100,
+            "tagavara_provenance": "official",
+            "boniteedi_kood": 2,
+        }]
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value={
+                "number": "78404:409:0113",
+                "geometry": parcel_geometry,
+                "pindala_ha": 1,
+            })),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=stands)),
+            patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
+            patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        self.assertEqual(len(result["mets"]["eraldised"]), 1)
+        self.assertNotIn("eraldised", result["map_layers"])
+        self.assertIn(
+            "metsaregister.eraldis_geomeetria",
+            result["meta"]["unavailable_sources"],
+        )
+        self.assertTrue(result["meta"]["partial"])
+        self.assertTrue(result["meta"]["ai_analysis_available"])
 
     async def test_search_stand_overlay_keeps_legacy_teal_below_half_cutting_age(self):
         geometry = {
@@ -1021,7 +1067,7 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(status["kaitseala"], {
             "intersects": True,
-            "sources_complete": False,
+            "sources_complete": True,
         })
         self.assertEqual(status["sood"], {
             "intersects": False,
@@ -1139,6 +1185,26 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
                 if inspect.getcoroutinestate(task) != inspect.CORO_CLOSED:
                     task.close()
 
+    def test_malformed_notice_fields_are_unknown_instead_of_zero_or_executable_text(self):
+        normalized, complete = api._normalized_notice_properties({
+            "teatise_nr": {"unexpected": True},
+            "too_kood": ["LR"],
+            "otsus": "JAH\x00INJECT",
+            "pindala": "not-a-number",
+            "raiutav_maht": -5,
+            "eraldise_nr": "not-a-stand",
+            "arhiiv": "false",
+        })
+
+        self.assertFalse(complete)
+        self.assertEqual(normalized["teatise_nr"], "")
+        self.assertEqual(normalized["too_kood"], "")
+        self.assertEqual(normalized["otsus"], "JAH INJECT")
+        self.assertIsNone(normalized["pindala"])
+        self.assertIsNone(normalized["raiutav_maht"])
+        self.assertIsNone(normalized["eraldise_nr"])
+        self.assertFalse(normalized["arhiiv"])
+
     async def test_detail_task_failures_mark_both_sources_unavailable(self):
         kataster = {
             "number": "78404:409:0113",
@@ -1176,6 +1242,43 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertTrue(result["meta"]["partial"])
         self.assertTrue(result["meta"]["ai_analysis_available"])
+
+    async def test_detail_failure_does_not_turn_missing_species_into_pine_composition(self):
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        stands = [{
+            "id": 1,
+            "pindala_ha": 1,
+            "puuliik_kood": "MA",
+            "puuliik_kood_raw": None,
+            "puuliik": "mänd",
+            "vanus": 40,
+            "vanus_raw": 40,
+            "tagavara_y_ha": 100,
+            "tagavara_provenance": "official",
+            "boniteedi_kood": 3,
+            "eraldis_nr": 1,
+        }]
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value={
+                "number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1,
+            })),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=stands)),
+            patch("api.index.query_eraldis_element", new=AsyncMock(side_effect=RuntimeError("unavailable"))),
+            patch("api.index.query_kahjustused", new=AsyncMock(side_effect=RuntimeError("unavailable"))),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        stand = result["mets"]["eraldised"][0]
+        self.assertFalse(result["mets"]["liigiandmed_taielikud"])
+        self.assertEqual(result["mets"]["liikide_koosseis"], [])
+        self.assertFalse(stand["koosseisu_detail_kasutatud"])
+        self.assertEqual(stand["hinna_allika_kvaliteet"], "fallback")
 
     async def test_detail_failure_marks_only_the_failed_source(self):
         kataster = {
@@ -1325,7 +1428,12 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             patch("api.index.query_eraldis", new=AsyncMock(return_value=eraldised)),
             patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
             patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
-            patch("api.index.query_all_layers", new=AsyncMock(return_value=({"lageraiealad": [clearcut]}, [], []))),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({
+                "lageraiealad": [clearcut],
+                "yrask_eelis": [],
+                "yrask_mke": [],
+                "karuputk": [],
+            }, [], []))),
             patch("api.index.query_teatised", new=AsyncMock(return_value=[notice, notice_second_row, notice_without_volume, recovered_notice, unmatched_notice, malformed_date_notice])),
             patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
         ):
@@ -1383,6 +1491,151 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["teatised_meta"]["teatisi_kokku"], 5)
         self.assertEqual(result["teatised_meta"]["ridu_kokku"], 6)
 
+    async def test_search_deduplicates_kpois_umbrella_records_already_in_specialized_sources(self):
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        duplicate = {
+            "type": "Feature",
+            "id": "restriction.1",
+            "geometry": geometry,
+            "properties": {"id": 42, "kood": "VEE", "nimi": "Veekaitse"},
+        }
+        layers = {
+            "veekaitse": [duplicate],
+            "kma_kitsendused": [duplicate],
+            "kaitsealad": [],
+            "sood": [],
+        }
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value={
+                "number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1,
+            })),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=(layers, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        self.assertEqual([item["tyyp"] for item in result["kitsendused"]], ["veekaitse"])
+
+    async def test_beetle_observation_without_spruce_does_not_penalize_legacy_or_current_score(self):
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        stands = [{
+            "id": 1,
+            "eraldis_nr": 1,
+            "geometry": geometry,
+            "pindala_ha": 1,
+            "puuliik_kood": "MA",
+            "puuliik_kood_raw": "MA",
+            "puuliik": "mänd",
+            "vanus": 60,
+            "vanus_raw": 60,
+            "tagavara_y_ha": 100,
+            "tagavara_provenance": "official",
+            "boniteedi_kood": 3,
+            "invent_kp": "2026-01-01",
+            "registreerimise_kp": "2026-01-01",
+        }]
+        observation = {"type": "Feature", "geometry": geometry, "properties": {}}
+        layers = {
+            "yrask_eelis": [observation],
+            "yrask_mke": [],
+            "karuputk": [],
+            "kaitsealad": [],
+            "sood": [],
+        }
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value={
+                "number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1,
+            })),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=stands)),
+            patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
+            patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=(layers, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        self.assertEqual(result["riskid"]["yrask"]["score"], 0)
+        self.assertEqual(result["riskid"]["yrask_hinnang"]["score"], 0)
+        self.assertEqual(result["riskid"]["terviseindeks"], 98)
+        self.assertEqual(result["riskid"]["terviseskoor"], 100)
+
+    async def test_beetle_assessment_marks_unavailable_layers_as_partial(self):
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        stands = [{
+            "id": 1,
+            "eraldis_nr": 1,
+            "geometry": geometry,
+            "pindala_ha": 1,
+            "puuliik_kood": "KU",
+            "puuliik_kood_raw": "KU",
+            "puuliik": "kuusk",
+            "vanus": 60,
+            "vanus_raw": 60,
+            "tagavara_y_ha": 100,
+            "tagavara_provenance": "official",
+            "boniteedi_kood": 3,
+            "invent_kp": "2026-01-01",
+            "registreerimise_kp": "2026-01-01",
+        }]
+        layers = {
+            "yrask_eelis": [], "yrask_mke": [], "karuputk": [],
+            "kaitsealad": [], "sood": [],
+        }
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value={
+                "number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1,
+            })),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=stands)),
+            patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
+            patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=(
+                layers, ["yrask_eelis"], []
+            ))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        assessment = result["riskid"]["yrask_hinnang"]
+        self.assertFalse(assessment["sources_complete"])
+        self.assertFalse(assessment["layer_sources_complete"])
+        self.assertIn("kihikontroll osaline", assessment["label"])
+
+    async def test_unavailable_invasive_species_source_is_unknown_not_absent(self):
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        layers = {"karuputk": [], "kaitsealad": [], "sood": []}
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value={
+                "number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1,
+            })),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=(layers, ["karuputk"], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        self.assertIsNone(result["riskid"]["karuputk"])
+        self.assertEqual(result["riskid"]["karuputk_kontroll"], {
+            "intersects": None,
+            "sources_complete": False,
+        })
+
     async def test_partial_notice_layers_preserve_rows_and_mark_search_partial(self):
         geometry = {
             "type": "Polygon",
@@ -1403,6 +1656,11 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(result["teatised"]), 1)
         self.assertTrue(result["meta"]["partial"])
         self.assertIn("metsaregister.teatis_arhiiv", result["meta"]["unavailable_sources"])
+        self.assertFalse(result["teatised_meta"]["sources_complete"])
+        self.assertEqual(
+            result["teatised_meta"]["unavailable_sources"],
+            ["metsaregister.teatis_arhiiv"],
+        )
 
     async def test_notice_event_status_and_location_scope_are_neutral_and_additive(self):
         geometry = {
@@ -1466,17 +1724,19 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertFalse(by_number["ARCHIVED"]["active"])
         self.assertEqual(by_number["ARCHIVED"]["event_status"], "archived")
-        self.assertTrue(by_number["DENIED"]["active"])
+        self.assertFalse(by_number["DENIED"]["active"])
         self.assertEqual(by_number["DENIED"]["event_status"], "not_permitted")
         self.assertEqual(by_number["DENIED"]["event_status_label"], "Otsus ei luba tööd")
         self.assertFalse(by_number["EXPIRED"]["active"])
         self.assertEqual(by_number["EXPIRED"]["event_status"], "not_current")
         self.assertEqual(by_number["NO_EXPIRY"]["event_status"], "not_current")
         self.assertEqual(by_number["UNKNOWN"]["event_status"], "unknown")
-        self.assertTrue(by_number["MALFORMED"]["active"])
+        self.assertFalse(by_number["UNKNOWN"]["active"])
+        self.assertFalse(by_number["MALFORMED"]["active"])
         self.assertEqual(by_number["MALFORMED"]["event_status"], "unknown")
         self.assertEqual(by_number["MALFORMED"]["event_status_label"], "Staatus määramata")
         self.assertEqual(by_number["REGISTERED"]["event_status"], "registered")
+        self.assertFalse(by_number["REGISTERED"]["active"])
         self.assertNotEqual(by_number["REGISTERED"]["event_status"], "not_permitted")
         self.assertEqual(by_number["AREA_INFERRED"]["eraldise_seose_meetod"], "pindala")
         self.assertEqual(by_number["AREA_INFERRED"]["location_scope"], "parcel_unlocated")

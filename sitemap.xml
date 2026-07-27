@@ -4,40 +4,19 @@
 
   <url>
     <loc>https://terrapoint.ee/</loc>
-    <lastmod>2026-07-01</lastmod>
+    <lastmod>2026-07-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://terrapoint.ee/static/og-image.png</image:loc>
       <image:title>Terrapoint — Eesti metsaandmete analüüs</image:title>
-      <image:caption>Metsa väärtus, eraldised, süsinikuvaru, riskid ja toetused ühe otsinguga.</image:caption>
+      <image:caption>Maa referents, puidustsenaariumid, eraldised, süsinikuvaru, riskid ja toetused ühe otsinguga.</image:caption>
     </image:image>
     <image:image>
       <image:loc>https://terrapoint.ee/static/img/team-hackathon-2026.jpg</image:loc>
       <image:title>Terrapoint tiim — „Metsikult andmetes 2026" võitjad</image:title>
       <image:caption>Krister Koger, Kaspar Mälgand ja Arle Aron Reidma — Terrapoint tiim võitis Keskkonnaagentuuri „Metsikult andmetes 2026" häkatoni.</image:caption>
     </image:image>
-  </url>
-
-  <url>
-    <loc>https://terrapoint.ee/#meist</loc>
-    <lastmod>2026-07-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://terrapoint.ee/#allikad</loc>
-    <lastmod>2026-07-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://terrapoint.ee/#kontakt</loc>
-    <lastmod>2026-07-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
   </url>
 
 </urlset>

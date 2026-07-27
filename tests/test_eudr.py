@@ -41,18 +41,25 @@ class EudrContractTests(unittest.TestCase):
         }]
 
     def request(self, layers, unavailable=None, truncated=None):
+        self.layer_query = AsyncMock(
+            return_value=(layers, unavailable or [], truncated or [])
+        )
         with (
             patch("api.index.query_kataster", new=AsyncMock(return_value=self.kataster)),
             patch("api.index.query_eraldis", new=AsyncMock(return_value=self.eraldised)),
             patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
-            patch(
-                "api.index.query_all_layers",
-                new=AsyncMock(return_value=(layers, unavailable or [], truncated or [])),
-            ),
+            patch("api.index.query_layers", new=self.layer_query),
         ):
             return self.client.get(f"/api/export/eudr/{PARCEL}")
 
-    def test_export_uses_metsaregister_protected_area_in_canonical_status(self):
+    def test_export_queries_only_the_relevant_spatial_sources(self):
+        response = self.request({"kaitsealad": [], "sood": []})
+
+        self.assertEqual(response.status_code, 200)
+        self.layer_query.assert_awaited_once()
+        self.assertEqual(self.layer_query.await_args.args[1], ("kaitsealad", "sood"))
+
+    def test_adaptest_activity_model_is_not_exported_as_an_official_protected_area(self):
         response = self.request({
             "kaitsealad": [],
             "katsealad": [INTERSECTING_FEATURE],
@@ -61,11 +68,95 @@ class EudrContractTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         properties = response.json()["features"][0]["properties"]
-        self.assertTrue(properties["kaitseala"])
+        self.assertFalse(properties["kaitseala"])
         self.assertEqual(properties["spatial_status"]["kaitseala"], {
-            "intersects": True,
+            "intersects": False,
             "sources_complete": True,
         })
+
+    def test_export_uses_dominant_volume_species_instead_of_first_stand(self):
+        self.eraldised = [
+            {"pindala_ha": 1, "puuliik_kood": "KS", "vanus": 60, "tagavara_y_ha": 10},
+            {"pindala_ha": 2, "puuliik_kood": "MA", "vanus": 70, "tagavara_y_ha": 100},
+        ]
+
+        response = self.request({"kaitsealad": [], "sood": []})
+
+        self.assertEqual(response.status_code, 200)
+        properties = response.json()["features"][0]["properties"]
+        self.assertEqual(properties["peapuuliik"], "MA")
+
+    def test_export_does_not_guess_missing_forest_species_or_age(self):
+        self.eraldised = [{
+            "pindala_ha": 1.2,
+            "puuliik_kood": "MA",
+            "puuliik_kood_raw": None,
+            "vanus": 0,
+            "vanus_raw": None,
+            "tagavara_y_ha": 100,
+        }]
+
+        response = self.request({"kaitsealad": [], "sood": []})
+
+        self.assertEqual(response.status_code, 200)
+        properties = response.json()["features"][0]["properties"]
+        self.assertIsNone(properties["peapuuliik"])
+        self.assertFalse(properties["metsa_liigiandmed_taielikud"])
+        self.assertIsNone(properties["keskmine_vanus"])
+        self.assertFalse(properties["metsa_vanuseandmed_taielikud"])
+
+    def test_export_does_not_choose_a_dominant_species_with_missing_stock(self):
+        self.eraldised = [
+            {
+                "pindala_ha": 1,
+                "puuliik_kood": "MA",
+                "puuliik_kood_raw": "MA",
+                "vanus": 20,
+                "vanus_raw": 20,
+                "tagavara_y_ha": 100,
+            },
+            {
+                "pindala_ha": 10,
+                "puuliik_kood": "KU",
+                "puuliik_kood_raw": "KU",
+                "vanus": 30,
+                "vanus_raw": 30,
+                "tagavara_y_ha": None,
+            },
+        ]
+
+        response = self.request({"kaitsealad": [], "sood": []})
+
+        properties = response.json()["features"][0]["properties"]
+        self.assertTrue(properties["metsa_liigiandmed_taielikud"])
+        self.assertFalse(properties["metsa_tagavaraandmed_taielikud"])
+        self.assertIsNone(properties["peapuuliik"])
+
+    def test_export_preserves_a_valid_zero_age(self):
+        self.eraldised = [{
+            "pindala_ha": 1.2,
+            "puuliik_kood": "MA",
+            "puuliik_kood_raw": "MA",
+            "vanus": 0,
+            "vanus_raw": 0,
+            "tagavara_y_ha": 0,
+        }]
+
+        response = self.request({"kaitsealad": [], "sood": []})
+
+        properties = response.json()["features"][0]["properties"]
+        self.assertEqual(properties["keskmine_vanus"], 0)
+        self.assertTrue(properties["metsa_vanuseandmed_taielikud"])
+
+    def test_export_is_explicitly_a_geolocation_reference_not_due_diligence_declaration(self):
+        response = self.request({"kaitsealad": [], "sood": []})
+
+        self.assertEqual(response.status_code, 200)
+        properties = response.json()["features"][0]["properties"]
+        self.assertEqual(properties["eudr_export_scope"], "geolocation_reference")
+        self.assertFalse(properties["eudr_due_diligence_complete"])
+        self.assertTrue(properties["eudr_limitations"])
+        self.assertTrue(any("raadamis" in item.lower() for item in properties["eudr_limitations"]))
 
     def test_export_fails_closed_when_relevant_status_is_unknown(self):
         response = self.request(
@@ -120,7 +211,7 @@ class EudrContractTests(unittest.TestCase):
 
     def test_missing_required_protection_layer_fails_closed(self):
         response = self.request({
-            "kaitsealad": [],
+            "katsealad": [INTERSECTING_FEATURE],
             "sood": [],
         })
 

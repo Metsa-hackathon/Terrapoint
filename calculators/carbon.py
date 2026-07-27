@@ -27,6 +27,9 @@ kuusk on boreaalne okaspuu — IPCC järgi 0.24. See vähendab kuuse biomassi
 arvutust ~4%, kombineeritult tiheduse parandusega (0.40 vs 0.46) ~13%.
 """
 
+import math
+
+
 # Puidu tihedus (t/m³) — IPCC GPG LULUCF Table 3A.1.9-1 järgi.
 # root_shoot — IPCC 2006 GL Table 4.4 (boreaal/temperatuurse metsad) järgi.
 # BEF — biomass expansion factor, IPCC GPG Table 3A.1.10 järgi (kõik
@@ -40,8 +43,8 @@ SPECIES_DATA = {
     # Lehtpuud — boreaalne/liigendatud, IPCC Table 3A.1.9-1
     "KS": {"density": 0.51, "bef": 1.30, "root_shoot": 0.24},  # Betula pendula
     "HB": {"density": 0.35, "bef": 1.40, "root_shoot": 0.24},  # Populus tremula — tihedus 0.45→0.35 (29% parandus)
-    "LM": {"density": 0.45, "bef": 1.38, "root_shoot": 0.26},  # Alnus incana (perekond)
-    "LV": {"density": 0.45, "bef": 1.38, "root_shoot": 0.26},  # Alnus glutinosa (perekond)
+    "LM": {"density": 0.45, "bef": 1.38, "root_shoot": 0.26},  # Alnus glutinosa (sanglepp; perekonna tegur)
+    "LV": {"density": 0.45, "bef": 1.38, "root_shoot": 0.26},  # Alnus incana (hall lepp; perekonna tegur)
     "RE": {"density": 0.45, "bef": 1.38, "root_shoot": 0.26},  # Salix (parandatud 0.50→0.45)
     # Muud liigid — Eesti liigipõhiste andmete puudusel IPCC rühma vaikeväärtused
     "TA": {"density": 0.58, "bef": 1.30, "root_shoot": 0.24},  # Quercus
@@ -57,12 +60,13 @@ SPECIES_DATA = {
 CARBON_FRACTION = 0.47
 # CO2/C molaarse massi suhe = 44/12 ≈ 3.67. Universaalne keemia konstant.
 CO2_C_RATIO = 3.67
-# Süsiniku potentsiaalne tulu — vabatahtlik süsinikuturg (VCM), forest-credit
-# väärtus €10-30/t. Kasutame keskmist €20/t (allikas: carboncredits.com,
-# senken.io 2025-2026 VCM ülevaated). Hind hajutab suuresti kvaliteedi
-# järgi: madala kvaliteedi krediit ~€5/t, kõrge kvaliteedi (ICVCM
-# heakskiidetud) kuni €80/t.
-CO2_PRICE_EUR = 20
+# Olemasolevat süsinikuvaru ei saa korrutada krediidihinnaga. Süsinikutulu
+# sõltub tõendatud lisanduvusest, baasjoonest, püsivusest, lekkest, seirest ja
+# konkreetse standardi verifitseerimisest; neid sisendeid registrivastus ei anna.
+CREDIT_INCOME_LIMITATION = (
+    "Olemasolev süsinikuvaru ei ole müüdavate krediitide kogus; tulu hindamiseks "
+    "on vaja tõendada lisanduv sidumine ja läbida krediidistandardi kontroll."
+)
 # Keskmine EU sõiduauto aastane CO2 jälg (elukaartse: tootmine + kasutus +
 # utiliseerimine): ~3.0 t/a. Allikas EEA ja D-Carbonize 2024-2026.
 # Pelga väljalaske (tailpipe) järgi ~1.3-2.5 t/a; elukaartse järgi ~3-5 t/a.
@@ -75,40 +79,108 @@ CO2_PER_CAR_YEAR = 3.0
 CO2_PER_TREE_KG = 22
 
 
-def carbon_potential(tagavara_y_ha: float, pindala_ha: float, peapuuliik_kood: str) -> dict:
-    """Arvuta metsa biomass, süsinik ja CO2 ekvivalendid.
+def _nonnegative_number(value: object) -> float | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if number < 0 or not math.isfinite(number):
+        return None
+    return number
 
-    Args:
-        tagavara_y_ha: ümarmaterjali tagavara m³/ha (sisend metsaregistrist)
-        pindala_ha: metsamaa pindala hektarites
-        peapuuliik_kood: peapuuliigi kood (nt "MA" = Mänd)
 
-    Returns:
-        dict: biomass_tons_ha, carbon_tons_ha, co2_tons_ha,
-              co2_tons_total, potential_income_eur, cars_equivalent,
-              trees_equivalent
-
-    Valem IPCC GPG LULUCF 2003 järgi:
-        biomass = tagavara × density × BEF × (1 + root_shoot)
-        carbon  = biomass × carbon_fraction
-        co2     = carbon × co2/c_ratio
-    """
-    sp = SPECIES_DATA.get(peapuuliik_kood, SPECIES_DATA["MA"])
-    biomass_ha = tagavara_y_ha * sp["density"] * sp["bef"] * (1 + sp["root_shoot"])
+def _raw_carbon(stock_per_ha: object, area_ha: object, species_code: object) -> dict | None:
+    stock = _nonnegative_number(stock_per_ha)
+    area = _nonnegative_number(area_ha)
+    code = str(species_code or "").upper()
+    species = SPECIES_DATA.get(code)
+    if stock is None or area is None or species is None:
+        return None
+    biomass_ha = stock * species["density"] * species["bef"] * (1 + species["root_shoot"])
     carbon_ha = biomass_ha * CARBON_FRACTION
     co2_ha = carbon_ha * CO2_C_RATIO
-    co2_total = co2_ha * pindala_ha
-
-    # Sammuväärtused (süsinik, autod, puud) — kommunikatsiooniks
-    cars_equivalent = round(co2_total / CO2_PER_CAR_YEAR)
-    trees_equivalent = round(co2_total * 1000 / CO2_PER_TREE_KG)  # tonnid → kg
-
     return {
-        "biomass_tons_ha": round(biomass_ha, 1),
-        "carbon_tons_ha": round(carbon_ha, 1),
-        "co2_tons_ha": round(co2_ha, 1),
-        "co2_tons_total": round(co2_total, 1),
-        "potential_income_eur": round(co2_total * CO2_PRICE_EUR),
-        "cars_equivalent": cars_equivalent,
-        "trees_equivalent": trees_equivalent,
+        "area_ha": area,
+        "biomass_tons_ha": biomass_ha,
+        "carbon_tons_ha": carbon_ha,
+        "co2_tons_ha": co2_ha,
+        "co2_tons_total": co2_ha * area,
     }
+
+
+def _public_carbon_result(raw: dict) -> dict:
+    co2_total = raw["co2_tons_total"]
+    return {
+        "biomass_tons_ha": round(raw["biomass_tons_ha"], 1),
+        "carbon_tons_ha": round(raw["carbon_tons_ha"], 1),
+        "co2_tons_ha": round(raw["co2_tons_ha"], 1),
+        "co2_tons_total": round(co2_total, 1),
+        "potential_income_eur": None,
+        "credit_income_estimate_available": False,
+        "credit_income_limitation": CREDIT_INCOME_LIMITATION,
+        "cars_equivalent": round(co2_total / CO2_PER_CAR_YEAR),
+        "trees_equivalent": round(co2_total * 1000 / CO2_PER_TREE_KG),
+    }
+
+
+def carbon_potential(tagavara_y_ha: float, pindala_ha: float, peapuuliik_kood: str) -> dict:
+    """Arvuta ühe liigiga puistu biomass, süsinik ja CO2 ekvivalendid.
+
+    Tundmatu liigi või vigase numbrilise sisendi puhul ei asendata liiki
+    vaikimisi männiga, sest see looks näiliselt täpse registriväite.
+    """
+    raw = _raw_carbon(tagavara_y_ha, pindala_ha, peapuuliik_kood)
+    if raw is None:
+        return {
+            "biomass_tons_ha": None,
+            "carbon_tons_ha": None,
+            "co2_tons_ha": None,
+            "co2_tons_total": None,
+            "potential_income_eur": None,
+            "credit_income_estimate_available": False,
+            "credit_income_limitation": CREDIT_INCOME_LIMITATION,
+            "cars_equivalent": None,
+            "trees_equivalent": None,
+        }
+    return _public_carbon_result(raw)
+
+
+def forest_carbon_potential(stands: list[dict]) -> dict | None:
+    """Koonda süsinikuvaru eraldiste kaupa, kasutades iga eraldise liiki.
+
+    Kogu kinnistu käsitlemine ühe domineeriva liigina moonutab segametsa
+    biomassi. Kui mõne pindalaga eraldise liik, tagavara või pindala ei ole
+    usaldusväärne, jääb kinnistu koondhinnang teadmata.
+    """
+    total_area = 0.0
+    total_biomass = 0.0
+    total_carbon = 0.0
+    total_co2 = 0.0
+    for stand in stands:
+        species_code = (
+            stand.get("puuliik_kood_raw")
+            if "puuliik_kood_raw" in stand
+            else stand.get("puuliik_kood")
+        )
+        raw = _raw_carbon(
+            stand.get("tagavara_y_ha"),
+            stand.get("pindala_ha"),
+            species_code,
+        )
+        if raw is None:
+            return None
+        area = raw["area_ha"]
+        total_area += area
+        total_biomass += raw["biomass_tons_ha"] * area
+        total_carbon += raw["carbon_tons_ha"] * area
+        total_co2 += raw["co2_tons_total"]
+    if total_area <= 0:
+        return None
+    return _public_carbon_result({
+        "biomass_tons_ha": total_biomass / total_area,
+        "carbon_tons_ha": total_carbon / total_area,
+        "co2_tons_ha": total_co2 / total_area,
+        "co2_tons_total": total_co2,
+    })

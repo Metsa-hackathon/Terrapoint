@@ -6,6 +6,39 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > domain). `terrapoint.vercel.app` on sama projekti alias — push master
 > branchi uuendab mõlemat korraga.
 
+## [Määramata] - 2026-07-27
+
+### Added
+- **Lähteandmete ja arvutuste regressioonilepingud** katavad nüüd vahemälu
+  väljatõstmise, katastri- ja Metsaregistri väljade tervikluse, osalised
+  allikavastused, EUDR väljavõtte ulatuse ning brauseri töövood.
+- **Isehostitud brauserivarad** — Leaflet, muutuvad kirjafondid ja ligipääsetav
+  API juhend ei sõltu enam käitusajal kolmandate osapoolte koodi-CDN-idest.
+
+### Changed
+- **EUDR GeoJSON on geolokatsiooni lähtefail** — väljavõte ei nimeta end
+  vastavuskontrolliks ega deklaratsiooniks ning kirjeldab eraldi 31.12.2020
+  ajapiiri, tarneahela ja hoolsuskohustuse puuduvaid tõendeid.
+- **Vanuse ja väärtuse väljundid on otsustusneutraalsed** — vanuse suhe ei ole
+  raiemeetodi soovitus, puidu vahemik ei ole turuväärtus ning suurima eraldise
+  näitajad ja hinnangulised sisendid on selgelt piiritletud.
+- **Juurutus paigaldab muutunud sõltuvused** samasse Pythoni keskkonda, mida
+  API teenus kasutab, kontrollib `pip check` tulemust ning märgib deploy õnnestunuks
+  alles API, avalehe ja rakenduse JavaScripti tervisekontrolli järel.
+
+### Fixed
+- **FastAPI ja Starlette turvauuendus** eemaldab auditis leitud haavatava
+  Starlette versiooni; brauserivastused kasutavad Vercelis ja FastAPI-s sama
+  ranget CSP-d ning turvapäiseid.
+- **Registriandmete terviklus** — vigased või vastuolulised pindala-, hinna-,
+  kuupäeva-, liigi-, tagavara-, teatise- ja geomeetriaväljad ei muutu enam
+  arvutusotsuses nulliks, vaikimisi männiks ega kinnitatud negatiivseks tulemuseks.
+- **Kihilised kasutajaliidese töövood** parandavad aadressi valiku, päringute
+  võistlusolukorrad, fookuse taastamise, mobiilse tabelikerimise, EUDR veateated
+  ja AI sisemise mõttekäigu varjamise.
+- **Staatiliste varade maht** vähenes: kasutamata fotod eemaldati ja kuus
+  töölauavaate puupilti asendati väiksemate WebP-failidega.
+
 ## [Määramata] - 2026-07-23
 
 ### Fixed

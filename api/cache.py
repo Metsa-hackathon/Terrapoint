@@ -10,6 +10,8 @@ class TTLCache:
     """Thread-safe in-memory cache with TTL per key."""
 
     def __init__(self, default_ttl: int = 300, max_entries: int = 512):
+        if max_entries < 1:
+            raise ValueError("max_entries must be positive")
         self._data: dict[str, tuple[float, object]] = {}
         self._default_ttl = default_ttl
         self._max_entries = max_entries
@@ -21,14 +23,17 @@ class TTLCache:
             if entry is None:
                 return None
             expires_at, value = entry
-            if time.time() > expires_at:
+            if time.monotonic() > expires_at:
                 del self._data[key]
                 return None
             return value
 
     def set(self, key: str, value: object, ttl: int | None = None) -> None:
-        expires_at = time.time() + (ttl if ttl is not None else self._default_ttl)
+        expires_at = time.monotonic() + (ttl if ttl is not None else self._default_ttl)
         with self._lock:
+            # Refreshing an existing key must not evict an unrelated entry.
+            # Reinsert it so the insertion-ordered dict keeps FIFO eviction fair.
+            self._data.pop(key, None)
             while len(self._data) >= self._max_entries:
                 self._data.pop(next(iter(self._data)))
             self._data[key] = (expires_at, value)

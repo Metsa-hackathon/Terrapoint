@@ -1,7 +1,9 @@
+import asyncio
 import unittest
 from urllib.parse import parse_qs, urlparse
 from unittest.mock import AsyncMock, patch
 
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from api import index as api
@@ -298,6 +300,131 @@ class KatasterApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 502)
         self.assertEqual(response.json(), {"error": "Katastri andmeallikas ei vasta. Proovi uuesti."})
+
+    def test_query_kataster_rejects_an_upstream_record_for_another_parcel(self):
+        feature = {
+            "properties": {
+                "tunnus": "10501:001:9999",
+                "pindala": 10_000,
+            },
+            "geometry": {"type": "Polygon", "coordinates": []},
+        }
+
+        with patch("services.kataster._wfs_get", new=AsyncMock(return_value=[feature])):
+            with self.assertRaises(HTTPException) as context:
+                asyncio.run(kataster.query_kataster("10501:001:0001"))
+
+        self.assertEqual(context.exception.status_code, 502)
+
+    def test_query_kataster_rejects_conflicting_duplicate_records(self):
+        feature = {
+            "properties": {
+                "tunnus": "10501:001:0001",
+                "pindala": 10_000,
+                "maks_hind": 1000,
+            },
+            "geometry": {"type": "Polygon", "coordinates": []},
+        }
+        conflict = {
+            **feature,
+            "properties": {**feature["properties"], "pindala": 20_000},
+        }
+
+        with patch(
+            "services.kataster._wfs_get",
+            new=AsyncMock(return_value=[feature, conflict]),
+        ):
+            with self.assertRaises(HTTPException) as context:
+                asyncio.run(kataster.query_kataster("10501:001:0001"))
+
+        self.assertEqual(context.exception.status_code, 502)
+
+    def test_query_kataster_accepts_an_exact_duplicate_only_once(self):
+        feature = {
+            "properties": {
+                "tunnus": "10501:001:0001",
+                "pindala": 10_000,
+                "maks_hind": 1000,
+            },
+            "geometry": {"type": "Polygon", "coordinates": []},
+        }
+
+        with patch(
+            "services.kataster._wfs_get",
+            new=AsyncMock(return_value=[feature, feature]),
+        ):
+            result = asyncio.run(kataster.query_kataster("10501:001:0001"))
+
+        self.assertEqual(result["pindala_ha"], 1)
+        self.assertEqual(result["maks_hind"], 1000)
+
+    def test_query_kataster_rejects_malformed_official_text(self):
+        feature = {
+            "properties": {
+                "tunnus": "10501:001:0001",
+                "pindala": 10_000,
+                "l_aadress": {"unexpected": True},
+            },
+            "geometry": {"type": "Polygon", "coordinates": []},
+        }
+
+        with patch("services.kataster._wfs_get", new=AsyncMock(return_value=[feature])):
+            with self.assertRaises(HTTPException) as context:
+                asyncio.run(kataster.query_kataster("10501:001:0001"))
+
+        self.assertEqual(context.exception.status_code, 502)
+
+    def test_query_kataster_rejects_invalid_official_taxable_value(self):
+        for value in ("not-a-number", -1, float("nan"), True):
+            with self.subTest(value=value):
+                feature = {
+                    "properties": {
+                        "tunnus": "10501:001:0001",
+                        "pindala": 10_000,
+                        "maks_hind": value,
+                    },
+                    "geometry": {"type": "Polygon", "coordinates": []},
+                }
+
+                with patch("services.kataster._wfs_get", new=AsyncMock(return_value=[feature])):
+                    with self.assertRaises(HTTPException) as context:
+                        asyncio.run(kataster.query_kataster("10501:001:0001"))
+
+                self.assertEqual(context.exception.status_code, 502)
+
+    def test_query_kataster_preserves_missing_and_zero_taxable_values(self):
+        for value in (None, 0):
+            with self.subTest(value=value):
+                feature = {
+                    "properties": {
+                        "tunnus": "10501:001:0001",
+                        "pindala": 10_000,
+                        "maks_hind": value,
+                    },
+                    "geometry": {"type": "Polygon", "coordinates": []},
+                }
+
+                with patch("services.kataster._wfs_get", new=AsyncMock(return_value=[feature])):
+                    result = asyncio.run(kataster.query_kataster("10501:001:0001"))
+
+                self.assertEqual(result["maks_hind"], value)
+
+    def test_query_kataster_rejects_invalid_official_area(self):
+        for area in ("not-a-number", -1, 0, float("nan"), True):
+            with self.subTest(area=area):
+                feature = {
+                    "properties": {
+                        "tunnus": "10501:001:0001",
+                        "pindala": area,
+                    },
+                    "geometry": {"type": "Polygon", "coordinates": []},
+                }
+
+                with patch("services.kataster._wfs_get", new=AsyncMock(return_value=[feature])):
+                    with self.assertRaises(HTTPException) as context:
+                        asyncio.run(kataster.query_kataster("10501:001:0001"))
+
+                self.assertEqual(context.exception.status_code, 502)
 
 
 if __name__ == "__main__":

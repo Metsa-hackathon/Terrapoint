@@ -2,7 +2,13 @@ import unittest
 from unittest.mock import AsyncMock, patch
 
 from services import metsaregister
-from services.metsaregister import MetsaregisterWFSError, query_eraldis, query_eraldis_element, query_teatised
+from services.metsaregister import (
+    MetsaregisterWFSError,
+    query_eraldis,
+    query_eraldis_element,
+    query_kahjustused,
+    query_teatised,
+)
 
 
 class FakeResponse:
@@ -197,6 +203,7 @@ class MetsaregisterDataTests(unittest.IsolatedAsyncioTestCase):
                 "registreerimise_kp": "2019-01-03T12:30:00Z",
                 "juurdekasv": 4.2,
                 "kasvukoht_kood": "MD",
+                "keskm_raievanus": 67,
             },
         }]
 
@@ -207,6 +214,7 @@ class MetsaregisterDataTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(eraldised[0]["registreerimise_kp"], "2019-01-03")
         self.assertEqual(eraldised[0]["juurdekasv"], 4.2)
         self.assertEqual(eraldised[0]["kasvukoht_kood"], "MD")
+        self.assertEqual(eraldised[0]["raievanus"], 67)
 
     async def test_missing_age_and_species_remain_available_to_classifiers_as_none(self):
         features = [{
@@ -225,6 +233,61 @@ class MetsaregisterDataTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(stands[0]["puuliik_kood"], "MA")
         self.assertIsNone(stands[0]["vanus_raw"])
         self.assertIsNone(stands[0]["puuliik_kood_raw"])
+
+    async def test_invalid_boolean_and_date_stand_data_fails_closed(self):
+        base = {
+            "id": 1,
+            "peapuuliik_kood": "MA",
+            "tagavara_1_ha": 10,
+            "boniteedi_kood": 2,
+            "pindala": 1,
+        }
+        for extra in (
+            {"kuivendatud": "false"},
+            {"invent_kp": {"unexpected": True}},
+            {"registreerimise_kp": "not-a-date"},
+        ):
+            with self.subTest(extra=extra):
+                features = [{"properties": {**base, **extra}}]
+                with patch(
+                    "services.metsaregister._wfs_get",
+                    new=AsyncMock(return_value=features),
+                ):
+                    with self.assertRaises(MetsaregisterWFSError):
+                        await query_eraldis("78404:409:0113")
+
+    async def test_invalid_numeric_stand_data_fails_closed(self):
+        features = [{
+            "properties": {
+                "id": 1,
+                "peapuuliik_kood": "MA",
+                "tagavara_1_ha": -1,
+                "boniteedi_kood": 2,
+                "pindala": 1,
+            },
+        }]
+
+        with patch("services.metsaregister._wfs_get", new=AsyncMock(return_value=features)):
+            with self.assertRaises(MetsaregisterWFSError):
+                await query_eraldis("78404:409:0113")
+
+    async def test_missing_stand_area_fails_closed(self):
+        features = [{"properties": {"id": 1, "peapuuliik_kood": "MA"}}]
+
+        with patch("services.metsaregister._wfs_get", new=AsyncMock(return_value=features)):
+            with self.assertRaises(MetsaregisterWFSError):
+                await query_eraldis("78404:409:0113")
+
+    async def test_zero_stand_area_fails_closed(self):
+        features = [{"properties": {
+            "id": 1,
+            "peapuuliik_kood": "MA",
+            "pindala": 0,
+        }}]
+
+        with patch("services.metsaregister._wfs_get", new=AsyncMock(return_value=features)):
+            with self.assertRaises(MetsaregisterWFSError):
+                await query_eraldis("78404:409:0113")
 
     async def test_notices_merge_current_and_archive_and_prefer_current_duplicate(self):
         current = [{"id": "teatis.1", "properties": {
@@ -261,6 +324,37 @@ class MetsaregisterDataTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(current_a["arhiiv"])
         self.assertEqual(current_a["otsus"], "JAH")
 
+    async def test_notice_query_does_not_crash_on_unhashable_source_fields(self):
+        current = [{
+            "id": {"unexpected": True},
+            "properties": {
+                "teatise_nr": {"unexpected": True},
+                "eraldise_nr": [1],
+                "too_kood": ["LR"],
+            },
+        }]
+
+        async def fake_wfs(url, **_kwargs):
+            return [] if "teatis_arhiiv" in url else current
+
+        with patch("services.metsaregister._wfs_get", new=AsyncMock(side_effect=fake_wfs)):
+            notices, unavailable = await query_teatised("78404:409:0113")
+
+        self.assertEqual(len(notices), 1)
+        self.assertEqual(unavailable, [])
+
+    async def test_notice_query_marks_malformed_properties_incomplete(self):
+        current = [{"id": "teatis.1", "properties": None}]
+
+        async def fake_wfs(url, **_kwargs):
+            return [] if "teatis_arhiiv" in url else current
+
+        with patch("services.metsaregister._wfs_get", new=AsyncMock(side_effect=fake_wfs)):
+            notices, unavailable = await query_teatised("78404:409:0113")
+
+        self.assertEqual(notices, [])
+        self.assertEqual(unavailable, ["metsaregister.teatis"])
+
     async def test_notice_query_reports_single_layer_failure_with_surviving_rows(self):
         current = [{"id": "teatis.1", "properties": {"teatise_nr": "A"}}]
 
@@ -282,6 +376,66 @@ class MetsaregisterDataTests(unittest.IsolatedAsyncioTestCase):
         ):
             with self.assertRaises(MetsaregisterWFSError):
                 await query_teatised("78404:409:0113")
+
+    async def test_stand_query_rejects_record_declared_for_another_parcel(self):
+        features = [{
+            "properties": {
+                "id": 1,
+                "katastri_nr": "78404:409:9999",
+                "peapuuliik_kood": "MA",
+                "tagavara_1_ha": 10,
+                "pindala": 1,
+            },
+        }]
+
+        with patch("services.metsaregister._wfs_get", new=AsyncMock(return_value=features)):
+            with self.assertRaises(MetsaregisterWFSError):
+                await query_eraldis("78404:409:0113")
+
+    async def test_exact_duplicate_stands_do_not_double_area_or_stock(self):
+        feature = {
+            "id": "eraldis.1",
+            "properties": {
+                "id": 1,
+                "katastri_nr": "78404:409:0113",
+                "eraldise_nr": 1,
+                "peapuuliik_kood": "MA",
+                "tagavara_1_ha": 100,
+                "boniteedi_kood": 2,
+                "pindala": 1,
+            },
+        }
+
+        with patch("services.metsaregister._wfs_get", new=AsyncMock(return_value=[feature, feature])):
+            stands = await query_eraldis("78404:409:0113")
+
+        self.assertEqual(len(stands), 1)
+
+    async def test_damage_query_rejects_malformed_text_fields(self):
+        features = [{
+            "properties": {
+                "eraldis_id": 1,
+                "kahjustuse_tyyp": {"unexpected": True},
+            },
+        }]
+
+        with patch("services.metsaregister._wfs_get", new=AsyncMock(return_value=features)):
+            with self.assertRaises(MetsaregisterWFSError):
+                await query_kahjustused(1)
+
+    async def test_element_query_rejects_record_for_another_stand(self):
+        features = [{
+            "properties": {
+                "eraldis_id": 2,
+                "puuliik_kood": "MA",
+                "tagavara": 50,
+                "vanus": 60,
+            },
+        }]
+
+        with patch("services.metsaregister._wfs_get", new=AsyncMock(return_value=features)):
+            with self.assertRaises(MetsaregisterWFSError):
+                await query_eraldis_element(1)
 
 
 if __name__ == "__main__":

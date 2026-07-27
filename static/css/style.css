@@ -749,6 +749,19 @@ a { color: var(--blue-700); text-decoration: none; }
     font-weight: 500;
     letter-spacing: 0.01em;
 }
+.eudr-scope-warning {
+    display: grid;
+    gap: 4px;
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border: 1px solid #f2cf7d;
+    border-radius: var(--r-sm);
+    background: var(--warn-bg);
+    color: var(--ink-3);
+    font-size: 12px;
+    line-height: 1.45;
+}
+.eudr-scope-warning strong { color: var(--warn); }
 .eudr-export-btn {
     display: inline-flex;
     align-items: center;
@@ -766,6 +779,7 @@ a { color: var(--blue-700); text-decoration: none; }
 }
 .eudr-export-btn:hover { background: var(--blue-950); }
 .eudr-export-btn:active { transform: translateY(1px); }
+.eudr-export-btn:disabled { opacity: 0.65; cursor: wait; transform: none; }
 .eudr-export-btn svg { flex-shrink: 0; }
 
 /* Collapsible summary line — quiet, but legible on hover */
@@ -1132,10 +1146,9 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     z-index: 2;
 }
 
-.landing-eyebrow { transform-origin: 50% 50%; }
-
 .landing-eyebrow {
     display: inline-flex;
+    transform-origin: 50% 50%;
     align-items: center;
     gap: 5px;
     padding: 4px 11px 4px 9px;
@@ -2447,10 +2460,8 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     border-top: 1px solid var(--paper-3);
 }
 .comp-table td {
-    font-size: var(--tier-3-table);
-}
-.comp-table td {
     padding: 8px 0;
+    font-size: var(--tier-3-table);
     border-bottom: 1px solid var(--paper-3);
     font-family: var(--ff-sans);
 }
@@ -2564,7 +2575,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     font-size: 13px;
     color: var(--ink-4);
     margin: 1px 0 0;
-    letter-spacing: -0.005em;
     font-family: var(--ff-mono);
     letter-spacing: 0;
 }
@@ -2895,6 +2905,12 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .ai-hint-custom:hover {
     background: var(--blue-700);
     border-color: var(--blue-700);
+}
+.ai-chat-privacy {
+    margin: 10px 2px 0;
+    color: var(--ink-5);
+    font-size: 11px;
+    line-height: 1.45;
 }
 .ai-welcome { opacity: 0.95; }
 
@@ -3779,8 +3795,10 @@ footer {
 .leaflet-control-attribution:focus,
 .leaflet-control-attribution:focus-within {
     max-width: min(720px, 90vw);
-    background: rgba(255, 255, 255, 0.97) !important;
     padding: 6px 10px !important;
+    background: rgba(255, 255, 255, 0.97) !important;
+    white-space: normal;
+    text-overflow: clip;
     cursor: auto;
 }
 .leaflet-control-attribution:hover::before,
@@ -3792,12 +3810,6 @@ footer {
 .leaflet-control-attribution:focus a,
 .leaflet-control-attribution:focus-within a {
     display: inline;
-}
-.leaflet-control-attribution:hover,
-.leaflet-control-attribution:focus,
-.leaflet-control-attribution:focus-within {
-    white-space: normal;
-    text-overflow: clip;
 }
 @media (max-width: 640px) {
     .leaflet-control-attribution { font-size: 10px !important; }
@@ -3989,6 +4001,10 @@ footer {
     white-space: nowrap;
 }
 .table-grid-row:hover { background: var(--paper-2); }
+.table-grid-hscroll {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+}
 .table-grid-scroll {
     max-height: calc(var(--table-grid-row-min, 30px) * 15);
     overflow-y: auto;
@@ -4044,6 +4060,24 @@ footer {
     text-align: left;
 }
 .kitsendused-row strong { font-weight: 600; color: var(--ink-2); }
+.kitsendused-desc-toggle {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    min-height: 24px;
+    padding: 2px 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+.kitsendused-desc-toggle:focus-visible {
+    outline: 2px solid var(--blue-500);
+    outline-offset: 3px;
+    border-radius: 2px;
+}
 .kitsendused-row.has-kitsendused-desc {
     position: relative;
     overflow: visible;
@@ -4311,15 +4345,6 @@ footer {
         min-width: 100%;
     }
     .table-grid-scroll { overflow-x: visible; }
-    .table-grid-hscroll { overflow-x: auto; overscroll-behavior-x: contain; }
-
-/* Horisontaalne scroll: Kitsendused, Metsateatised, Toetused tabelid
-   1/3-laiuses kaardis (357px) ei mahu — Pindala veerg läheb kärbitud.
-   Lubame alati horisontaalse scrolli, et kõik veerud oleks kättesaadavad. */
-.table-grid-hscroll {
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-}
 
     .eraldised-table-header,
     .eraldised-row {
@@ -4425,7 +4450,7 @@ footer {
     .ai-chat-header h2 { font-size: 13px; }
     .ai-chat-subtitle { font-size: 12.5px; }
     .ai-bubble { font-size: 13.5px; padding: 8px 12px; }
-    .ai-hint { font-size: 12.5px; padding: 5px 11px; }
+    .ai-hint { min-height: 44px; padding: 8px 12px; font-size: 12.5px; }
     .ai-chat-input-area { padding: 10px 12px 12px; }
 
     .error-msg {
@@ -4479,11 +4504,7 @@ footer {
     .ai-chat-input-wrap input,
     .ai-chat-input-wrap textarea { min-height: 44px; padding: 10px 0; font-size: 15px; }
     .ai-chat-input-wrap button { width: 44px; height: 44px; }
-    .search-box { min-height: 40px; }
     .search-box button { width: 44px; height: 44px; }
-    .landing-search .search-box { min-height: 48px; }
-    .landing-search .search-box button { width: 44px; height: 44px; }
-    .ai-hint { min-height: 44px; padding: 8px 12px; font-size: 12.5px; }
     .map-workspace-button,
     .map-workspace-close,
     .map-view-preset,
@@ -4764,8 +4785,6 @@ footer {
 }
 .source-flow-step strong {
     display: block;
-}
-.source-flow-step strong {
     margin-bottom: 4px;
     font-size: 15px;
     line-height: 1.3;
@@ -5120,6 +5139,12 @@ footer {
 .feedback-textarea {
     resize: vertical;
     min-height: 100px;
+}
+.feedback-privacy {
+    margin: -4px 0 0;
+    color: var(--ink-4);
+    font-size: 12px;
+    line-height: 1.5;
 }
 .feedback-submit {
     display: inline-flex;

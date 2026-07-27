@@ -211,6 +211,42 @@ class AreaDataTests(unittest.TestCase):
         self.assertIn("Kaugandmete terviseskoor: 84/100", prompt)
         self.assertIn("ei ole ametlik terviseindeks", prompt)
 
+    def test_ai_prompt_does_not_claim_a_dominant_species_with_incomplete_stock(self):
+        prompt = build_system_prompt({
+            "kataster": {"number": "78404:409:0113"},
+            "mets": {
+                "puuliik": "mänd",
+                "liigiandmed_taielikud": True,
+                "peapuuliigi_andmed_taielikud": False,
+                "eraldised": [],
+            },
+            "meta": {"partial": False, "unavailable_sources": []},
+        })
+
+        self.assertIn("Peapuuliik: andmed puudulikud", prompt)
+        self.assertNotIn("Peapuuliik: mänd", prompt)
+
+    def test_ai_prompt_never_turns_age_ratio_into_a_harvest_method_recommendation(self):
+        data = {
+            "kataster": {"number": "78404:409:0113"},
+            "mets": {"eraldised": [], "pindala_ha": 1},
+            "raie": {
+                "label": "Lageraie",
+                "ratio": 1.1,
+                "age_class": "cutting_age_reached",
+                "age_class_label": "Raievanus saavutatud",
+            },
+            "meta": {"partial": False, "unavailable_sources": []},
+        }
+
+        prompt = build_system_prompt(data)
+
+        self.assertNotIn("RAIE: Lageraie", prompt)
+        self.assertIn("RAIEVANUSE SUHE: Raievanus saavutatud", prompt)
+        self.assertIn("ei ole raiemeetodi soovitus", prompt)
+        self.assertIn("Ära esita vanust, vanuse suhet ega automaatset klassi", prompt)
+        self.assertIn("vajavad metsa seisundi kohapealset hindamist", prompt)
+
     def test_ai_prompt_prefers_corrected_beetle_assessment(self):
         prompt = build_system_prompt({
             "kataster": {"number": "78404:409:0113", "pindala_ha": 2},
@@ -229,6 +265,9 @@ class AreaDataTests(unittest.TestCase):
             "mets": {"eraldised": [{
                 "eraldis_nr": 1,
                 "puuliik": "mänd",
+                "pindala_ha": 1,
+                "tagavara_y_ha": 100,
+                "tagavara_provenance": "official",
                 "vaartus_eur": 7_800,
                 "vaartus_hinnang_eur": 1_310,
             }]},

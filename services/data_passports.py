@@ -103,9 +103,22 @@ def build_asset_passports(
     total_volume_m3: float,
     land_reference_meta: dict | None = None,
 ) -> list[dict]:
-    official_stands = sum(stand.get("tagavara_provenance") == "official" for stand in stands)
-    estimated_stands = sum(stand.get("tagavara_provenance") == "estimated" for stand in stands)
-    unavailable_stands = sum(stand.get("tagavara_provenance") == "unavailable" for stand in stands)
+    def has_usable_stock(stand: dict) -> bool:
+        value = stand.get("tagavara_y_ha")
+        return _finite_number(value) and value >= 0
+
+    official_stands = sum(
+        stand.get("tagavara_provenance") == "official" and has_usable_stock(stand)
+        for stand in stands
+    )
+    estimated_stands = sum(
+        stand.get("tagavara_provenance") == "estimated" and has_usable_stock(stand)
+        for stand in stands
+    )
+    unavailable_stands = sum(
+        stand.get("tagavara_provenance") == "unavailable" or not has_usable_stock(stand)
+        for stand in stands
+    )
     unknown_stands = len(stands) - official_stands - estimated_stands - unavailable_stands
     usable_stands = official_stands + estimated_stands + unknown_stands
     if estimated_stands and official_stands:

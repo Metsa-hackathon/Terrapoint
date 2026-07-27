@@ -7,8 +7,8 @@ class AssetPassportTests(unittest.TestCase):
     def test_builds_ordered_volume_and_value_passports(self):
         passports = build_asset_passports(
             stands=[
-                {"eraldis_nr": 1, "tagavara_provenance": "official"},
-                {"eraldis_nr": 2, "tagavara_provenance": "official"},
+                {"eraldis_nr": 1, "tagavara_provenance": "official", "tagavara_y_ha": 100},
+                {"eraldis_nr": 2, "tagavara_provenance": "official", "tagavara_y_ha": 124},
             ],
             inventory={
                 "staatus": "värske",
@@ -75,7 +75,7 @@ class AssetPassportTests(unittest.TestCase):
 
     def test_land_reference_keeps_assessment_year_and_validity_semantics_separate(self):
         passports = build_asset_passports(
-            stands=[{"eraldis_nr": 1, "tagavara_provenance": "official"}],
+            stands=[{"eraldis_nr": 1, "tagavara_provenance": "official", "tagavara_y_ha": 100}],
             inventory={"staatus": "värske"},
             reliability={"score": 80, "level": "kõrge", "reasons": []},
             timber_estimate={"low_eur": 1_000, "base_eur": 1_500, "high_eur": 2_000},
@@ -108,8 +108,8 @@ class AssetPassportTests(unittest.TestCase):
     def test_marks_volume_as_mixed_when_any_stand_stock_is_estimated(self):
         passports = build_asset_passports(
             stands=[
-                {"eraldis_nr": 1, "tagavara_provenance": "official"},
-                {"eraldis_nr": 2, "tagavara_provenance": "estimated"},
+                {"eraldis_nr": 1, "tagavara_provenance": "official", "tagavara_y_ha": 100},
+                {"eraldis_nr": 2, "tagavara_provenance": "estimated", "tagavara_y_ha": 80},
             ],
             inventory={"staatus": "hoiatus", "inventuuri_vanus_max_a": 7},
             reliability={"score": 54, "level": "keskmine", "reasons": []},
@@ -133,7 +133,7 @@ class AssetPassportTests(unittest.TestCase):
 
     def test_all_estimated_volume_never_claims_official_stock_inputs(self):
         passports = build_asset_passports(
-            stands=[{"eraldis_nr": 1, "tagavara_provenance": "estimated"}],
+            stands=[{"eraldis_nr": 1, "tagavara_provenance": "estimated", "tagavara_y_ha": 150}],
             inventory={"staatus": "värske", "inventuuri_vanus_max_a": 1},
             reliability={
                 "score": 45,
@@ -152,6 +152,25 @@ class AssetPassportTests(unittest.TestCase):
         self.assertEqual(volume["confidence"]["level"], "madal")
         self.assertIn("hinnang", volume["confidence"]["label"].lower())
         self.assertTrue(any("hinnanguline" in item.lower() for item in timber["limitations"]))
+
+    def test_missing_stock_is_unavailable_even_if_provenance_label_is_inconsistent(self):
+        passports = build_asset_passports(
+            stands=[{
+                "eraldis_nr": 1,
+                "tagavara_provenance": "official",
+                "tagavara_y_ha": None,
+            }],
+            inventory={"staatus": "värske"},
+            reliability={"score": 80, "level": "kõrge", "reasons": []},
+            timber_estimate={"low_eur": 1_000, "base_eur": 1_500, "high_eur": 2_000},
+            property_estimate={"land_reference_available": False},
+            total_volume_m3=0,
+        )
+
+        volume = passports[0]
+        self.assertFalse(volume["available"])
+        self.assertEqual(volume["quality"]["official_stands"], 0)
+        self.assertEqual(volume["quality"]["unavailable_stands"], 1)
 
     def test_unsupported_stock_is_unavailable_and_notice_outage_caps_confidence(self):
         passports = build_asset_passports(
@@ -177,8 +196,8 @@ class AssetPassportTests(unittest.TestCase):
     def test_estimated_and_unavailable_stock_is_incomplete_not_a_complete_estimate(self):
         passports = build_asset_passports(
             stands=[
-                {"eraldis_nr": 1, "tagavara_provenance": "estimated"},
-                {"eraldis_nr": 2, "tagavara_provenance": "unavailable"},
+                {"eraldis_nr": 1, "tagavara_provenance": "estimated", "tagavara_y_ha": 150},
+                {"eraldis_nr": 2, "tagavara_provenance": "unavailable", "tagavara_y_ha": None},
             ],
             inventory={"staatus": "värske", "inventuuri_vanus_max_a": 1},
             reliability={
@@ -217,7 +236,7 @@ class AssetPassportTests(unittest.TestCase):
         for timber_estimate in invalid_ranges:
             with self.subTest(timber_estimate=timber_estimate):
                 passports = build_asset_passports(
-                    stands=[{"eraldis_nr": 1, "tagavara_provenance": "official"}],
+                    stands=[{"eraldis_nr": 1, "tagavara_provenance": "official", "tagavara_y_ha": 100}],
                     inventory={"staatus": "värske"},
                     reliability={"score": 82, "level": "kõrge", "reasons": []},
                     timber_estimate=timber_estimate,

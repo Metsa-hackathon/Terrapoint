@@ -7,7 +7,14 @@ pole tagasi pöördunud.
 """
 import unittest
 from calculators.cutting_age import CUTTING_AGE, cutting_age_indicator
-from calculators.carbon import SPECIES_DATA, CARBON_FRACTION, CO2_C_RATIO, CO2_PER_CAR_YEAR, carbon_potential
+from calculators.carbon import (
+    SPECIES_DATA,
+    CARBON_FRACTION,
+    CO2_C_RATIO,
+    CO2_PER_CAR_YEAR,
+    carbon_potential,
+    forest_carbon_potential,
+)
 from services.metsaregister import BONITEET_MAP
 
 
@@ -22,7 +29,7 @@ class CuttingAgeTests(unittest.TestCase):
             # Iga järgmise boniteedi kood (kehvem) peab raievanus
             # olema suurem või võrdne eelmisega
             for i in range(0, max(ages.keys())):
-                if i in ages and i + 1 in ages:
+                if i in ages and i + 1 in ages and ages[i] is not None and ages[i + 1] is not None:
                     self.assertGreaterEqual(
                         ages[i + 1], ages[i],
                         f"{species_code}: boniteet {i+1} (kehvem) raievanus "
@@ -52,12 +59,11 @@ class CuttingAgeTests(unittest.TestCase):
                 self.assertIn(code, ages,
                     f"{species_code}: WFS kood {code} puudub CUTTING_AGE'st")
 
-    def test_cutting_age_indicator_fallback_for_unknown_boniteet(self):
-        """Tundmatu boniteedi kood peab langema III (kood 3) peale, mitte
-        andma KeyErrorit. Vana kood kasutas default=60, mis oli vale."""
+    def test_cutting_age_indicator_does_not_guess_unknown_boniteet(self):
         result = cutting_age_indicator(100, "MA", 99)
-        # III kood = 3 -> MA raievanus 100a, ratio 1.0 -> "Raievanus käes"
-        self.assertEqual(result["raievanus"], 100)
+
+        self.assertIsNone(result["raievanus"])
+        self.assertEqual(result["status"], "unknown")
 
     def test_cutting_age_status_thresholds(self):
         """Ratio läved: < 0.85 = green, < 1.0 = yellow, >= 1.0 red."""
@@ -65,8 +71,19 @@ class CuttingAgeTests(unittest.TestCase):
         mature = cutting_age_indicator(85, "MA", 0)  # 85/90 = 0.94 -> yellow
         ripe = cutting_age_indicator(95, "MA", 0)   # 95/90 = 1.06 -> red
         self.assertEqual(young["status"], "green")
+        self.assertEqual(young["label"], "Alla raievanuse")
         self.assertEqual(mature["status"], "yellow")
+        self.assertEqual(mature["label"], "Läheneb raievanusele")
         self.assertEqual(ripe["status"], "red")
+        self.assertEqual(ripe["label"], "Raievanus saavutatud")
+
+    def test_official_stand_cutting_age_overrides_generic_species_table(self):
+        result = cutting_age_indicator(59, "KU", 0, source_cutting_age=62)
+
+        self.assertEqual(result["raievanus"], 62)
+        self.assertEqual(result["ratio"], 0.95)
+        self.assertEqual(result["raievanus_provenance"], "Metsaregister")
+        self.assertEqual(result["age_class"], "maturing")
 
     def test_neutral_age_class_boundaries_are_additive(self):
         expected = {
@@ -98,13 +115,25 @@ class CuttingAgeTests(unittest.TestCase):
                 self.assertEqual(result["age_class_label"], "Määramata")
                 self.assertEqual(result["age_class_provenance"], "Terrapointi tuletis")
 
-    def test_classifier_codes_are_not_mistaken_for_other_species(self):
-        self.assertIn("SD", CUTTING_AGE)  # seedermänd
-        self.assertNotIn("SP", CUTTING_AGE)  # sarapuu
-        self.assertNotIn("PK", CUTTING_AGE)  # paakspuu
-        unsupported = cutting_age_indicator(40, "SP", 3)
-        self.assertIsNone(unsupported["raievanus"])
-        self.assertEqual(unsupported["status"], "unknown")
+    def test_only_species_groups_supported_by_the_official_table_are_classified(self):
+        for code in ("MA", "KU", "KS", "HB", "LM", "TA", "SA", "VA", "JA", "KP"):
+            self.assertIn(code, CUTTING_AGE)
+        for code in ("LH", "SD", "LV", "RE", "SP", "PK"):
+            self.assertNotIn(code, CUTTING_AGE)
+            unsupported = cutting_age_indicator(40, code, 3)
+            self.assertIsNone(unsupported["raievanus"])
+            self.assertEqual(unsupported["status"], "unknown")
+
+    def test_hard_broadleaves_use_the_official_hardwood_row(self):
+        for code in ("TA", "SA", "VA", "JA", "KP"):
+            self.assertEqual(CUTTING_AGE[code][0], 90)
+            self.assertEqual(CUTTING_AGE[code][5], 130)
+
+    def test_aspen_has_no_age_threshold_in_the_poorest_classes(self):
+        for boniteet in (5, 6):
+            result = cutting_age_indicator(80, "HB", boniteet)
+            self.assertIsNone(result["raievanus"])
+            self.assertEqual(result["status"], "unknown")
 
 
 class BoniteetMapTests(unittest.TestCase):
@@ -175,6 +204,39 @@ class CarbonDensityTests(unittest.TestCase):
         self.assertLessEqual(CO2_PER_CAR_YEAR, 3.5)
         self.assertGreaterEqual(CO2_PER_CAR_YEAR, 2.0)
 
+    def test_existing_carbon_stock_is_not_presented_as_saleable_credit_income(self):
+        result = carbon_potential(200, 10, "MA")
+
+        self.assertIsNone(result["potential_income_eur"])
+        self.assertFalse(result["credit_income_estimate_available"])
+        self.assertIn("lisanduv", result["credit_income_limitation"].lower())
+
+    def test_mixed_forest_carbon_is_aggregated_per_stand_species(self):
+        stands = [
+            {"tagavara_y_ha": 100, "pindala_ha": 1, "puuliik_kood_raw": "MA"},
+            {"tagavara_y_ha": 100, "pindala_ha": 1, "puuliik_kood_raw": "KS"},
+        ]
+
+        result = forest_carbon_potential(stands)
+        expected = (
+            carbon_potential(100, 1, "MA")["co2_tons_total"]
+            + carbon_potential(100, 1, "KS")["co2_tons_total"]
+        )
+
+        self.assertIsNotNone(result)
+        self.assertAlmostEqual(result["co2_tons_total"], expected, delta=0.2)
+        self.assertNotEqual(
+            result["co2_tons_total"],
+            carbon_potential(100, 2, "MA")["co2_tons_total"],
+        )
+
+    def test_unsupported_species_does_not_silently_use_pine_carbon_factors(self):
+        result = forest_carbon_potential([
+            {"tagavara_y_ha": 100, "pindala_ha": 1, "puuliik_kood_raw": "NU"},
+        ])
+
+        self.assertIsNone(result)
+
 
 class TimberPriceTests(unittest.TestCase):
     """Puidu hinnad — Erametsaliit 2026 Q1.
@@ -237,6 +299,143 @@ class TimberPriceTests(unittest.TestCase):
         self.assertTrue(v["legacy_market_value_fields_deprecated"])
         self.assertEqual(v["range_low_eur"], 10600)
         self.assertEqual(v["range_high_eur"], 81100)
+
+    def test_top_level_cutting_age_preserves_boniteet_code_zero(self):
+        from api.index import _search_core
+        import asyncio
+        import time
+        from unittest.mock import AsyncMock, patch
+
+        geometry = {"type": "Polygon", "coordinates": [[[24, 59], [24.1, 59], [24.1, 59.1], [24, 59]]]}
+        kataster = {"number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1}
+        stands = [{
+            "id": 1,
+            "eraldis_nr": 1,
+            "geometry": geometry,
+            "pindala_ha": 1,
+            "puuliik_kood": "KU",
+            "puuliik_kood_raw": "KU",
+            "puuliik": "kuusk",
+            "vanus": 59,
+            "vanus_raw": 59,
+            "tagavara_y_ha": 100,
+            "tagavara_provenance": "official",
+            "boniteedi_kood": 0,
+            "boniteet": "1A",
+            "invent_kp": "2026-01-01",
+            "registreerimise_kp": "2026-01-01",
+        }]
+
+        async def main():
+            with (
+                patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+                patch("api.index.query_eraldis", new=AsyncMock(return_value=stands)),
+                patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
+                patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+                patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+                patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+                patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+            ):
+                return await _search_core("78404:409:0113", time.time())
+
+        result = asyncio.run(main())
+
+        self.assertEqual(result["mets"]["eraldised"][0]["raievanus"], 60)
+        self.assertEqual(result["raie"]["raievanus"], 60)
+        self.assertEqual(result["raie"]["ratio"], 0.98)
+        self.assertEqual(result["raie"]["scope"], "largest_stand")
+
+    def test_top_level_age_indicator_really_uses_the_largest_stand(self):
+        from api.index import _search_core
+        import asyncio
+        import time
+        from unittest.mock import AsyncMock, patch
+
+        geometry = {"type": "Polygon", "coordinates": [[[24, 59], [24.1, 59], [24.1, 59.1], [24, 59]]]}
+        stands = [
+            {
+                "id": 1, "eraldis_nr": 1, "geometry": geometry,
+                "pindala_ha": 1, "puuliik_kood": "MA", "puuliik_kood_raw": "MA",
+                "puuliik": "mänd", "vanus": 100, "vanus_raw": 100,
+                "tagavara_y_ha": 500, "tagavara_provenance": "official",
+                "boniteedi_kood": 2, "boniteet": "II",
+            },
+            {
+                "id": 2, "eraldis_nr": 2, "geometry": geometry,
+                "pindala_ha": 10, "puuliik_kood": "KU", "puuliik_kood_raw": "KU",
+                "puuliik": "kuusk", "vanus": 59, "vanus_raw": 59,
+                "tagavara_y_ha": 20, "tagavara_provenance": "official",
+                "boniteedi_kood": 0, "boniteet": "1A",
+            },
+        ]
+
+        async def main():
+            with (
+                patch("api.index.query_kataster", new=AsyncMock(return_value={
+                    "number": "78404:409:0113", "geometry": geometry, "pindala_ha": 11,
+                })),
+                patch("api.index.query_eraldis", new=AsyncMock(return_value=stands)),
+                patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
+                patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+                patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+                patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+                patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+            ):
+                return await _search_core("78404:409:0113", time.time())
+
+        result = asyncio.run(main())
+
+        self.assertEqual(result["mets"]["puuliik_kood"], "MA")
+        self.assertEqual(result["raie"]["scope"], "largest_stand")
+        self.assertEqual(result["raie"]["eraldis_nr"], 2)
+        self.assertEqual(result["raie"]["raievanus"], 60)
+        self.assertEqual(result["raie"]["ratio"], 0.98)
+        self.assertEqual(result["mets"]["boniteet"], "1A")
+
+    def test_search_does_not_guess_missing_boniteet_for_cutting_age(self):
+        from api.index import _search_core
+        import asyncio
+        import time
+        from unittest.mock import AsyncMock, patch
+
+        geometry = {"type": "Polygon", "coordinates": [[[24, 59], [24.1, 59], [24.1, 59.1], [24, 59]]]}
+        stands = [{
+            "id": 1,
+            "eraldis_nr": 1,
+            "geometry": geometry,
+            "pindala_ha": 1,
+            "puuliik_kood": "MA",
+            "puuliik_kood_raw": "MA",
+            "puuliik": "mänd",
+            "vanus": 90,
+            "vanus_raw": 90,
+            "tagavara_y_ha": 100,
+            "tagavara_provenance": "official",
+            "boniteedi_kood": None,
+            "boniteet": "Määramata",
+            "raievanus": None,
+        }]
+
+        async def main():
+            with (
+                patch("api.index.query_kataster", new=AsyncMock(return_value={
+                    "number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1,
+                })),
+                patch("api.index.query_eraldis", new=AsyncMock(return_value=stands)),
+                patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
+                patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+                patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+                patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+                patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+            ):
+                return await _search_core("78404:409:0113", time.time())
+
+        result = asyncio.run(main())
+
+        self.assertEqual(result["raie"]["status"], "unknown")
+        self.assertIsNone(result["raie"]["raievanus"])
+        self.assertEqual(result["mets"]["eraldised"][0]["raie_status"], "unknown")
+        self.assertIsNone(result["mets"]["eraldised"][0]["boniteet_kood"])
 
     def test_each_stand_uses_its_own_species_elements(self):
         from api.index import _search_core

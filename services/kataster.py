@@ -42,6 +42,16 @@ def _normalized_date(value: object) -> str | None:
         return None
 
 
+def _finite_nonnegative_number(value: object) -> float | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) and number >= 0 else None
+
+
 async def query_land_valuation_metadata(kataster_nr: str) -> dict | None:
     """Fetch optional valuation timing without making cadastral data depend on it."""
     kataster_nr = _validate_kataster_nr(kataster_nr)
@@ -171,9 +181,56 @@ async def query_kataster(
     features = features_result
     if not features:
         return None
-    props = features[0].get("properties", {})
-    geom = features[0].get("geometry")
-    taxable_value = props.get("maks_hind")
+    if any(
+        not isinstance(feature.get("properties"), dict)
+        or feature["properties"].get("tunnus") != kataster_nr
+        for feature in features
+    ):
+        raise HTTPException(
+            status_code=502,
+            detail="Katastri WFS tagastas vastuolulised andmed",
+        )
+    matching_features = features
+    canonical_feature = matching_features[0]
+    if any(feature != canonical_feature for feature in matching_features[1:]):
+        raise HTTPException(
+            status_code=502,
+            detail="Katastri WFS tagastas vastuolulised duplikaadid",
+        )
+    props = canonical_feature["properties"]
+    geom = canonical_feature.get("geometry")
+    area_m2 = _finite_nonnegative_number(props.get("pindala"))
+    if area_m2 is None or area_m2 <= 0:
+        raise HTTPException(status_code=502, detail="Katastri WFS tagastas vigase pindala")
+    raw_taxable_value = props.get("maks_hind")
+    taxable_value = (
+        None
+        if raw_taxable_value is None
+        else _finite_nonnegative_number(raw_taxable_value)
+    )
+    if raw_taxable_value is not None and taxable_value is None:
+        raise HTTPException(
+            status_code=502,
+            detail="Katastri WFS tagastas vigase maksustamishinna",
+        )
+    text_values = {}
+    for field, max_length in (
+        ("siht1", 160),
+        ("omvorm", 160),
+        ("mk_nimi", 160),
+        ("ov_nimi", 160),
+        ("l_aadress", 300),
+    ):
+        value = props.get(field)
+        if value is None:
+            value = ""
+        if not isinstance(value, str):
+            raise HTTPException(
+                status_code=502,
+                detail=f"Katastri WFS tagastas vigase välja {field}",
+            )
+        text_values[field] = re.sub(r"[\x00-\x1f\x7f]+", " ", value).strip()[:max_length]
+
     valuation_meta = {"state": "unavailable"}
     if isinstance(valuation_result, dict) and valuation_result.get("state") == "available":
         official_value = valuation_result.get("total_value")
@@ -190,12 +247,12 @@ async def query_kataster(
             valuation_meta = valuation_result
     return {
         "number": props.get("tunnus", kataster_nr),
-        "pindala_ha": round(props.get("pindala", 0) / 10000, 2),
-        "sihtotstarve": props.get("siht1", ""),
-        "omvorm": props.get("omvorm", ""),
-        "mk_nimi": props.get("mk_nimi", ""),
-        "ov_nimi": props.get("ov_nimi", ""),
-        "l_aadress": props.get("l_aadress", ""),
+        "pindala_ha": round(area_m2 / 10000, 2),
+        "sihtotstarve": text_values["siht1"],
+        "omvorm": text_values["omvorm"],
+        "mk_nimi": text_values["mk_nimi"],
+        "ov_nimi": text_values["ov_nimi"],
+        "l_aadress": text_values["l_aadress"],
         "maks_hind": taxable_value,
         "maks_hind_meta": valuation_meta,
         "geometry": geom,

@@ -48,11 +48,11 @@
       "headers": [
         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=(), payment=()" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com; script-src-elem 'self' 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; style-src-elem 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:; connect-src 'self' https://gsavalik.envir.ee https://xgis.maaamet.ee https://geoportaal.maaamet.ee https://tiles.maaamet.ee https://kaart.maaamet.ee https://eelis.ee https://kitsendused.kataster.ee https://register.metsad.ee https://register.muinas.ee https://kotkas.envir.ee https://rmk.ee https://stat.ee https://keskkonnaportaal.ee https://infoleht.keskkonnainfo.ee https://n8n.arleserver.cfd; frame-ancestors 'self'; base-uri 'self'; form-action 'self' https://n8n.arleserver.cfd; upgrade-insecure-requests" },
-        { "key": "X-XSS-Protection", "value": "1; mode=block" }
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; manifest-src 'self'; worker-src 'none'; script-src 'self' 'sha256-xqUpUykbxHOS6bApfu5aM+WDp2oldrVcuj4m9hZTGJM='; script-src-elem 'self' 'sha256-xqUpUykbxHOS6bApfu5aM+WDp2oldrVcuj4m9hZTGJM='; style-src 'self'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://tiles.maaamet.ee https://gsavalik.envir.ee; connect-src 'self' https://gsavalik.envir.ee https://n8n.arleserver.cfd; upgrade-insecure-requests" }
       ]
     }
   ]

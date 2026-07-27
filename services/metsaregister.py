@@ -1,9 +1,12 @@
 import asyncio
 import math
-import re
+from datetime import date
+
 import httpx
 from fastapi import HTTPException
 import config
+
+from services.validation import KATASTER_RE
 
 
 class MetsaregisterWFSError(Exception):
@@ -45,13 +48,13 @@ async def _wfs_get(url: str, timeout: float = 10.0, retries: int = 3) -> list[di
             raise MetsaregisterWFSError("WFS response could not be read") from exc
     raise MetsaregisterWFSError("WFS failed without a response")
 
-_KATASTER_RE = re.compile(r'^\d{1,5}:\d{1,4}:\d{1,5}(:\d{1,4})?$')
+_KATASTER_RE = KATASTER_RE
 
 
 def _validate_kataster_nr(kataster_nr: str) -> str:
     """Sanitize kataster_nr to prevent CQL injection."""
-    if not _KATASTER_RE.match(kataster_nr):
-        raise HTTPException(status_code=400, detail=f"Vigane katastritunnus: {kataster_nr}")
+    if not _KATASTER_RE.fullmatch(kataster_nr or ""):
+        raise HTTPException(status_code=400, detail="Vigane katastritunnus")
     return kataster_nr
 
 # Metsaregistri ametlik puuliikide klassifikaator. Ära täpsusta üldnimetusi
@@ -92,7 +95,7 @@ def _first_present(*values):
 
 
 def _finite_number(value):
-    if value is None:
+    if value is None or isinstance(value, bool):
         return None
     try:
         number = float(value)
@@ -101,24 +104,69 @@ def _finite_number(value):
     return number if math.isfinite(number) else None
 
 
-def _date_only(value):
-    return str(value)[:10] if value else None
+def _source_nonnegative(value, field: str, *, required: bool = False) -> float | None:
+    """Validate a numeric registry field without turning corruption into zero."""
+    if value is None:
+        if required:
+            raise MetsaregisterWFSError(f"WFS field {field} is missing")
+        return None
+    number = _finite_number(value)
+    if number is None or number < 0:
+        raise MetsaregisterWFSError(f"WFS field {field} is invalid")
+    return number
+
+
+def _deduplicate_features(features: list[dict], property_ids: tuple[str, ...]) -> list[dict]:
+    """Drop exact source duplicates and reject conflicting rows with one ID."""
+    unique = []
+    seen: dict[tuple[str, str], dict] = {}
+    for feature in features:
+        properties = feature.get("properties")
+        if not isinstance(properties, dict):
+            raise MetsaregisterWFSError("WFS feature properties are invalid")
+        identity = None
+        for field in property_ids:
+            value = properties.get(field)
+            if value not in (None, ""):
+                identity = (field, str(value))
+                break
+        if identity is None and feature.get("id") not in (None, ""):
+            identity = ("feature.id", str(feature["id"]))
+        previous = seen.get(identity) if identity is not None else None
+        if previous is not None:
+            if feature == previous:
+                continue
+            raise MetsaregisterWFSError("WFS returned conflicting duplicate records")
+        if identity is not None:
+            seen[identity] = feature
+        unique.append(feature)
+    return unique
+
+
+def _date_only(value, field: str):
+    if value in (None, ""):
+        return None
+    if not isinstance(value, str):
+        raise MetsaregisterWFSError(f"WFS field {field} is invalid")
+    try:
+        return date.fromisoformat(value[:10]).isoformat()
+    except ValueError:
+        raise MetsaregisterWFSError(f"WFS field {field} is invalid") from None
 
 
 def _live_stock_per_ha(props: dict) -> float | None:
     """Sum live first, second and individual-tree storey stock, preserving zeroes."""
     values = [
-        _finite_number(props.get("tagavara_1_ha")),
-        _finite_number(props.get("tagavara_2_ha")),
-        _finite_number(props.get("tagavara_y_ha")),
+        _source_nonnegative(props.get(field), field)
+        for field in ("tagavara_1_ha", "tagavara_2_ha", "tagavara_y_ha")
     ]
     if all(value is None for value in values):
         return None
     return sum(value or 0 for value in values)
 
-# Tagavara hinnang (m³/ha) kõrguse ja boniteedi järgi — Eesti boniteeditabelid
-# Võti: (boniteet_kood, kõrgus_m) → m³/ha
-# Allikas: RMK boniteeditabelid, keskmised väärtused
+# Coarse internal stock heuristic (m³/ha) by height and boniteet.
+# It is not an official registry value or a cited growth table; every caller
+# must expose ``estimated`` provenance and lower confidence.
 _TAGAVARA_BY_HEIGHT = {
     # boniteet_kood: [(kõrgus, m³/ha), ...] — interpolatsiooniks
     1: [(5, 30), (10, 80), (15, 150), (20, 230), (25, 310), (30, 380)],
@@ -128,8 +176,8 @@ _TAGAVARA_BY_HEIGHT = {
     5: [(5, 5), (10, 20), (15, 40), (20, 70), (25, 100), (30, 130)],
 }
 
-# The source table has no separate curves for the classifier's edge classes.
-# Use the nearest available class instead of silently treating both as III.
+# The internal heuristic has no separate curves for the classifier's edge
+# classes. Use the nearest available class instead of treating both as III.
 _TAGAVARA_TABLE_CODE = {0: 1, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 5}
 
 
@@ -172,11 +220,40 @@ async def query_eraldis(kataster_nr: str) -> list[dict]:
     features = await _wfs_get(url, timeout=20.0, retries=3)
     if not features:
         return []
+    features = _deduplicate_features(features, ("id", "sys_id"))
     result = []
     for feat in features:
-        props = feat.get("properties", {})
+        props = feat["properties"]
+        declared_parcel = props.get("katastri_nr")
+        if declared_parcel is not None and declared_parcel != kataster_nr:
+            raise MetsaregisterWFSError("WFS returned a stand for another cadastral unit")
         raw_kood = props.get("peapuuliik_kood")
-        raw_vanus = props.get("keskm_vanus")
+        if raw_kood is not None and (not isinstance(raw_kood, str) or not raw_kood.strip()):
+            raise MetsaregisterWFSError("WFS field peapuuliik_kood is invalid")
+        raw_vanus = _source_nonnegative(props.get("keskm_vanus"), "keskm_vanus")
+        stand_id = _source_nonnegative(props.get("id"), "id", required=True)
+        if not stand_id.is_integer() or stand_id < 1:
+            raise MetsaregisterWFSError("WFS field id is invalid")
+        area = _source_nonnegative(props.get("pindala"), "pindala", required=True)
+        if area <= 0:
+            raise MetsaregisterWFSError("WFS field pindala is invalid")
+        raw_boniteet = _source_nonnegative(props.get("boniteedi_kood"), "boniteedi_kood")
+        if raw_boniteet is None:
+            boniteedi_kood = None
+        elif not raw_boniteet.is_integer() or not 0 <= raw_boniteet <= 6:
+            raise MetsaregisterWFSError("WFS field boniteedi_kood is invalid")
+        else:
+            boniteedi_kood = int(raw_boniteet)
+        height = _source_nonnegative(props.get("korgus"), "korgus")
+        source_cutting_age = _source_nonnegative(
+            props.get("keskm_raievanus"), "keskm_raievanus"
+        )
+        growth = _source_nonnegative(props.get("juurdekasv"), "juurdekasv")
+        raw_drainage = props.get("kuivendatud")
+        if raw_drainage is not None and type(raw_drainage) is not bool:
+            raise MetsaregisterWFSError("WFS field kuivendatud is invalid")
+        # Forest inventory relative density may legitimately exceed 100.
+        canopy_density = _source_nonnegative(props.get("taius_1"), "taius_1")
         kood = raw_kood or "MA"
         # 1., 2. ja üksikpuude rinde tagavarad on eraldi kategooriad, mitte
         # sama väärtuse alias-väljad. Surnud/lamapuitu (_s/_l) elusa puistu
@@ -185,13 +262,13 @@ async def query_eraldis(kataster_nr: str) -> list[dict]:
         tagavara_provenance = "official"
         if tagavara is None:
             tagavara = estimate_tagavara(
-                int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3,
-                props.get("korgus", 0),
-                props.get("keskm_vanus", 0),
+                boniteedi_kood if boniteedi_kood is not None else 3,
+                height or 0,
+                raw_vanus or 0,
             )
             tagavara_provenance = "estimated" if tagavara is not None else "unavailable"
         result.append({
-            "id": props.get("id"),
+            "id": int(stand_id),
             "puuliik": SPECIES_NAMES.get(kood, kood),
             "puuliik_kood": kood,
             "puuliik_kood_raw": raw_kood,
@@ -207,19 +284,22 @@ async def query_eraldis(kataster_nr: str) -> list[dict]:
                 "2": _finite_number(props.get("tagavara_2_ha")),
                 "Y": _finite_number(props.get("tagavara_y_ha")),
             },
-            "boniteet": BONITEET_MAP.get(int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3, "III"),
-            "boniteedi_kood": int(props.get("boniteedi_kood", 3)) if props.get("boniteedi_kood") is not None else 3,
-            "raievanus": props.get("keskm_raievanus"),
-            "korgus": props.get("korgus"),
-            "pindala_ha": props.get("pindala", 0),
-            "taius_1": props.get("taius_1"),
-            "kuivendatud": bool(props.get("kuivendatud")) if props.get("kuivendatud") is not None else None,
+            "boniteet": BONITEET_MAP.get(boniteedi_kood, "Määramata"),
+            "boniteedi_kood": boniteedi_kood,
+            "raievanus": source_cutting_age,
+            "korgus": height,
+            "pindala_ha": area,
+            "taius_1": canopy_density,
+            "kuivendatud": raw_drainage,
             "tuleohu_kood": props.get("tuleohu_kood"),
             "siht1": props.get("siht1"),
             "eraldis_nr": props.get("eraldise_nr"),
-            "invent_kp": _date_only(props.get("invent_kp")),
-            "registreerimise_kp": _date_only(props.get("registreerimise_kp")),
-            "juurdekasv": _finite_number(props.get("juurdekasv")),
+            "invent_kp": _date_only(props.get("invent_kp"), "invent_kp"),
+            "registreerimise_kp": _date_only(
+                props.get("registreerimise_kp"),
+                "registreerimise_kp",
+            ),
+            "juurdekasv": growth,
             "kasvukoht_kood": props.get("kasvukoht_kood"),
             "geometry": feat.get("geometry"),
         })
@@ -227,30 +307,43 @@ async def query_eraldis(kataster_nr: str) -> list[dict]:
 
 
 async def query_eraldis_element(eraldis_id: int) -> list[dict]:
+    if isinstance(eraldis_id, bool) or not isinstance(eraldis_id, int) or eraldis_id < 1:
+        raise MetsaregisterWFSError("Invalid stand identifier")
     url = (
         f"{config.GEOBASE}/metsaregister/wfs?"
         f"service=WFS&request=GetFeature&typeName=metsaregister:eraldis_element"
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&CQL_FILTER=eraldis_id%3D{eraldis_id}"
     )
-    features = await _wfs_get(url, timeout=10.0, retries=1)
+    features = _deduplicate_features(
+        await _wfs_get(url, timeout=10.0, retries=1),
+        ("sys_id",),
+    )
     result = []
     for feat in features:
-        p = feat.get("properties", {})
+        p = feat["properties"]
+        declared_stand = p.get("eraldis_id")
+        if declared_stand is not None and str(declared_stand) != str(eraldis_id):
+            raise MetsaregisterWFSError("WFS returned an element for another stand")
         kood = p.get("puuliik_kood", "")
-        tagavara = _first_present(p.get("tagavara"), p.get("tagavara_y_ha"))
+        if not isinstance(kood, str):
+            raise MetsaregisterWFSError("WFS field puuliik_kood is invalid")
+        element_age = _source_nonnegative(p.get("vanus"), "vanus")
+        canopy_density = _source_nonnegative(p.get("taius"), "taius")
+        raw_stock = _first_present(p.get("tagavara"), p.get("tagavara_y_ha"))
+        tagavara = _source_nonnegative(raw_stock, "tagavara")
         tagavara_provenance = "official"
         if tagavara is None:
-            tagavara = estimate_tagavara(3, 0, p.get("vanus", 0))
+            tagavara = estimate_tagavara(3, 0, element_age or 0)
             tagavara_provenance = "estimated" if tagavara is not None else "unavailable"
         result.append({
             "eraldis_id": eraldis_id,
             "puuliik": SPECIES_NAMES.get(kood, kood),
             "puuliik_kood": kood,
-            "vanus": p.get("vanus", 0),
+            "vanus": element_age if element_age is not None else 0,
             "tagavara_y_ha": tagavara,
             "tagavara_provenance": tagavara_provenance,
-            "taius": p.get("taius", 0),
+            "taius": canopy_density if canopy_density is not None else 0,
         })
     return result
 
@@ -301,32 +394,72 @@ async def query_teatised(kataster_nr: str) -> tuple[list[dict], list[str]]:
     for features, is_archived in ((archived, True), (current, False)):
         if isinstance(features, Exception):
             continue
-        for feature in features:
+        source_name = (
+            "metsaregister.teatis_arhiiv"
+            if is_archived
+            else "metsaregister.teatis"
+        )
+        for row_index, feature in enumerate(features):
+            raw_properties = feature.get("properties")
+            if not isinstance(raw_properties, dict):
+                unavailable_sources.append(source_name)
+                continue
             item = dict(feature)
-            props = dict(feature.get("properties", {}))
+            props = dict(raw_properties)
             props["arhiiv"] = is_archived
             item["properties"] = props
             # One notice can contain several stand/work rows. Deduplicate only
             # an identical current/archive row, never the whole notice number.
-            key = (
-                props.get("teatise_nr"),
-                props.get("eraldise_nr"),
-                props.get("too_kood"),
-                props.get("raiutav_maht"),
-                props.get("pindala"),
-                props.get("otsus_kinnitatud_kp"),
+            # Malformed container values remain available for downstream
+            # completeness handling, but must not become unhashable dict keys.
+            key = tuple(
+                value if isinstance(value, (str, int, float, type(None))) else None
+                for value in (
+                    props.get("teatise_nr"),
+                    props.get("eraldise_nr"),
+                    props.get("too_kood"),
+                    props.get("raiutav_maht"),
+                    props.get("pindala"),
+                    props.get("otsus_kinnitatud_kp"),
+                )
             )
-            if not any(key):
-                key = (feature.get("id") or props.get("sys_id"),)
+            if not any(value not in (None, "") for value in key):
+                feature_id = feature.get("id") or props.get("sys_id")
+                if not isinstance(feature_id, (str, int, float)):
+                    feature_id = f"{source_name}:{row_index}"
+                key = (feature_id,)
             merged[key] = item
+    unavailable_sources = list(dict.fromkeys(unavailable_sources))
     return list(merged.values()), unavailable_sources
 
 
 async def query_kahjustused(eraldis_id: int) -> list[dict]:
+    if isinstance(eraldis_id, bool) or not isinstance(eraldis_id, int) or eraldis_id < 1:
+        raise MetsaregisterWFSError("Invalid stand identifier")
     url = (
         f"{config.GEOBASE}/metsaregister/wfs?"
         f"service=WFS&request=GetFeature&typeName=metsaregister:kahjustused"
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&CQL_FILTER=eraldis_id%3D{eraldis_id}"
     )
-    return await _wfs_get(url, timeout=10.0, retries=1)
+    features = _deduplicate_features(
+        await _wfs_get(url, timeout=10.0, retries=1),
+        ("sys_id", "id"),
+    )
+    normalized = []
+    for feature in features:
+        properties = feature["properties"]
+        declared_stand = properties.get("eraldis_id")
+        if declared_stand is not None and str(declared_stand) != str(eraldis_id):
+            raise MetsaregisterWFSError("WFS returned damage for another stand")
+        normalized_properties = dict(properties)
+        for field in ("kahjustuse_tyyp", "kirjeldus", "kuupaev"):
+            value = properties.get(field)
+            if value is None:
+                normalized_properties[field] = ""
+            elif not isinstance(value, str):
+                raise MetsaregisterWFSError(f"WFS field {field} is invalid")
+            else:
+                normalized_properties[field] = value[:500]
+        normalized.append({**feature, "properties": normalized_properties})
+    return normalized

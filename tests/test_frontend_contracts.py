@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import json
 import re
 import subprocess
@@ -6,12 +8,17 @@ from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).parent.parent
-INDEX_HTML = (PROJECT_ROOT / "index.html").read_text(encoding="utf-8")
+INDEX_DOCUMENT = (PROJECT_ROOT / "index.html").read_text(encoding="utf-8")
+APP_JS = (PROJECT_ROOT / "static/js/app.js").read_text(encoding="utf-8")
+# Existing contract helpers inspect both markup and application source.
+INDEX_HTML = INDEX_DOCUMENT + "\n" + APP_JS
 STYLE_CSS = (PROJECT_ROOT / "static/css/style.css").read_text(encoding="utf-8")
+FONTS_CSS = (PROJECT_ROOT / "static/css/fonts.css").read_text(encoding="utf-8")
 FONT_SIZES_CSS = (PROJECT_ROOT / "static/css/font-sizes.css").read_text(encoding="utf-8")
 API_PY = (PROJECT_ROOT / "api/index.py").read_text(encoding="utf-8")
 VERCEL_CONFIG = json.loads((PROJECT_ROOT / "vercel.json").read_text(encoding="utf-8"))
 VERCEL_HEALTH_PY = (PROJECT_ROOT / "api/runtime_health.py").read_text(encoding="utf-8")
+SITEMAP_XML = (PROJECT_ROOT / "sitemap.xml").read_text(encoding="utf-8")
 PYTHON_VERSION = (PROJECT_ROOT / ".python-version").read_text(encoding="utf-8").strip()
 
 
@@ -82,7 +89,8 @@ class FrontendContractTests(unittest.TestCase):
         self.assertIn("Registrite lähteandmed", section)
         self.assertIn("Terrapointi arvutused", section)
         self.assertEqual(section.count('<article class="source-card"'), 4)
-        self.assertIn("Täiendavad kontrollallikad", section)
+        self.assertIn("Lingid iseseisvaks lisakontrolliks", section)
+        self.assertIn("ei päri neid nelja allikat automaatselt", section)
         self.assertNotIn("Eesti <em>riiklikud registrid</em>", section)
         self.assertNotIn(".source-flow-step span {", STYLE_CSS)
         self.assertRegex(
@@ -215,6 +223,8 @@ async function fetch(url) {{
         hero_trees = re.search(r'<div class="hero-trees".*?</div>\s*</div>', INDEX_HTML, re.DOTALL)
         self.assertIsNotNone(hero_trees)
         self.assertEqual(hero_trees.group(0).count('media="(min-width: 769px)"'), 6)
+        self.assertEqual(hero_trees.group(0).count('type="image/webp"'), 6)
+        self.assertNotIn('.png', hero_trees.group(0))
         self.assertNotRegex(hero_trees.group(0), r'<img[^>]+src="/static/img/tree-')
 
     def test_mobile_load_does_not_force_focus_or_eager_wms(self):
@@ -257,6 +267,28 @@ async function fetch(url) {{
         self.assertNotIn('/static/css/style.css?r=jkl104', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl103', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl102', INDEX_HTML)
+
+    def test_sitemap_uses_only_the_canonical_document_url(self):
+        self.assertEqual(SITEMAP_XML.count("<url>"), 1)
+        self.assertIn("<loc>https://terrapoint.ee/</loc>", SITEMAP_XML)
+        self.assertNotIn("terrapoint.ee/#", SITEMAP_XML)
+        self.assertIn("<lastmod>2026-07-27</lastmod>", SITEMAP_XML)
+        self.assertNotIn("Metsa väärtus", SITEMAP_XML)
+
+    def test_fonts_are_self_hosted_with_local_license_files(self):
+        self.assertIn('/static/css/fonts.css?r=jkl001', INDEX_DOCUMENT)
+        self.assertNotIn('fonts.googleapis.com', INDEX_DOCUMENT)
+        self.assertNotIn('fonts.gstatic.com', INDEX_DOCUMENT)
+        font_urls = re.findall(r"url\('(/static/fonts/[^']+\.woff2)'\)", FONTS_CSS)
+        self.assertEqual(len(font_urls), 6)
+        for url in font_urls:
+            self.assertTrue((PROJECT_ROOT / url.removeprefix('/')).is_file(), url)
+        for filename in (
+            "OFL-Bricolage-Grotesque.txt",
+            "OFL-Geist.txt",
+            "OFL-Geist-Mono.txt",
+        ):
+            self.assertIn("SIL OPEN FONT LICENSE", (PROJECT_ROOT / "static/fonts" / filename).read_text())
 
     def test_asset_passports_render_traceable_values_and_contextual_ai_actions(self):
         range_helper = _extract_js_function("formatEurRange")
@@ -403,6 +435,43 @@ async function fetch(url) {{
             r"(?s)@container\s*\(max-width:\s*420px\)\s*\{.*?\.asset-passport summary\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) 16px;",
         )
 
+    def test_eudr_export_surfaces_backend_errors_and_has_a_bounded_request(self):
+        export = _extract_js_function("exportEUDR")
+        self.assertIn("controller.abort()", export)
+        self.assertIn("}, 20000)", export)
+        self.assertIn("errorPayload.error || errorPayload.detail", export)
+        self.assertIn("URL.revokeObjectURL", export)
+
+    def test_ai_input_discloses_third_party_processing_before_questions_are_sent(self):
+        self.assertIn("edastatakse OpenCode Zen AI-teenusele", INDEX_DOCUMENT)
+        self.assertIn("Ära lisa küsimusse isikuandmeid ega konfidentsiaalset teavet", INDEX_DOCUMENT)
+        self.assertIn("AI vastus võib eksida", INDEX_DOCUMENT)
+
+    def test_missing_taxable_value_is_not_rendered_as_zero(self):
+        render = _extract_js_function("renderKataster")
+        script = f"""
+const target = {{innerHTML: ''}};
+const document = {{getElementById: () => target}};
+function escHtml(value) {{ return String(value); }}
+function formatNum(value) {{ return String(value); }}
+function formatEur(value) {{ return String(value) + ' €'; }}
+function formatDateEt(value) {{ return value; }}
+function ddInfo() {{ return ''; }}
+function valueExplain() {{ return ''; }}
+{render}
+renderKataster({{number:'1', pindala_ha:1, maks_hind:null}});
+const missing = target.innerHTML;
+renderKataster({{number:'1', pindala_ha:1, maks_hind:0}});
+console.log(JSON.stringify({{missing, zero:target.innerHTML}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertIn("Andmeallikas ei tagastanud väärtust", state["missing"])
+        self.assertNotIn("0 €", state["missing"])
+        self.assertIn("0 €", state["zero"])
+        self.assertNotIn("data.maks_hind || 0", render)
+
     def test_simple_property_questions_resolve_from_loaded_facts_before_ai(self):
         resolver = _extract_js_function("aiResolveFactQuestion")
         send_start = INDEX_HTML.index("async function aiSendMessage")
@@ -472,6 +541,13 @@ async function fetch(url) {{
                 kataster:data.kataster,
                 mets:{{puuliik:'mänd', liigiandmed_taielikud:false}}
               }}),
+              missingDominantStock: aiResolveFactQuestion('Mis on peapuuliik?', {{
+                kataster:data.kataster,
+                mets:{{
+                  puuliik:'mänd', liigiandmed_taielikud:true,
+                  peapuuliigi_andmed_taielikud:false
+                }}
+              }}),
               malformedSpecies: aiResolveFactQuestion('Mis on peapuuliik?', {{
                 kataster:data.kataster,
                 mets:{{puuliik:{{name:'mänd'}}, liigiandmed_taielikud:true}}
@@ -514,6 +590,7 @@ async function fetch(url) {{
         self.assertIsNone(state["compoundNing"])
         self.assertEqual(state["sourcedTaxableValue"]["factId"], "land_taxable_value")
         self.assertIsNone(state["missingSpeciesSource"])
+        self.assertIsNone(state["missingDominantStock"])
         self.assertIsNone(state["malformedSpecies"])
         self.assertIsNone(state["booleanValue"])
         self.assertIn("Terrapointi hinnang", state["estimatedVolume"]["sourceName"])
@@ -952,7 +1029,7 @@ console.log(JSON.stringify({{
         self.assertNotIn("eraldisText.slice", render.group(0))
         self.assertIn("escHtml(eraldisNr)", render.group(0))
         self.assertIn("title=\"' + escHtml(eraldisText) + '\"", render.group(0))
-        self.assertIn("aria-label=\"' + escHtml(eraldisText) + '\"", render.group(0))
+        self.assertNotIn("aria-label=\"' + escHtml(eraldisText) + '\"", render.group(0))
         mobile_prefix_rule = ".teatised-row .teatised-eraldis-prefix { display: none; }"
         self.assertIn(mobile_prefix_rule, STYLE_CSS)
         prefix_rule_index = STYLE_CSS.index(mobile_prefix_rule)
@@ -1371,15 +1448,27 @@ console.log(JSON.stringify(states.map(eudrProtectionState)));
         result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
         states = json.loads(result.stdout)
 
-        self.assertEqual(states[0]["riskLevel"], "Madal risk — kaitseala ei ole")
+        self.assertEqual(
+            states[0]["contextLabel"],
+            "Kontrollitud looduskaitsekihtides kattuvust ei tuvastatud",
+        )
         self.assertTrue(states[0]["sourcesComplete"])
-        self.assertEqual(states[1]["riskLevel"], "Staatus teadmata — osa ruumiandmeid puudub")
+        self.assertEqual(
+            states[1]["contextLabel"],
+            "Looduskaitse eelsõel osaline — puudumist ei saa kinnitada",
+        )
         self.assertFalse(states[1]["sourcesComplete"])
-        self.assertEqual(states[2]["riskLevel"], "Kõrge risk — kaitseala piirangud")
+        self.assertEqual(
+            states[2]["contextLabel"],
+            "Looduskaitse või soo kattuvus leitud — kontrolli tegevustingimusi eraldi",
+        )
         self.assertTrue(states[2]["kaitseala"])
         self.assertFalse(states[2]["sourcesComplete"])
         self.assertIsNone(states[3]["natura"])
         self.assertFalse(states[3]["sourcesComplete"])
+        self.assertNotIn("GeoJSON vastab EL määruse 2023/1115 nõuetele", INDEX_HTML)
+        self.assertNotIn("nõuet täidetud", INDEX_HTML)
+        self.assertIn("ei ole EUDR vastavuskontroll ega hoolsuskohustuse deklaratsioon", INDEX_HTML)
 
     def test_reset_parcel_result_clears_previous_map_ai_and_value_state(self):
         clear_helper = re.search(r'function clearParcelPanels\(\).*?\n    }', INDEX_HTML, re.DOTALL)
@@ -1552,7 +1641,7 @@ console.log(JSON.stringify({{
         self.assertFalse(state["expiring"])
         self.assertFalse(state["missing"])
         self.assertIn("CHAT_SNAPSHOT_EXPIRED", INDEX_HTML)
-        self.assertIn("chatError.code = j.code", INDEX_HTML)
+        self.assertIn("chatError.code = errorPayload.code", INDEX_HTML)
 
     def test_address_submissions_begin_parcel_replacement_before_resolution(self):
         self.assertIn("function beginParcelReplacement()", INDEX_HTML)
@@ -3404,6 +3493,142 @@ console.log(JSON.stringify({{unavailable, successful}}));
         self.assertNotIn("Viimati edukalt kontrollitud", state["unavailable"])
         self.assertIn('class="map-source-attempted">Kontrollikatse ', state["successful"])
         self.assertIn('class="map-source-checked">Viimati edukalt kontrollitud ', state["successful"])
+
+    def test_streamed_reasoning_is_hidden_even_before_a_closing_marker_arrives(self):
+        helper = _extract_js_function("aiCleanModelAnswer")
+        script = f"""
+{helper}
+console.log(JSON.stringify({{
+  partial: aiCleanModelAnswer('<think>secret planning'),
+  complete: aiCleanModelAnswer('<think>secret planning</think>Final answer'),
+  tagged: aiCleanModelAnswer('<𝑎𝑛𝑡𝑚𝑙:thinking_mode>secret</𝑎𝑛𝑡𝑚𝑙:thinking_mode><assistant>Vastus</assistant>'),
+}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertEqual(state["partial"], "")
+        self.assertEqual(state["complete"], "Final answer")
+        self.assertEqual(state["tagged"], "Vastus")
+        send = _extract_js_function("aiSendMessage")
+        self.assertIn("fullText = aiCleanModelAnswer(fullText)", send)
+
+    def test_ambiguous_address_requires_an_explicit_choice(self):
+        helper = _extract_js_function("useResolvedAddress")
+        script = rf"""
+const KATASTER_RE = /^\d{{5}}:\d{{3}}:\d{{4}}$/;
+const navInput = {{value: ''}};
+const landInput = {{value: ''}};
+let searches = 0;
+let rendered = 0;
+let error = '';
+function setAddressDropdownVisibility() {{}}
+function doSearch() {{ searches += 1; }}
+function hideLoading() {{}}
+function renderAddressChoices(results) {{ rendered = results.length; }}
+function showError(message) {{ error = message; }}
+function showParcelResolutionError(message) {{ error = message; }}
+{helper}
+const target = {{focus() {{}}}};
+useResolvedAddress([
+  {{katastri_nr: '11111:111:1111'}},
+  {{katastri_nr: '22222:222:2222'}},
+], {{}}, target, 'Sama aadress');
+const ambiguous = {{searches, rendered, error}};
+useResolvedAddress([{{katastri_nr: '33333:333:3333'}}], {{}}, target, 'Üks aadress');
+console.log(JSON.stringify({{ambiguous, searches, selected: navInput.value}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertEqual(state["ambiguous"]["searches"], 0)
+        self.assertEqual(state["ambiguous"]["rendered"], 2)
+        self.assertIn("Vali õige tulemus", state["ambiguous"]["error"])
+        self.assertEqual(state["searches"], 1)
+        self.assertEqual(state["selected"], "33333:333:3333")
+
+    def test_empty_notice_result_distinguishes_complete_source_from_outage(self):
+        helper = _extract_js_function("renderTeatised")
+        script = f"""
+const element = {{innerHTML: ''}};
+const document = {{getElementById() {{ return element; }}}};
+{helper}
+renderTeatised([], {{sources_complete: false}});
+const unavailable = element.innerHTML;
+renderTeatised([], {{sources_complete: true}});
+console.log(JSON.stringify({{unavailable, complete: element.innerHTML}}));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        state = json.loads(result.stdout)
+
+        self.assertIn("puudumist ei saa kinnitada", state["unavailable"])
+        self.assertIn("teatisi ei leitud", state["complete"])
+
+    def test_frontend_accessibility_contracts_cover_dynamic_controls(self):
+        self.assertIn('id="sidebar" aria-label="Mobiilimenüü" aria-hidden="true" inert', INDEX_HTML)
+        self.assertEqual(INDEX_HTML.count('role="combobox"'), 2)
+        self.assertEqual(INDEX_HTML.count('role="listbox"'), 2)
+        self.assertIn("setAddressActiveOption", INDEX_HTML)
+        self.assertIn("document.activeElement !== landInput", INDEX_HTML)
+        self.assertIn("document.activeElement !== input", INDEX_HTML)
+        self.assertIn('aria-label="Metsateatiste tabel"', INDEX_HTML)
+        self.assertIn('aria-label="Metsaeraldiste tabel"', INDEX_HTML)
+        self.assertIn("sidebar.inert = !open", INDEX_HTML)
+        self.assertIn("returnFocus.focus({preventScroll: true})", INDEX_HTML)
+
+    def test_eudr_uses_geometry_derived_backend_centroid(self):
+        render = _extract_js_function("renderEudr")
+        self.assertIn("k.centroid.latitude", render)
+        self.assertIn("k.centroid.longitude", render)
+        self.assertNotIn("ring.forEach", render)
+        self.assertIn("31.12.2020", render)
+
+    def test_search_rejects_a_response_for_another_parcel(self):
+        source = _extract_js_function("doSearch")
+        self.assertIn("data.kataster.number !== nr", source)
+        self.assertIn("tagastas teise katastriüksuse", source)
+
+    def test_leaflet_is_self_hosted_from_the_verified_release(self):
+        leaflet_root = PROJECT_ROOT / "static/vendor/leaflet"
+        css_hash = base64.b64encode(
+            hashlib.sha256((leaflet_root / "leaflet.css").read_bytes()).digest()
+        ).decode()
+        js_hash = base64.b64encode(
+            hashlib.sha256((leaflet_root / "leaflet.js").read_bytes()).digest()
+        ).decode()
+        self.assertEqual(css_hash, "p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=")
+        self.assertEqual(js_hash, "20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=")
+        self.assertIn('/static/vendor/leaflet/leaflet.css?v=1.9.4', INDEX_DOCUMENT)
+        self.assertIn('/static/vendor/leaflet/leaflet.js?v=1.9.4', INDEX_DOCUMENT)
+        self.assertIn("BSD 2-Clause", (leaflet_root / "LICENSE").read_text())
+        self.assertNotIn("unpkg.com", INDEX_DOCUMENT)
+
+    def test_csp_limits_network_hosts_and_inline_execution(self):
+        csp = next(
+            header["value"]
+            for rule in VERCEL_CONFIG["headers"]
+            for header in rule["headers"]
+            if header["key"] == "Content-Security-Policy"
+        )
+        json_ld = re.search(
+            r'<script type="application/ld\+json">([\s\S]*?)</script>',
+            INDEX_DOCUMENT,
+        ).group(1)
+        json_ld_hash = base64.b64encode(hashlib.sha256(json_ld.encode()).digest()).decode()
+        self.assertIn(f"'sha256-{json_ld_hash}'", csp)
+        self.assertIn("object-src 'none'", csp)
+        self.assertIn("frame-ancestors 'none'", csp)
+        self.assertIn("connect-src 'self' https://gsavalik.envir.ee https://n8n.arleserver.cfd", csp)
+        self.assertNotIn("https://xgis.maaamet.ee", csp)
+        self.assertNotIn("https://unpkg.com", csp)
+        self.assertNotIn("fonts.googleapis.com", csp)
+        self.assertNotIn("fonts.gstatic.com", csp)
+        self.assertNotIn("script-src 'self' 'unsafe-inline'", csp)
+        self.assertNotIn("style-src-elem 'self' 'unsafe-inline'", csp)
+        self.assertIn("style-src-attr 'unsafe-inline'", csp)
+        self.assertNotIn("'unsafe-eval'", csp)
+        self.assertIn('<script defer src="/static/js/app.js', INDEX_DOCUMENT)
+        self.assertNotRegex(INDEX_DOCUMENT, r"\son[a-z]+=")
 
 
 if __name__ == "__main__":

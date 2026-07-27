@@ -1,115 +1,111 @@
-"""Raievanus (felling age) by species and boniteet.
+"""Official renewal-cutting age thresholds by species group and boniteet.
 
-Allikas: Kliimaministeerium — Uuendusraie arvutus, Tabel 4 (seaduslikud
-raievanused). https://kliimaministeerium.ee/media/1034/download
+Source: Kliimaministeerium, ``Uuendusraie arvutus``, table 4:
+https://kliimaministeerium.ee/media/1034/download
 
-Eesti Metsaseaduse alusel on raievanus suurim kehvema kasvukoha boniteedi
-korral — puud kasvavad aeglasemini ja vajavad rohkem aega küpsuse
-jõudmiseks. Vana kood invertis selle suuna: väiksem raievanus kehvema
-boniteedi puhul, mis soovitas eelaealisi raieid (nt mänd boniteet V koodis
-55a, aga seaduse järgi 120a). Võis viia seadusevastaste raiesoovitusteni.
+The source has rows only for Scots pine, Norway spruce, birch, aspen,
+black alder, and hard broadleaves. It explicitly says that legislation does
+not define a maturity age or diameter for grey alder. Therefore species absent
+from those rows remain unknown instead of inheriting a look-alike species'
+threshold. In the aspen row, classes V and Va are also explicitly blank.
 
-Boniteedi koodid (WFS metsaregister.eraldis.boniteedi_kood):
-    0 = 1A  (kõige parem kasvukoht)
-    1 = I
-    2 = II
-    3 = III
-    4 = IV
-    5 = V   (kõige kehvem)
-    6 = Va  (alam-V; kliimaministeeriumi tabelist väljas; kasutan V väärtust)
-
-Kliimaministeeriumi Tabel 4 baseerub Metsaseaduse § 41 lg 2 ja KKM
-määrusele. Tabelis puudub eraldi veerg WFS 6 (Va) jaoks — kasutame V
-väärtust kui turvaline fallback, et mitte kunagi lubada raie enne
-seaduslikku raievanust.
-
-Liikide kaupa Tabel 4 väärtused (vastavalt kliimaministeeriumi dokumendi
-veergudele 1A, I, II, III, IV, V):
-  - Mänd (MA), Lehis (LH), Seedermänd (SD): okaspuud, pikk eluiga
-  - Kuusk (KU): okaspuu, tundlikum pinnasele (stab 60-90a)
-  - Kask (KS), Vaher (VA): keskmised lehtpuud
-  - Haab (HB), Sanglepp (LM), Hall lepp (LV), Remmelgas (RE): kiired
-    kasvajad, lühike raievanus (30-60a)
-  - Tamm (TA), Saar (SA), Jalakas (JA): kõvad lehtpuud,
-    pikk raievanus (90-130a)
+WFS boniteet codes: 0=1A, 1=I, 2=II, 3=III, 4=IV, 5=V, 6=Va.
+The source combines V and Va where a value exists.
 """
 
-# Raievanus (aastat) liigi ja boniteedi koodi (0-6) järgi.
-# Suurem boniteedi kood = kehvem kasvukoht = PIKEM seaduslik raievanus
-# (vastupidiselt vana koodi, mis vähendas). Allikas: Kliimaministeerium
-# uuendusraie dokumendi Tabel 4. WFS kood 6 (Va) = kasutab V väärtust.
-CUTTING_AGE = {
-    # Okaspuud — Mänd (MA), Lehis (LH), Seedermänd (SD) — pikk eluiga
-    "MA": {0: 90,  1: 90,  2: 90,  3: 100, 4: 110, 5: 120, 6: 120},
-    "LH": {0: 90,  1: 90,  2: 90,  3: 100, 4: 110, 5: 120, 6: 120},
-    "SD": {0: 90,  1: 90,  2: 90,  3: 100, 4: 110, 5: 120, 6: 120},
-    # Kuusk (KU) — tundlikum pinnasele
-    "KU": {0: 60,  1: 70,  2: 80,  3: 90,  4: 90,  5: 90,  6: 90},
-    # Kõvad lehtpuud — Tamm (TA), Saar (SA), Jalakas (JA)
-    "TA": {0: 90,  1: 90,  2: 100, 3: 110, 4: 120, 5: 130, 6: 130},
-    "SA": {0: 90,  1: 90,  2: 100, 3: 110, 4: 120, 5: 130, 6: 130},
-    "JA": {0: 90,  1: 90,  2: 100, 3: 110, 4: 120, 5: 130, 6: 130},
-    # Keskmised lehtpuud — Kask (KS), Vaher (VA)
-    "KS": {0: 60,  1: 60,  2: 70,  3: 70,  4: 70,  5: 70,  6: 70},
-    "VA": {0: 60,  1: 60,  2: 70,  3: 70,  4: 70,  5: 70,  6: 70},
-    # Kiired lehtpuud — Haab (HB), Sanglepp (LM), Remmelgas (RE)
-    "HB": {0: 30,  1: 40,  2: 40,  3: 50,  4: 50,  5: 50,  6: 50},
-    "LM": {0: 60,  1: 60,  2: 60,  3: 60,  4: 60,  5: 60,  6: 60},
-    "RE": {0: 30,  1: 30,  2: 30,  3: 30,  4: 30,  5: 30,  6: 30},
-    # Hall lepp (LV) — kiire kasv, kogu vahemikus 30a
-    "LV": {0: 30,  1: 30,  2: 30,  3: 30,  4: 30,  5: 30,  6: 30},
+import math
+
+
+_HARD_BROADLEAF_AGE = {0: 90, 1: 90, 2: 100, 3: 110, 4: 120, 5: 130, 6: 130}
+
+# Values are years. ``None`` means that table 4 has no age threshold for the
+# species group and boniteet; it must not be replaced by a guessed value.
+CUTTING_AGE: dict[str, dict[int, int | None]] = {
+    "MA": {0: 90, 1: 90, 2: 90, 3: 100, 4: 110, 5: 120, 6: 120},
+    "KU": {0: 60, 1: 70, 2: 80, 3: 90, 4: 90, 5: 90, 6: 90},
+    "KS": {0: 60, 1: 60, 2: 70, 3: 70, 4: 70, 5: 70, 6: 70},
+    "HB": {0: 30, 1: 40, 2: 40, 3: 50, 4: 50, 5: None, 6: None},
+    "LM": {0: 60, 1: 60, 2: 60, 3: 60, 4: 60, 5: 60, 6: 60},
+    # Official classifier members of the table's "Kõvad lehtpuud" row.
+    "TA": dict(_HARD_BROADLEAF_AGE),
+    "SA": dict(_HARD_BROADLEAF_AGE),
+    "VA": dict(_HARD_BROADLEAF_AGE),
+    "JA": dict(_HARD_BROADLEAF_AGE),
+    "KP": dict(_HARD_BROADLEAF_AGE),
 }
 
 
-def cutting_age_indicator(vanus: int | None, puuliik_kood: str, boniteedi_kood: int) -> dict:
-    """Arvuta raievanus indikaator liigi ja boniteedi põhjal.
+def _finite_number(value: object) -> float | None:
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
 
-    Boniteedi_kood väärtused 0-6 (WFS metsaregister.eraldis):
-      0=1A (parim), 1=I, 2=II, 3=III, 4=IV, 5=V (kehveim),
-      6=Va (alam-V; kliimaministeeriumi tabelis puudub — kasutan V'd).
 
-    Tagastab:
-      - raievanus: seaduslik raievanus antud liigile + boniteedile (a)
-      - ratio: vanus / raievanus (1.0 = raievanus saavutatud)
-      - status: green/yellow/red
-      - label: inimloetav staatus eesti keeles
+def _unknown_result(label: str, cutting_age=None, cutting_age_provenance=None) -> dict:
+    return {
+        "raievanus": cutting_age,
+        "raievanus_provenance": cutting_age_provenance,
+        "ratio": 0,
+        "status": "unknown",
+        "label": label,
+        "age_class": "unknown",
+        "age_class_label": "Määramata",
+        "age_class_color": "#6b7280",
+        "age_class_provenance": "Terrapointi tuletis",
+    }
+
+
+def cutting_age_indicator(
+    vanus: int | float | None,
+    puuliik_kood: str,
+    boniteedi_kood: int | None,
+    source_cutting_age: int | float | None = None,
+) -> dict:
+    """Calculate a neutral age class against a register or table threshold.
+
+    ``source_cutting_age`` is Metsaregister's stand-specific
+    ``keskm_raievanus`` and takes precedence over the generic table because it
+    can reflect the registered stand composition. The resulting age class is
+    still a Terrapoint derivation and is not a harvesting recommendation.
     """
-    species = CUTTING_AGE.get(puuliik_kood)
-    if species is None:
-        return {
-            "raievanus": None,
-            "ratio": 0,
-            "status": "unknown",
-            "label": "Raievanus pole selle klassifikaatori kirje jaoks määratud",
-            "age_class": "unknown",
-            "age_class_label": "Määramata",
-            "age_class_color": "#6b7280",
-            "age_class_provenance": "Terrapointi tuletis",
-        }
-    # Tagavara: kui boniteedi_kood on väljaspool 0-6 (nt None või >6),
-    # kasutame keskmist boniteeti III (kood 3) — turvaline vaikeväärtus
-    # (mitte 60a väärtus vana koodist).
-    if boniteedi_kood not in species:
-        boniteedi_kood = 3
-    raievanus = species[boniteedi_kood]
-    if vanus is None:
-        return {
-            "raievanus": raievanus,
-            "ratio": 0,
-            "status": "unknown",
-            "label": "Puistu vanus pole määratud",
-            "age_class": "unknown",
-            "age_class_label": "Määramata",
-            "age_class_color": "#6b7280",
-            "age_class_provenance": "Terrapointi tuletis",
-        }
-    ratio = vanus / raievanus if raievanus else 0
+    official_age = _finite_number(source_cutting_age)
+    if official_age is not None and official_age > 0:
+        cutting_age = official_age
+        cutting_age_provenance = "Metsaregister"
+    else:
+        species = CUTTING_AGE.get(puuliik_kood)
+        if species is None:
+            return _unknown_result("Raievanus pole selle klassifikaatori kirje jaoks määratud")
+        if boniteedi_kood not in species:
+            return _unknown_result("Puistu boniteet pole määratud")
+        cutting_age = species[boniteedi_kood]
+        cutting_age_provenance = "Kliimaministeeriumi tabel 4"
+        if cutting_age is None:
+            return _unknown_result(
+                "Selle liigi ja boniteedi jaoks pole vanusepiiri määratud",
+                cutting_age_provenance=cutting_age_provenance,
+            )
+
+    stand_age = _finite_number(vanus)
+    public_cutting_age = int(cutting_age) if float(cutting_age).is_integer() else cutting_age
+    if stand_age is None or stand_age < 0:
+        return _unknown_result(
+            "Puistu vanus pole määratud",
+            public_cutting_age,
+            cutting_age_provenance,
+        )
+
+    ratio = stand_age / cutting_age
     if ratio < 0.85:
-        status, label = "green", "Hooldusraie"
+        status, label = "green", "Alla raievanuse"
     elif ratio < 1.0:
         status, label = "yellow", "Läheneb raievanusele"
     else:
-        status, label = "red", "Raievanus käes"
+        status, label = "red", "Raievanus saavutatud"
     if ratio < 0.50:
         age_class, age_class_label, age_class_color = "young", "Noor", "#7aa6c2"
     elif ratio < 0.85:
@@ -122,7 +118,8 @@ def cutting_age_indicator(vanus: int | None, puuliik_kood: str, boniteedi_kood: 
         "status": status,
         "label": label,
         "ratio": round(ratio, 2),
-        "raievanus": raievanus,
+        "raievanus": public_cutting_age,
+        "raievanus_provenance": cutting_age_provenance,
         "age_class": age_class,
         "age_class_label": age_class_label,
         "age_class_color": age_class_color,

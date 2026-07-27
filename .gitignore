@@ -3,6 +3,8 @@ __pycache__/
 .env
 .env.*
 .venv/
+.coverage
+htmlcov/
 .vercel
 server_*.log
 *.log

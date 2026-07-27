@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="et">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Terrapoint API dokumentatsioon</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/static/css/api-docs.css?v=1">
+</head>
+<body>
+    <main>
+        <p class="eyebrow">Terrapoint</p>
+        <h1>API dokumentatsioon</h1>
+        <p>Terrapointi avalik API koondab Eesti katastri-, metsa- ja ruumiandmeid. Masinloetav täielik leping koos parameetrite ja vastuseskeemidega on <a href="/api/openapi.json">OpenAPI JSON-failis</a>.</p>
+
+        <section aria-labelledby="endpoints-title">
+            <h2 id="endpoints-title">Põhiotspunktid</h2>
+            <dl class="endpoint-list">
+                <div><dt><code>GET /api/health</code></dt><dd>Rakenduse tervis ja vahemälu koondolek.</dd></div>
+                <div><dt><code>GET /api/address/{q}</code></dt><dd>Aadressiotsingu katastrivalikud.</dd></div>
+                <div><dt><code>GET /api/cadastre/objects/{adob_id}</code></dt><dd>Kaardiobjekti tunnuse seostamine katastritunnusega.</dd></div>
+                <div><dt><code>GET /api/search/{kataster_nr}</code></dt><dd>Kinnistu põhiandmed, arvutuslikud stsenaariumid, allikate olekud ja kaardikihid.</dd></div>
+                <div><dt><code>GET /api/map-context/{kataster_nr}</code></dt><dd>Valitud kaarditeemade allikaolekud ja kinnistuga kattuvad objektid.</dd></div>
+                <div><dt><code>GET /api/export/eudr/{kataster_nr}</code></dt><dd>Geolokatsiooni lähtefail; mitte EUDR vastavustõend ega hoolsuskohustuse deklaratsioon.</dd></div>
+                <div><dt><code>POST /api/chat</code></dt><dd>Serveri allkirjastatud kinnistuandmetega piiratud AI-küsimus.</dd></div>
+            </dl>
+        </section>
+
+        <section aria-labelledby="usage-title">
+            <h2 id="usage-title">Kasutamine</h2>
+            <p>Katastritunnus peab vastama ametlikule kujule, näiteks <code>78404:409:0113</code>. Vastuste <code>meta</code>-, <code>sources_complete</code>- ja <code>unavailable_sources</code>-väljad eristavad täielikku kontrolli, osalist vastust ja allikakatkestust.</p>
+            <p>Piirangud, toetused, väärtusvahemikud, süsinikuvaru ja EUDR-väljavõte on otsustustoe sisendid, mitte load, vastavustõendid, turuväärtus ega kohapealne ekspertiis.</p>
+        </section>
+
+        <p><a href="/">Tagasi Terrapointi avalehele</a></p>
+    </main>
+</body>
+</html>

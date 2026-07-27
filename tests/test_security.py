@@ -1,12 +1,19 @@
 import unittest
+import json
 import os
 import base64
+import inspect
+from pathlib import Path
+
+import httpx
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
 import config
 from api.index import (
+    BROWSER_CONTENT_SECURITY_POLICY,
+    BROWSER_SECURITY_HEADERS,
     ChatRequest,
     app,
     _chat_completion_payload,
@@ -15,6 +22,9 @@ from api.index import (
     _rate_limit_buckets,
     _sanitize_chat_history,
 )
+
+
+REAL_ASYNC_CLIENT = httpx.AsyncClient
 
 
 class SecurityBoundaryTests(unittest.TestCase):
@@ -161,6 +171,133 @@ class SecurityBoundaryTests(unittest.TestCase):
             "kataster": {"number": "78404:409:0113"},
             "mets": {"eraldised": [{"eraldis_nr": 1}]},
         }))
+
+    def test_backend_responses_include_browser_security_headers(self):
+        response = TestClient(app).get("/")
+
+        self.assertEqual(response.headers["x-content-type-options"], "nosniff")
+        self.assertEqual(response.headers["x-frame-options"], "DENY")
+        self.assertEqual(response.headers["referrer-policy"], "strict-origin-when-cross-origin")
+        self.assertIn("object-src 'none'", response.headers["content-security-policy"])
+        self.assertIn("frame-ancestors 'none'", response.headers["content-security-policy"])
+        self.assertNotIn("xgis.maaamet.ee", response.headers["content-security-policy"])
+        self.assertEqual(
+            response.headers["content-security-policy"],
+            BROWSER_CONTENT_SECURITY_POLICY,
+        )
+        vercel = json.loads((Path(__file__).parents[1] / "vercel.json").read_text())
+        vercel_browser_headers = {
+            header["key"]: header["value"]
+            for rule in vercel["headers"]
+            if rule["source"] == "/(.*)"
+            for header in rule["headers"]
+        }
+        self.assertEqual(
+            vercel_browser_headers["Content-Security-Policy"],
+            BROWSER_CONTENT_SECURITY_POLICY,
+        )
+        for name, value in BROWSER_SECURITY_HEADERS.items():
+            self.assertEqual(vercel_browser_headers[name], value)
+
+    def test_api_documentation_is_self_hosted_under_the_strict_csp(self):
+        client = TestClient(app)
+        docs = client.get("/api/docs")
+        schema = client.get("/api/openapi.json")
+        redoc = client.get("/api/redoc", follow_redirects=False)
+
+        self.assertEqual(docs.status_code, 200)
+        self.assertIn("/static/css/api-docs.css?v=1", docs.text)
+        self.assertIn('href="/api/openapi.json"', docs.text)
+        self.assertNotIn("<script", docs.text)
+        self.assertNotIn("cdn.jsdelivr.net", docs.text)
+        self.assertNotIn("unpkg.com", docs.text)
+        self.assertEqual(docs.headers["content-security-policy"], BROWSER_CONTENT_SECURITY_POLICY)
+        self.assertEqual(schema.status_code, 200)
+        self.assertIn("/api/search/{kataster_nr}", schema.json()["paths"])
+        self.assertEqual(redoc.status_code, 308)
+        self.assertEqual(redoc.headers["location"], "/api/docs")
+        self.assertIn("mitte EUDR vastavustõend", docs.text)
+
+    def test_untrusted_host_is_rejected_before_reaching_the_application(self):
+        response = TestClient(app).get("/api/health", headers={"Host": "attacker.example"})
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_oversized_address_query_is_rejected_without_an_upstream_request(self):
+        with patch("api.index.httpx.AsyncClient") as client_factory:
+            response = TestClient(app).get("/api/address/" + ("a" * 161))
+
+        self.assertEqual(response.status_code, 400)
+        client_factory.assert_not_called()
+
+    def test_address_search_deduplicates_valid_registry_rows(self):
+        payload = {"features": [{"properties": {
+            "tunnus": "78404:409:0113",
+            "l_aadress": "Kadaka pst 159",
+            "mk_nimi": "Harju maakond",
+            "ov_nimi": "Tallinn",
+            "ay_nimi": "Mustamäe",
+        }}] * 2}
+        transport = httpx.MockTransport(
+            lambda _request: httpx.Response(200, json=payload)
+        )
+        with patch(
+            "api.index.httpx.AsyncClient",
+            side_effect=lambda **kwargs: REAL_ASYNC_CLIENT(
+                transport=transport,
+                timeout=kwargs.get("timeout"),
+            ),
+        ):
+            response = TestClient(app).get("/api/address/Kadaka%20pst%20159%20test")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["results"], [{
+            "aadress": "Kadaka pst 159",
+            "maakond": "Harju maakond",
+            "vald": "Tallinn",
+            "asula": "Mustamäe",
+            "katastri_nr": "78404:409:0113",
+        }])
+
+    def test_address_search_rejects_malformed_registry_identity(self):
+        transport = httpx.MockTransport(
+            lambda _request: httpx.Response(200, json={"features": [{"properties": {
+                "tunnus": "not-a-parcel",
+                "l_aadress": "Testi tee 1",
+            }}]})
+        )
+        with patch(
+            "api.index.httpx.AsyncClient",
+            side_effect=lambda **kwargs: REAL_ASYNC_CLIENT(
+                transport=transport,
+                timeout=kwargs.get("timeout"),
+            ),
+        ):
+            response = TestClient(app).get("/api/address/Testi%20tee%201%20invalid")
+
+        self.assertEqual(response.status_code, 502)
+        self.assertEqual(
+            response.json(),
+            {"error": "Aadressiotsing ebaõnnestus. Proovi uuesti."},
+        )
+
+    def test_chat_stream_never_sends_provider_reasoning_to_api_clients(self):
+        source = inspect.getsource(__import__("api.index", fromlist=["chat"]).chat)
+
+        self.assertNotIn('{"reasoning": preview}', source)
+        self.assertNotIn('orjson.dumps({"reasoning"', source)
+
+    def test_runtime_dependencies_use_patched_fastapi_and_starlette(self):
+        requirements = (Path(__file__).parents[1] / "requirements.txt").read_text()
+
+        self.assertIn("fastapi==0.140.0", requirements)
+        self.assertIn("starlette==1.3.1", requirements)
+        self.assertNotIn("starlette==0.52.1", requirements)
+
+    def test_obsolete_xgis_proxy_is_not_exposed(self):
+        response = TestClient(app).get("/api/tiles/xgis")
+
+        self.assertEqual(response.status_code, 404)
 
     def test_chat_optional_partial_data_passes_readiness_gate(self):
         data = {
