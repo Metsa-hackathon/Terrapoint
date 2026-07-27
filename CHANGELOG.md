@@ -36,8 +36,9 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 - **Kihilised kasutajaliidese töövood** parandavad aadressi valiku, päringute
   võistlusolukorrad, fookuse taastamise, mobiilse tabelikerimise, EUDR veateated
   ja AI sisemise mõttekäigu varjamise.
-- **Staatiliste varade maht** vähenes: kasutamata fotod eemaldati ja kuus
-  töölauavaate puupilti asendati väiksemate WebP-failidega.
+- **Staatiliste varade maht ja serveerimine** — kasutamata fotod eemaldati,
+  kuus töölauavaate puupilti asendati väiksemate WebP-failidega ning WebP/WOFF2
+  vastused saavad Verceli Python-käituskeskkonnas õige MIME-tüübi.
 
 ## [Määramata] - 2026-07-23
 

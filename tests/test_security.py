@@ -199,6 +199,18 @@ class SecurityBoundaryTests(unittest.TestCase):
         for name, value in BROWSER_SECURITY_HEADERS.items():
             self.assertEqual(vercel_browser_headers[name], value)
 
+    def test_static_webp_and_woff2_have_explicit_nosniff_safe_mime_types(self):
+        client = TestClient(app)
+        webp = client.get("/static/img/tree-barrier-left.webp")
+        font = client.get("/static/fonts/geist-latin.woff2")
+
+        self.assertEqual(webp.status_code, 200)
+        self.assertEqual(webp.headers["content-type"], "image/webp")
+        self.assertEqual(font.status_code, 200)
+        self.assertEqual(font.headers["content-type"], "font/woff2")
+        self.assertEqual(webp.headers["x-content-type-options"], "nosniff")
+        self.assertEqual(font.headers["x-content-type-options"], "nosniff")
+
     def test_api_documentation_is_self_hosted_under_the_strict_csp(self):
         client = TestClient(app)
         docs = client.get("/api/docs")

@@ -14,6 +14,7 @@ import hmac
 import inspect
 import logging
 import math
+import mimetypes
 import os
 import re
 from datetime import date, datetime, timezone
@@ -1009,6 +1010,12 @@ app = FastAPI(
 app.add_middleware(CORSMiddleware, allow_origins=config.CORS_ORIGINS, allow_methods=["GET", "POST", "OPTIONS"], allow_headers=["Content-Type", "Authorization"])
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=config.TRUSTED_HOSTS)
 app.add_middleware(BrowserSecurityHeadersMiddleware)
+
+# Verceli Python runtime'i süsteemne MIME-tabel ei sisalda alati WebP- ega
+# WOFF2-laiendit. Registreeri need enne StaticFiles instantsi loomist, et
+# ``nosniff`` turvapäis ei jätaks pilte või fonte octet-stream vastuseks.
+mimetypes.add_type("image/webp", ".webp")
+mimetypes.add_type("font/woff2", ".woff2")
 
 # Serve static files and frontend
 STATIC_DIR = PROJECT_ROOT / "static"
