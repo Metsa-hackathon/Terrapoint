@@ -3772,17 +3772,34 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             return;
         }
 
-        // Kaardista API staatus -> badge klass ja silt
+        // Kaardista API staatus -> badge klass ja kompaktne silt. Täielik ametlik
+        // silt jääb title'i ja aria-label'isse ka siis, kui nähtav tekst on lühem.
         function teatisedStatusBadge(eventStatus, eventStatusLabel, staatus, active, archived) {
+            function statusBadge(className, fullLabel, compactLabel) {
+                var accessibleLabel = String(fullLabel || 'Staatus määramata');
+                var visibleLabel = String(compactLabel || accessibleLabel);
+                return '<span class="teatised-status ' + className
+                    + '" title="' + escHtml(accessibleLabel)
+                    + '" aria-label="' + escHtml(accessibleLabel) + '">'
+                    + escHtml(visibleLabel) + '</span>';
+            }
             if (typeof eventStatus === 'string' && eventStatus.trim()) {
                 var canonicalStatus = eventStatus.trim().toLowerCase();
                 var canonicalLabels = {
                     permitted_current: 'Kehtiv lubatud töö',
                     not_permitted: 'Töö ei ole lubatud',
-                    registered: 'Registreeritud',
+                    registered: 'Registreeritud teatis',
                     archived: 'Arhiivitud sündmus',
                     not_current: 'Ei ole praegu kehtiv',
                     unknown: 'Staatus määramata',
+                };
+                var compactLabels = {
+                    permitted_current: 'Kehtiv luba',
+                    not_permitted: 'Ei ole lubatud',
+                    registered: 'Registreeritud',
+                    archived: 'Arhiivitud',
+                    not_current: 'Ei kehti',
+                    unknown: 'Määramata',
                 };
                 var canonicalClasses = {
                     permitted_current: 'status-kehtiv status-permitted-current',
@@ -3794,37 +3811,37 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 };
                 var canonicalLabel = typeof eventStatusLabel === 'string' && eventStatusLabel.trim()
                     ? eventStatusLabel.trim()
-                    : (canonicalLabels[canonicalStatus] || 'Staatus määramata');
+                    : (canonicalLabels[canonicalStatus] || canonicalLabels.unknown);
                 var canonicalClass = canonicalClasses[canonicalStatus] || canonicalClasses.unknown;
-                return '<span class="teatised-status ' + canonicalClass + '">' + escHtml(canonicalLabel) + '</span>';
+                return statusBadge(canonicalClass, canonicalLabel, compactLabels[canonicalStatus] || compactLabels.unknown);
             }
             var s = (staatus || '').toUpperCase().trim();
             if (archived) {
-                return '<span class="teatised-status status-muud">Arhiiv</span>';
+                return statusBadge('status-muud', 'Arhiivitud sündmus', 'Arhiivitud');
             }
             if (active || s === 'KEHTIV') {
-                return '<span class="teatised-status status-kehtiv">Kehtiv</span>';
+                return statusBadge('status-kehtiv', 'Kehtiv lubatud töö', 'Kehtiv luba');
             }
             if (s === 'JAH') {
-                return '<span class="teatised-status status-kehtetu">Aegunud</span>';
+                return statusBadge('status-kehtetu', 'Aegunud', 'Aegunud');
             }
             if (s === 'REGISTREERITUD') {
-                return '<span class="teatised-status status-registreeritud">Registreeritud</span>';
+                return statusBadge('status-registreeritud', 'Registreeritud teatis', 'Registreeritud');
             }
             if (s === 'KEHTETU' || s === 'TÜHISTATUD' || s === 'CLOSED') {
-                return '<span class="teatised-status status-kehtetu">' + escHtml(staatus) + '</span>';
+                return statusBadge('status-kehtetu', staatus, staatus);
             }
             if (!s) {
-                return '<span class="teatised-status status-muud">—</span>';
+                return statusBadge('status-muud', 'Staatus määramata', 'Määramata');
             }
-            return '<span class="teatised-status status-muud">' + escHtml(staatus) + '</span>';
+            return statusBadge('status-muud', staatus, staatus);
         }
 
         var html = '<details class="eraldised-panel table-panel teatised-panel" open>';
         var totalNotices = meta && meta.teatisi_kokku != null ? meta.teatisi_kokku : data.length;
         var totalRows = meta && meta.ridu_kokku != null ? meta.ridu_kokku : data.length;
         var shownRows = meta && meta.ridu_kuvatud != null ? meta.ridu_kuvatud : data.length;
-        var summaryLabel = totalNotices + ' teatist · ' + totalRows + ' eraldiseridu';
+        var summaryLabel = 'teatist · ' + totalRows + ' eraldiseridu';
         if (shownRows < totalRows) summaryLabel += ' · kuvatud ' + shownRows;
         html += tablePanelSummary(totalNotices, summaryLabel);
 

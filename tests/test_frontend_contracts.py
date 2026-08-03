@@ -250,7 +250,8 @@ async function fetch(url) {{
         self.assertIn("must-revalidate", cache_control)
 
     def test_changed_stylesheet_busts_the_previous_immutable_url(self):
-        self.assertIn('/static/css/style.css?r=jkl116', INDEX_HTML)
+        self.assertIn('/static/css/style.css?r=jkl117', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl116', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl115', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl114', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl113', INDEX_HTML)
@@ -267,6 +268,8 @@ async function fetch(url) {{
         self.assertNotIn('/static/css/style.css?r=jkl104', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl103', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl102', INDEX_HTML)
+        self.assertIn('/static/js/app.js?r=jkl002', INDEX_HTML)
+        self.assertNotIn('/static/js/app.js?r=jkl001', INDEX_HTML)
 
     def test_sitemap_uses_only_the_canonical_document_url(self):
         self.assertEqual(SITEMAP_XML.count("<url>"), 1)
@@ -1016,28 +1019,20 @@ console.log(JSON.stringify({{
         self.assertNotIn("t.eraldis", render.group(0))
         self.assertNotIn("teatise_eraldis_nr", render.group(0))
 
-    def test_notice_compartment_column_preserves_full_ellipsized_label(self):
+    def test_notice_compartment_label_remains_visible_in_compact_rows(self):
         render = re.search(r'function renderTeatised\(data, meta\).*?\n    }', INDEX_HTML, re.DOTALL)
-        desktop_columns = re.search(
-            r"(?m)^\.teatised-table-header,\s*\n\.teatised-row \{\s*\n\s*grid-template-columns: ([^;]+);",
-            STYLE_CSS,
-        )
         self.assertIsNotNone(render)
-        self.assertIsNotNone(desktop_columns)
-        self.assertIn("84px", desktop_columns.group(1))
         self.assertIn('<span class="teatised-eraldis-prefix">Eraldis </span>', render.group(0))
         self.assertNotIn("eraldisText.slice", render.group(0))
         self.assertIn("escHtml(eraldisNr)", render.group(0))
         self.assertIn("title=\"' + escHtml(eraldisText) + '\"", render.group(0))
         self.assertNotIn("aria-label=\"' + escHtml(eraldisText) + '\"", render.group(0))
-        mobile_prefix_rule = ".teatised-row .teatised-eraldis-prefix { display: none; }"
-        self.assertIn(mobile_prefix_rule, STYLE_CSS)
-        prefix_rule_index = STYLE_CSS.index(mobile_prefix_rule)
-        mobile_breakpoint_index = STYLE_CSS.rfind("@media (max-width: 640px) {", 0, prefix_rule_index)
-        next_breakpoint_index = STYLE_CSS.find("@media (", prefix_rule_index)
-        self.assertGreater(mobile_breakpoint_index, -1)
-        self.assertLess(prefix_rule_index, next_breakpoint_index)
-        self.assertIn("grid-template-columns: minmax(0, 1fr);", STYLE_CSS)
+        self.assertIn(
+            "#card-teatised .teatised-row .teatised-eraldis-prefix { display: inline; }",
+            STYLE_CSS,
+        )
+        self.assertNotIn(".teatised-row .teatised-eraldis-prefix { display: none; }", STYLE_CSS)
+
 
     def test_results_start_at_dashboard_and_cards_keep_natural_height(self):
         self.assertNotIn("document.getElementById('card-vaartus')", INDEX_HTML)
@@ -1046,18 +1041,28 @@ console.log(JSON.stringify({{
         self.assertIn("align-items: start;", STYLE_CSS)
         self.assertIn("#dashboard { scroll-margin-top:", STYLE_CSS)
 
-    def test_mobile_notices_use_stacked_labeled_rows(self):
+    def test_notices_use_compact_scroll_free_rows_with_narrow_fallback(self):
         for label in ('Tüüp', 'Eraldis', 'Staatus', 'Kehtiv kuni', 'Pindala'):
             self.assertIn(f'data-label="{label}"', INDEX_HTML)
-        self.assertIn('.teatised-table-header { display: none; }', STYLE_CSS)
-        self.assertIn("content: attr(data-label);", STYLE_CSS)
+        self.assertIn("#card-teatised .teatised-table-header { display: none; }", STYLE_CSS)
+        self.assertIn("#card-teatised .teatised-panel .table-grid-hscroll,", STYLE_CSS)
+        self.assertIn("overflow-x: hidden;", STYLE_CSS)
+        self.assertIn("max-height: none;", STYLE_CSS)
+        self.assertIn('"type type area"', STYLE_CSS)
+        self.assertIn('"stand status expiry"', STYLE_CSS)
+        self.assertIn("@container (max-width: 260px)", STYLE_CSS)
+        self.assertIn('"status status"', STYLE_CSS)
+        self.assertIn("permitted_current: 'Kehtiv luba'", INDEX_HTML)
+        self.assertIn("not_current: 'Ei kehti'", INDEX_HTML)
+        self.assertIn("aria-label=\"' + escHtml(accessibleLabel)", INDEX_HTML)
         self.assertIn("formatDateEt(t.kehtiv_kuni)", INDEX_HTML)
         self.assertIn(
             "teatisedStatusBadge(t.event_status, t.event_status_label, t.staatus, t.active, t.arhiiv)",
             INDEX_HTML,
         )
         self.assertIn('class="teatised-type-value"', INDEX_HTML)
-        self.assertIn(".teatised-row .teatised-type-value { grid-column: 2; }", STYLE_CSS)
+        self.assertIn("var summaryLabel = 'teatist · ' + totalRows + ' eraldiseridu';", INDEX_HTML)
+        self.assertNotIn("totalNotices + ' teatist · '", INDEX_HTML)
 
     def test_inline_explanations_are_keyboard_accessible_buttons(self):
         helper = re.search(r'function ddInfo\(text, valueText\).*?\n    }', INDEX_HTML, re.DOTALL)

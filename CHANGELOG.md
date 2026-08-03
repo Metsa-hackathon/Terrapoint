@@ -27,6 +27,10 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   alles API, avalehe ja rakenduse JavaScripti tervisekontrolli järel.
 
 ### Fixed
+- **Kompaktne metsateatiste vaade** koondab teatise tüübi, staatuse, eraldise,
+  kehtivuse ja pindala kaheks selgeks reaks ilma kaardisisese horisontaalse
+  kerimiseta; kõige kitsamal ekraanil liigub staatus loetavuse säilitamiseks
+  eraldi reale.
 - **FastAPI ja Starlette turvauuendus** eemaldab auditis leitud haavatava
   Starlette versiooni; brauserivastused kasutavad Vercelis ja FastAPI-s sama
   ranget CSP-d ning turvapäiseid.

@@ -3985,10 +3985,6 @@ footer {
 .eraldised-row {
     grid-template-columns: minmax(0, 1fr) minmax(124px, auto);
 }
-.teatised-table-header,
-.teatised-row {
-    grid-template-columns: minmax(72px, 1.05fr) 84px minmax(80px, 0.95fr) minmax(80px, 0.95fr) 60px;
-}
 .kitsendused-table-header,
 .kitsendused-row {
     grid-template-columns: minmax(0, 1fr) 84px;
@@ -4210,6 +4206,99 @@ footer {
 .teatised-status.status-kehtetu { color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; }
 .teatised-status.status-muud { color: #4b5563; background: #f3f4f6; border: 1px solid #e5e7eb; }
 
+/* Metsateatised — kompaktsed kaherealised kirjed hoiavad kõik väljad nähtaval
+   ilma sisemise horisontaalse kerimiseta ka ühe grid-veeru laiuses kaardis. */
+#card-teatised .teatised-panel { overflow-x: hidden; }
+#card-teatised .teatised-table-header { display: none; }
+#card-teatised .teatised-panel .table-grid-hscroll,
+#card-teatised .teatised-panel .table-grid-scroll {
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+}
+#card-teatised .teatised-panel .table-grid-scroll {
+    max-height: none;
+    background: none;
+}
+#card-teatised .teatised-row {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+        "type type area"
+        "stand status expiry";
+    gap: 6px;
+    padding: 9px 6px;
+    border-bottom: 1px solid var(--hair);
+    align-items: center;
+}
+#card-teatised .teatised-row:last-child { border-bottom: 0; }
+#card-teatised .teatised-row > div {
+    display: block;
+    min-width: 0;
+    overflow: visible;
+    white-space: nowrap;
+    text-align: left !important;
+}
+#card-teatised .teatised-row > div::before { content: none; }
+#card-teatised .teatised-row .teatised-type {
+    grid-area: type;
+    white-space: normal;
+}
+#card-teatised .teatised-row .teatised-type-value {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 2px 7px;
+    color: var(--ink-2);
+    font-weight: 600;
+}
+#card-teatised .teatised-row .teatised-type span {
+    display: inline;
+    margin-top: 0;
+    font-weight: 400;
+}
+#card-teatised .teatised-row .teatised-eraldis { grid-area: stand; }
+#card-teatised .teatised-row .teatised-eraldis-prefix { display: inline; }
+#card-teatised .teatised-row > div:nth-child(3) {
+    grid-area: status;
+    overflow: hidden;
+}
+#card-teatised .teatised-row > div:nth-child(4) { grid-area: expiry; }
+#card-teatised .teatised-row > div:nth-child(4)::before {
+    content: "kuni ";
+    color: var(--ink-4);
+    font-size: 10px;
+}
+#card-teatised .teatised-row > div:nth-child(5) {
+    grid-area: area;
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+}
+#card-teatised .teatised-status {
+    gap: 3px;
+    padding: 1px 4px;
+    font-size: 10px;
+}
+#card-teatised .teatised-status::before {
+    width: 4px;
+    height: 4px;
+    flex: 0 0 auto;
+}
+
+/* Kõige kitsamas kaardis läheb staatus kärpimise asemel eraldi reale. */
+#card-teatised { container-type: inline-size; }
+@container (max-width: 260px) {
+    #card-teatised .teatised-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "type area"
+            "stand expiry"
+            "status status";
+    }
+}
+
 /* ═══ RESPONSIVE ════════════════════════════════════════════════════════════ */
 
 /* Tablet */
@@ -4356,45 +4445,6 @@ footer {
         min-width: 0;
     }
     .eraldised-table-panel .table-grid-hscroll { overflow-x: visible; }
-    .teatised-table-header,
-    .teatised-row {
-        grid-template-columns: minmax(64px, 1fr) 44px minmax(70px, 0.95fr) minmax(68px, 0.95fr) 48px;
-    }
-    .teatised-table-header { display: none; }
-    .teatised-panel .table-grid-hscroll { overflow-x: visible; }
-    .teatised-panel .table-grid-scroll {
-        width: 100%;
-        min-width: 0;
-        max-height: 520px;
-        background: none;
-    }
-    .teatised-row {
-        width: 100%;
-        min-width: 0;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 7px;
-        padding: 12px 8px;
-        border-bottom: 1px solid var(--hair);
-        align-items: start;
-    }
-    .teatised-row > div {
-        display: grid;
-        grid-template-columns: 88px minmax(0, 1fr);
-        gap: 8px;
-        align-items: start;
-        overflow: visible;
-        white-space: normal;
-        text-align: left !important;
-    }
-    .teatised-row > div::before {
-        content: attr(data-label);
-        color: var(--ink-4);
-        font-size: 11px;
-        font-weight: 600;
-    }
-    .teatised-row .teatised-type-value { grid-column: 2; }
-    .teatised-row .teatised-type span { margin-top: 0; }
-    .teatised-row .teatised-eraldis-prefix { display: none; }
     .kitsendused-table-header,
     .kitsendused-row {
         grid-template-columns: minmax(120px, 1fr) 72px;
