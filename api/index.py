@@ -971,6 +971,39 @@ BROWSER_SECURITY_HEADERS = {
     "X-Frame-Options": "DENY",
 }
 
+# Safari applies ``upgrade-insecure-requests`` to loopback subresources, while
+# Chromium exempts them.  A local HTTP server therefore ends up serving bare
+# HTML in Safari because every relative CSS/JS/image URL is rewritten to HTTPS.
+# Keep the production policy strict, but do not ask browsers to upgrade assets
+# when the document itself is being served from a loopback development host.
+LOCAL_BROWSER_CONTENT_SECURITY_POLICY = BROWSER_CONTENT_SECURITY_POLICY.removesuffix(
+    "; upgrade-insecure-requests"
+)
+LOCAL_BROWSER_SECURITY_HEADERS = {
+    **{
+        name: value
+        for name, value in BROWSER_SECURITY_HEADERS.items()
+        if name != "Strict-Transport-Security"
+    },
+    "Content-Security-Policy": LOCAL_BROWSER_CONTENT_SECURITY_POLICY,
+}
+
+
+def _is_loopback_request(scope: dict) -> bool:
+    host_header = next(
+        (
+            value.decode("latin-1")
+            for name, value in scope.get("headers", ())
+            if name.lower() == b"host"
+        ),
+        "",
+    )
+    try:
+        hostname = urlsplit(f"//{host_header}").hostname
+    except ValueError:
+        return False
+    return bool(hostname and hostname.lower().rstrip(".") in {"localhost", "127.0.0.1", "::1"})
+
 
 class BrowserSecurityHeadersMiddleware:
     """Attach canonical browser headers without buffering streaming responses."""
@@ -983,10 +1016,16 @@ class BrowserSecurityHeadersMiddleware:
             await self.app(scope, receive, send)
             return
 
+        security_headers = (
+            LOCAL_BROWSER_SECURITY_HEADERS
+            if _is_loopback_request(scope)
+            else BROWSER_SECURITY_HEADERS
+        )
+
         async def send_with_security_headers(message):
             if message["type"] == "http.response.start":
                 headers = MutableHeaders(scope=message)
-                for name, value in BROWSER_SECURITY_HEADERS.items():
+                for name, value in security_headers.items():
                     if name not in headers:
                         headers[name] = value
             await send(message)

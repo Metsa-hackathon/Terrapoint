@@ -199,6 +199,18 @@ class SecurityBoundaryTests(unittest.TestCase):
         for name, value in BROWSER_SECURITY_HEADERS.items():
             self.assertEqual(vercel_browser_headers[name], value)
 
+    def test_loopback_http_does_not_upgrade_assets_to_https(self):
+        response = TestClient(app, base_url="http://localhost:8099").get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(
+            "upgrade-insecure-requests",
+            response.headers["content-security-policy"],
+        )
+        self.assertNotIn("strict-transport-security", response.headers)
+        self.assertEqual(response.headers["x-content-type-options"], "nosniff")
+        self.assertIn("object-src 'none'", response.headers["content-security-policy"])
+
     def test_static_webp_and_woff2_have_explicit_nosniff_safe_mime_types(self):
         client = TestClient(app)
         webp = client.get("/static/img/tree-barrier-left.webp")

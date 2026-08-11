@@ -103,6 +103,9 @@
     --ff-mono: "Geist Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     --ff-display: "Geist", "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
     --ff-estonian: "Geist", "Inter Tight", system-ui, sans-serif; /* Geist covers Estonian diacritics */
+    --panel-title-font-size: 16px;
+    --panel-font-size: 14px;
+    --panel-supporting-font-size: 12px;
 
     /* Motion */
     --ease: cubic-bezier(0.32, 0.72, 0, 1);
@@ -305,7 +308,7 @@ a { color: var(--blue-700); text-decoration: none; }
     width: 100%;
     max-width: 580px;
     min-width: 0;
-    height: 42px;
+    height: 38px;
     padding: 0 2px 0 14px;
     background: var(--white);
     border: 1px solid var(--hair);
@@ -359,8 +362,8 @@ a { color: var(--blue-700); text-decoration: none; }
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     padding: 0;
     background: var(--blue-900);
     color: var(--white);
@@ -1150,8 +1153,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     display: inline-flex;
     transform-origin: 50% 50%;
     align-items: center;
-    gap: 5px;
-    padding: 4px 11px 4px 9px;
+    padding: 4px 11px;
     margin-bottom: 18px;
     background: var(--white);
     border: 1px solid var(--hair);
@@ -1161,17 +1163,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     color: var(--ink-3);
     font-weight: 500;
     letter-spacing: -0.005em;
-}
-.landing-eyebrow .dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--success);
-    box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.18);
-    animation: pulse-dot 2s ease-in-out infinite;
-}
-@keyframes pulse-dot {
-    0%, 100% { box-shadow: 0 0 0 3px rgba(4, 120, 87, 0.18); }
-    50% { box-shadow: 0 0 0 5px rgba(4, 120, 87, 0.05); }
 }
 
 .landing-title {
@@ -1433,6 +1424,25 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     height: 560px;
     background: var(--paper-3);
 }
+.map-reset-control {
+    position: absolute;
+    top: 142px;
+    right: 16px;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid var(--hair);
+    border-radius: 8px;
+    background: var(--white);
+    color: var(--ink-2);
+    box-shadow: var(--sh-2);
+    cursor: pointer;
+}
+.map-reset-control:hover { background: var(--blue-50); color: var(--blue-700); }
+.map-reset-control:focus-visible { outline: 2px solid var(--blue-500); outline-offset: 2px; }
 
 /* Unified map workspace */
 .map-controls {
@@ -1901,11 +1911,32 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     gap: 16px;
     align-items: start;
 }
+.metrics-grid.is-tetris {
+    /* JavaScript measures each card, locks the first three across the top,
+       then assigns the rest to columns whose final heights are most even. */
+    grid-auto-flow: row dense;
+    grid-auto-rows: 1px;
+    column-gap: 16px;
+    row-gap: 0;
+}
+.metrics-grid.is-tetris > .metric-card {
+    grid-row-end: span var(--tetris-row-span);
+    margin-bottom: 16px;
+}
 @media (max-width: 1180px) {
     .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 768px) {
     .metrics-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .metrics-grid.is-tetris {
+        grid-auto-flow: row;
+        grid-auto-rows: auto;
+        row-gap: 12px;
+    }
+    .metrics-grid.is-tetris > .metric-card {
+        grid-row-end: auto;
+        margin-bottom: 0;
+    }
 }
 .metric-card {
     grid-column: span 1;
@@ -1923,15 +1954,90 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     animation: cardIn 0.5s var(--ease-out) backwards;
     color: var(--ink-2);
 }
-/* Tighter padding on cards that hold the eraldised table — the 7-column
-   table needs more horizontal room than the 28px default gives it. The
-   table panel itself has padding:0, so reducing the card padding
-   directly widens the available space. */
-.metric-card:has(.eraldised-table-panel) {
-    padding-left: 14px;
-    padding-right: 14px;
+
+/* Keep every result card on the same type scale, including content injected
+   by JavaScript. Font weight, family, color and line-height still provide
+   hierarchy without mixing text sizes between cards. */
+.metric-card,
+.metric-card *,
+.metric-card::before,
+.metric-card::after,
+.metric-card *::before,
+.metric-card *::after {
+    font-size: var(--panel-font-size) !important;
 }
 
+/* Three-level result-card type scale: card title, primary content, and
+   supporting/additional context. */
+.metric-card .card-header h3,
+.metric-card .card-header h3 * {
+    font-size: var(--panel-title-font-size) !important;
+}
+
+.metric-card .section-desc,
+.metric-card .data-quality-alert,
+.metric-card .data-quality-alert *,
+.metric-card small,
+.metric-card .ph-eyebrow,
+.metric-card .ph-label,
+.metric-card .value-block-label,
+.metric-card .value-block .sub,
+.metric-card .estimate-midpoint,
+.metric-card .confidence-heading,
+.metric-card .estimate-breakdown span,
+.metric-card .estimate-breakdown small,
+.metric-card .asset-trust-strip span,
+.metric-card .asset-trust-strip p,
+.metric-card .asset-passport-origin,
+.metric-card .asset-passport-body,
+.metric-card .asset-passport-note,
+.metric-card .asset-passport-methods,
+.metric-card .traffic-light,
+.metric-card .eudr-scope-warning,
+.metric-card .muted-summary {
+    font-size: var(--panel-supporting-font-size) !important;
+}
+
+/* Nested panels are supporting additions as a whole. Their headings, bold
+   values and child elements stay on the supporting tier too. */
+.metric-card :is(
+    .supporting-callout,
+    .callout-surface,
+    .value-block,
+    .estimate-breakdown,
+    .data-quality-alert,
+    .asset-trust-strip,
+    .asset-passport-note,
+    .asset-passport-methods,
+    .eudr-scope-warning,
+    .eligible-banner,
+    .toetus-card,
+    .toetus-reason,
+    .toetus-eraldis-row,
+    .toetus-match-note,
+    .toetus-group-heading,
+    .error-state
+),
+.metric-card :is(
+    .supporting-callout,
+    .callout-surface,
+    .value-block,
+    .estimate-breakdown,
+    .data-quality-alert,
+    .asset-trust-strip,
+    .asset-passport-note,
+    .asset-passport-methods,
+    .eudr-scope-warning,
+    .eligible-banner,
+    .toetus-card,
+    .toetus-reason,
+    .toetus-eraldis-row,
+    .toetus-match-note,
+    .toetus-group-heading,
+    .error-state
+) * {
+    font-size: var(--panel-supporting-font-size) !important;
+}
 .metric-card:nth-child(1) { animation-delay: 0.02s; }
 .metric-card:nth-child(2) { animation-delay: 0.06s; }
 .metric-card:nth-child(3) { animation-delay: 0.10s; }
@@ -1941,14 +2047,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .metric-card:nth-child(7) { animation-delay: 0.26s; }
 .metric-card:nth-child(8) { animation-delay: 0.30s; }
 .metric-card:nth-child(9) { animation-delay: 0.34s; }
-
-/* Alumise rea kaardid (Kitsendused, Metsateatised, Toetused) ei veni
-   grid rea kõrgusele — muidu tekib tühi valge kast, kui sisu on lühike
-   (nt Metsateatised 3 reaga). `align-self: start` jätab kaardi loomulikku
-   kõrgusesse, ülejäänud rida on grid taust (mitte kaardi valge). */
-.metric-card:nth-child(n+7) {
-    align-self: start;
-}
 
 /* Eemaldatud ::before gradient joon — AI slop dekoratsioon */
 
@@ -1978,7 +2076,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 }
 .highlight-card:hover { border-color: var(--blue-300); box-shadow: var(--sh-4); }
 
-/* Card header — ikoonid minimaalsed, ilma värviliste kastideta */
+/* Card header — ikoonid minimaalsed, pehmetes looduslikes toonides */
 .card-header {
     display: flex;
     align-items: flex-start;
@@ -1993,7 +2091,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     justify-content: center;
     flex-shrink: 0;
     background: none;
-    color: var(--ink-4);
+    color: var(--card-icon-color, var(--ink-4));
     border: none;
     transition: none;
     margin-top: 2px;
@@ -2001,11 +2099,19 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .card-icon svg { width: 16px; height: 16px; }
 .metric-card:hover .card-icon {
     background: none;
-    color: var(--ink-4);
+    color: var(--card-icon-color, var(--ink-4));
     border: none;
     transform: none;
 }
-.vaartus-icon { color: var(--blue-700); }
+.kataster-icon { --card-icon-color: #7890a8; }
+.mets-icon { --card-icon-color: #78977f; }
+.vaartus-icon { --card-icon-color: #8a83a6; }
+.sinik-icon { --card-icon-color: #70979c; }
+.risk-icon { --card-icon-color: #b07e72; }
+.eudr-icon { --card-icon-color: #7b88aa; }
+.kitsendused-icon { --card-icon-color: #9982a0; }
+.teatised-icon { --card-icon-color: #a28870; }
+.toetused-icon { --card-icon-color: #8a9b6f; }
 
 .card-head-text { flex: 1; min-width: 0; }
 .card-header h3 {
@@ -2055,7 +2161,8 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    padding: 7px 0;
+    padding: 2px 0;
+    min-height: 48px;
     font-size: var(--tier-2-row);
     position: relative;
 }
@@ -2515,6 +2622,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 
 /* ═══ AI CHAT ══════════════════════════════════════════════════════════════ */
 .ai-chat-section {
+    --ai-chat-font-size: var(--panel-font-size);
     background: var(--white);
     border: 1px solid var(--hair);
     border-radius: 8px;
@@ -2523,6 +2631,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     display: flex;
     flex-direction: column;
     grid-column: span 12;
+    font-size: var(--ai-chat-font-size);
 }
 .ai-chat-header {
     display: flex;
@@ -2533,6 +2642,12 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     border-bottom: 1px solid var(--hair);
     position: relative;
 }
+.ai-chat-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    flex-shrink: 0;
+}
 .ai-chat-header::after {
     content: "";
     position: absolute;
@@ -2541,38 +2656,15 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     background: linear-gradient(90deg, var(--blue-200), var(--blue-400) 50%, var(--blue-200));
     opacity: 0.4;
 }
-.ai-chat-icon {
-    width: 32px; height: 32px;
-    background:
-        radial-gradient(circle at 30% 30%, var(--blue-400), var(--blue-700));
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--white);
-    flex-shrink: 0;
-    box-shadow: var(--sh-2);
-    position: relative;
-}
-.ai-chat-icon::after {
-    content: "";
-    position: absolute;
-    inset: -2px;
-    border-radius: 10px;
-    border: 1px solid var(--blue-300);
-    opacity: 0.4;
-    animation: pulse 2.4s ease-in-out infinite;
-}
-.ai-chat-icon svg { width: 16px; height: 16px; position: relative; z-index: 1; }
 .ai-chat-header h2 {
-    font-size: 16px;
+    font-size: var(--ai-chat-font-size);
     font-weight: 700;
     color: var(--ink-2);
     margin: 0;
     letter-spacing: -0.01em;
 }
 .ai-chat-subtitle {
-    font-size: 13px;
+    font-size: var(--ai-chat-font-size);
     color: var(--ink-4);
     margin: 1px 0 0;
     font-family: var(--ff-mono);
@@ -2607,7 +2699,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     border: none;
     border-radius: var(--r-md, 8px);
     font-family: var(--ff-sans);
-    font-size: 14px;
+    font-size: var(--ai-chat-font-size);
     font-weight: 600;
     cursor: pointer;
     transition: background var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
@@ -2616,7 +2708,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .ai-analyze-btn:active { transform: translateY(1px); }
 .ai-analyze-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
 .ai-analyze-cta-hint {
-    font-size: 13px;
+    font-size: var(--ai-chat-font-size);
     color: var(--ink-4);
     text-align: center;
     margin: 0;
@@ -2629,6 +2721,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     gap: 10px;
     animation: msgIn 0.35s var(--ease-spring);
 }
+.ai-message.ai-welcome { align-items: center; }
 @keyframes msgIn {
     from { opacity: 0; transform: translateY(8px) scale(0.98); }
     to { opacity: 1; transform: translateY(0) scale(1); }
@@ -2637,25 +2730,23 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .ai-avatar {
     width: 22px; height: 22px;
     border-radius: 50%;
-    background:
-        radial-gradient(circle at 30% 30%, var(--blue-400), var(--blue-700));
+    background: transparent;
+    border: 2px solid var(--blue-500);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
     margin-top: 4px;
+    margin-left: 5px;
     color: var(--white);
     font-size: 10px;
     font-weight: 700;
-    box-shadow: var(--sh-1);
+    box-shadow: none;
     position: relative;
 }
+.ai-welcome .ai-avatar { margin-top: 0; }
 .ai-avatar::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    border: 1.5px solid var(--white);
+    content: none;
 }
 .user-message .ai-avatar { display: none; }
 .ai-bubble {
@@ -2664,7 +2755,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     border-radius: var(--r-md);
     padding: 10px 14px;
     max-width: min(88%, 72ch);
-    font-size: 14.5px;
+    font-size: var(--ai-chat-font-size);
     line-height: 1.6;
     color: var(--ink-2);
     letter-spacing: -0.005em;
@@ -2680,7 +2771,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     display: inline-flex;
     margin-bottom: 6px;
     color: var(--blue-700);
-    font-size: 10.5px;
+    font-size: var(--ai-chat-font-size);
     font-weight: 700;
     letter-spacing: 0.06em;
     line-height: 1.2;
@@ -2689,7 +2780,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .ai-bubble strong { font-weight: 600; color: var(--ink-2); }
 .user-message .ai-bubble strong { color: var(--white); }
 .ai-bubble h2, .ai-bubble h3, .ai-bubble h4 {
-    font-size: 14.5px;
+    font-size: var(--ai-chat-font-size);
     font-weight: 600;
     margin: 8px 0 4px;
     color: var(--blue-700);
@@ -2702,14 +2793,14 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     background: var(--paper-3);
     padding: 1px 5px;
     border-radius: 3px;
-    font-size: 12px;
+    font-size: var(--ai-chat-font-size);
     font-family: var(--ff-mono);
 }
 .ai-bubble pre {
     background: var(--paper-3);
     padding: 8px 10px;
     border-radius: var(--r-sm);
-    font-size: 12px;
+    font-size: var(--ai-chat-font-size);
     overflow-x: auto;
     margin: 6px 0;
     font-family: var(--ff-mono);
@@ -2722,7 +2813,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 }
 .ai-thinking-icon { color: var(--blue-600); animation: pulse 1.5s ease-in-out infinite; }
 .ai-thinking-text {
-    font-size: 12.5px;
+    font-size: var(--ai-chat-font-size);
     color: var(--ink-4);
     font-style: italic;
     letter-spacing: -0.005em;
@@ -2756,7 +2847,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     border-left: 2px solid var(--blue-500);
     border-radius: var(--r-sm);
     color: var(--ink-4);
-    font-size: 12px;
+    font-size: var(--ai-chat-font-size);
     font-style: italic;
     max-height: 64px;
     overflow: hidden;
@@ -2777,7 +2868,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 11.5px;
+    font-size: var(--ai-chat-font-size);
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
@@ -2793,7 +2884,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     50% { opacity: 1; transform: scale(1.4); }
 }
 .ai-thinking-snippet {
-    font-size: 12px;
+    font-size: var(--ai-chat-font-size);
     color: var(--ink-4);
     white-space: nowrap;
     overflow: hidden;
@@ -2832,7 +2923,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     outline: none;
     background: transparent;
     color: var(--ink-2);
-    font-size: 14.5px;
+    font-size: var(--ai-chat-font-size);
     font-family: var(--ff-sans);
     letter-spacing: -0.005em;
     resize: none;
@@ -2883,7 +2974,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     background: var(--white);
     border: 1px solid var(--hair);
     border-radius: var(--r-full);
-    font-size: 12px;
+    font-size: var(--ai-chat-font-size);
     font-family: var(--ff-sans);
     color: var(--ink-3);
     cursor: pointer;
@@ -2909,7 +3000,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .ai-chat-privacy {
     margin: 10px 2px 0;
     color: var(--ink-5);
-    font-size: 11px;
+    font-size: var(--ai-chat-font-size);
     line-height: 1.45;
 }
 .ai-welcome { opacity: 0.95; }
@@ -3627,13 +3718,18 @@ td a { color: var(--blue-700); font-family: var(--ff-sans); font-weight: 500; }
     position: static;
     width: 100%;
     box-shadow: none;
-    margin-top: 6px;
+    margin-top: 2px;
     font-family: var(--ff-sans);
     letter-spacing: 0;
     overflow-wrap: break-word;
     word-break: normal;
 }
-.info-row:has(.info-dd-text.show) { flex-wrap: wrap; align-items: flex-start; }
+.info-row:has(.info-dd-text.show) {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 0;
+    padding-bottom: 14px;
+}
 .info-dd-text.show { display: block; }
 .info-dd-text .dd-field { font-size: 14px; color: var(--ink-3); line-height: 1.55; }
 .info-dd-text .dd-value {
@@ -4328,6 +4424,7 @@ footer {
     .hamburger { display: inline-flex !important; }
     .dashboard { padding: 16px 14px 80px; gap: 18px; }
     #map { height: 420px; }
+    .map-reset-control { top: 12px; right: 12px; }
     .section-head h2 { font-size: 24px; }
     /* Trees: hidden on phone / small tablet — desktop keeps the full forest. */
     .hero-trees { display: none; }
@@ -4394,8 +4491,7 @@ footer {
     .landing-meta { gap: 12px; margin-top: 24px; }
     .landing-meta-num { font-size: 22px; }
     .landing-meta-label { font-size: 11px; letter-spacing: 0.04em; }
-    .landing-eyebrow { font-size: 11.5px; padding: 3px 9px 3px 8px; gap: 4px; margin-bottom: 12px; letter-spacing: 0.01em; }
-    .landing-eyebrow .dot { width: 5px; height: 5px; box-shadow: 0 0 0 2px rgba(4, 120, 87, 0.18); }
+    .landing-eyebrow { font-size: 11.5px; padding: 3px 9px; margin-bottom: 12px; letter-spacing: 0.01em; }
 
     .section-head { flex-direction: column; align-items: flex-start; gap: 4px; }
     .section-head h2 { font-size: 24px; }
@@ -4453,7 +4549,7 @@ footer {
         grid-template-columns: minmax(70px, 0.9fr) minmax(104px, 1.45fr) 72px;
     }
 
-    .info-row { padding: 10px 0; }
+    .info-row { min-height: 52px; padding: 4px 0; }
     .big-number { font-size: 32px; }
     .big-number .unit { font-size: 14px; }
     .value-block { padding: 12px 14px 10px; }
@@ -4496,11 +4592,11 @@ footer {
 
     .ai-chat-section { border-radius: 8px; }
     .ai-chat-messages { max-height: 320px; padding: 12px 14px; }
-    .ai-chat-header { padding: 12px 14px; }
-    .ai-chat-header h2 { font-size: 13px; }
-    .ai-chat-subtitle { font-size: 12.5px; }
-    .ai-bubble { font-size: 13.5px; padding: 8px 12px; }
-    .ai-hint { min-height: 44px; padding: 8px 12px; font-size: 12.5px; }
+    .ai-chat-header { gap: 10px; padding: 12px 14px; }
+    .ai-chat-header h2 { font-size: var(--ai-chat-font-size); }
+    .ai-chat-subtitle { font-size: var(--ai-chat-font-size); }
+    .ai-bubble { font-size: var(--ai-chat-font-size); padding: 8px 12px; }
+    .ai-hint { min-height: 44px; padding: 8px 12px; font-size: var(--ai-chat-font-size); }
     .ai-chat-input-area { padding: 10px 12px 12px; }
 
     .error-msg {
@@ -4552,7 +4648,7 @@ footer {
 
     /* ── Touch targets: bump everything that taps to ≥44px on mobile ── */
     .ai-chat-input-wrap input,
-    .ai-chat-input-wrap textarea { min-height: 44px; padding: 10px 0; font-size: 15px; }
+    .ai-chat-input-wrap textarea { min-height: 44px; padding: 10px 0; font-size: var(--ai-chat-font-size); }
     .ai-chat-input-wrap button { width: 44px; height: 44px; }
     .search-box button { width: 44px; height: 44px; }
     .map-workspace-button,

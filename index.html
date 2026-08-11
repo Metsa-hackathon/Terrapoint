@@ -61,7 +61,7 @@
     <script src="/static/vendor/leaflet/leaflet.js?v=1.9.4" defer></script>
     <link rel="stylesheet" href="/static/css/fonts.css?r=jkl001">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl034">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl117">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl126">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -321,7 +321,6 @@
         </div>
         <div class="hero-content">
             <div class="landing-eyebrow">
-                <span class="dot" aria-hidden="true"></span>
                 Eesti metsaandmed · päring allikatest
             </div>
             <h1 class="landing-title">Sinu mets <em>numbrite</em><br>ja <em>kaardi</em> peal.</h1>
@@ -375,6 +374,11 @@
         <div class="map-section">
             <div class="map-wrapper">
                 <div id="map" role="region" aria-label="Katastri ja metsaandmete kaart"></div>
+                <button type="button" class="map-reset-control" id="map-reset-control" title="Taasta kaardivaade" aria-label="Taasta kaardivaade">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+                    </svg>
+                </button>
                 <div class="map-hint" id="map-hint" role="status">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <circle cx="12" cy="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/>
@@ -432,19 +436,7 @@
         <!-- Terrapoint AI Chat -->
         <div class="ai-chat-section" id="ai-chat-section">
             <div class="ai-chat-header">
-                <div class="ai-chat-icon">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="12" y1="2" x2="12" y2="6"/>
-                        <line x1="12" y1="18" x2="12" y2="22"/>
-                        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
-                        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
-                        <line x1="2" y1="12" x2="6" y2="12"/>
-                        <line x1="18" y1="12" x2="22" y2="12"/>
-                        <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
-                        <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
-                        <path d="M12 8l-3 5h2l-2 3h6l-2-3h2l-3-5z" fill="currentColor" stroke="none"/>
-                    </svg>
-                </div>
+                <img class="ai-chat-logo" src="/static/favicon.svg" alt="" aria-hidden="true">
                 <div>
                     <h2>AI analüüs</h2>
                     <p class="ai-chat-subtitle">Kinnistupõhine nõuanne</p>
@@ -884,7 +876,7 @@
         </div>
     </footer>
 
-    <script defer src="/static/js/app.js?r=jkl002"></script>
+    <script defer src="/static/js/app.js?r=jkl007"></script>
     <script defer src="/static/js/hero.js"></script>
 </body>
 </html>

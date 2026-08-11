@@ -2286,15 +2286,22 @@
         // Web Mercator moonutab Eesti laiuskraadil vahemaad ja pindala
         // märgatavalt. Kaart on visuaalseks kontekstiks; mõõte- ja pindala-
         // arvutused tulevad registriandmetest, mitte ekraaniprojektsioonist.
+        // Hoia kaamera Eesti ja selle vahetu ümbruse kohal. Ilma piirideta saab
+        // Leafleti lohistada WMTS-maailmast välja, nii et nähtavale jääb tühi taust.
+        var estoniaMapBounds = [[56.0, 20.0], [60.5, 30.0]];
         map = L.map('map', {
             crs: L.CRS.EPSG3857,
             zoomControl: false,
             // Eemaldame vaikimisi atribuudi ja lisame kokkupandava juhtelemendi;
             // iga aluskiht annab sellele oma pakkuja, toote ja väljavõtte aja.
             attributionControl: false,
-            minZoom: 6,
+            minZoom: 7.5,
             maxZoom: 19,
-        }).setView([58.5, 25.0], 7);
+            zoomSnap: 0.5,
+            zoomDelta: 0.5,
+            maxBounds: estoniaMapBounds,
+            maxBoundsViscosity: 1.0,
+        }).setView([58.5, 25.0], 7.5);
         var dimmedThemePane = map.createPane('map-theme-dimmed');
         var normalThemePane = map.createPane('map-theme-normal');
         var focusedThemePane = map.createPane('map-theme-focused');
@@ -2312,7 +2319,7 @@
         const maaruumOrthophoto = L.tileLayer(
             'https://tiles.maaamet.ee/tm/wmts/1.0.0/foto/default/GMC/{z}/{y}/{x}.jpg?ASUTUS=Terrapoint&KESKKOND=PROD&IS=terrapoint.ee',
             {
-                tileSize: 256, maxNativeZoom: 18, maxZoom: 19, minZoom: 6,
+                tileSize: 256, maxNativeZoom: 18, maxZoom: 19, minZoom: 7.5,
                 attribution: 'Maa- ja Ruumiameti ortofoto · väljavõte ' + basemapExtractionDateEt + ' · pildistusaeg erineb asukohati',
             }
         );
@@ -2432,6 +2439,16 @@
         if (parcelLayer) {
             map.fitBounds(parcelLayer.getBounds(), { padding: [40, 40], maxZoom: 15 });
         }
+    }
+
+    function resetMapView() {
+        if (!map) return;
+        map.invalidateSize();
+        if (parcelLayer && parcelLayer.getBounds().isValid()) {
+            map.fitBounds(parcelLayer.getBounds(), { padding: [40, 40], maxZoom: 15 });
+            return;
+        }
+        map.setView([58.5, 25.0], 7.5, { animate: false });
     }
 
     function positionMapLayerTooltip(layer, event) {
@@ -3461,7 +3478,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
         // Rough scale illustration; never present stock as an annual flow.
         if (data.cars_equivalent || data.trees_equivalent) {
-            html += '<div style="margin-top:0.75rem;padding:0.75rem;background:var(--paper-2);border-radius:var(--r-sm);font-size:0.82rem">';
+            html += '<div class="supporting-callout" style="margin-top:0.75rem;padding:0.75rem;background:var(--paper-2);border-radius:var(--r-sm)">';
             html += '<div style="font-weight:600;color:var(--text-secondary);margin-bottom:0.4rem">Suurusjärgu võrdlus (varu võrrelduna ühe aasta vooga):</div>';
             if (data.cars_equivalent) {
                 html += '<div style="margin-bottom:0.25rem">🚗 ligikaudu ' + formatNum(data.cars_equivalent) + ' auto aastane CO₂ heide</div>';
@@ -4495,6 +4512,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             dashboard.hidden = false;
             dashboard.style.animation = 'sectionIn 0.5s var(--ease-out)';
         }
+        refreshTetrisCardLayout();
         if (!landingWasVisible) requestAnimationFrame(scrollToDashboard);
     }
 
@@ -4511,9 +4529,127 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
     // ═══ app.js ═══
     var currentData = null;
+    var refreshTetrisCardLayout = function() {};
+
+    function initTetrisCardLayout() {
+        var grid = document.querySelector('.metrics-grid');
+        if (!grid) return;
+
+        var cards = Array.prototype.slice.call(grid.querySelectorAll(':scope > .metric-card'));
+        var scheduled = false;
+
+        function balanceCardsAcrossColumns(visibleCards, columnCount) {
+            var columnHeights = new Array(columnCount).fill(0);
+            var fixedCardCount = Math.min(3, visibleCards.length);
+
+            // The first three cards are locked: one per column on desktop. On
+            // the two-column tablet layout, the third follows immediately
+            // below whichever of the first two columns is shorter.
+            for (var fixedIndex = 0; fixedIndex < fixedCardCount; fixedIndex += 1) {
+                var fixedColumn = fixedIndex < columnCount
+                    ? fixedIndex
+                    : columnHeights.indexOf(Math.min.apply(Math, columnHeights));
+                visibleCards[fixedIndex].style.gridColumn = String(fixedColumn + 1);
+                columnHeights[fixedColumn] += Number(
+                    visibleCards[fixedIndex].style.getPropertyValue('--tetris-row-span')
+                );
+            }
+
+            var movableCards = visibleCards.slice(fixedCardCount);
+            var bestAssignment = [];
+            var bestSpread = Infinity;
+            var bestBottom = Infinity;
+
+            // There are only six movable cards, so checking every column
+            // assignment is inexpensive and produces a straighter bottom
+            // edge than a simple shortest-column greedy pass.
+            function assignCard(cardIndex, heights, assignment) {
+                if (cardIndex === movableCards.length) {
+                    var highest = Math.max.apply(Math, heights);
+                    var lowest = Math.min.apply(Math, heights);
+                    var spread = highest - lowest;
+                    if (spread < bestSpread || (spread === bestSpread && highest < bestBottom)) {
+                        bestSpread = spread;
+                        bestBottom = highest;
+                        bestAssignment = assignment.slice();
+                    }
+                    return;
+                }
+
+                var span = Number(movableCards[cardIndex].style.getPropertyValue('--tetris-row-span'));
+                for (var columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
+                    heights[columnIndex] += span;
+                    assignment.push(columnIndex);
+                    assignCard(cardIndex + 1, heights, assignment);
+                    assignment.pop();
+                    heights[columnIndex] -= span;
+                }
+            }
+
+            assignCard(0, columnHeights.slice(), []);
+            movableCards.forEach(function(card, cardIndex) {
+                card.style.gridColumn = String(bestAssignment[cardIndex] + 1);
+            });
+        }
+
+        function layoutCards() {
+            scheduled = false;
+
+            // A single column already has no holes to fill, and ordinary grid
+            // flow keeps the mobile layout simpler and avoids needless spans.
+            if (window.matchMedia('(max-width: 768px)').matches) {
+                grid.classList.remove('is-tetris');
+                cards.forEach(function(card) {
+                    card.style.removeProperty('--tetris-row-span');
+                    card.style.removeProperty('grid-column');
+                });
+                return;
+            }
+
+            var visibleCards = cards.filter(function(card) {
+                return card.getBoundingClientRect().height > 0;
+            });
+            if (!visibleCards.length) {
+                grid.classList.remove('is-tetris');
+                return;
+            }
+
+            // With one-pixel implicit rows and no row gap, the extra 16 pixels
+            // reserved in each span become the visual gutter below the card.
+            visibleCards.forEach(function(card) {
+                var rowSpan = Math.ceil(card.getBoundingClientRect().height + 16);
+                card.style.setProperty('--tetris-row-span', rowSpan);
+                card.style.removeProperty('grid-column');
+            });
+            var columnCount = window.matchMedia('(max-width: 1180px)').matches ? 2 : 3;
+            balanceCardsAcrossColumns(visibleCards, columnCount);
+            grid.classList.add('is-tetris');
+        }
+
+        function scheduleLayout() {
+            if (scheduled) return;
+            scheduled = true;
+            requestAnimationFrame(layoutCards);
+        }
+
+        refreshTetrisCardLayout = scheduleLayout;
+        window.addEventListener('resize', scheduleLayout);
+
+        if ('ResizeObserver' in window) {
+            var cardResizeObserver = new ResizeObserver(scheduleLayout);
+            cards.forEach(function(card) { cardResizeObserver.observe(card); });
+        }
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(scheduleLayout);
+        }
+        scheduleLayout();
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
+        initTetrisCardLayout();
         initMap();
+        var mapResetControl = document.getElementById('map-reset-control');
+        if (mapResetControl) mapResetControl.addEventListener('click', resetMapView);
         initMapWorkspaceControls();
         renderMapWorkspaceState();
         aiInitScrollTracking();

@@ -250,7 +250,11 @@ async function fetch(url) {{
         self.assertIn("must-revalidate", cache_control)
 
     def test_changed_stylesheet_busts_the_previous_immutable_url(self):
-        self.assertIn('/static/css/style.css?r=jkl117', INDEX_HTML)
+        self.assertIn('/static/css/style.css?r=jkl126', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl125', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl124', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl123', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl122', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl116', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl115', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl114', INDEX_HTML)
@@ -268,8 +272,12 @@ async function fetch(url) {{
         self.assertNotIn('/static/css/style.css?r=jkl104', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl103', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl102', INDEX_HTML)
-        self.assertIn('/static/js/app.js?r=jkl002', INDEX_HTML)
-        self.assertNotIn('/static/js/app.js?r=jkl001', INDEX_HTML)
+        self.assertIn('/static/js/app.js?r=jkl007', INDEX_HTML)
+        self.assertNotIn('/static/js/app.js?r=jkl006', INDEX_HTML)
+        self.assertNotIn('/static/js/app.js?r=jkl005', INDEX_HTML)
+        self.assertNotIn('/static/js/app.js?r=jkl004', INDEX_HTML)
+        self.assertNotIn('/static/js/app.js?r=jkl003', INDEX_HTML)
+        self.assertNotIn('/static/js/app.js?r=jkl002', INDEX_HTML)
 
     def test_sitemap_uses_only_the_canonical_document_url(self):
         self.assertEqual(SITEMAP_XML.count("<url>"), 1)
@@ -863,9 +871,14 @@ console.log(JSON.stringify({{missing, zero:target.innerHTML}}));
         self.assertIn("row.appendChild(txt)", toggle.group(0))
         self.assertIn("txt.classList.toggle('show')", toggle.group(0))
         self.assertIn("el.setAttribute('aria-expanded'", toggle.group(0))
-        self.assertIn(".info-row:has(.info-dd-text.show) { flex-wrap: wrap;", STYLE_CSS)
+        expanded_row = re.search(r"(?m)^\.info-row:has\(\.info-dd-text\.show\) \{([^}]*)\}", STYLE_CSS)
+        self.assertIsNotNone(expanded_row)
+        self.assertIn("flex-wrap: wrap;", expanded_row.group(1))
         self.assertIn("flex: 1 0 100%;", explanation.group(1))
         self.assertIn("width: 100%;", explanation.group(1))
+        self.assertIn("margin-top: 2px;", explanation.group(1))
+        self.assertIn("row-gap: 0;", expanded_row.group(1))
+        self.assertIn("padding-bottom: 14px;", expanded_row.group(1))
         self.assertIn("font-size: 14px;", field.group(1))
         self.assertIn("font-size: 13.5px;", value.group(1))
         self.assertIn("word-break: normal;", value.group(1))
@@ -1040,6 +1053,25 @@ console.log(JSON.stringify({{
         self.assertIn(".metrics-grid {", STYLE_CSS)
         self.assertIn("align-items: start;", STYLE_CSS)
         self.assertIn("#dashboard { scroll-margin-top:", STYLE_CSS)
+
+    def test_result_cards_use_dense_tetris_packing_above_mobile_widths(self):
+        self.assertIn(".metrics-grid.is-tetris {", STYLE_CSS)
+        self.assertIn("grid-auto-flow: row dense;", STYLE_CSS)
+        self.assertIn("grid-auto-rows: 1px;", STYLE_CSS)
+        self.assertIn("grid-row-end: span var(--tetris-row-span);", STYLE_CSS)
+        self.assertIn("function initTetrisCardLayout()", INDEX_HTML)
+        self.assertIn("new ResizeObserver(scheduleLayout)", INDEX_HTML)
+        self.assertIn("Math.ceil(card.getBoundingClientRect().height + 16)", INDEX_HTML)
+        self.assertIn("function balanceCardsAcrossColumns(visibleCards, columnCount)", INDEX_HTML)
+        self.assertIn("var fixedCardCount = Math.min(3, visibleCards.length);", INDEX_HTML)
+        self.assertIn("assignCard(cardIndex + 1, heights, assignment);", INDEX_HTML)
+        self.assertIn("spread < bestSpread", INDEX_HTML)
+        self.assertIn("grid.classList.remove('is-tetris');", INDEX_HTML)
+        self.assertIn("card.style.removeProperty('grid-column');", INDEX_HTML)
+        self.assertRegex(
+            STYLE_CSS,
+            r"@media \(max-width: 768px\) \{[\s\S]*?\.metrics-grid\.is-tetris \{[\s\S]*?grid-auto-rows: auto;",
+        )
 
     def test_notices_use_compact_scroll_free_rows_with_narrow_fallback(self):
         for label in ('Tüüp', 'Eraldis', 'Staatus', 'Kehtiv kuni', 'Pindala'):
@@ -2289,9 +2321,18 @@ console.log(JSON.stringify({{
             re.DOTALL,
         )
         self.assertIsNotNone(orthophoto)
-        self.assertIn("minZoom: 6", init_map)
+        self.assertIn("minZoom: 7.5", init_map)
+        self.assertIn("zoomSnap: 0.5", init_map)
+        self.assertIn("zoomDelta: 0.5", init_map)
+        self.assertIn("var estoniaMapBounds = [[56.0, 20.0], [60.5, 30.0]]", init_map)
+        self.assertIn("maxBounds: estoniaMapBounds", init_map)
+        self.assertIn("maxBoundsViscosity: 1.0", init_map)
+        self.assertIn('id="map-reset-control"', INDEX_HTML)
+        self.assertIn('aria-label="Taasta kaardivaade"', INDEX_HTML)
+        self.assertIn("mapResetControl.addEventListener('click', resetMapView)", INDEX_HTML)
+        self.assertIn("map.setView([58.5, 25.0], 7.5, { animate: false })", _extract_js_function("resetMapView"))
         self.assertIn("tileSize: 256", orthophoto.group(1))
-        self.assertIn("minZoom: 6", orthophoto.group(1))
+        self.assertIn("minZoom: 7.5", orthophoto.group(1))
         self.assertIn("maxNativeZoom: 18", orthophoto.group(1))
         self.assertIn("maxZoom: 19", orthophoto.group(1))
         self.assertIn("maaruumOrthophoto.addTo(map);", init_map)
