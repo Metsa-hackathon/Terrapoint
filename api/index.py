@@ -958,7 +958,8 @@ def _chat_completion_payload(model: str, messages: list[dict]) -> dict:
 
 
 BROWSER_CONTENT_SECURITY_POLICY = (
-    "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; "
+    "default-src 'self'; base-uri 'self'; object-src 'none'; "
+    "frame-ancestors 'self' https://praktika.arleserver.cfd; "
     "form-action 'self'; manifest-src 'self'; worker-src 'none'; "
     "script-src 'self' 'sha256-xqUpUykbxHOS6bApfu5aM+WDp2oldrVcuj4m9hZTGJM='; "
     "script-src-elem 'self' 'sha256-xqUpUykbxHOS6bApfu5aM+WDp2oldrVcuj4m9hZTGJM='; "
@@ -977,7 +978,6 @@ BROWSER_SECURITY_HEADERS = {
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
     "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
 }
 
 # Safari applies ``upgrade-insecure-requests`` to loopback subresources, while

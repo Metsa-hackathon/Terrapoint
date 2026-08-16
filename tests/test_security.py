@@ -176,10 +176,13 @@ class SecurityBoundaryTests(unittest.TestCase):
         response = TestClient(app).get("/")
 
         self.assertEqual(response.headers["x-content-type-options"], "nosniff")
-        self.assertEqual(response.headers["x-frame-options"], "DENY")
+        self.assertNotIn("x-frame-options", response.headers)
         self.assertEqual(response.headers["referrer-policy"], "strict-origin-when-cross-origin")
         self.assertIn("object-src 'none'", response.headers["content-security-policy"])
-        self.assertIn("frame-ancestors 'none'", response.headers["content-security-policy"])
+        self.assertIn(
+            "frame-ancestors 'self' https://praktika.arleserver.cfd",
+            response.headers["content-security-policy"],
+        )
         self.assertNotIn("xgis.maaamet.ee", response.headers["content-security-policy"])
         self.assertEqual(
             response.headers["content-security-policy"],

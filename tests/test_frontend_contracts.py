@@ -3696,7 +3696,7 @@ console.log(JSON.stringify({{unavailable, complete: element.innerHTML}}));
         json_ld_hash = base64.b64encode(hashlib.sha256(json_ld.encode()).digest()).decode()
         self.assertIn(f"'sha256-{json_ld_hash}'", csp)
         self.assertIn("object-src 'none'", csp)
-        self.assertIn("frame-ancestors 'none'", csp)
+        self.assertIn("frame-ancestors 'self' https://praktika.arleserver.cfd", csp)
         self.assertIn("connect-src 'self' https://gsavalik.envir.ee https://n8n.arleserver.cfd", csp)
         self.assertNotIn("https://xgis.maaamet.ee", csp)
         self.assertNotIn("https://unpkg.com", csp)
