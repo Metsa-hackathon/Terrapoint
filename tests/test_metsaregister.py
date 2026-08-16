@@ -108,6 +108,15 @@ class MetsaregisterDataTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(eraldised[0]["tagavara_y_ha"], 0)
         self.assertEqual(eraldised[0]["tagavara_provenance"], "official")
 
+    async def test_stand_source_retry_policy_fits_api_deadline(self):
+        with patch(
+            "services.metsaregister._wfs_get",
+            new=AsyncMock(return_value=[]),
+        ) as wfs_get:
+            self.assertEqual(await query_eraldis("78404:409:0113"), [])
+
+        self.assertEqual(wfs_get.await_args.kwargs, {"timeout": 3.5, "retries": 1})
+
     async def test_missing_stock_is_marked_as_terrapoint_estimate(self):
         features = [{
             "properties": {

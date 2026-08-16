@@ -1409,15 +1409,18 @@ console.log(JSON.stringify({{
         self.assertIn('spatial_status["kaitseala"]["intersects"] is True', API_PY)
         self.assertIn('"registreerimise_kp": stand.get("registreerimise_kp")', API_PY)
 
-    def test_archive_notice_outage_does_not_show_broad_data_warning(self):
+    def test_optional_source_outage_does_not_show_broad_data_warning(self):
         helper = re.search(r'function shouldShowBroadPartialWarning\(meta\).*?\n    }', INDEX_HTML, re.DOTALL)
         self.assertIsNotNone(helper)
         self.assertIn("if (!meta || !meta.partial) return false;", helper.group(0))
+        self.assertIn("Object.prototype.hasOwnProperty.call(meta, 'blocking_sources')", helper.group(0))
         self.assertIn("if (meta.ai_analysis_available === true) return false;", helper.group(0))
-        self.assertIn("source !== 'metsaregister.teatis_arhiiv'", helper.group(0))
+        self.assertIn("'metsaregister.natura_2000'", helper.group(0))
+        self.assertIn("source.indexOf('layers.') !== 0", helper.group(0))
         self.assertIn("return sources.length === 0 ||", helper.group(0))
         self.assertIn("if (shouldShowBroadPartialWarning(data.meta))", INDEX_HTML)
         self.assertIn("meta.ai_analysis_available !== true", INDEX_HTML)
+        self.assertNotIn("Osa andmeallikaid jäi laadimata või oli liiga mahukas", INDEX_HTML)
 
     def test_partial_warning_policy_executes_for_ai_ready_and_blocking_states(self):
         broad = re.search(r'function shouldShowBroadPartialWarning\(meta\).*?\n    }', INDEX_HTML, re.DOTALL)
@@ -1432,6 +1435,9 @@ const states = {json.dumps([
     {"partial": True, "ai_analysis_available": True, "unavailable_sources": ["metsaregister.teatised"]},
     {"partial": False, "ai_analysis_available": True, "details_skipped": True, "unavailable_sources": []},
     {"partial": True, "ai_analysis_available": False, "unavailable_sources": ["metsaregister.eraldised"]},
+    {"partial": True, "unavailable_sources": ["metsaregister.natura_2000"]},
+    {"partial": True, "ai_analysis_available": False, "blocking_sources": [], "unavailable_sources": ["layers.kaitsealad"]},
+    {"partial": True, "ai_analysis_available": False, "blocking_sources": ["metsaregister.eraldised"], "unavailable_sources": ["metsaregister.eraldised"]},
 ])};
 console.log(JSON.stringify(states.map(meta => [
     shouldShowBroadPartialWarning(meta),
@@ -1443,6 +1449,9 @@ console.log(JSON.stringify(states.map(meta => [
 
         self.assertEqual(json.loads(result.stdout), [
             [False, False],
+            [False, False],
+            [False, False],
+            [True, False],
             [False, False],
             [False, False],
             [True, False],
@@ -3047,6 +3056,30 @@ global.fetch = async function(url) {{ requestedUrl = url; return {{ok: true, jso
         self.assertNotIn(".focus(", _extract_js_function("applyMapContextPayload"))
         self.assertNotIn(".focus(", _extract_js_function("doSearch"))
         self.assertIn("closeMapWorkspaceOnMobile(false);", _extract_js_function("beginParcelReplacement"))
+
+    def test_search_gateway_timeout_has_an_actionable_message(self):
+        search = _extract_js_function("searchParcel").replace(
+            "function searchParcel", "async function searchParcel", 1
+        )
+        script = f"""
+const API_BASE = 'https://example.test/api';
+global.fetch = async function() {{
+  return {{ok: false, status: 504, json: async function() {{ return {{}}; }}}};
+}};
+{search}
+(async function() {{
+  try {{
+    await searchParcel('78404:409:0113', new AbortController());
+  }} catch (error) {{
+    console.log(JSON.stringify(error.message));
+  }}
+}})().catch(function(error) {{ console.error(error); process.exit(1); }});
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        self.assertEqual(
+            json.loads(result.stdout),
+            "Otsinguteenus aegus. Proovi mõne hetke pärast uuesti.",
+        )
 
     def test_stand_popup_always_reports_inventory_freshness(self):
         source = _extract_js_function("addEraldisedLayer")

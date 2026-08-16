@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import AsyncMock, patch
 
 import orjson
+from fastapi import HTTPException
 from shapely.geometry import Point, shape
 
 from api import index as api
@@ -411,6 +412,17 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(response.status_code, 504)
         self.assertEqual(orjson.loads(response.body)["code"], "SEARCH_TIMEOUT")
+
+    async def test_cadastral_source_timeout_is_not_reported_as_global_504(self):
+        with (
+            patch("api.index.KATASTER_TIMEOUT_SECONDS", 0.01),
+            patch("api.index.query_kataster", new=AsyncMock(side_effect=asyncio.TimeoutError)),
+        ):
+            with self.assertRaises(HTTPException) as context:
+                await api._search_core("78404:409:0113", api.time.time())
+
+        self.assertEqual(context.exception.status_code, 502)
+        self.assertIn("Katastri andmeallikas", context.exception.detail)
 
     async def test_partial_response_is_not_cached(self):
         result = {
@@ -885,10 +897,11 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             finally:
                 cancelled.set()
 
+        stand_query = AsyncMock(side_effect=slow_eraldis)
         with (
             patch("api.index.PRIMARY_SOURCE_TIMEOUT_SECONDS", 0.01),
             patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
-            patch("api.index.query_eraldis", new=AsyncMock(side_effect=slow_eraldis)),
+            patch("api.index.query_eraldis", new=stand_query),
             patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
             patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
             patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
@@ -897,6 +910,9 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result["meta"]["partial"])
         self.assertIn("metsaregister.eraldised", result["meta"]["unavailable_sources"])
+        self.assertEqual(result["meta"]["blocking_sources"], ["metsaregister.eraldised"])
+        self.assertEqual(result["meta"]["partial_severity"], "blocking")
+        self.assertEqual(stand_query.await_count, 1)
         self.assertTrue(cancelled.is_set())
 
     async def test_layer_features_outside_the_parcel_do_not_create_restrictions(self):
@@ -1047,6 +1063,8 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(result["meta"]["partial"])
         self.assertIn("layers.kaitsealad", result["meta"]["unavailable_sources"])
+        self.assertEqual(result["meta"]["blocking_sources"], [])
+        self.assertEqual(result["meta"]["partial_severity"], "degraded")
         self.assertEqual(result["meta"]["truncated_layers"], [])
         self.assertIsNone(result["spatial_status"]["kaitseala"]["intersects"])
         self.assertFalse(result["spatial_status"]["kaitseala"]["sources_complete"])

@@ -674,7 +674,12 @@
             clearTimeout(timer);
             var payload = await res.json().catch(function() { return {}; });
             if (!res.ok) {
-                throw new Error(payload.error || payload.detail || (res.status === 404 ? 'Katastri numbrit ei leitud.' : 'Serveri viga: ' + res.status));
+                var fallbackMessage = res.status === 404
+                    ? 'Katastri numbrit ei leitud.'
+                    : res.status === 504
+                        ? 'Otsinguteenus aegus. Proovi mõne hetke pärast uuesti.'
+                        : 'Serveri viga: ' + res.status;
+                throw new Error(payload.error || payload.detail || fallbackMessage);
             }
             if (payload.error) throw new Error(payload.error);
             return payload;
@@ -4219,10 +4224,26 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
     function shouldShowBroadPartialWarning(meta) {
         if (!meta || !meta.partial) return false;
+        if (Object.prototype.hasOwnProperty.call(meta, 'blocking_sources')) {
+            if (!Array.isArray(meta.blocking_sources)) return true;
+            return meta.blocking_sources.length > 0;
+        }
         if (meta.ai_analysis_available === true) return false;
         var sources = Array.isArray(meta.unavailable_sources) ? meta.unavailable_sources : [];
+        var optionalRegistrySources = [
+            'metsaregister.eraldis_element',
+            'metsaregister.kahjustused',
+            'metsaregister.teatis',
+            'metsaregister.teatis_arhiiv',
+            'metsaregister.teatised',
+            'metsaregister.natura_2000',
+            'metsaregister.eraldis_geomeetria',
+        ];
         return sources.length === 0 || sources.some(function(source) {
-            return source !== 'metsaregister.teatis_arhiiv';
+            return typeof source !== 'string' || (
+                source.indexOf('layers.') !== 0
+                && optionalRegistrySources.indexOf(source) === -1
+            );
         });
     }
 
@@ -5276,7 +5297,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             hideLoading();
             showDashboard();
             if (shouldShowBroadPartialWarning(data.meta)) {
-                showError('Osa andmeallikaid jäi laadimata või oli liiga mahukas. Puuduvad andmed ei tähenda, et piiranguid või metsa ei ole. Proovi otsingut uuesti.');
+                showError('Otsuse jaoks vajalik põhiandmete allikas ei vastanud. Muud kinnistuandmed kuvati, kuid puuduvat tulemust ei tohi tõlgendada metsa või piirangu puudumisena.');
             } else if (data.mets && shouldShowDetailLimitWarning(data.meta)) {
                 showError('Metsa detailandmete maht või laadimisaeg ületas turvalise piiri. Koosseis ja puidustsenaarium põhinevad üldisematel registriandmetel.');
             }

@@ -18,6 +18,8 @@ ADOB_RESOLVE_TIMEOUT_SECONDS = 2.5
 ADOB_RESOLVE_DEADLINE_SECONDS = 8.5
 LAND_VALUATION_URL = "https://hindamine.kataster.ee/api/latest"
 LAND_VALUATION_TIMEOUT_SECONDS = 1.5
+KATASTER_WFS_ATTEMPT_TIMEOUT_SECONDS = 2.5
+KATASTER_WFS_RETRIES = 1
 
 
 class KatasterWFSError(Exception):
@@ -164,14 +166,22 @@ async def query_kataster(
     )
     if include_valuation_metadata:
         features_result, valuation_result = await asyncio.gather(
-            _wfs_get(url, timeout=10.0, retries=3),
+            _wfs_get(
+                url,
+                timeout=KATASTER_WFS_ATTEMPT_TIMEOUT_SECONDS,
+                retries=KATASTER_WFS_RETRIES,
+            ),
             query_land_valuation_metadata(kataster_nr),
             return_exceptions=True,
         )
     else:
         valuation_result = None
         try:
-            features_result = await _wfs_get(url, timeout=10.0, retries=3)
+            features_result = await _wfs_get(
+                url,
+                timeout=KATASTER_WFS_ATTEMPT_TIMEOUT_SECONDS,
+                retries=KATASTER_WFS_RETRIES,
+            )
         except KatasterWFSError as exc:
             features_result = exc
     if isinstance(features_result, KatasterWFSError):

@@ -461,6 +461,15 @@ AI_OPTIONAL_UNAVAILABLE_SOURCES = {
 } | {f"layers.{config[0]}" for config in LAYER_CONFIGS}
 
 
+def _blocking_search_sources(unavailable_sources: list[str]) -> list[str]:
+    """Return unavailable sources that invalidate the parcel's core analysis."""
+    return sorted({
+        source
+        for source in unavailable_sources
+        if isinstance(source, str) and source not in AI_OPTIONAL_UNAVAILABLE_SOURCES
+    })
+
+
 def _ai_analysis_available(data: dict) -> bool:
     """Allow degraded analysis only when parcel and core forest data exist."""
     kataster = data.get("kataster") or {}
@@ -479,7 +488,7 @@ def _ai_analysis_available(data: dict) -> bool:
         return False
     if meta.get("partial") and not unavailable_sources:
         return False
-    return all(source in AI_OPTIONAL_UNAVAILABLE_SOURCES for source in unavailable_sources)
+    return not _blocking_search_sources(unavailable_sources)
 
 
 def _chat_snapshot_signing_key() -> bytes | None:
@@ -2051,10 +2060,16 @@ async def _search_core(
     include_map_layers: bool = True,
 ) -> dict:
     """Sisemine otsinguloogika — eraldatud, et saaks timeout-i panna."""
-    kataster_data = await asyncio.wait_for(
-        query_kataster(kataster_nr, include_valuation_metadata=True),
-        timeout=KATASTER_TIMEOUT_SECONDS,
-    )
+    try:
+        kataster_data = await asyncio.wait_for(
+            query_kataster(kataster_nr, include_valuation_metadata=True),
+            timeout=KATASTER_TIMEOUT_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=502,
+            detail="Katastri andmeallikas ei vastanud tähtaja jooksul. Proovi uuesti.",
+        ) from None
     if not kataster_data:
         return {"error": "Krunti ei leitud", "_status": 404}
 
@@ -3281,6 +3296,15 @@ async def _search_core(
         "sources_complete": not notice_unavailable_sources,
         "unavailable_sources": notice_unavailable_sources,
     }
+    normalized_unavailable_sources = sorted(set(unavailable_sources))
+    blocking_sources = _blocking_search_sources(normalized_unavailable_sources)
+    partial_severity = (
+        "blocking"
+        if blocking_sources
+        else "degraded"
+        if normalized_unavailable_sources
+        else "complete"
+    )
 
     result = {
         "kataster": kataster_data,
@@ -3298,10 +3322,12 @@ async def _search_core(
         "map_layers": map_layers,
         "meta": {
             "response_time_ms": elapsed,
-            "partial": bool(unavailable_sources),
+            "partial": bool(normalized_unavailable_sources),
+            "partial_severity": partial_severity,
             "details_skipped": skip_details,
             "sampled_eraldised": sampled_eraldised,
-            "unavailable_sources": sorted(set(unavailable_sources)),
+            "unavailable_sources": normalized_unavailable_sources,
+            "blocking_sources": blocking_sources,
             "truncated_layers": sorted(set(truncated_layers)),
         },
     }

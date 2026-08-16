@@ -172,6 +172,21 @@ class KatasterDataTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["maks_hind"], 7073)
         self.assertEqual(result["maks_hind_meta"], {"state": "unavailable"})
 
+    async def test_query_kataster_retry_policy_fits_api_deadline(self):
+        with patch(
+            "services.kataster._wfs_get",
+            new=AsyncMock(return_value=[]),
+        ) as wfs_get:
+            self.assertIsNone(await kataster.query_kataster("10501:001:0001"))
+
+        self.assertEqual(
+            wfs_get.await_args.kwargs,
+            {
+                "timeout": kataster.KATASTER_WFS_ATTEMPT_TIMEOUT_SECONDS,
+                "retries": kataster.KATASTER_WFS_RETRIES,
+            },
+        )
+
     async def test_wfs_get_rejects_malformed_features_container(self):
         response = FakeResponse({"features": None})
 

@@ -217,7 +217,11 @@ async def query_eraldis(kataster_nr: str) -> list[dict]:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&CQL_FILTER=katastri_nr%3D%27{kataster_nr}%27"
     )
-    features = await _wfs_get(url, timeout=20.0, retries=3)
+    # Every API caller gives this critical source an 8-10 second outer budget.
+    # A 20 second per-attempt timeout meant the outer guard cancelled the very
+    # first request before _wfs_get could apply its retry policy. Two bounded
+    # attempts (3.5s + backoff + 3.5s) fit inside the smallest caller budget.
+    features = await _wfs_get(url, timeout=3.5, retries=1)
     if not features:
         return []
     features = _deduplicate_features(features, ("id", "sys_id"))
