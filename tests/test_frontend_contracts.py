@@ -3655,6 +3655,11 @@ console.log(JSON.stringify({{unavailable, complete: element.innerHTML}}));
         self.assertIn("sidebar.inert = !open", INDEX_HTML)
         self.assertIn("returnFocus.focus({preventScroll: true})", INDEX_HTML)
 
+    def test_embedded_application_never_steals_parent_page_focus(self):
+        self.assertIn("window.self === window.top", APP_JS)
+        self.assertIn("landInput.focus({ preventScroll: true })", APP_JS)
+        self.assertIn("navInput.focus({ preventScroll: true })", APP_JS)
+
     def test_eudr_uses_geometry_derived_backend_centroid(self):
         render = _extract_js_function("renderEudr")
         self.assertIn("k.centroid.latitude", render)

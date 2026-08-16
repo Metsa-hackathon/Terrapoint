@@ -4910,10 +4910,12 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         });
     }
 
-        // Avoid opening the software keyboard or stealing focus on touch devices.
-        if (window.matchMedia('(pointer: fine) and (min-width: 769px)').matches) {
-            if (landInput) landInput.focus();
-            else if (navInput) navInput.focus();
+        // Keep the standalone desktop shortcut, but never let an embedded app
+        // steal focus and scroll its parent page down to the iframe.
+        var isTopLevelWindow = window.self === window.top;
+        if (isTopLevelWindow && window.matchMedia('(pointer: fine) and (min-width: 769px)').matches) {
+            if (landInput) landInput.focus({ preventScroll: true });
+            else if (navInput) navInput.focus({ preventScroll: true });
         }
 
         // Map hint dismiss (×) and auto-hide once user has clicked the map
