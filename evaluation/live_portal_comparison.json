@@ -1,0 +1,283 @@
+{
+  "schema_version": 1,
+  "snapshot_sha256": "c092f9be36bcecc50231aa1b2aa9d5cb8dd61e6a817fdffb6ca405480c879349",
+  "captured_at": "2026-08-16",
+  "method_limit": "Rendered public search plus direct public search requests. Counts record discoverability only, not relevance or correctness.",
+  "query_count": 18,
+  "portal_default_zero_results": 11,
+  "portal_all_time_zero_results": 9,
+  "prototype_relevant_top3": 18,
+  "prototype_with_source_or_safe_clarification": 18,
+  "rows": [
+    {
+      "id": "FAQ-01",
+      "query": "Kui suur osa Eestist on kaetud metsaga?",
+      "default_result_count": 10,
+      "all_time_result_count": 10,
+      "relevant_document_id": "forest-area",
+      "prototype_top3": [
+        "forest-area",
+        "will-forest-run-out",
+        "forest-age-trend"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "answered",
+      "prototype_source_count": 2
+    },
+    {
+      "id": "FAQ-02",
+      "query": "Kas Eestis raiutakse rohkem kui metsa juurde kasvab?",
+      "default_result_count": 0,
+      "all_time_result_count": 1,
+      "relevant_document_id": "harvest-versus-increment",
+      "prototype_top3": [
+        "harvest-versus-increment",
+        "harvest-over-time",
+        "logging-in-protected-areas"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "answered",
+      "prototype_source_count": 2
+    },
+    {
+      "id": "FAQ-03",
+      "query": "Miks annavad eri allikad erinevaid numbreid?",
+      "default_result_count": 0,
+      "all_time_result_count": 0,
+      "relevant_document_id": "why-numbers-differ",
+      "prototype_top3": [
+        "why-numbers-differ",
+        "smi-versus-metsaregister",
+        "rmk-versus-smi"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "answered",
+      "prototype_source_count": 3
+    },
+    {
+      "id": "FAQ-04",
+      "query": "Mis vahe on SMI-l ja metsaregistril?",
+      "default_result_count": 0,
+      "all_time_result_count": 0,
+      "relevant_document_id": "smi-versus-metsaregister",
+      "prototype_top3": [
+        "smi-versus-metsaregister",
+        "rmk-versus-smi",
+        "increment-method"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "answered",
+      "prototype_source_count": 3
+    },
+    {
+      "id": "FAQ-05",
+      "query": "Kuidas arvutatakse juurdekasvu?",
+      "default_result_count": 2,
+      "all_time_result_count": 2,
+      "relevant_document_id": "increment-method",
+      "prototype_top3": [
+        "increment-method",
+        "harvest-versus-increment",
+        "logging-in-protected-areas"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "answered",
+      "prototype_source_count": 2
+    },
+    {
+      "id": "FAQ-06",
+      "query": "Miks ei võrdu tagavara raiutava puidukogusega?",
+      "default_result_count": 0,
+      "all_time_result_count": 0,
+      "relevant_document_id": "stock-versus-harvestable",
+      "prototype_top3": [
+        "stock-versus-harvestable",
+        "why-numbers-differ",
+        "pine-versus-spruce"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "answered",
+      "prototype_source_count": 2
+    },
+    {
+      "id": "FAQ-07",
+      "query": "Kust leida konkreetse kinnistu metsaandmeid?",
+      "default_result_count": 0,
+      "all_time_result_count": 0,
+      "relevant_document_id": "property-forest-data",
+      "prototype_top3": [
+        "property-forest-data",
+        "protected-forest-share",
+        "smi-versus-metsaregister"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "answered",
+      "prototype_source_count": 2
+    },
+    {
+      "id": "FAQ-08",
+      "query": "Kui suur osa metsadest on kaitse all?",
+      "default_result_count": 11,
+      "all_time_result_count": 13,
+      "relevant_document_id": "protected-forest-share",
+      "prototype_top3": [
+        "protected-forest-share",
+        "old-forest-protection",
+        "will-forest-run-out"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "answered",
+      "prototype_source_count": 2
+    },
+    {
+      "id": "FAQ-09",
+      "query": "Miks erinevad RMK ja SMI numbrid?",
+      "default_result_count": 0,
+      "all_time_result_count": 0,
+      "relevant_document_id": "rmk-versus-smi",
+      "prototype_top3": [
+        "rmk-versus-smi",
+        "why-numbers-differ",
+        "smi-versus-metsaregister"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "answered",
+      "prototype_source_count": 3
+    },
+    {
+      "id": "FAQ-10",
+      "query": "Kuidas mõjutab kliimamuutus metsi?",
+      "default_result_count": 0,
+      "all_time_result_count": 0,
+      "relevant_document_id": "climate-impact",
+      "prototype_top3": [
+        "climate-impact",
+        "why-numbers-differ",
+        "sample-size-and-precision"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "answered",
+      "prototype_source_count": 2
+    },
+    {
+      "id": "FAQ-11",
+      "query": "Mis on metsateatis?",
+      "default_result_count": 11,
+      "all_time_result_count": 13,
+      "relevant_document_id": "forest-notice",
+      "prototype_top3": [
+        "forest-notice",
+        "logging-in-protected-areas",
+        "harvest-over-time"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "answered",
+      "prototype_source_count": 3
+    },
+    {
+      "id": "FAQ-12",
+      "query": "Kas Eestis saab mets otsa?",
+      "default_result_count": 5,
+      "all_time_result_count": 6,
+      "relevant_document_id": "will-forest-run-out",
+      "prototype_top3": [
+        "will-forest-run-out",
+        "old-forest-protection",
+        "protected-forest-share"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "needs_clarification",
+      "prototype_source_count": 3
+    },
+    {
+      "id": "FAQ-13",
+      "query": "Kas praegu raiutakse rohkem kui 20 aastat tagasi?",
+      "default_result_count": 0,
+      "all_time_result_count": 0,
+      "relevant_document_id": "harvest-over-time",
+      "prototype_top3": [
+        "harvest-over-time",
+        "harvest-versus-increment",
+        "logging-in-protected-areas"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "needs_clarification",
+      "prototype_source_count": 2
+    },
+    {
+      "id": "FAQ-14",
+      "query": "Kas meie metsad muutuvad nooremaks?",
+      "default_result_count": 4,
+      "all_time_result_count": 4,
+      "relevant_document_id": "forest-age-trend",
+      "prototype_top3": [
+        "forest-age-trend",
+        "will-forest-run-out",
+        "municipality-forest-area"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "answered",
+      "prototype_source_count": 2
+    },
+    {
+      "id": "FAQ-15",
+      "query": "Kui palju lageraiet on viimase 10 aasta jooksul tehtud?",
+      "default_result_count": 0,
+      "all_time_result_count": 1,
+      "relevant_document_id": "clearcut-over-time",
+      "prototype_top3": [
+        "clearcut-over-time",
+        "clearcut-value-judgement",
+        "harvest-over-time"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "needs_clarification",
+      "prototype_source_count": 2
+    },
+    {
+      "id": "FAQ-16",
+      "query": "Kas kuusk või mänd domineerib Eestis?",
+      "default_result_count": 0,
+      "all_time_result_count": 0,
+      "relevant_document_id": "pine-versus-spruce",
+      "prototype_top3": [
+        "pine-versus-spruce",
+        "climate-impact",
+        "why-numbers-differ"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "answered",
+      "prototype_source_count": 1
+    },
+    {
+      "id": "FAQ-17",
+      "query": "Kas kaitsealadel raiutakse?",
+      "default_result_count": 1,
+      "all_time_result_count": 1,
+      "relevant_document_id": "logging-in-protected-areas",
+      "prototype_top3": [
+        "logging-in-protected-areas",
+        "harvest-versus-increment",
+        "harvest-over-time"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "answered",
+      "prototype_source_count": 3
+    },
+    {
+      "id": "FAQ-18",
+      "query": "Kui palju metsa on minu koduvallas?",
+      "default_result_count": 0,
+      "all_time_result_count": 0,
+      "relevant_document_id": "municipality-forest-area",
+      "prototype_top3": [
+        "municipality-forest-area",
+        "will-forest-run-out",
+        "forest-age-trend"
+      ],
+      "prototype_relevant_in_top3": true,
+      "prototype_status": "needs_clarification",
+      "prototype_source_count": 2
+    }
+  ]
+}

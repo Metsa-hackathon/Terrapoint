@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "audited_at": "2026-08-16",
+  "target": "static/embed/index.html",
+  "standard": "WCAG 2.2 AA local prototype contract",
+  "gate_passed": true,
+  "structural_checks": [
+    {
+      "name": "document_language",
+      "passed": true,
+      "evidence": "<html lang=\"et\">"
+    },
+    {
+      "name": "single_labelled_main",
+      "passed": true,
+      "evidence": "Üks main-landmark on seotud nähtava H1-ga."
+    },
+    {
+      "name": "question_name_and_description",
+      "passed": true,
+      "evidence": "Textarea nimi tuleb label'ist ja juhis aria-describedby kaudu."
+    },
+    {
+      "name": "live_status_and_alert",
+      "passed": true,
+      "evidence": "Asünkroonne olek ja vead on eraldi live-region'ites."
+    },
+    {
+      "name": "result_focus_target",
+      "passed": true,
+      "evidence": "Tulemuse kuvamisel liigub fookus programmiliselt vastuse H2-le."
+    },
+    {
+      "name": "form_busy_and_invalid_state",
+      "passed": true,
+      "evidence": "Laadimine ja lokaalne valideerimisviga jõuavad accessibility API-sse."
+    },
+    {
+      "name": "label_references_resolve",
+      "passed": true,
+      "evidence": "Kõik aria-labelledby IDREF-id lahenevad samas dokumendis."
+    },
+    {
+      "name": "unique_ids",
+      "passed": true,
+      "evidence": "Dokumendis ei ole korduvaid id atribuute."
+    },
+    {
+      "name": "logical_heading_order",
+      "passed": true,
+      "evidence": "Pealkirjatasemed DOM-is: [1, 2, 2, 2, 3, 3]."
+    },
+    {
+      "name": "no_positive_tabindex",
+      "passed": true,
+      "evidence": "Tabijärjekord järgib DOM-i; positiivseid tabindex väärtusi pole."
+    },
+    {
+      "name": "visible_focus_contract",
+      "passed": true,
+      "evidence": "3 px kõrge kontrastiga väline fookusrõngas kõigil interaktiivsetel elementidel."
+    },
+    {
+      "name": "reduced_motion_contract",
+      "passed": true,
+      "evidence": "Vähendatud liikumise kasutajaeelistus on CSS-is toetatud."
+    },
+    {
+      "name": "responsive_and_target_size_contract",
+      "passed": true,
+      "evidence": "Mobiilipaigutus ja 44 px põhitoimingu kõrgus on määratud."
+    }
+  ],
+  "contrast_checks": [
+    {
+      "name": "body text",
+      "foreground": "#17332d",
+      "background": "#f2f6f1",
+      "ratio": 12.42,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "primary heading",
+      "foreground": "#123f34",
+      "background": "#ffffff",
+      "ratio": 11.76,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "lead text",
+      "foreground": "#46615b",
+      "background": "#ffffff",
+      "ratio": 6.73,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "review status text",
+      "foreground": "#6b4e13",
+      "background": "#f2f6f1",
+      "ratio": 7.06,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "secondary text",
+      "foreground": "#61736e",
+      "background": "#ffffff",
+      "ratio": 5.02,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "placeholder text",
+      "foreground": "#61736e",
+      "background": "#fbfdfb",
+      "ratio": 4.91,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "primary button text",
+      "foreground": "#ffffff",
+      "background": "#176a56",
+      "ratio": 6.5,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "question chip text",
+      "foreground": "#245348",
+      "background": "#f6faf7",
+      "ratio": 8.29,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "request status",
+      "foreground": "#526b64",
+      "background": "#f2f6f1",
+      "ratio": 5.27,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "error text",
+      "foreground": "#78281f",
+      "background": "#fff1ef",
+      "ratio": 8.99,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "confidence text",
+      "foreground": "#34554d",
+      "background": "#e9f1ed",
+      "ratio": 7.16,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "clarification text",
+      "foreground": "#573f10",
+      "background": "#fff6dd",
+      "ratio": 9.17,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "source link",
+      "foreground": "#0e604c",
+      "background": "#ffffff",
+      "ratio": 7.51,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "footer text",
+      "foreground": "#60736d",
+      "background": "#f2f6f1",
+      "ratio": 4.61,
+      "minimum": 4.5,
+      "passed": true
+    },
+    {
+      "name": "textarea boundary",
+      "foreground": "#748f84",
+      "background": "#fbfdfb",
+      "ratio": 3.42,
+      "minimum": 3.0,
+      "passed": true
+    },
+    {
+      "name": "chip boundary",
+      "foreground": "#7b9489",
+      "background": "#f6faf7",
+      "ratio": 3.1,
+      "minimum": 3.0,
+      "passed": true
+    },
+    {
+      "name": "focus ring on card",
+      "foreground": "#7a4a00",
+      "background": "#ffffff",
+      "ratio": 7.48,
+      "minimum": 3.0,
+      "passed": true
+    },
+    {
+      "name": "focus ring on page",
+      "foreground": "#7a4a00",
+      "background": "#f2f6f1",
+      "ratio": 6.85,
+      "minimum": 3.0,
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "Static checks do not emulate a named screen reader or browser/OS combination.",
+    "Keyboard and accessibility-tree smoke evidence is recorded separately in docs/kaur/accessibility-qa.md.",
+    "Independent WCAG conformance review remains a pre-publication KAUR gate."
+  ]
+}

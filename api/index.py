@@ -57,6 +57,7 @@ from services.layers import (
 )
 from services.subsidies import check_subsidies
 from services.data_passports import build_asset_passports
+from services.forestry_search import get_forestry_search_engine
 from calculators.carbon import forest_carbon_potential
 from calculators.cutting_age import cutting_age_indicator
 from calculators.health_index import (
@@ -91,6 +92,14 @@ class ChatRequest(BaseModel):
     data: dict | None = Field(default=None, description="Eelnevalt laetud kinnistuandmed")
 
 
+class ForestrySearchRequest(BaseModel):
+    """Public forestry explainer request."""
+    model_config = ConfigDict(extra="forbid")
+
+    question: str = Field(..., min_length=3, max_length=500, description="Eestikeelne metsandusküsimus")
+    top_k: int = Field(default=3, ge=1, le=5, description="Retrieval-kandidaatide arv")
+
+
 class ErrorResponse(BaseModel):
     """Standardne veavastus."""
     error: str = Field(..., description="Inimloetav veateade")
@@ -119,6 +128,9 @@ CHAT_SNAPSHOT_MAX_CHARS = 2048
 CHAT_MAX_TOKENS = int(os.environ.get("OPENCODE_ZEN_MAX_TOKENS", "8192"))
 CHAT_RATE_LIMIT = 8
 CHAT_RATE_WINDOW_SECONDS = 60
+FORESTRY_SEARCH_RATE_LIMIT = 30
+FORESTRY_SEARCH_RATE_WINDOW_SECONDS = 60
+MAX_FORESTRY_SEARCH_BODY_BYTES = 16_384
 SEARCH_TIMEOUT_SECONDS = 20.0
 KATASTER_TIMEOUT_SECONDS = 6.0
 PRIMARY_SOURCE_TIMEOUT_SECONDS = 8.0
@@ -946,15 +958,66 @@ def _subsidy_stand_age(stand: dict):
 
 
 def _chat_completion_payload(model: str, messages: list[dict]) -> dict:
+    """Build an OpenCode Zen Responses API payload (Muse Spark 1.3 Free).
+
+    Zen lists ``muse-spark-1.3-contributor-free`` as Responses-only
+    (``https://opencode.ai/zen/v1/responses``), so the legacy
+    ``/v1/chat/completions`` shape with ``messages``/``choices`` is no
+    longer sent. The public SSE contract (``{"content": piece}`` +
+    ``[DONE]``) is unchanged — the caller translates Responses deltas.
+    """
+    input_items = []
+    for message in messages or []:
+        role = message.get("role", "user")
+        if role not in ("system", "user", "assistant", "developer"):
+            role = "user"
+        text = message.get("content", "")
+        if not isinstance(text, str):
+            text = str(text)
+        input_items.append({
+            "role": role,
+            "content": [{"type": "input_text", "text": text}],
+        })
     return {
         "model": model,
-        "messages": messages,
+        "input": input_items,
         "stream": True,
+        "store": False,
         "temperature": 0.4,
-        "max_tokens": CHAT_MAX_TOKENS,
-        "reasoning_effort": "low",
         "top_p": 0.9,
+        "reasoning": {"effort": "low"},
+        "max_output_tokens": CHAT_MAX_TOKENS,
     }
+
+
+def _extract_responses_text(payload: dict) -> str:
+    """Extract user-visible text from a Responses `response.completed` event."""
+    if not isinstance(payload, dict):
+        return ""
+    direct = payload.get("output_text")
+    if isinstance(direct, str) and direct:
+        return direct
+    response = payload.get("response")
+    candidates = []
+    if isinstance(response, dict):
+        candidates.append(response.get("output_text", ""))
+        outputs = response.get("output") or []
+    else:
+        outputs = payload.get("output") or []
+    for item in outputs if isinstance(outputs, list) else []:
+        if not isinstance(item, dict):
+            continue
+        for part in item.get("content") or []:
+            if not isinstance(part, dict):
+                continue
+            if part.get("type") in ("output_text", "text"):
+                text = part.get("text", "")
+                if isinstance(text, str) and text:
+                    return text
+    for candidate in candidates:
+        if isinstance(candidate, str) and candidate:
+            return candidate
+    return ""
 
 
 BROWSER_CONTENT_SECURITY_POLICY = (
@@ -970,6 +1033,14 @@ BROWSER_CONTENT_SECURITY_POLICY = (
     "img-src 'self' data: blob: https://tiles.maaamet.ee https://gsavalik.envir.ee; "
     "connect-src 'self' https://gsavalik.envir.ee https://n8n.arleserver.cfd; "
     "upgrade-insecure-requests"
+)
+EMBED_CONTENT_SECURITY_POLICY = (
+    "default-src 'self'; base-uri 'none'; object-src 'none'; "
+    f"frame-ancestors {' '.join(config.EMBED_FRAME_ANCESTORS)}; "
+    "form-action 'self'; manifest-src 'none'; worker-src 'none'; "
+    "script-src 'self'; script-src-elem 'self'; "
+    "style-src 'self'; style-src-elem 'self'; style-src-attr 'none'; "
+    "font-src 'self'; img-src 'self' data:; connect-src 'self'; upgrade-insecure-requests"
 )
 BROWSER_SECURITY_HEADERS = {
     "Content-Security-Policy": BROWSER_CONTENT_SECURITY_POLICY,
@@ -1034,9 +1105,19 @@ class BrowserSecurityHeadersMiddleware:
         async def send_with_security_headers(message):
             if message["type"] == "http.response.start":
                 headers = MutableHeaders(scope=message)
-                for name, value in security_headers.items():
-                    if name not in headers:
-                        headers[name] = value
+                if scope.get("path") == "/embed/forest":
+                    for name, value in security_headers.items():
+                        if name in {"Content-Security-Policy", "X-Frame-Options"}:
+                            continue
+                        if name not in headers:
+                            headers[name] = value
+                    headers["Content-Security-Policy"] = EMBED_CONTENT_SECURITY_POLICY
+                    if "X-Frame-Options" in headers:
+                        del headers["X-Frame-Options"]
+                else:
+                    for name, value in security_headers.items():
+                        if name not in headers:
+                            headers[name] = value
             await send(message)
 
         await self.app(scope, receive, send_with_security_headers)
@@ -1089,6 +1170,128 @@ async def api_redoc_redirect():
 
 def json_response(data: dict, status: int = 200, headers: dict[str, str] | None = None) -> Response:
     return Response(content=orjson.dumps(data), media_type="application/json", status_code=status, headers=headers)
+
+
+@app.get("/embed/forest", include_in_schema=False)
+async def forestry_embed():
+    """Serve the only Terrapoint document allowed inside approved parent sites."""
+    path = STATIC_DIR / "embed" / "index.html"
+    if not path.exists():
+        return HTMLResponse("<h1>Metsanduse tõlgendaja pole paigaldatud</h1>", status_code=503)
+    return FileResponse(
+        str(path),
+        media_type="text/html; charset=utf-8",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "X-Robots-Tag": "noindex, nofollow",
+        },
+    )
+
+
+@app.get("/embed/forest/demo", include_in_schema=False)
+async def forestry_embed_demo():
+    """Same-origin integration fixture for manual and browser smoke tests."""
+    path = STATIC_DIR / "embed" / "demo.html"
+    if not path.exists():
+        return Response(status_code=404)
+    return FileResponse(
+        str(path),
+        media_type="text/html; charset=utf-8",
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate", "X-Robots-Tag": "noindex"},
+    )
+
+
+@app.post("/api/forest-search", tags=["Metsanduse tõlgendaja"])
+async def forestry_search(request: Request):
+    """Return a source-grounded forestry explanation without logging question text."""
+    content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    if content_type != "application/json":
+        return json_response(
+            {"error": "Päring peab olema JSON-vormingus.", "code": "UNSUPPORTED_MEDIA_TYPE"},
+            415,
+            {"Cache-Control": "private, no-store"},
+        )
+    if request.headers.get("sec-fetch-site", "").lower() == "cross-site":
+        return json_response(
+            {"error": "Brauseri rist-origin päring ei ole lubatud.", "code": "ORIGIN_FORBIDDEN"},
+            403,
+            {"Cache-Control": "private, no-store"},
+        )
+    origin = request.headers.get("origin", "").rstrip("/")
+    request_origin = f"{request.url.scheme}://{request.url.netloc}"
+    if origin and origin != request_origin and origin not in config.CORS_ORIGINS:
+        return json_response(
+            {"error": "Päringu päritolu ei ole lubatud.", "code": "ORIGIN_FORBIDDEN"},
+            403,
+            {"Cache-Control": "private, no-store"},
+        )
+    allowed, retry_after = _check_rate_limit(
+        _client_identifier(request),
+        "forest-search",
+        FORESTRY_SEARCH_RATE_LIMIT,
+        FORESTRY_SEARCH_RATE_WINDOW_SECONDS,
+    )
+    if not allowed:
+        return json_response(
+            {"error": "Liiga palju päringuid. Oota hetk ja proovi uuesti.", "code": "RATE_LIMITED"},
+            429,
+            {"Retry-After": str(retry_after), "Cache-Control": "private, no-store"},
+        )
+    body = await _read_limited_json(request, MAX_FORESTRY_SEARCH_BODY_BYTES)
+    try:
+        search_request = ForestrySearchRequest.model_validate(body)
+        response = get_forestry_search_engine().answer(
+            search_request.question,
+            limit=search_request.top_k,
+        )
+    except (ValidationError, ValueError):
+        return json_response(
+            {"error": "Küsimus peab olema 3–500 tähemärki ja top_k vahemikus 1–5.", "code": "VALIDATION_ERROR"},
+            400,
+            {"Cache-Control": "private, no-store"},
+        )
+    return json_response(response, headers={"Cache-Control": "private, no-store"})
+
+
+@app.get("/api/forest-search/suggestions", tags=["Metsanduse tõlgendaja"])
+async def forestry_search_suggestions(
+    request: Request,
+    q: Annotated[str, Query(max_length=100)] = "",
+    limit: Annotated[int, Query(ge=1, le=8)] = 5,
+):
+    allowed, retry_after = _check_rate_limit(
+        _client_identifier(request), "forest-suggestions", 60, 60
+    )
+    if not allowed:
+        return json_response(
+            {"error": "Liiga palju päringuid.", "code": "RATE_LIMITED"},
+            429,
+            {"Retry-After": str(retry_after), "Cache-Control": "private, no-store"},
+        )
+    suggestions = get_forestry_search_engine().suggestions(q, limit=limit)
+    return json_response(
+        {"suggestions": suggestions},
+        headers={"Cache-Control": "public, max-age=300"},
+    )
+
+
+@app.get("/api/forest-search/meta", tags=["Metsanduse tõlgendaja"])
+async def forestry_search_meta():
+    engine = get_forestry_search_engine()
+    coverage = engine.knowledge_base.required_coverage
+    return json_response({
+        "service": "kaur-forest-explainer-prototype",
+        "strategy": engine.STRATEGY,
+        "generator": engine.generator.provider_id,
+        "review_status": "prototype_pending_kaur_content_approval",
+        "documents": len(engine.documents),
+        "sources": len(engine.sources),
+        "coverage": {
+            "faq": len(coverage["faq"]),
+            "misconceptions": len(coverage["misconception"]),
+        },
+        "question_text_logging": False,
+    }, headers={"Cache-Control": "public, max-age=300"})
 
 
 def _chat_boundary_error(request: Request) -> Response | None:
@@ -4050,9 +4253,9 @@ def build_system_prompt(data: dict) -> str:
 async def chat(request: Request):
     """AI metsanduse nõustaja.
 
-    Kasutab OpenCode Zen (DeepSeek V4 Flash Free) AI-d, et vastata küsimustele
-    kinnistu andmete põhjal. Brauseri saadetud andmed peavad vastama otsingu
-    käigus serveri allkirjastatud tõendile.
+    Kasutab OpenCode Zen (Muse Spark 1.3 Free) AI-d Responses API kaudu, et
+    vastata küsimustele kinnistu andmete põhjal. Brauseri saadetud andmed
+    peavad vastama otsingu käigus serveri allkirjastatud tõendile.
     """
     try:
         boundary_error = _chat_boundary_error(request)
@@ -4115,8 +4318,8 @@ async def chat(request: Request):
         if not api_key:
             return json_response({"error": "AI teenus ei ole seadistatud. Võta ühendust administraatoriga."}, 500)
 
-        api_url = "https://opencode.ai/zen/v1/chat/completions"
-        model = os.environ.get("OPENCODE_ZEN_MODEL", "deepseek-v4-flash-free")
+        api_url = "https://opencode.ai/zen/v1/responses"
+        model = os.environ.get("OPENCODE_ZEN_MODEL", "muse-spark-1.3-contributor-free")
 
         async def stream_response():
             saw_content = False
@@ -4145,6 +4348,10 @@ async def chat(request: Request):
                             return
                         async for line in resp.aiter_lines():
                             line = line.strip()
+                            # Zen Responses SSE sends `event:` + `data:` pairs;
+                            # only the data line carries the JSON payload.
+                            if line.startswith("event:"):
+                                continue
                             if not line.startswith("data: "):
                                 continue
                             data_str = line[6:]
@@ -4154,16 +4361,42 @@ async def chat(request: Request):
                                 chunk = orjson.loads(data_str)
                             except orjson.JSONDecodeError:
                                 continue
-                            choices = chunk.get("choices") or []
-                            if not choices:
-                                continue
-                            delta = choices[0].get("delta", {})
-                            # Provider reasoning is internal model metadata. Do
-                            # not expose it through the public SSE API, even if
-                            # the current browser happens not to render it.
-                            if delta.get("reasoning_content"):
-                                continue
-                            content_piece = delta.get("content", "")
+                            # Responses API: only output-text deltas are
+                            # user-visible. Reasoning / refusal / status events
+                            # stay server-side and are never forwarded.
+                            content_piece = ""
+                            chunk_type = chunk.get("type", "")
+                            if chunk_type == "response.output_text.delta":
+                                delta_text = chunk.get("delta", "")
+                                if isinstance(delta_text, str) and delta_text:
+                                    content_piece = delta_text
+                            elif chunk_type in ("response.completed", "response.output_text.done", "response.done"):
+                                # Final event without prior deltas (e.g. short
+                                # answer): extract once, then keep streaming.
+                                if not saw_content:
+                                    completed_text = _extract_responses_text(chunk)
+                                    if completed_text:
+                                        content_piece = completed_text
+                            else:
+                                # Legacy chat-completions shape (kept only as a
+                                # defensive fallback, never emitted by Zen for
+                                # Muse Spark): translate delta.content.
+                                choices = chunk.get("choices") or []
+                                if choices:
+                                    delta = choices[0].get("delta", {})
+                                    # Provider reasoning is internal model
+                                    # metadata. Do not expose it through the
+                                    # public SSE API, even if the current
+                                    # browser happens not to render it.
+                                    if delta.get("reasoning_content"):
+                                        continue
+                                    delta_content = delta.get("content", "")
+                                    if isinstance(delta_content, str) and delta_content:
+                                        content_piece = delta_content
+                                    else:
+                                        continue
+                                else:
+                                    continue
                             if content_piece:
                                 saw_content = True
                                 yield "data: " + orjson.dumps({"content": content_piece}).decode() + "\n\n"

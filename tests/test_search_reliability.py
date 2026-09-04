@@ -913,6 +913,7 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["meta"]["blocking_sources"], ["metsaregister.eraldised"])
         self.assertEqual(result["meta"]["partial_severity"], "blocking")
         self.assertEqual(stand_query.await_count, 1)
+        self.assertNotIn("core_source_retry_attempted", result["meta"])
         self.assertTrue(cancelled.is_set())
 
     async def test_layer_features_outside_the_parcel_do_not_create_restrictions(self):

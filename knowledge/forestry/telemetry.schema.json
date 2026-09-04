@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://terrapoint.ee/schemas/kaur-forest-telemetry-v1.json",
+  "title": "KAUR forest explainer privacy-preserving event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event_name", "event_time", "service_version", "index_version", "status"],
+  "properties": {
+    "event_name": {
+      "type": "string",
+      "enum": ["widget_loaded", "answer_rendered", "clarification_shown", "redirect_shown", "source_opened", "helpful_vote"]
+    },
+    "event_time": {"type": "string", "format": "date-time"},
+    "anonymous_session_id": {"type": "string", "maxLength": 64},
+    "service_version": {"type": "string", "maxLength": 80},
+    "index_version": {"type": "string", "maxLength": 80},
+    "generator_version": {"type": "string", "maxLength": 80},
+    "status": {"type": "string", "enum": ["answered", "needs_clarification", "redirect", "error"]},
+    "document_ids": {"type": "array", "maxItems": 8, "items": {"type": "string", "maxLength": 100}},
+    "confidence_bucket": {"type": "string", "enum": ["high", "medium", "low", "none"]},
+    "latency_bucket": {"type": "string", "enum": ["lt_250ms", "250_500ms", "500_1000ms", "1_3s", "gte_3s"]},
+    "viewport_bucket": {"type": "string", "enum": ["small", "medium", "large"]},
+    "error_code": {"type": ["string", "null"], "maxLength": 80},
+    "helpful": {"type": ["boolean", "null"]}
+  },
+  "privacy_note": "Privacy: question text, answer text, cadastral identifiers, IP addresses and full user agents are intentionally absent. Collection is disabled until KAUR establishes a legal basis."
+}

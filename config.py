@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlsplit
 
 GEOBASE = "https://gsavalik.envir.ee/geoserver"
 
@@ -24,6 +25,13 @@ DEFAULT_TRUSTED_HOSTS = [
     "127.0.0.1",
     "172.20.0.1",
     "testserver",
+]
+
+DEFAULT_EMBED_FRAME_ANCESTORS = [
+    "'self'",
+    "https://keskkonnaportaal.ee",
+    "https://www.keskkonnaportaal.ee",
+    "https://keskkonnaportaal.envir.ee",
 ]
 
 
@@ -58,5 +66,46 @@ def _parse_trusted_hosts() -> list[str]:
     return valid_hosts or list(DEFAULT_TRUSTED_HOSTS)
 
 
+def _parse_embed_frame_ancestors() -> list[str]:
+    """Return CSP-safe origins allowed to host the forestry iframe.
+
+    Paths, credentials, fragments, wildcards and non-HTTPS remote origins are
+    rejected so an environment variable cannot inject a CSP directive.
+    """
+    raw = os.getenv("EMBED_FRAME_ANCESTORS", "")
+    candidates = [value.strip().rstrip("/") for value in raw.split(",") if value.strip()]
+    if not candidates:
+        return list(DEFAULT_EMBED_FRAME_ANCESTORS)
+
+    valid = ["'self'"]
+    for value in candidates:
+        if value == "'self'":
+            continue
+        parsed = urlsplit(value)
+        try:
+            port = parsed.port
+        except ValueError:
+            continue
+        if (
+            parsed.scheme != "https"
+            or not parsed.hostname
+            or parsed.username
+            or parsed.password
+            or parsed.path not in ("", "/")
+            or parsed.query
+            or parsed.fragment
+            or "*" in value
+            or any(char.isspace() for char in value)
+        ):
+            continue
+        normalized = f"https://{parsed.hostname.lower()}"
+        if port and port != 443:
+            normalized += f":{port}"
+        if normalized not in valid:
+            valid.append(normalized)
+    return valid
+
+
 CORS_ORIGINS = _parse_cors_origins()
 TRUSTED_HOSTS = _parse_trusted_hosts()
+EMBED_FRAME_ANCESTORS = _parse_embed_frame_ancestors()

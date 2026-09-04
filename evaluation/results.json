@@ -1,0 +1,2086 @@
+{
+  "schema_version": 1,
+  "dataset_id": "kaur-forest-search-et-v2",
+  "dataset_file": "forestry_queries_v2.json",
+  "dataset_sha256": "6408f0b29aabbcecb153bd75fe39001e4c32793ae5a59d71a30b5a006be76d79",
+  "dataset_frozen_at": "2026-08-16",
+  "dataset_status": "prototype; KAUR content-owner approval pending",
+  "engine_strategy": "prototype-bm25-estonian-char3-terminology-rrf-rerank-v2",
+  "splits": {
+    "development": {
+      "retrieval": {
+        "query_count": 72,
+        "baseline": {
+          "recall_at_3": 0.7917,
+          "ndcg_at_3": 0.7452,
+          "mrr": 0.7493
+        },
+        "hybrid": {
+          "recall_at_3": 0.9722,
+          "ndcg_at_3": 0.9396,
+          "mrr": 0.9345
+        },
+        "recall_at_3_absolute_gain": 0.1806,
+        "critical_regressions": [],
+        "failures": [
+          {
+            "id": "prior-locked-mis-08",
+            "query": "Metsateatistes kavandatud maht võrdub tegeliku aastase raiemahuga",
+            "relevant_document_ids": [
+              "harvest-versus-increment"
+            ],
+            "baseline_top3": [
+              "clearcut-over-time",
+              "stock-versus-harvestable",
+              "forest-notice"
+            ],
+            "hybrid_top3": [
+              "harvest-over-time",
+              "forest-notice",
+              "clearcut-over-time"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": false
+          },
+          {
+            "id": "prior-locked-mis-12",
+            "query": "Üksainus metsa pindala protsent on alati õige",
+            "relevant_document_ids": [
+              "why-numbers-differ"
+            ],
+            "baseline_top3": [
+              "why-numbers-differ",
+              "forest-area",
+              "protected-forest-share"
+            ],
+            "hybrid_top3": [
+              "forest-area",
+              "municipality-forest-area",
+              "protected-forest-share"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": false
+          }
+        ],
+        "details": [
+          {
+            "id": "prior-dev-001",
+            "query": "Kui palju metsamaad Eestis on?",
+            "relevant_document_ids": [
+              "forest-area"
+            ],
+            "baseline_top3": [
+              "smi-versus-metsaregister"
+            ],
+            "hybrid_top3": [
+              "forest-area",
+              "will-forest-run-out",
+              "municipality-forest-area"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-002",
+            "query": "Mis protsent riigi pindalast on mets?",
+            "relevant_document_ids": [
+              "forest-area"
+            ],
+            "baseline_top3": [
+              "forest-area",
+              "protected-forest-share",
+              "rmk-versus-smi"
+            ],
+            "hybrid_top3": [
+              "forest-area",
+              "protected-forest-share",
+              "will-forest-run-out"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-003",
+            "query": "Miks registri ja statistilise metsainventuuri arvud lahknevad?",
+            "relevant_document_ids": [
+              "smi-versus-metsaregister"
+            ],
+            "baseline_top3": [
+              "why-numbers-differ",
+              "forest-area",
+              "smi-versus-metsaregister"
+            ],
+            "hybrid_top3": [
+              "smi-versus-metsaregister",
+              "why-numbers-differ",
+              "property-forest-data"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-004",
+            "query": "Kas metsaregister katab kogu Eestit?",
+            "relevant_document_ids": [
+              "smi-versus-metsaregister"
+            ],
+            "baseline_top3": [
+              "smi-versus-metsaregister",
+              "property-forest-data",
+              "forest-notice"
+            ],
+            "hybrid_top3": [
+              "smi-versus-metsaregister",
+              "forest-area",
+              "property-forest-data"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-005",
+            "query": "Mille põhjal leitakse metsa aastane juurdekasv?",
+            "relevant_document_ids": [
+              "increment-method"
+            ],
+            "baseline_top3": [
+              "increment-method",
+              "harvest-versus-increment",
+              "stock-versus-harvestable"
+            ],
+            "hybrid_top3": [
+              "increment-method",
+              "harvest-versus-increment",
+              "will-forest-run-out"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-006",
+            "query": "Kas juurdekasv on mudeli hinnang?",
+            "relevant_document_ids": [
+              "increment-method"
+            ],
+            "baseline_top3": [
+              "increment-method",
+              "harvest-versus-increment",
+              "stock-versus-harvestable"
+            ],
+            "hybrid_top3": [
+              "increment-method",
+              "harvest-versus-increment",
+              "rmk-versus-smi"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-007",
+            "query": "Kumb on suurem, raie või juurdekasv?",
+            "relevant_document_ids": [
+              "harvest-versus-increment"
+            ],
+            "baseline_top3": [
+              "harvest-versus-increment",
+              "increment-method",
+              "logging-in-protected-areas"
+            ],
+            "hybrid_top3": [
+              "harvest-versus-increment",
+              "increment-method",
+              "logging-in-protected-areas"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-008",
+            "query": "Kas väljaraie ületas juurdekasvu 2023?",
+            "relevant_document_ids": [
+              "harvest-versus-increment"
+            ],
+            "baseline_top3": [
+              "harvest-versus-increment",
+              "increment-method",
+              "harvest-over-time"
+            ],
+            "hybrid_top3": [
+              "harvest-versus-increment",
+              "increment-method",
+              "harvest-over-time"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-009",
+            "query": "Miks ametlikes allikates on erinevad metsaarvud?",
+            "relevant_document_ids": [
+              "why-numbers-differ"
+            ],
+            "baseline_top3": [
+              "forest-area",
+              "rmk-versus-smi",
+              "why-numbers-differ"
+            ],
+            "hybrid_top3": [
+              "why-numbers-differ",
+              "forest-area",
+              "rmk-versus-smi"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-010",
+            "query": "Kas üks metsatagavara number on õige?",
+            "relevant_document_ids": [
+              "why-numbers-differ"
+            ],
+            "baseline_top3": [
+              "why-numbers-differ",
+              "old-forest-protection"
+            ],
+            "hybrid_top3": [
+              "why-numbers-differ",
+              "old-forest-protection",
+              "stock-versus-harvestable"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-011",
+            "query": "Kas tagavara tähendab raiutavat kogust?",
+            "relevant_document_ids": [
+              "stock-versus-harvestable"
+            ],
+            "baseline_top3": [
+              "forest-notice",
+              "sample-size-and-precision",
+              "old-forest-protection"
+            ],
+            "hybrid_top3": [
+              "stock-versus-harvestable",
+              "why-numbers-differ",
+              "pine-versus-spruce"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-012",
+            "query": "Mitu tm saab kogu tagavarast kätte?",
+            "relevant_document_ids": [
+              "stock-versus-harvestable"
+            ],
+            "baseline_top3": [
+              "stock-versus-harvestable",
+              "increment-method",
+              "forest-area"
+            ],
+            "hybrid_top3": [
+              "stock-versus-harvestable",
+              "why-numbers-differ",
+              "increment-method"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-013",
+            "query": "Kuidas leian katastri metsaeraldised?",
+            "relevant_document_ids": [
+              "property-forest-data"
+            ],
+            "baseline_top3": [],
+            "hybrid_top3": [
+              "property-forest-data",
+              "smi-versus-metsaregister",
+              "sample-size-and-precision"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-014",
+            "query": "Metsaportaali kinnistuandmed",
+            "relevant_document_ids": [
+              "property-forest-data"
+            ],
+            "baseline_top3": [
+              "protected-forest-share",
+              "logging-in-protected-areas",
+              "old-forest-protection"
+            ],
+            "hybrid_top3": [
+              "property-forest-data",
+              "forest-notice",
+              "protected-forest-share"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-015",
+            "query": "Mis protsent metsamaast on majandamisest väljas?",
+            "relevant_document_ids": [
+              "protected-forest-share"
+            ],
+            "baseline_top3": [
+              "protected-forest-share",
+              "forest-area",
+              "stock-versus-harvestable"
+            ],
+            "hybrid_top3": [
+              "forest-area",
+              "protected-forest-share",
+              "will-forest-run-out"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-016",
+            "query": "Kaitstava metsa osakaal",
+            "relevant_document_ids": [
+              "protected-forest-share"
+            ],
+            "baseline_top3": [
+              "forest-age-trend",
+              "protected-forest-share",
+              "forest-area"
+            ],
+            "hybrid_top3": [
+              "protected-forest-share",
+              "forest-age-trend",
+              "will-forest-run-out"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-017",
+            "query": "Kas RMK numbrid hõlmavad erametsi?",
+            "relevant_document_ids": [
+              "rmk-versus-smi"
+            ],
+            "baseline_top3": [
+              "rmk-versus-smi",
+              "why-numbers-differ"
+            ],
+            "hybrid_top3": [
+              "why-numbers-differ",
+              "rmk-versus-smi",
+              "smi-versus-metsaregister"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-018",
+            "query": "Miks riigimetsa ja SMI statistika erineb?",
+            "relevant_document_ids": [
+              "rmk-versus-smi"
+            ],
+            "baseline_top3": [
+              "smi-versus-metsaregister",
+              "sample-size-and-precision",
+              "property-forest-data"
+            ],
+            "hybrid_top3": [
+              "rmk-versus-smi",
+              "smi-versus-metsaregister",
+              "increment-method"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-019",
+            "query": "Mida toovad põud, torm ja ürask metsale?",
+            "relevant_document_ids": [
+              "climate-impact"
+            ],
+            "baseline_top3": [
+              "climate-impact"
+            ],
+            "hybrid_top3": [
+              "climate-impact",
+              "forest-age-trend",
+              "will-forest-run-out"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-020",
+            "query": "Kliima soojenemise mõju kuusikutele",
+            "relevant_document_ids": [
+              "climate-impact"
+            ],
+            "baseline_top3": [
+              "climate-impact",
+              "clearcut-value-judgement"
+            ],
+            "hybrid_top3": [
+              "climate-impact",
+              "clearcut-value-judgement",
+              "pine-versus-spruce"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-021",
+            "query": "Kas heaks kiidetud metsateatis tähendab tehtud raiet?",
+            "relevant_document_ids": [
+              "forest-notice"
+            ],
+            "baseline_top3": [
+              "forest-notice",
+              "clearcut-over-time",
+              "sample-size-and-precision"
+            ],
+            "hybrid_top3": [
+              "forest-notice",
+              "logging-in-protected-areas",
+              "harvest-over-time"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-022",
+            "query": "Kui kaua metsateatis kehtib?",
+            "relevant_document_ids": [
+              "forest-notice"
+            ],
+            "baseline_top3": [
+              "forest-notice",
+              "logging-in-protected-areas",
+              "harvest-over-time"
+            ],
+            "hybrid_top3": [
+              "forest-notice",
+              "logging-in-protected-areas",
+              "harvest-over-time"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-023",
+            "query": "Kas metsamaa pindala kiiresti kaob?",
+            "relevant_document_ids": [
+              "will-forest-run-out"
+            ],
+            "baseline_top3": [
+              "will-forest-run-out",
+              "municipality-forest-area",
+              "forest-area"
+            ],
+            "hybrid_top3": [
+              "will-forest-run-out",
+              "municipality-forest-area",
+              "forest-area"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-024",
+            "query": "Kas raiumise tõttu jääb Eesti metsata?",
+            "relevant_document_ids": [
+              "will-forest-run-out"
+            ],
+            "baseline_top3": [
+              "old-forest-protection"
+            ],
+            "hybrid_top3": [
+              "will-forest-run-out",
+              "old-forest-protection",
+              "stock-versus-harvestable"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-025",
+            "query": "Raiemahu aegrida viimase 20 aasta kohta",
+            "relevant_document_ids": [
+              "harvest-over-time"
+            ],
+            "baseline_top3": [
+              "harvest-over-time",
+              "clearcut-over-time",
+              "harvest-versus-increment"
+            ],
+            "hybrid_top3": [
+              "harvest-over-time",
+              "clearcut-over-time",
+              "harvest-versus-increment"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-026",
+            "query": "Kas raied on võrreldes 2004. aastaga kasvanud?",
+            "relevant_document_ids": [
+              "harvest-over-time"
+            ],
+            "baseline_top3": [
+              "harvest-over-time",
+              "logging-in-protected-areas",
+              "clearcut-over-time"
+            ],
+            "hybrid_top3": [
+              "harvest-over-time",
+              "logging-in-protected-areas",
+              "clearcut-over-time"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-027",
+            "query": "Puistute keskmine vanus",
+            "relevant_document_ids": [
+              "forest-age-trend"
+            ],
+            "baseline_top3": [
+              "forest-age-trend",
+              "old-forest-protection",
+              "forest-area"
+            ],
+            "hybrid_top3": [
+              "forest-age-trend",
+              "old-forest-protection",
+              "will-forest-run-out"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-028",
+            "query": "Kas vanu metsi jääb vähemaks?",
+            "relevant_document_ids": [
+              "forest-age-trend"
+            ],
+            "baseline_top3": [
+              "climate-impact",
+              "why-numbers-differ",
+              "rmk-versus-smi"
+            ],
+            "hybrid_top3": [
+              "forest-age-trend",
+              "old-forest-protection",
+              "climate-impact"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-029",
+            "query": "Lageraie hektarid aastas",
+            "relevant_document_ids": [
+              "clearcut-over-time"
+            ],
+            "baseline_top3": [
+              "clearcut-over-time",
+              "clearcut-value-judgement",
+              "increment-method"
+            ],
+            "hybrid_top3": [
+              "clearcut-over-time",
+              "clearcut-value-judgement",
+              "harvest-over-time"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-030",
+            "query": "lageraije pindala kümnendil",
+            "relevant_document_ids": [
+              "clearcut-over-time"
+            ],
+            "baseline_top3": [
+              "municipality-forest-area",
+              "pine-versus-spruce",
+              "clearcut-over-time"
+            ],
+            "hybrid_top3": [
+              "clearcut-over-time",
+              "pine-versus-spruce",
+              "municipality-forest-area"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-031",
+            "query": "Kumb puuliik on levinum, mänd või kuusk?",
+            "relevant_document_ids": [
+              "pine-versus-spruce"
+            ],
+            "baseline_top3": [
+              "pine-versus-spruce"
+            ],
+            "hybrid_top3": [
+              "pine-versus-spruce",
+              "climate-impact",
+              "clearcut-value-judgement"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-032",
+            "query": "Männi ja kuuse tagavara võrdlus",
+            "relevant_document_ids": [
+              "pine-versus-spruce"
+            ],
+            "baseline_top3": [
+              "pine-versus-spruce",
+              "harvest-versus-increment",
+              "harvest-over-time"
+            ],
+            "hybrid_top3": [
+              "pine-versus-spruce",
+              "stock-versus-harvestable",
+              "why-numbers-differ"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-033",
+            "query": "Kas sihtkaitsevööndis võib puid võtta?",
+            "relevant_document_ids": [
+              "logging-in-protected-areas"
+            ],
+            "baseline_top3": [
+              "climate-impact",
+              "logging-in-protected-areas",
+              "old-forest-protection"
+            ],
+            "hybrid_top3": [
+              "logging-in-protected-areas",
+              "climate-impact",
+              "old-forest-protection"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-034",
+            "query": "Piiranguvööndi raie tingimused",
+            "relevant_document_ids": [
+              "logging-in-protected-areas"
+            ],
+            "baseline_top3": [
+              "logging-in-protected-areas",
+              "forest-notice",
+              "harvest-over-time"
+            ],
+            "hybrid_top3": [
+              "logging-in-protected-areas",
+              "forest-notice",
+              "harvest-versus-increment"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-035",
+            "query": "Tartu valla metsasus",
+            "relevant_document_ids": [
+              "municipality-forest-area"
+            ],
+            "baseline_top3": [
+              "municipality-forest-area",
+              "forest-area",
+              "will-forest-run-out"
+            ],
+            "hybrid_top3": [
+              "municipality-forest-area",
+              "forest-area",
+              "will-forest-run-out"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-036",
+            "query": "KOV metsamaa hektarid",
+            "relevant_document_ids": [
+              "municipality-forest-area"
+            ],
+            "baseline_top3": [
+              "will-forest-run-out",
+              "forest-area",
+              "increment-method"
+            ],
+            "hybrid_top3": [
+              "municipality-forest-area",
+              "forest-area",
+              "will-forest-run-out"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-037",
+            "query": "Kas rohkem proovitükke tagab täpsema SMI?",
+            "relevant_document_ids": [
+              "sample-size-and-precision"
+            ],
+            "baseline_top3": [
+              "harvest-versus-increment",
+              "sample-size-and-precision",
+              "pine-versus-spruce"
+            ],
+            "hybrid_top3": [
+              "harvest-over-time",
+              "smi-versus-metsaregister",
+              "sample-size-and-precision"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-038",
+            "query": "Valimi esinduslikkus",
+            "relevant_document_ids": [
+              "sample-size-and-precision"
+            ],
+            "baseline_top3": [
+              "sample-size-and-precision"
+            ],
+            "hybrid_top3": [
+              "sample-size-and-precision",
+              "municipality-forest-area",
+              "forest-area"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-039",
+            "query": "Kas lageraie on alati keskkonnale halb?",
+            "relevant_document_ids": [
+              "clearcut-value-judgement"
+            ],
+            "baseline_top3": [
+              "clearcut-value-judgement",
+              "clearcut-over-time",
+              "sample-size-and-precision"
+            ],
+            "hybrid_top3": [
+              "clearcut-value-judgement",
+              "clearcut-over-time",
+              "sample-size-and-precision"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-040",
+            "query": "Kas lageraie eetiline hinnang on fakt?",
+            "relevant_document_ids": [
+              "clearcut-value-judgement"
+            ],
+            "baseline_top3": [
+              "clearcut-value-judgement",
+              "clearcut-over-time",
+              "increment-method"
+            ],
+            "hybrid_top3": [
+              "clearcut-value-judgement",
+              "clearcut-over-time",
+              "increment-method"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-041",
+            "query": "Kas 100-aastane mets on automaatselt kaitstud?",
+            "relevant_document_ids": [
+              "old-forest-protection"
+            ],
+            "baseline_top3": [
+              "old-forest-protection",
+              "protected-forest-share",
+              "increment-method"
+            ],
+            "hybrid_top3": [
+              "old-forest-protection",
+              "protected-forest-share",
+              "increment-method"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-dev-042",
+            "query": "Kas vana puistu tähendab raiekeeldu?",
+            "relevant_document_ids": [
+              "old-forest-protection"
+            ],
+            "baseline_top3": [
+              "old-forest-protection",
+              "forest-notice",
+              "sample-size-and-precision"
+            ],
+            "hybrid_top3": [
+              "old-forest-protection",
+              "forest-age-trend",
+              "sample-size-and-precision"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-01",
+            "query": "Palun ütle Eesti metsa kogupindala ja metsasuse määr",
+            "relevant_document_ids": [
+              "forest-area"
+            ],
+            "baseline_top3": [
+              "municipality-forest-area",
+              "forest-area",
+              "why-numbers-differ"
+            ],
+            "hybrid_top3": [
+              "municipality-forest-area",
+              "forest-area",
+              "will-forest-run-out"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-02",
+            "query": "Kas 2023. aasta raiutud puidumaht jäi aastasest kasvust väiksemaks?",
+            "relevant_document_ids": [
+              "harvest-versus-increment"
+            ],
+            "baseline_top3": [
+              "harvest-versus-increment",
+              "clearcut-over-time",
+              "harvest-over-time"
+            ],
+            "hybrid_top3": [
+              "harvest-versus-increment",
+              "increment-method",
+              "harvest-over-time"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-03",
+            "query": "Kuidas saavad kaks ametlikku metsastatistika tabelit anda erineva vastuse?",
+            "relevant_document_ids": [
+              "why-numbers-differ"
+            ],
+            "baseline_top3": [
+              "pine-versus-spruce",
+              "sample-size-and-precision",
+              "rmk-versus-smi"
+            ],
+            "hybrid_top3": [
+              "why-numbers-differ",
+              "rmk-versus-smi",
+              "smi-versus-metsaregister"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-04",
+            "query": "Kas proovialade inventuur ja registri eraldiste summa mõõdavad sama asja?",
+            "relevant_document_ids": [
+              "smi-versus-metsaregister"
+            ],
+            "baseline_top3": [
+              "why-numbers-differ",
+              "municipality-forest-area",
+              "harvest-over-time"
+            ],
+            "hybrid_top3": [
+              "smi-versus-metsaregister",
+              "property-forest-data",
+              "increment-method"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-05",
+            "query": "Kas puude kasv arvutatakse mudeliga või mõõdetakse otse?",
+            "relevant_document_ids": [
+              "increment-method"
+            ],
+            "baseline_top3": [
+              "increment-method",
+              "rmk-versus-smi"
+            ],
+            "hybrid_top3": [
+              "increment-method",
+              "rmk-versus-smi",
+              "logging-in-protected-areas"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-06",
+            "query": "Milline osa kasvava metsa mahust on tegelikult kasutatav?",
+            "relevant_document_ids": [
+              "stock-versus-harvestable"
+            ],
+            "baseline_top3": [
+              "stock-versus-harvestable",
+              "municipality-forest-area",
+              "property-forest-data"
+            ],
+            "hybrid_top3": [
+              "stock-versus-harvestable",
+              "municipality-forest-area",
+              "forest-age-trend"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-07",
+            "query": "Kust avan katastriüksuse puistu takseerandmed?",
+            "relevant_document_ids": [
+              "property-forest-data"
+            ],
+            "baseline_top3": [
+              "property-forest-data",
+              "rmk-versus-smi",
+              "will-forest-run-out"
+            ],
+            "hybrid_top3": [
+              "property-forest-data",
+              "smi-versus-metsaregister",
+              "rmk-versus-smi"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-08",
+            "query": "Kui mitu protsenti metsamaast ei ole majandatav?",
+            "relevant_document_ids": [
+              "protected-forest-share"
+            ],
+            "baseline_top3": [
+              "protected-forest-share",
+              "forest-area",
+              "municipality-forest-area"
+            ],
+            "hybrid_top3": [
+              "protected-forest-share",
+              "forest-area",
+              "stock-versus-harvestable"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-09",
+            "query": "Miks riigimetsa majandaja aruanne ei võrdu kogu riigi statistikaga?",
+            "relevant_document_ids": [
+              "rmk-versus-smi"
+            ],
+            "baseline_top3": [
+              "rmk-versus-smi",
+              "stock-versus-harvestable",
+              "logging-in-protected-areas"
+            ],
+            "hybrid_top3": [
+              "rmk-versus-smi",
+              "stock-versus-harvestable",
+              "municipality-forest-area"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-10",
+            "query": "Mida tähendavad soojemad talved ja põuad Eesti metsadele?",
+            "relevant_document_ids": [
+              "climate-impact"
+            ],
+            "baseline_top3": [
+              "climate-impact"
+            ],
+            "hybrid_top3": [
+              "climate-impact",
+              "forest-age-trend",
+              "will-forest-run-out"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-11",
+            "query": "Kas lubava märkega raiedokument tõendab, et puud võeti maha?",
+            "relevant_document_ids": [
+              "forest-notice"
+            ],
+            "baseline_top3": [
+              "forest-notice"
+            ],
+            "hybrid_top3": [
+              "forest-notice",
+              "logging-in-protected-areas",
+              "harvest-over-time"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-12",
+            "query": "Kas Eesti kaotab praeguse raiumisega kogu oma metsapinna?",
+            "relevant_document_ids": [
+              "will-forest-run-out"
+            ],
+            "baseline_top3": [
+              "will-forest-run-out"
+            ],
+            "hybrid_top3": [
+              "will-forest-run-out",
+              "forest-area",
+              "municipality-forest-area"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-13",
+            "query": "Soovin võrrelda puidu raiumist 2005. ja 2023. aastal",
+            "relevant_document_ids": [
+              "harvest-over-time"
+            ],
+            "baseline_top3": [
+              "harvest-versus-increment",
+              "logging-in-protected-areas",
+              "rmk-versus-smi"
+            ],
+            "hybrid_top3": [
+              "harvest-over-time",
+              "harvest-versus-increment",
+              "logging-in-protected-areas"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-14",
+            "query": "Milline on puistute vanus ja kas see langeb?",
+            "relevant_document_ids": [
+              "forest-age-trend"
+            ],
+            "baseline_top3": [
+              "forest-age-trend",
+              "old-forest-protection",
+              "forest-area"
+            ],
+            "hybrid_top3": [
+              "forest-age-trend",
+              "old-forest-protection",
+              "forest-area"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-15",
+            "query": "Palun näita kümnendi lageraije pindala",
+            "relevant_document_ids": [
+              "clearcut-over-time"
+            ],
+            "baseline_top3": [
+              "clearcut-over-time",
+              "municipality-forest-area",
+              "property-forest-data"
+            ],
+            "hybrid_top3": [
+              "clearcut-over-time",
+              "municipality-forest-area",
+              "pine-versus-spruce"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-16",
+            "query": "Kumba liiki on pindalalt enam — männi- või kuusepuistuid?",
+            "relevant_document_ids": [
+              "pine-versus-spruce"
+            ],
+            "baseline_top3": [
+              "pine-versus-spruce",
+              "will-forest-run-out"
+            ],
+            "hybrid_top3": [
+              "pine-versus-spruce",
+              "municipality-forest-area",
+              "clearcut-over-time"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-17",
+            "query": "Kas piiranguvööndis ja sihtkaitsevööndis kehtib sama raiereegel?",
+            "relevant_document_ids": [
+              "logging-in-protected-areas"
+            ],
+            "baseline_top3": [
+              "forest-notice",
+              "harvest-over-time",
+              "stock-versus-harvestable"
+            ],
+            "hybrid_top3": [
+              "logging-in-protected-areas",
+              "forest-notice",
+              "harvest-versus-increment"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-faq-18",
+            "query": "Kui metsane on Saue vald?",
+            "relevant_document_ids": [
+              "municipality-forest-area"
+            ],
+            "baseline_top3": [
+              "municipality-forest-area"
+            ],
+            "hybrid_top3": [
+              "municipality-forest-area",
+              "forest-area",
+              "will-forest-run-out"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-mis-01",
+            "query": "Metsaregistris on iga Eesti metsahektar värskelt inventeeritud",
+            "relevant_document_ids": [
+              "smi-versus-metsaregister"
+            ],
+            "baseline_top3": [
+              "municipality-forest-area",
+              "increment-method",
+              "clearcut-over-time"
+            ],
+            "hybrid_top3": [
+              "property-forest-data",
+              "smi-versus-metsaregister",
+              "municipality-forest-area"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-mis-02",
+            "query": "Kui aastane juurdekasv ületab raiet, on kõik looduskaitseküsimused lahendatud",
+            "relevant_document_ids": [
+              "harvest-versus-increment"
+            ],
+            "baseline_top3": [
+              "increment-method",
+              "harvest-versus-increment",
+              "stock-versus-harvestable"
+            ],
+            "hybrid_top3": [
+              "harvest-versus-increment",
+              "increment-method",
+              "logging-in-protected-areas"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-mis-03",
+            "query": "Puidutagavara on sama mis lubatud raiemaht",
+            "relevant_document_ids": [
+              "stock-versus-harvestable"
+            ],
+            "baseline_top3": [
+              "harvest-over-time",
+              "harvest-versus-increment",
+              "logging-in-protected-areas"
+            ],
+            "hybrid_top3": [
+              "stock-versus-harvestable",
+              "harvest-over-time",
+              "harvest-versus-increment"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-mis-04",
+            "query": "RMK andmed kirjeldavad kogu Eesti metsi",
+            "relevant_document_ids": [
+              "rmk-versus-smi"
+            ],
+            "baseline_top3": [
+              "rmk-versus-smi",
+              "why-numbers-differ",
+              "sample-size-and-precision"
+            ],
+            "hybrid_top3": [
+              "rmk-versus-smi",
+              "why-numbers-differ",
+              "smi-versus-metsaregister"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-mis-05",
+            "query": "Metsamaa ja puudega kaetud puistu pindala on alati sama",
+            "relevant_document_ids": [
+              "forest-area"
+            ],
+            "baseline_top3": [
+              "forest-area",
+              "will-forest-run-out",
+              "clearcut-value-judgement"
+            ],
+            "hybrid_top3": [
+              "forest-area",
+              "will-forest-run-out",
+              "municipality-forest-area"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-mis-06",
+            "query": "Kui valimis on rohkem proovitükke, on tulemus kindlasti alati täpne",
+            "relevant_document_ids": [
+              "sample-size-and-precision"
+            ],
+            "baseline_top3": [
+              "sample-size-and-precision",
+              "clearcut-value-judgement",
+              "harvest-versus-increment"
+            ],
+            "hybrid_top3": [
+              "sample-size-and-precision",
+              "clearcut-value-judgement",
+              "pine-versus-spruce"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-mis-07",
+            "query": "Praeguse raiega saab Eesti mets peagi otsa",
+            "relevant_document_ids": [
+              "will-forest-run-out"
+            ],
+            "baseline_top3": [
+              "will-forest-run-out",
+              "old-forest-protection",
+              "forest-area"
+            ],
+            "hybrid_top3": [
+              "will-forest-run-out",
+              "forest-notice",
+              "old-forest-protection"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-mis-08",
+            "query": "Metsateatistes kavandatud maht võrdub tegeliku aastase raiemahuga",
+            "relevant_document_ids": [
+              "harvest-versus-increment"
+            ],
+            "baseline_top3": [
+              "clearcut-over-time",
+              "stock-versus-harvestable",
+              "forest-notice"
+            ],
+            "hybrid_top3": [
+              "harvest-over-time",
+              "forest-notice",
+              "clearcut-over-time"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": false
+          },
+          {
+            "id": "prior-locked-mis-09",
+            "query": "Lageraie on puhas faktiküsimus: see on alati hea või alati halb",
+            "relevant_document_ids": [
+              "clearcut-value-judgement"
+            ],
+            "baseline_top3": [
+              "clearcut-value-judgement",
+              "sample-size-and-precision",
+              "clearcut-over-time"
+            ],
+            "hybrid_top3": [
+              "clearcut-value-judgement",
+              "clearcut-over-time",
+              "sample-size-and-precision"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-mis-10",
+            "query": "Iga vana mets on seadusega automaatselt kaitstud",
+            "relevant_document_ids": [
+              "old-forest-protection"
+            ],
+            "baseline_top3": [
+              "old-forest-protection",
+              "protected-forest-share",
+              "logging-in-protected-areas"
+            ],
+            "hybrid_top3": [
+              "old-forest-protection",
+              "protected-forest-share",
+              "forest-age-trend"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-mis-11",
+            "query": "Metsaregistri kinnistuandmetest saab vigadeta riikliku statistika",
+            "relevant_document_ids": [
+              "smi-versus-metsaregister"
+            ],
+            "baseline_top3": [
+              "smi-versus-metsaregister",
+              "protected-forest-share",
+              "sample-size-and-precision"
+            ],
+            "hybrid_top3": [
+              "property-forest-data",
+              "smi-versus-metsaregister",
+              "protected-forest-share"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "prior-locked-mis-12",
+            "query": "Üksainus metsa pindala protsent on alati õige",
+            "relevant_document_ids": [
+              "why-numbers-differ"
+            ],
+            "baseline_top3": [
+              "why-numbers-differ",
+              "forest-area",
+              "protected-forest-share"
+            ],
+            "hybrid_top3": [
+              "forest-area",
+              "municipality-forest-area",
+              "protected-forest-share"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": false
+          }
+        ]
+      },
+      "behavior": {
+        "citation_integrity": {
+          "checked": 72,
+          "passed": 69,
+          "rate": 0.9583
+        },
+        "extractive_answer_faithfulness": {
+          "definition": "Both displayed answer sections and limitations exactly match the selected editor-approved knowledge fields, and every citation matches that document.",
+          "checked": 72,
+          "passed": 69,
+          "rate": 0.9583,
+          "failures": [
+            {
+              "id": "prior-dev-020",
+              "selected_document_id": null,
+              "passed": false
+            },
+            {
+              "id": "prior-dev-033",
+              "selected_document_id": null,
+              "passed": false
+            },
+            {
+              "id": "prior-locked-faq-05",
+              "selected_document_id": null,
+              "passed": false
+            }
+          ]
+        },
+        "redirect_and_abstention": {
+          "checked": 0,
+          "passed": 0,
+          "rate": 1.0,
+          "failures": []
+        }
+      },
+      "coverage": {
+        "faq": {
+          "expected": 18,
+          "covered": 18,
+          "missing": []
+        },
+        "misconceptions": {
+          "expected": 12,
+          "covered": 12,
+          "missing": []
+        }
+      }
+    },
+    "locked": {
+      "retrieval": {
+        "query_count": 30,
+        "baseline": {
+          "recall_at_3": 0.7667,
+          "ndcg_at_3": 0.6762,
+          "mrr": 0.6639
+        },
+        "hybrid": {
+          "recall_at_3": 1.0,
+          "ndcg_at_3": 0.9139,
+          "mrr": 0.8833
+        },
+        "recall_at_3_absolute_gain": 0.2333,
+        "critical_regressions": [],
+        "failures": [],
+        "details": [
+          {
+            "id": "v2-locked-faq-01",
+            "query": "Metsamaa hektarid ja osakaal riigi pindalast",
+            "relevant_document_ids": [
+              "forest-area"
+            ],
+            "baseline_top3": [
+              "forest-area",
+              "forest-age-trend",
+              "protected-forest-share"
+            ],
+            "hybrid_top3": [
+              "municipality-forest-area",
+              "forest-area",
+              "clearcut-over-time"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-02",
+            "query": "Kas 2024. aasta inventuuri kasvunäitaja oli 2023. aasta raietest suurem?",
+            "relevant_document_ids": [
+              "harvest-versus-increment"
+            ],
+            "baseline_top3": [
+              "clearcut-over-time",
+              "harvest-versus-increment",
+              "harvest-over-time"
+            ],
+            "hybrid_top3": [
+              "harvest-over-time",
+              "harvest-versus-increment",
+              "clearcut-over-time"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-03",
+            "query": "Miks KAURi avaldatud metsaarv ei ühti teise ametliku tabeliga?",
+            "relevant_document_ids": [
+              "why-numbers-differ"
+            ],
+            "baseline_top3": [
+              "rmk-versus-smi",
+              "harvest-versus-increment",
+              "increment-method"
+            ],
+            "hybrid_top3": [
+              "why-numbers-differ",
+              "logging-in-protected-areas",
+              "rmk-versus-smi"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-04",
+            "query": "Kumb sobib riigi hinnanguks, valikuuring või eraldisregister?",
+            "relevant_document_ids": [
+              "smi-versus-metsaregister"
+            ],
+            "baseline_top3": [
+              "smi-versus-metsaregister",
+              "forest-area",
+              "logging-in-protected-areas"
+            ],
+            "hybrid_top3": [
+              "smi-versus-metsaregister",
+              "property-forest-data",
+              "sample-size-and-precision"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-05",
+            "query": "Kust tuleb 15,4303 miljoni tm aastane kasvuhinnang?",
+            "relevant_document_ids": [
+              "increment-method"
+            ],
+            "baseline_top3": [
+              "increment-method",
+              "harvest-versus-increment",
+              "property-forest-data"
+            ],
+            "hybrid_top3": [
+              "increment-method",
+              "harvest-versus-increment",
+              "property-forest-data"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-06",
+            "query": "Kas 452,831 miljonit tihumeetrit tähendab, et selle kõik võib üles võtta?",
+            "relevant_document_ids": [
+              "stock-versus-harvestable"
+            ],
+            "baseline_top3": [
+              "stock-versus-harvestable",
+              "old-forest-protection",
+              "increment-method"
+            ],
+            "hybrid_top3": [
+              "old-forest-protection",
+              "stock-versus-harvestable",
+              "sample-size-and-precision"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-07",
+            "query": "Millises teenuses näen oma maatüki puistu koosseisu?",
+            "relevant_document_ids": [
+              "property-forest-data"
+            ],
+            "baseline_top3": [
+              "will-forest-run-out",
+              "forest-age-trend",
+              "old-forest-protection"
+            ],
+            "hybrid_top3": [
+              "property-forest-data",
+              "smi-versus-metsaregister",
+              "pine-versus-spruce"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-08",
+            "query": "Mittemajandatava ja piiranguga metsamaa osakaal",
+            "relevant_document_ids": [
+              "protected-forest-share"
+            ],
+            "baseline_top3": [
+              "forest-area",
+              "forest-age-trend",
+              "protected-forest-share"
+            ],
+            "hybrid_top3": [
+              "protected-forest-share",
+              "forest-area",
+              "will-forest-run-out"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-09",
+            "query": "Miks riigimetsa takseerinfo erineb Keskkonnaagentuuri kogu riigi hinnangust?",
+            "relevant_document_ids": [
+              "rmk-versus-smi"
+            ],
+            "baseline_top3": [
+              "rmk-versus-smi",
+              "logging-in-protected-areas"
+            ],
+            "hybrid_top3": [
+              "rmk-versus-smi",
+              "sample-size-and-precision",
+              "harvest-over-time"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-10",
+            "query": "Kuidas mõjutavad üraskid, põlengud ja kuivus puistuid muutuvas kliimas?",
+            "relevant_document_ids": [
+              "climate-impact"
+            ],
+            "baseline_top3": [],
+            "hybrid_top3": [
+              "climate-impact",
+              "forest-age-trend",
+              "stock-versus-harvestable"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-11",
+            "query": "Mida lubav märge raiekavatsusel tegelikult ütleb?",
+            "relevant_document_ids": [
+              "forest-notice"
+            ],
+            "baseline_top3": [
+              "forest-notice"
+            ],
+            "hybrid_top3": [
+              "forest-notice",
+              "logging-in-protected-areas",
+              "harvest-over-time"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-12",
+            "query": "Kas praegused metsastatistika trendid näitavad metsa kadumist?",
+            "relevant_document_ids": [
+              "will-forest-run-out"
+            ],
+            "baseline_top3": [
+              "will-forest-run-out",
+              "municipality-forest-area",
+              "stock-versus-harvestable"
+            ],
+            "hybrid_top3": [
+              "why-numbers-differ",
+              "will-forest-run-out",
+              "property-forest-data"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-13",
+            "query": "Kuidas on toimunud raie maht kahe kümnendi jooksul muutunud?",
+            "relevant_document_ids": [
+              "harvest-over-time"
+            ],
+            "baseline_top3": [
+              "clearcut-over-time",
+              "harvest-over-time",
+              "forest-notice"
+            ],
+            "hybrid_top3": [
+              "clearcut-over-time",
+              "harvest-over-time",
+              "logging-in-protected-areas"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-14",
+            "query": "Kas puistute vanusejaotus nihkub noorte poole?",
+            "relevant_document_ids": [
+              "forest-age-trend"
+            ],
+            "baseline_top3": [
+              "forest-age-trend",
+              "forest-area"
+            ],
+            "hybrid_top3": [
+              "forest-age-trend",
+              "forest-area",
+              "old-forest-protection"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-15",
+            "query": "Lageraiete pindalade trend aastatel 2014–2024",
+            "relevant_document_ids": [
+              "clearcut-over-time"
+            ],
+            "baseline_top3": [
+              "will-forest-run-out",
+              "pine-versus-spruce",
+              "harvest-versus-increment"
+            ],
+            "hybrid_top3": [
+              "clearcut-over-time",
+              "harvest-over-time",
+              "will-forest-run-out"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-16",
+            "query": "Võrdle männikute ja kuusikute hektareid ning tagavara",
+            "relevant_document_ids": [
+              "pine-versus-spruce"
+            ],
+            "baseline_top3": [
+              "pine-versus-spruce",
+              "municipality-forest-area",
+              "stock-versus-harvestable"
+            ],
+            "hybrid_top3": [
+              "pine-versus-spruce",
+              "stock-versus-harvestable",
+              "why-numbers-differ"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-17",
+            "query": "Milline raie on looduskaitseala eri vööndites lubatud?",
+            "relevant_document_ids": [
+              "logging-in-protected-areas"
+            ],
+            "baseline_top3": [
+              "logging-in-protected-areas",
+              "why-numbers-differ",
+              "smi-versus-metsaregister"
+            ],
+            "hybrid_top3": [
+              "logging-in-protected-areas",
+              "harvest-versus-increment",
+              "forest-notice"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-faq-18",
+            "query": "Kui suur metsasus on näiteks Võru omavalitsuses?",
+            "relevant_document_ids": [
+              "municipality-forest-area"
+            ],
+            "baseline_top3": [
+              "forest-area",
+              "municipality-forest-area",
+              "will-forest-run-out"
+            ],
+            "hybrid_top3": [
+              "forest-area",
+              "municipality-forest-area",
+              "will-forest-run-out"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-mis-01",
+            "query": "Lausinventeeritud registri tagavara peab olema õigem kui proovipunktide SMI hinnang",
+            "relevant_document_ids": [
+              "smi-versus-metsaregister"
+            ],
+            "baseline_top3": [
+              "old-forest-protection",
+              "why-numbers-differ",
+              "forest-notice"
+            ],
+            "hybrid_top3": [
+              "smi-versus-metsaregister",
+              "why-numbers-differ",
+              "increment-method"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-mis-02",
+            "query": "Raiemahtu ja juurdekasvu saab võrrelda ilma definitsioone kontrollimata",
+            "relevant_document_ids": [
+              "harvest-versus-increment"
+            ],
+            "baseline_top3": [
+              "increment-method",
+              "harvest-versus-increment",
+              "stock-versus-harvestable"
+            ],
+            "hybrid_top3": [
+              "harvest-versus-increment",
+              "increment-method",
+              "harvest-over-time"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-mis-03",
+            "query": "Kogu 452 miljonit tm on raiutav varu",
+            "relevant_document_ids": [
+              "stock-versus-harvestable"
+            ],
+            "baseline_top3": [
+              "stock-versus-harvestable",
+              "increment-method",
+              "harvest-versus-increment"
+            ],
+            "hybrid_top3": [
+              "stock-versus-harvestable",
+              "increment-method",
+              "harvest-versus-increment"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-mis-04",
+            "query": "RMK veebikaart on kogu Eesti metsa statistika",
+            "relevant_document_ids": [
+              "rmk-versus-smi"
+            ],
+            "baseline_top3": [
+              "rmk-versus-smi",
+              "why-numbers-differ",
+              "property-forest-data"
+            ],
+            "hybrid_top3": [
+              "rmk-versus-smi",
+              "will-forest-run-out",
+              "municipality-forest-area"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-mis-05",
+            "query": "51,84 ja 54,08 protsendist üks peab olema vale",
+            "relevant_document_ids": [
+              "forest-area"
+            ],
+            "baseline_top3": [
+              "forest-area",
+              "old-forest-protection",
+              "will-forest-run-out"
+            ],
+            "hybrid_top3": [
+              "forest-area",
+              "old-forest-protection",
+              "forest-notice"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-mis-06",
+            "query": "Kümme korda rohkem vaatlusi annab alati kümme korda täpsema tulemuse",
+            "relevant_document_ids": [
+              "sample-size-and-precision"
+            ],
+            "baseline_top3": [
+              "smi-versus-metsaregister",
+              "sample-size-and-precision",
+              "clearcut-value-judgement"
+            ],
+            "hybrid_top3": [
+              "sample-size-and-precision",
+              "smi-versus-metsaregister",
+              "clearcut-value-judgement"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-mis-07",
+            "query": "Ühe aasta raiemahu põhjal on tõestatud, et Eesti metsad hävivad",
+            "relevant_document_ids": [
+              "will-forest-run-out"
+            ],
+            "baseline_top3": [
+              "will-forest-run-out",
+              "harvest-versus-increment",
+              "rmk-versus-smi"
+            ],
+            "hybrid_top3": [
+              "will-forest-run-out",
+              "harvest-over-time",
+              "forest-age-trend"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-mis-08",
+            "query": "Suurem juurdekasvu number tõestab automaatselt kestliku metsamajanduse",
+            "relevant_document_ids": [
+              "harvest-versus-increment"
+            ],
+            "baseline_top3": [
+              "why-numbers-differ",
+              "old-forest-protection",
+              "increment-method"
+            ],
+            "hybrid_top3": [
+              "harvest-versus-increment",
+              "increment-method",
+              "old-forest-protection"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-mis-09",
+            "query": "Lageraije võib numbrite põhjal nimetada alati keskkonnavastaseks",
+            "relevant_document_ids": [
+              "clearcut-value-judgement"
+            ],
+            "baseline_top3": [
+              "clearcut-value-judgement",
+              "sample-size-and-precision",
+              "rmk-versus-smi"
+            ],
+            "hybrid_top3": [
+              "clearcut-value-judgement",
+              "forest-notice",
+              "sample-size-and-precision"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-mis-10",
+            "query": "Puistu saab kaitsestaatuse kohe saja aasta vanuseks saades",
+            "relevant_document_ids": [
+              "old-forest-protection"
+            ],
+            "baseline_top3": [
+              "old-forest-protection",
+              "forest-age-trend",
+              "will-forest-run-out"
+            ],
+            "hybrid_top3": [
+              "old-forest-protection",
+              "forest-age-trend",
+              "logging-in-protected-areas"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-mis-11",
+            "query": "Eraldisregister ja statistiline metsainventuur peavad andma täpselt sama tulemuse",
+            "relevant_document_ids": [
+              "smi-versus-metsaregister"
+            ],
+            "baseline_top3": [
+              "harvest-versus-increment",
+              "rmk-versus-smi",
+              "clearcut-value-judgement"
+            ],
+            "hybrid_top3": [
+              "smi-versus-metsaregister",
+              "property-forest-data",
+              "increment-method"
+            ],
+            "baseline_hit": false,
+            "hybrid_hit": true
+          },
+          {
+            "id": "v2-locked-mis-12",
+            "query": "452,831 miljonit tm on täpne ja vaieldamatu tegelik puidumaht",
+            "relevant_document_ids": [
+              "why-numbers-differ"
+            ],
+            "baseline_top3": [
+              "stock-versus-harvestable",
+              "why-numbers-differ",
+              "increment-method"
+            ],
+            "hybrid_top3": [
+              "stock-versus-harvestable",
+              "why-numbers-differ",
+              "increment-method"
+            ],
+            "baseline_hit": true,
+            "hybrid_hit": true
+          }
+        ]
+      },
+      "behavior": {
+        "citation_integrity": {
+          "checked": 30,
+          "passed": 30,
+          "rate": 1.0
+        },
+        "extractive_answer_faithfulness": {
+          "definition": "Both displayed answer sections and limitations exactly match the selected editor-approved knowledge fields, and every citation matches that document.",
+          "checked": 30,
+          "passed": 30,
+          "rate": 1.0,
+          "failures": []
+        },
+        "redirect_and_abstention": {
+          "checked": 7,
+          "passed": 7,
+          "rate": 1.0,
+          "failures": []
+        }
+      },
+      "coverage": {
+        "faq": {
+          "expected": 18,
+          "covered": 18,
+          "missing": []
+        },
+        "misconceptions": {
+          "expected": 12,
+          "covered": 12,
+          "missing": []
+        }
+      }
+    }
+  },
+  "gate": {
+    "passed": true,
+    "checks": {
+      "hybrid_recall_at_3_gte_0_90": true,
+      "recall_gain_gte_0_15": true,
+      "hybrid_ndcg_at_3_gte_0_80": true,
+      "no_critical_retrieval_regression": true,
+      "citation_integrity_100_percent": true,
+      "extractive_answer_faithfulness_100_percent": true,
+      "redirect_and_abstention_100_percent": true,
+      "all_required_topics_covered": true
+    }
+  }
+}

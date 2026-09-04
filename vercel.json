@@ -44,7 +44,7 @@
       ]
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!embed/forest$).*)",
       "headers": [
         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
@@ -52,6 +52,17 @@
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=(), payment=()" },
         { "key": "Content-Security-Policy", "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https://praktika.arleserver.cfd; form-action 'self'; manifest-src 'self'; worker-src 'none'; script-src 'self' 'sha256-xqUpUykbxHOS6bApfu5aM+WDp2oldrVcuj4m9hZTGJM='; script-src-elem 'self' 'sha256-xqUpUykbxHOS6bApfu5aM+WDp2oldrVcuj4m9hZTGJM='; style-src 'self'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://tiles.maaamet.ee https://gsavalik.envir.ee; connect-src 'self' https://gsavalik.envir.ee https://n8n.arleserver.cfd; upgrade-insecure-requests" }
+      ]
+    },
+    {
+      "source": "/embed/forest",
+      "headers": [
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=(), payment=()" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'self' https://keskkonnaportaal.ee https://www.keskkonnaportaal.ee https://keskkonnaportaal.envir.ee; form-action 'self'; manifest-src 'none'; worker-src 'none'; script-src 'self'; script-src-elem 'self'; style-src 'self'; style-src-elem 'self'; style-src-attr 'none'; font-src 'self'; img-src 'self' data:; connect-src 'self'; upgrade-insecure-requests" }
       ]
     }
   ]

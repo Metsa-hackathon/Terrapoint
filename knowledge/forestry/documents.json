@@ -1,0 +1,618 @@
+{
+  "schema_version": 1,
+  "language": "et",
+  "reviewed_at": "2026-08-16",
+  "review_status": "prototype_research_reviewed_not_kaur_approved",
+  "required_coverage": {
+    "faq": {
+      "FAQ-01": ["forest-area"],
+      "FAQ-02": ["harvest-versus-increment"],
+      "FAQ-03": ["why-numbers-differ"],
+      "FAQ-04": ["smi-versus-metsaregister"],
+      "FAQ-05": ["increment-method"],
+      "FAQ-06": ["stock-versus-harvestable"],
+      "FAQ-07": ["property-forest-data"],
+      "FAQ-08": ["protected-forest-share"],
+      "FAQ-09": ["rmk-versus-smi"],
+      "FAQ-10": ["climate-impact"],
+      "FAQ-11": ["forest-notice"],
+      "FAQ-12": ["will-forest-run-out"],
+      "FAQ-13": ["harvest-over-time"],
+      "FAQ-14": ["forest-age-trend"],
+      "FAQ-15": ["clearcut-over-time"],
+      "FAQ-16": ["pine-versus-spruce"],
+      "FAQ-17": ["logging-in-protected-areas"],
+      "FAQ-18": ["municipality-forest-area"]
+    },
+    "misconception": {
+      "MIS-01": ["smi-versus-metsaregister"],
+      "MIS-02": ["harvest-versus-increment"],
+      "MIS-03": ["stock-versus-harvestable"],
+      "MIS-04": ["rmk-versus-smi"],
+      "MIS-05": ["forest-area"],
+      "MIS-06": ["sample-size-and-precision"],
+      "MIS-07": ["will-forest-run-out"],
+      "MIS-08": ["harvest-versus-increment"],
+      "MIS-09": ["clearcut-value-judgement"],
+      "MIS-10": ["old-forest-protection"],
+      "MIS-11": ["smi-versus-metsaregister"],
+      "MIS-12": ["why-numbers-differ"]
+    }
+  },
+  "documents": [
+    {
+      "id": "forest-area",
+      "content_type": "faq_and_misconception",
+      "intent": "national_forest_area",
+      "title": "Kui suur osa Eestist on mets?",
+      "question_aliases": [
+        "Kui suur osa Eestist on kaetud metsaga?",
+        "Mitu protsenti Eestist on mets?",
+        "Kui suur on Eesti metsasus?",
+        "Miks on metsasuse protsendid erinevad?"
+      ],
+      "keywords": ["metsasus", "metsamaa", "pindala", "protsent", "FRA", "Peipsi", "Võrtsjärv", "nimetaja"],
+      "topics": ["SMI", "metsasus", "definitsioon"],
+      "answer": {
+        "summary": "SMI 2024 järgi oli metsamaa pindala 2,3506 miljonit hektarit. See on 51,84% Eesti kogupindalast või 54,08%, kui Peipsi ja Võrtsjärv nimetajast välja jätta. Rahvusvahelise FRA metsadefinitsiooni järgi on osakaal veel teistsugune. Seepärast ei ole üks metsasuse protsent ilma definitsiooni ja nimetajata täielik vastus.",
+        "methodology": "SMI on valikuuring. Tabelis on eraldi metsamaa, puistute ja FRA definitsioon ning kaks pindala nimetajat.",
+        "limitations": [
+          "Tegu on SMI 2024 statistilise hinnanguga, mitte kinnistupõhise kaardimõõtmisega.",
+          "Piirkondlikku või rahvusvahelist võrdlust tohib teha ainult sama metsadefinitsiooni ja nimetajaga."
+        ],
+        "claim_type": "statistical_estimate"
+      },
+      "sources": [
+        {"source_id": "smi-2024-tables", "locator": "lk 7, Eestimaa metsasuse jaotus"},
+        {"source_id": "kkp-smi-overview", "locator": "Statistiline metsainventuur ehk SMI"}
+      ],
+      "related_questions": ["Mis vahe on SMI-l ja metsaregistril?", "Miks annavad eri allikad erinevaid numbreid?"]
+    },
+    {
+      "id": "smi-versus-metsaregister",
+      "content_type": "faq_and_misconception",
+      "intent": "source_method_comparison",
+      "title": "SMI ja Metsaregister vastavad eri küsimustele",
+      "question_aliases": [
+        "Mis vahe on SMI-l ja metsaregistril?",
+        "Miks SMI ja metsaregistri andmed ei kattu?",
+        "Kas SMI tagavara on üle hinnatud?",
+        "Kas lausmetsakorraldus on SMI-st täpsem?"
+      ],
+      "keywords": ["SMI", "metsaregister", "lausinventeerimine", "lausmetsakorraldus", "valikuuring", "proovitükk", "eraldis", "katvus", "aegunud"],
+      "topics": ["metoodika", "andmeallikad", "statistika"],
+      "answer": {
+        "summary": "SMI mõõdab valitud proovitükke ja üldistab tulemuse Eesti või suure piirkonna kohta koos statistilise veaga. Metsaregister koondab metsaeraldiste inventeerimisandmeid ning sobib kinnistu ja eraldise vaatamiseks, kuid andmed on eri vanusega ja ei kata kehtivana kogu metsamaad. Erinevus ei tõenda iseenesest, et üks allikas on vale või tagavara üle hinnatud.",
+        "methodology": "Võrdlemisel tuleb ühtlustada vaadeldav ala, andmeaasta, kehtivuse seis, metsamaa definitsioon ja näitaja arvutus. Alles siis saab erinevuse põhjuseid analüüsida.",
+        "limitations": [
+          "SMI ei anna usaldusväärset üksiku kinnistu hinnangut.",
+          "Keskkonnaportaali andmetel kehtivad Metsaregistri inventeerimisandmed kümme aastat ja kehtivad kirjed katavad ligikaudu kolmveerandi Eesti metsamaast."
+        ],
+        "claim_type": "methodological_explanation"
+      },
+      "sources": [
+        {"source_id": "kkp-smi-overview", "locator": "Ülevaade metsastatistikast; Statistiline metsainventuur ehk SMI"},
+        {"source_id": "kkp-current-forest", "locator": "Metsainventeerimisandmed"},
+        {"source_id": "kkp-metsaregister-data", "locator": "Metsa inventeerimisandmed; levitused"}
+      ],
+      "related_questions": ["Miks annavad eri allikad erinevaid numbreid?", "Kust leida konkreetse kinnistu metsaandmeid?"]
+    },
+    {
+      "id": "increment-method",
+      "content_type": "faq",
+      "intent": "statistical_method",
+      "title": "Kuidas arvutatakse metsa juurdekasvu?",
+      "question_aliases": [
+        "Kuidas arvutatakse juurdekasvu?",
+        "Mis on metsa aastane juurdekasv?",
+        "Kuidas SMI juurdekasvu hindab?",
+        "Kas juurdekasv on mõõdetud või modelleeritud?"
+      ],
+      "keywords": ["juurdekasv", "mudel", "proovitükk", "m3 aastas", "tm aastas", "SMI", "suhteline viga"],
+      "topics": ["SMI", "juurdekasv", "metoodika"],
+      "answer": {
+        "summary": "SMI 2024 tabelis on metsamaa tagavara juurdekasv mudeli alusel arvutatud hinnang. Kõigi metsamaade hinnang oli 15,4303 miljonit tihumeetrit aastas ehk keskmiselt 6,6 tm/ha aastas; avaldatud suhteline viga koguhinnangul oli ±1,4%.",
+        "methodology": "Juurdekasvu mudel kasutab SMI proovitükkide mõõtmisi ja puistutunnuseid. Tulemuseks on üldkogumi statistiline hinnang, mitte kõigi puude iga-aastane otsene ülelugemine.",
+        "limitations": [
+          "Juurdekasv on mudelarvutus ning seda tuleb esitada koos vea ja andmeaastaga.",
+          "Kogu metsamaa ja majandatava metsamaa juurdekasv ei ole sama näitaja."
+        ],
+        "claim_type": "statistical_estimate"
+      },
+      "sources": [
+        {"source_id": "smi-2024-tables", "locator": "lk 22, Metsamaa tagavara juurdekasv enamuspuuliigiti"},
+        {"source_id": "kkp-smi-overview", "locator": "SMI metoodika ja statistiline viga"}
+      ],
+      "related_questions": ["Kas Eestis raiutakse rohkem kui metsa juurde kasvab?", "Miks ei võrdu tagavara raiutava puidukogusega?"]
+    },
+    {
+      "id": "harvest-versus-increment",
+      "content_type": "faq_and_misconception",
+      "intent": "indicator_comparison",
+      "title": "Raiemahu ja juurdekasvu võrdlus vajab sama ulatust ja perioodi",
+      "question_aliases": [
+        "Kas Eestis raiutakse rohkem kui metsa juurde kasvab?",
+        "Kas raiemaht ületab juurdekasvu?",
+        "Raiutakse rohkem kui juurde kasvab",
+        "Kas Eesti metsade kasutus on juurdekasvust suurem?"
+      ],
+      "keywords": ["raiemaht", "raie", "juurdekasv", "väljaraie", "2023", "2024", "võrdlus", "jätkusuutlik"],
+      "topics": ["SMI", "raiemaht", "juurdekasv", "väärarusaam"],
+      "answer": {
+        "summary": "SMI 2024 avaldas 2023. aasta raiete tagavaraks 11,736 miljonit tm (suhteline viga ±10,1%) ja metsamaa mudelarvutuslikuks juurdekasvuks 15,4303 miljonit tm aastas (±1,4%). Nende avaldatud hinnangute järgi ei olnud raiemaht juurdekasvust suurem. Ühe arvupaari põhjal ei tohi siiski teha automaatset järeldust pikaajalise jätkusuutlikkuse kohta.",
+        "methodology": "Võrdluses peavad kattuma periood, maa kategooria, omanikering, brutokasvu või netokasvu definitsioon ning raiemahu allikas. Teatiste kavandatud mahtu ei tohi käsitleda toimunud raiemahuna.",
+        "limitations": [
+          "Raiemahu hinnangu suhteline viga on avaldatud juurdekasvu veast märksa suurem.",
+          "Pikaajaline hinnang vajab aegrida, metsade vanusestruktuuri, suremust, kaitse- ja majanduspiiranguid ning sama metoodikaga näitajaid."
+        ],
+        "claim_type": "statistical_comparison"
+      },
+      "sources": [
+        {"source_id": "smi-2024-tables", "locator": "lk 22, juurdekasv; lk 57, 2023. a raiete maht"},
+        {"source_id": "kkp-current-forest", "locator": "Metsateatised: lubatud teatis ei võrdu realiseeritud raiega"}
+      ],
+      "related_questions": ["Kuidas arvutatakse juurdekasvu?", "Kas praegu raiutakse rohkem kui 20 aastat tagasi?"]
+    },
+    {
+      "id": "why-numbers-differ",
+      "content_type": "faq_and_misconception",
+      "intent": "source_reconciliation",
+      "title": "Metsaandmete erinev arv ei tähenda automaatselt vastuolu",
+      "question_aliases": [
+        "Miks annavad eri allikad erinevaid numbreid?",
+        "Miks metsaandmed ei klapi?",
+        "Milline metsa tagavara number on õige?",
+        "Kas metsa tagavara on üks kindel vaieldamatu number?"
+      ],
+      "keywords": ["erinevad numbrid", "andmeallikas", "tagavara", "definitsioon", "aasta", "katvus", "viga", "metoodika"],
+      "topics": ["andmekvaliteet", "metoodika", "väärarusaam"],
+      "answer": {
+        "summary": "Arvud võivad erineda, sest allikad mõõdavad eri nähtust, ala, aega või omanikeringi. SMI on statistiline hinnang; Metsaregister sisaldab eraldiste inventeerimisandmeid; RMK vaade kirjeldab RMK hallatavaid metsi. Ka metsasuse nimetaja, tagavara definitsioon, andmete kehtivus ja ümardamine muudavad tulemust.",
+        "methodology": "Enne võrdlust koosta andmepass: näitaja definitsioon, ühik, geograafia, vaatlus-/andmeaasta, avaldamisaeg, allika katvus, metoodika ja veahinnang.",
+        "limitations": [
+          "Ilma lähtearvude ja definitsioonideta ei saa otsustada, kas erinevus on sisuline või metoodiline.",
+          "Statistiline hinnang on vahemikuga teadmine, mitte vaieldamatu täppisarv."
+        ],
+        "claim_type": "methodological_explanation"
+      },
+      "sources": [
+        {"source_id": "kkp-smi-overview", "locator": "SMI valikuuring ja statistiline viga"},
+        {"source_id": "kkp-current-forest", "locator": "RMK metsade olem; Metsainventeerimisandmed"},
+        {"source_id": "smi-2024-tables", "locator": "lk 7 ja 61, definitsioonid ning suhtelised vead"}
+      ],
+      "related_questions": ["Mis vahe on SMI-l ja metsaregistril?", "Miks erinevad RMK ja SMI numbrid?"]
+    },
+    {
+      "id": "stock-versus-harvestable",
+      "content_type": "faq_and_misconception",
+      "intent": "indicator_definition",
+      "title": "Metsa tagavara ei ole sama mis raiutav puidukogus",
+      "question_aliases": [
+        "Miks ei võrdu tagavara raiutava puidukogusega?",
+        "Kas kogu metsa tagavara saab raiuda?",
+        "Tagavara ei võrdu kättesaadava puiduga",
+        "Kui palju metsa tagavarast on raiutav?"
+      ],
+      "keywords": ["tagavara", "raiutav", "kättesaadav", "mittemajandatav", "majanduspiirang", "küpsus", "puidukogus"],
+      "topics": ["tagavara", "metsakasutus", "väärarusaam"],
+      "answer": {
+        "summary": "Tagavara kirjeldab kasvava metsa puidumahtu, mitte lubatud ega majanduslikult kättesaadavat raiemahtu. SMI 2024 hinnang kogu metsamaa tagavarale oli 452,831 miljonit tm (±1,5%), samal ajal oli 19,7% metsamaast mittemajandatav ja 10,1% majanduspiiranguga. Ka majandusmetsas piiravad kasutust vanus, seisund, juurdekasv, õigus, ligipääs ja omaniku otsus.",
+        "methodology": "Raiutava mahu hindamine vajab tagavarast eraldi metoodikat ja ajahorisonti. Tagavara hetkeseisu ei tohi esitada aastase kasutusvõimalusena.",
+        "limitations": [
+          "SMI majanduskategooriad ei ole üks-ühele sama mis kõik õiguslikud kaitsekategooriad.",
+          "Kinnistu kasutusvõimalus tuleb kontrollida Metsaportaalis ja vajadusel Keskkonnaametiga."
+        ],
+        "claim_type": "statistical_and_methodological_explanation"
+      },
+      "sources": [
+        {"source_id": "smi-2024-tables", "locator": "lk 8, majanduskategooriad; lk 12, tagavara"},
+        {"source_id": "forest-act", "locator": "kehtiv metsakasutuse õigusraamistik"}
+      ],
+      "related_questions": ["Kui suur osa metsadest on kaitse all?", "Kas Eestis saab mets otsa?"]
+    },
+    {
+      "id": "property-forest-data",
+      "content_type": "faq",
+      "intent": "property_lookup",
+      "title": "Konkreetse kinnistu metsaandmed tulevad Metsaregistrist",
+      "question_aliases": [
+        "Kust leida konkreetse kinnistu metsaandmeid?",
+        "Kuidas vaadata oma metsa andmeid?",
+        "Kust otsida katastritunnuse metsa?",
+        "Näita selle kinnistu metsaandmeid"
+      ],
+      "keywords": ["kinnistu", "katastritunnus", "metsaportaal", "metsaregister", "eraldis", "omanik", "kaart"],
+      "topics": ["Metsaregister", "kinnistu", "suunamine"],
+      "answer": {
+        "summary": "Kinnistu ja metsaeraldise andmeid vaata riiklikust Metsaportaalist. Terrapointi kinnistuotsing saab avalikke registrikihte koondada, kuid üldine metsa-statistika tõlgendaja ei tohi SMI riiklikku hinnangut üksikule kinnistule omistada.",
+        "methodology": "Sisesta Metsaportaalis või Terrapointi kinnistuotsingus katastritunnus. Kontrolli inventeerimise kuupäeva, andmete kehtivust, eraldisi ja piiranguid eraldi.",
+        "limitations": [
+          "Osa kaitsealuste liikide andmeid on nähtav ainult autentitud omanikule ja seda ei tohi üldises vastuses avaldada.",
+          "Registrikanne ei asenda kohapealset metsa hindamist ega haldusotsust."
+        ],
+        "claim_type": "service_direction"
+      },
+      "sources": [
+        {"source_id": "kkp-metsaregister-data", "locator": "Metsaportaali HTML ja WMS/WFS levitused"},
+        {"source_id": "keskkonnaamet-protected-species", "locator": "kinnistu liigiandmete ligipääs"}
+      ],
+      "related_questions": ["Mis vahe on SMI-l ja metsaregistril?", "Mis on metsateatis?"]
+    },
+    {
+      "id": "protected-forest-share",
+      "content_type": "faq",
+      "intent": "protection_statistics",
+      "title": "Kaitstud metsa osakaal sõltub kasutatud kategooriast",
+      "question_aliases": [
+        "Kui suur osa metsadest on kaitse all?",
+        "Mitu protsenti Eesti metsast on kaitstud?",
+        "Kui palju on rangelt kaitstavat metsa?",
+        "Mis osa metsast on mittemajandatav?"
+      ],
+      "keywords": ["kaitse all", "kaitstud mets", "mittemajandatav", "majanduspiirang", "range kaitse", "protsent"],
+      "topics": ["looduskaitse", "SMI", "definitsioon"],
+      "answer": {
+        "summary": "Kõigepealt tuleb täpsustada, kas mõeldakse õiguslikult kaitstavat ala, ranget kaitset, mittemajandatavat metsa või majanduspiiranguga metsa. SMI 2024 majanduskategoorias oli 19,7% metsamaast mittemajandatav ja 10,1% majanduspiiranguga; neid protsente ei tohi automaatselt liita üheks „kaitse all” arvuks ilma definitsioonita.",
+        "methodology": "Riikliku osakaalu jaoks kasuta sama aasta SMI kategooriaid. Konkreetse ala õiguslik kaitse kontrollitakse EELISe/Metsaportaali ruumikihtidest ja kaitse-eeskirjast.",
+        "limitations": [
+          "Majanduskategooria ja õiguslik kaitsekategooria ei ole üks-ühele samad.",
+          "SMI kategooriate hinnangutel on avaldatud suhteline viga."
+        ],
+        "claim_type": "statistical_estimate_with_definition_warning"
+      },
+      "sources": [
+        {"source_id": "smi-2024-tables", "locator": "lk 8, Metsamaa pindala majanduskategooria järgi"},
+        {"source_id": "keskkonnaamet-protected-species", "locator": "kinnistu piirangute kontroll"}
+      ],
+      "related_questions": ["Kas kaitsealadel raiutakse?", "Kas vana mets on automaatselt kaitse all?"]
+    },
+    {
+      "id": "rmk-versus-smi",
+      "content_type": "faq_and_misconception",
+      "intent": "source_scope_comparison",
+      "title": "RMK ja SMI arvudel on erinev ulatus",
+      "question_aliases": [
+        "Miks erinevad RMK ja SMI numbrid?",
+        "Mis vahe on RMK andmetel ja SMI andmetel?",
+        "Kas RMK metsaandmed peaksid SMI-ga kattuma?",
+        "RMK versus Keskkonnaagentuuri metsaandmed"
+      ],
+      "keywords": ["RMK", "SMI", "riigimets", "kõik metsad", "takseerandmed", "omanik", "päevane uuendus"],
+      "topics": ["RMK", "SMI", "andmeallikad"],
+      "answer": {
+        "summary": "SMI üldistab proovitükkide põhjal kogu Eesti metsavaru. RMK vaated kirjeldavad RMK hallatavaid metsi RMK takseerandmete põhjal. Keskkonnaportaal märgib, et RMK olemi andmed uuenevad kord ööpäevas, SMI on aga perioodiline statistiline hinnang. Erinev omanikering, ajaseis ja meetod annavadki erineva tulemuse.",
+        "methodology": "Võrdle RMK osa SMI vastava riigimetskondade tabeliga ning ühtlusta aasta, näitaja ja kategooria. Kogu Eesti SMI arvu ei võrrelda otse RMK alamkogumiga.",
+        "limitations": ["RMK hallatav mets ei võrdu kogu riigi omandis oleva või kogu Eesti metsaga."],
+        "claim_type": "source_scope_explanation"
+      },
+      "sources": [
+        {"source_id": "kkp-current-forest", "locator": "RMK metsade olem"},
+        {"source_id": "kkp-smi-overview", "locator": "SMI valikuuringu ulatus"},
+        {"source_id": "smi-2024-tables", "locator": "riigimetskondade ja teiste valdajate eraldi veerud"}
+      ],
+      "related_questions": ["Miks annavad eri allikad erinevaid numbreid?", "Mis vahe on SMI-l ja metsaregistril?"]
+    },
+    {
+      "id": "climate-impact",
+      "content_type": "faq",
+      "intent": "climate_explanation",
+      "title": "Kliimamuutus mõjutab metsi mitme vastassuunalise teguri kaudu",
+      "question_aliases": [
+        "Kuidas mõjutab kliimamuutus metsi?",
+        "Mida teeb kliimamuutus Eesti metsadele?",
+        "Kas põud ja soojenemine kahjustavad metsa?",
+        "Kuidas kliima mõjutab kuuski ja üraskeid?"
+      ],
+      "keywords": ["kliimamuutus", "põud", "torm", "metsapõleng", "kahjur", "kooreürask", "kasvuperiood", "haigus"],
+      "topics": ["kliima", "metsatervis", "risk"],
+      "answer": {
+        "summary": "Soojem ja pikem kasvuperiood võib mõnes olukorras kasvu suurendada, kuid põud, tormid, tuleoht, haigused ja kahjurid võivad puid nõrgestada või suremust kasvatada. Keskkonnaülevaade seostab kliima muutumisega mitme haigustekitaja ja kahjuri levikuriski ning toob kuuse-kooreüraski sagedasema kahe põlvkonna üheks jälgitavaks märgiks.",
+        "methodology": "Riiklikku trendi hinnatakse pika seire ja kliimastsenaariumidega. Ühe kinnistu risk vajab puuliigi, vanuse, kasvukoha, veerežiimi, kahjustuste ja kohaliku seire kontrolli.",
+        "limitations": [
+          "See on riskide üldselgitus, mitte konkreetse metsa prognoos.",
+          "Üksik ilmastikuaasta ei tõenda pikaajalist kliimatrendi."
+        ],
+        "claim_type": "evidence_based_risk_explanation"
+      },
+      "sources": [
+        {"source_id": "kkp-forest-environment-review", "locator": "metsatervise ja kliimariski näitajad"},
+        {"source_id": "climate-adaptation-plan", "locator": "looduskeskkond ja biomajandus; kliimariskid"}
+      ],
+      "related_questions": ["Kust leida konkreetse kinnistu metsaandmeid?", "Kas kuusk või mänd domineerib Eestis?"]
+    },
+    {
+      "id": "forest-notice",
+      "content_type": "faq",
+      "intent": "legal_service_explanation",
+      "title": "Metsateatis on kavandatava tegevuse või kahjustuse teatis",
+      "question_aliases": [
+        "Mis on metsateatis?",
+        "Millal peab metsateatise esitama?",
+        "Kas metsateatis tähendab et mets raiuti?",
+        "Kuidas esitada metsateatist?"
+      ],
+      "keywords": ["metsateatis", "kavandatav raie", "kahjustus", "Keskkonnaamet", "Metsaportaal", "kehtivus", "lubav märge"],
+      "topics": ["metsateatis", "õigus", "Metsaregister"],
+      "answer": {
+        "summary": "Metsaseaduse § 41 järgi esitab omanik või esindaja Keskkonnaametile metsateatise kavandatava raie kohta seaduses nimetatud eranditega ning registrisse kandmata olulise metsakahjustuse kohta. Teatis ei tõenda, et raie toimus. Keskkonnaportaali järgi kehtib teatis kaks aastat ja kõiki lubava märkega teatisi ei realiseerita.",
+        "methodology": "Teatis esitatakse eelistatult Metsaportaalis, kus Keskkonnaamet kontrollib kavandatud tegevuse nõuetele vastavust. Enne tegutsemist kontrolli alati kehtivat seadust ja menetluse otsust.",
+        "limitations": [
+          "Õigusaktid võivad muutuda; see prototüüp ei anna personaalset õigusnõu.",
+          "Teatise mahtu ei tohi kasutada toimunud raiemahuna."
+        ],
+        "claim_type": "legal_information_not_advice"
+      },
+      "sources": [
+        {"source_id": "forest-act", "locator": "§ 41 Metsateatis; seis kontrollitud 16.08.2026"},
+        {"source_id": "keskkonnaamet-forest-notice", "locator": "Kuidas metsateatist esitada"},
+        {"source_id": "kkp-current-forest", "locator": "Metsateatised"}
+      ],
+      "related_questions": ["Kust leida konkreetse kinnistu metsaandmeid?", "Kas kaitsealadel raiutakse?"]
+    },
+    {
+      "id": "will-forest-run-out",
+      "content_type": "faq_and_misconception",
+      "intent": "trend_and_risk_explanation",
+      "title": "„Kas mets saab otsa?” ei ole ühe arvu küsimus",
+      "question_aliases": [
+        "Kas Eestis saab mets otsa?",
+        "Kas Eesti metsad hävivad kiiresti?",
+        "Kas meil varsti enam metsa pole?",
+        "Kas raiumine kaotab Eesti metsad?"
+      ],
+      "keywords": ["mets saab otsa", "metsad hävivad", "metsamaa", "puistu", "trend", "metsasus", "uuendamine"],
+      "topics": ["metsasus", "trend", "väärarusaam"],
+      "answer": {
+        "summary": "SMI 2024 hindas metsamaa osakaaluks 51,84% Eesti kogupindalast, kuid see hetkeseis ei tõesta üksi ei tulevast kadumist ega head ökoloogilist seisundit. Metsamaa, puistu vanus, tagavara, elurikkus, kaitse ja kasutus on eri näitajad. Küsimusele vastamiseks tuleb vaadata nende pikki aegridu ning definitsioone eraldi.",
+        "methodology": "Metsamaa pindala trendi võrreldakse sama SMI metoodikaga aastate vahel; metsa seisundi jaoks lisatakse vanusestruktuur, tagavara, kahjustused, elurikkus ja kaitsekategooriad.",
+        "limitations": [
+          "Metsamaa püsimine ei tähenda, et puistu vanus või elurikkus ei muutuks.",
+          "Ühe aasta raiemaht ei ole tuleviku metsapindala prognoos."
+        ],
+        "claim_type": "trend_explanation_with_abstention"
+      },
+      "sources": [
+        {"source_id": "smi-2024-tables", "locator": "lk 7, metsasuse jaotus"},
+        {"source_id": "kkp-forest-overview", "locator": "metsa ja metsamaa mõiste"},
+        {"source_id": "kkp-forest-environment-review", "locator": "metsade seisundi näitajad"}
+      ],
+      "related_questions": ["Kas meie metsad muutuvad nooremaks?", "Kas Eestis raiutakse rohkem kui metsa juurde kasvab?"]
+    },
+    {
+      "id": "harvest-over-time",
+      "content_type": "faq",
+      "intent": "time_series_comparison",
+      "title": "Raiemahu muutust hinnatakse sama metoodikaga aegridadest",
+      "question_aliases": [
+        "Kas praegu raiutakse rohkem kui 20 aastat tagasi?",
+        "Kuidas on raiemaht 20 aastaga muutunud?",
+        "Kas raie on võrreldes varasemaga kasvanud?",
+        "Näita raiemahu aegrida"
+      ],
+      "keywords": ["raiemaht", "20 aastat", "aegrida", "praegu", "varem", "SMI", "metsateatis"],
+      "topics": ["raiemaht", "aegrida", "võrdlus"],
+      "answer": {
+        "summary": "Sellele küsimusele ei piisa viimase aasta arvust. Vaja on sama definitsiooni ja metoodikaga SMI raiemahu aegrida. Metsateatiste kavandatud mahud, Metsaregistri jooksva aasta vaade ja SMI hinnatud toimunud raiemaht ei ole omavahel asendatavad.",
+        "methodology": "Vali võrreldavad aastad, sama maa kategooria ja sama raiemahu allikas; kuva hinnangud koos veapiiridega. SMI 2024 avaldas 2023. aasta raiete hinnangu ja viie aasta keskmise, kuid need ei kata iseenesest 20-aastast võrdlust.",
+        "limitations": ["Prototüübi kinnitatud korpus ei sisalda veel sisutoimetaja heakskiidetud 20-aastast aegrida, seega arvulist trendivastust ei anta."],
+        "claim_type": "clarification_and_data_requirement"
+      },
+      "sources": [
+        {"source_id": "smi-2024-tables", "locator": "lk 57-60, 2023. aasta ja viie aasta keskmine raiemaht"},
+        {"source_id": "kkp-current-forest", "locator": "metsateatiste ja ajalooliste andmete piirangud"}
+      ],
+      "related_questions": ["Kui palju lageraiet on viimase 10 aasta jooksul tehtud?", "Kas Eestis raiutakse rohkem kui metsa juurde kasvab?"]
+    },
+    {
+      "id": "forest-age-trend",
+      "content_type": "faq",
+      "intent": "age_structure",
+      "title": "Metsa vanust kirjeldab jaotus, mitte ainult keskmine",
+      "question_aliases": [
+        "Kas meie metsad muutuvad nooremaks?",
+        "Kui vanad on Eesti metsad?",
+        "Mis on Eesti puistute keskmine vanus?",
+        "Kas vanade metsade osakaal väheneb?"
+      ],
+      "keywords": ["metsa vanus", "nooremaks", "vanad metsad", "keskmine vanus", "vanuseklass", "puistu"],
+      "topics": ["vanus", "SMI", "aegrida"],
+      "answer": {
+        "summary": "SMI 2024 hindas puistute keskmiseks vanuseks 55 aastat (suhteline viga ±0,9%), kuid keskmine üksi ei näita, kas noorte ja vanade puistute osakaal samal ajal muutub. „Metsad muutuvad nooremaks” vajab vanuseklasside aegrida puuliigi ja majanduskategooria lõikes.",
+        "methodology": "Võrdle korduvate SMI aastate vanuseklasside pindala, mitte ainult üht keskmist. Hoia eraldi kõik metsad ja majandatavad metsad.",
+        "limitations": ["Prototüüp ei järelda trendi ühest SMI aastast."],
+        "claim_type": "statistical_estimate_and_trend_caveat"
+      },
+      "sources": [
+        {"source_id": "smi-2024-tables", "locator": "lk 16 ja 28-33, keskmine vanus ja vanuseklassid"},
+        {"source_id": "kkp-smi-overview", "locator": "SMI tulemuste arhiiv"}
+      ],
+      "related_questions": ["Kas Eestis saab mets otsa?", "Kas vana mets on automaatselt kaitse all?"]
+    },
+    {
+      "id": "clearcut-over-time",
+      "content_type": "faq",
+      "intent": "clearcut_time_series",
+      "title": "Lageraie kümneaastane maht vajab aastate kaupa aegrida",
+      "question_aliases": [
+        "Kui palju lageraiet on viimase 10 aasta jooksul tehtud?",
+        "Kui suur on lageraie pindala kümne aastaga?",
+        "Mitu hektarit lageraiet aastas tehakse?",
+        "Näita lageraie aegrida"
+      ],
+      "keywords": ["lageraie", "10 aastat", "pindala", "aegrida", "hektar", "raieliik"],
+      "topics": ["lageraie", "aegrida", "SMI"],
+      "answer": {
+        "summary": "SMI 2024 hindas 2023. aasta lageraie pindalaks 32,0 tuhat ha (±11,4%) ja avaldas viie aasta keskmiseks 30,5 tuhat ha aastas (±8,6%). Neid ei tohi lihtsalt kümnega korrutada: kümneaastase kogumi jaoks tuleb kasutada iga aasta sama metoodikaga hinnangut ning arvestada ebakindlust ja võimalikku alade korduvust.",
+        "methodology": "Koosta SMI aastate tabel samast raiete mahu peatükist; säilita aasta, raieliik, pindala, tagavara ja suhteline viga. Metsateatiste pindala ei võrdu toimunud lageraiega.",
+        "limitations": ["Kinnitatud kümneaastast aegrida pole prototüübi korpuses veel sisutoimetatud, seega kogusummat ei esitata."],
+        "claim_type": "partial_statistical_answer_with_abstention"
+      },
+      "sources": [
+        {"source_id": "smi-2024-tables", "locator": "lk 57 ja 59, lageraie pindala ning viie aasta keskmine"},
+        {"source_id": "kkp-current-forest", "locator": "metsateatis ei võrdu realiseeritud raiega"}
+      ],
+      "related_questions": ["Kas praegu raiutakse rohkem kui 20 aastat tagasi?", "Kas kõik lageraied on keskkonnavastased?"]
+    },
+    {
+      "id": "pine-versus-spruce",
+      "content_type": "faq",
+      "intent": "species_comparison",
+      "title": "Mänd on SMI 2024 järgi kuusest suurema pindala ja tagavaraga",
+      "question_aliases": [
+        "Kas kuusk või mänd domineerib Eestis?",
+        "Kumba on Eestis rohkem, kuuske või mändi?",
+        "Kas mänd on peamine puuliik?",
+        "Võrdle männi ja kuuse pindala"
+      ],
+      "keywords": ["kuusk", "mänd", "domineerib", "enamuspuuliik", "pindala", "tagavara", "puuliik"],
+      "topics": ["puuliigid", "SMI", "võrdlus"],
+      "answer": {
+        "summary": "SMI 2024 enamuspuuliigi tabelis oli männi metsamaa pindala 695,3 tuhat ha (29,6%) ja kuuse pindala 431,8 tuhat ha (18,4%). Tagavarast moodustas mänd 34,7% ja kuusk 18,3%. Seega on nende kahe võrdluses mänd suurem nii pindala kui tagavara järgi.",
+        "methodology": "„Domineerib” tuleb siduda mõõdikuga: enamuspuuliigi pindala, kogu puuliigi tagavara või metsade arv annavad eri küsimuse.",
+        "limitations": ["Enamuspuuliik ei tähenda, et puistus kasvaks ainult see liik; segapuistute koosseis vajab eraldi tabelit."],
+        "claim_type": "statistical_comparison"
+      },
+      "sources": [
+        {"source_id": "smi-2024-tables", "locator": "lk 12, Metsamaa pindala ja tagavara enamuspuuliigiti"}
+      ],
+      "related_questions": ["Kui suur osa Eestist on kaetud metsaga?", "Kuidas mõjutab kliimamuutus metsi?"]
+    },
+    {
+      "id": "logging-in-protected-areas",
+      "content_type": "faq",
+      "intent": "site_specific_legal_restriction",
+      "title": "Kaitsealal raiumine sõltub vööndist, eesmärgist ja tingimustest",
+      "question_aliases": [
+        "Kas kaitsealadel raiutakse?",
+        "Kas kaitstud metsas tohib raiuda?",
+        "Kas looduskaitsealal on raie keelatud?",
+        "Millised raied on kaitsealal lubatud?"
+      ],
+      "keywords": ["kaitseala", "raie", "sihtkaitsevöönd", "piiranguvöönd", "elupaik", "metsateatis", "tingimus"],
+      "topics": ["looduskaitse", "õigus", "kinnistu"],
+      "answer": {
+        "summary": "Kõik kaitsealad ja vööndid ei ole ühe režiimiga. Mõnes kohas on puidu saamiseks majandamine keelatud, teises võib olla lubatud piiratud või kaitse-eesmärki toetav tegevus. Konkreetne vastus tuleb kaitse-eeskirjast, EELISe/Metsaportaali kihist ja Keskkonnaameti menetlusest, mitte üleriigilisest protsendist.",
+        "methodology": "Tuvasta kinnistu, kaitstav objekt, vöönd, kaitse-eesmärk ja kavandatav tegevus; kontrolli kehtivat õigusakti ning esita vajadusel metsateatis.",
+        "limitations": [
+          "Üldine widget ei avalda piiratud liigiandmeid ega anna tegevusluba.",
+          "Õiguslik seis võib muutuda; kontrolli otsuse päeval Riigi Teatajat ja Keskkonnaametit."
+        ],
+        "claim_type": "legal_information_with_required_redirect"
+      },
+      "sources": [
+        {"source_id": "keskkonnaamet-protected-species", "locator": "piirangud ja Metsaportaali kontroll"},
+        {"source_id": "forest-act", "locator": "metsateatise kontroll ja kehtiv õigus"},
+        {"source_id": "kkp-current-forest", "locator": "Metsateatised kaitsealadel"}
+      ],
+      "related_questions": ["Kui suur osa metsadest on kaitse all?", "Kust leida konkreetse kinnistu metsaandmeid?"]
+    },
+    {
+      "id": "municipality-forest-area",
+      "content_type": "faq",
+      "intent": "local_area_lookup",
+      "title": "Valla metsa pindala vajab valla nime ja sobivat ruumiandmestikku",
+      "question_aliases": [
+        "Kui palju metsa on minu koduvallas?",
+        "Kui suur on valla metsasus?",
+        "Mitu hektarit metsa on minu vallas?",
+        "Võrdle valdade metsa pindala"
+      ],
+      "keywords": ["vald", "koduvallas", "kohalik omavalitsus", "metsa pindala", "metsasus", "ruumiandmed", "maakond"],
+      "topics": ["piirkond", "ruumiandmed", "täpsustus"],
+      "answer": {
+        "summary": "Palun nimeta vald ja ütle, kas soovid metsamaa pindala, metsasuse protsenti või Metsaregistris kehtivate eraldiste pindala. Need pole sama näitaja. SMI 2024 avaldab maakondlikke hinnanguid, kuid väikese valla jaoks tuleb kasutada sobivat metsamaa ruumikihti ja dokumenteeritud definitsiooni.",
+        "methodology": "Piirkonnapäring lõikab ajakohase metsamaa või Metsaregistri kihi valla piiriga ning tagastab andmeaasta, definitsiooni, katvuse ja pindala. SMI riiklikku näitajat ei jagata rahvaarvu või pindala suhtega vallale.",
+        "limitations": [
+          "Prototüübi esimene versioon küsib valla nime, kuid ei arvuta veel kõigi valdade reaalaja pindala.",
+          "Metsaregistri kehtivate eraldiste katvus ei võrdu kogu metsamaaga."
+        ],
+        "claim_type": "clarification_required"
+      },
+      "sources": [
+        {"source_id": "smi-2024-tables", "locator": "lk 61, maakondade metsamaa pindala ja suhteline viga"},
+        {"source_id": "kkp-metsaregister-data", "locator": "avalikud ruumikihid"}
+      ],
+      "related_questions": ["Kust leida konkreetse kinnistu metsaandmeid?", "Kui suur osa Eestist on kaetud metsaga?"]
+    },
+    {
+      "id": "sample-size-and-precision",
+      "content_type": "misconception",
+      "intent": "statistical_literacy",
+      "title": "Suurem valim ei tähenda automaatselt täpsemat hinnangut",
+      "question_aliases": [
+        "Kas suurem valim on alati täpsem?",
+        "Miks rohkem metsaeraldisi ei anna automaatselt paremat arvu?",
+        "Suurem valim tähendab täpsemat tulemust",
+        "Kuidas hinnata SMI täpsust?"
+      ],
+      "keywords": ["valim", "suurem valim", "täpsus", "esinduslikkus", "valikuviga", "suhteline viga", "uuringudisain"],
+      "topics": ["statistika", "SMI", "väärarusaam"],
+      "answer": {
+        "summary": "Valimi suurus mõjutab täpsust, kuid sama olulised on valikukava, esinduslikkus, mõõtmisviga, kihistamine ja see, kas andmed kirjeldavad õiget üldkogumit. Suur hulk aegunud või kallutatud registrikirjeid ei pruugi anda paremat riiklikku hinnangut kui korrektselt disainitud tõenäosuslik valim.",
+        "methodology": "Võrdle avaldatud standard- või suhtelist viga ning metoodikat, mitte ainult kirjete arvu. SMI tabelid avaldavad näitajate suhtelise vea eraldi.",
+        "limitations": ["Ka hästi disainitud valim ei muuda üksiku kinnistu SMI hinnangut usaldusväärseks."],
+        "claim_type": "statistical_method_explanation"
+      },
+      "sources": [
+        {"source_id": "kkp-smi-overview", "locator": "valikuuring ja statistiline viga"},
+        {"source_id": "smi-2024-tables", "locator": "suhtelise vea veerud"}
+      ],
+      "related_questions": ["Mis vahe on SMI-l ja metsaregistril?", "Miks annavad eri allikad erinevaid numbreid?"]
+    },
+    {
+      "id": "clearcut-value-judgement",
+      "content_type": "misconception",
+      "intent": "fact_value_separation",
+      "title": "„Kõik lageraied on keskkonnavastased” on väärtusväide, mitte üks statistiline fakt",
+      "question_aliases": [
+        "Kas kõik lageraied on keskkonnavastased?",
+        "Kas lageraie on alati halb?",
+        "Kõik lageraied kahjustavad keskkonda",
+        "Kas lageraie on lubatav?"
+      ],
+      "keywords": ["lageraie", "keskkonnavastane", "alati halb", "väärtushinnang", "mõju", "elurikkus", "õigus"],
+      "topics": ["lageraie", "väärtushinnang", "väärarusaam"],
+      "answer": {
+        "summary": "Väide sisaldab väärtushinnangut. Mõõdetavad faktid on näiteks raie pindala ja tagavara, ala kaitse-eesmärk, elupaigad, ajastus, mullastik, veerežiim ja uuendamine. Keskkonnamõju sõltub kohast ja teostusest; õiguslik lubatavus ei võrdu automaatselt väikese mõjuga ning mõju olemasolu ei määra üksi ühiskondlikku väärtusotsust.",
+        "methodology": "Eralda küsimus kolmeks: mis toimus, milline oli mõõdetav mõju ja millise väärtuskriteeriumi järgi seda hinnatakse. Kinnistuotsus vajab kohapõhist andmestikku ja menetlust.",
+        "limitations": ["Üldine RAG ei soovita raiemeetodit ega otsusta tegevuse lubatavust."],
+        "claim_type": "fact_value_boundary"
+      },
+      "sources": [
+        {"source_id": "smi-2024-tables", "locator": "lk 57-60, raieliikide statistika"},
+        {"source_id": "forest-act", "locator": "kehtiv õigusraamistik"},
+        {"source_id": "kkp-forest-environment-review", "locator": "metsa seisundi ja surve näitajad"}
+      ],
+      "related_questions": ["Kui palju lageraiet on viimase 10 aasta jooksul tehtud?", "Kas kaitsealadel raiutakse?"]
+    },
+    {
+      "id": "old-forest-protection",
+      "content_type": "misconception",
+      "intent": "protection_definition",
+      "title": "Vana mets ei ole ainult vanuse tõttu automaatselt kaitse all",
+      "question_aliases": [
+        "Kas vana mets on automaatselt kaitse all?",
+        "Kas saja-aastast metsa tohib raiuda?",
+        "Kas kõrge vanus tähendab looduskaitset?",
+        "Vana mets peab olema kaitstud"
+      ],
+      "keywords": ["vana mets", "automaatselt kaitse all", "vanus", "elupaik", "kaitseala", "piirang", "liik"],
+      "topics": ["vanus", "looduskaitse", "väärarusaam"],
+      "answer": {
+        "summary": "Puistu vanus on metsa tunnus, kuid õiguslik kaitse tuleneb kaitstavast objektist, vööndist, elupaigast, liigist või muust õiguslikust piirangust. Vana mets võib olla kõrge loodusväärtusega, kuid vanuse number üksi ei tõenda konkreetset kaitserežiimi.",
+        "methodology": "Kontrolli vanust Metsaregistrist ning kaitseobjekte ja piiranguid EELISe/Metsaportaali kihtidest; vajadusel küsib Keskkonnaamet lisateavet või seab menetluses tingimused.",
+        "limitations": [
+          "Osa liigiandmeid pole avalikus massiteabekanalis nähtav.",
+          "AI vastus ei asenda kaitse-eeskirja ega Keskkonnaameti otsust."
+        ],
+        "claim_type": "legal_and_ecological_definition"
+      },
+      "sources": [
+        {"source_id": "keskkonnaamet-protected-species", "locator": "kaitsealuse liigi piirangud ja andmete ligipääs"},
+        {"source_id": "kkp-metsaregister-data", "locator": "Natura 2000 ja inventeerimisandmete kihid"},
+        {"source_id": "forest-act", "locator": "kehtiv metsakasutuse raamistik"}
+      ],
+      "related_questions": ["Kui suur osa metsadest on kaitse all?", "Kas kaitsealadel raiutakse?"]
+    }
+  ]
+}

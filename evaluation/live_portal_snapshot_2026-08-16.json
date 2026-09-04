@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-08-16",
+  "portal_url": "https://keskkonnaportaal.ee/et/search",
+  "method": "Rendered public search plus direct public search requests. Counts record discoverability only, not relevance or correctness.",
+  "default_filter": "Viimased 5 aastat",
+  "queries": [
+    {"id":"FAQ-01","query":"Kui suur osa Eestist on kaetud metsaga?","default_result_count":10,"all_time_result_count":10,"relevant_document_id":"forest-area"},
+    {"id":"FAQ-02","query":"Kas Eestis raiutakse rohkem kui metsa juurde kasvab?","default_result_count":0,"all_time_result_count":1,"relevant_document_id":"harvest-versus-increment"},
+    {"id":"FAQ-03","query":"Miks annavad eri allikad erinevaid numbreid?","default_result_count":0,"all_time_result_count":0,"relevant_document_id":"why-numbers-differ"},
+    {"id":"FAQ-04","query":"Mis vahe on SMI-l ja metsaregistril?","default_result_count":0,"all_time_result_count":0,"relevant_document_id":"smi-versus-metsaregister"},
+    {"id":"FAQ-05","query":"Kuidas arvutatakse juurdekasvu?","default_result_count":2,"all_time_result_count":2,"relevant_document_id":"increment-method"},
+    {"id":"FAQ-06","query":"Miks ei võrdu tagavara raiutava puidukogusega?","default_result_count":0,"all_time_result_count":0,"relevant_document_id":"stock-versus-harvestable"},
+    {"id":"FAQ-07","query":"Kust leida konkreetse kinnistu metsaandmeid?","default_result_count":0,"all_time_result_count":0,"relevant_document_id":"property-forest-data"},
+    {"id":"FAQ-08","query":"Kui suur osa metsadest on kaitse all?","default_result_count":11,"all_time_result_count":13,"relevant_document_id":"protected-forest-share"},
+    {"id":"FAQ-09","query":"Miks erinevad RMK ja SMI numbrid?","default_result_count":0,"all_time_result_count":0,"relevant_document_id":"rmk-versus-smi"},
+    {"id":"FAQ-10","query":"Kuidas mõjutab kliimamuutus metsi?","default_result_count":0,"all_time_result_count":0,"relevant_document_id":"climate-impact"},
+    {"id":"FAQ-11","query":"Mis on metsateatis?","default_result_count":11,"all_time_result_count":13,"relevant_document_id":"forest-notice"},
+    {"id":"FAQ-12","query":"Kas Eestis saab mets otsa?","default_result_count":5,"all_time_result_count":6,"relevant_document_id":"will-forest-run-out"},
+    {"id":"FAQ-13","query":"Kas praegu raiutakse rohkem kui 20 aastat tagasi?","default_result_count":0,"all_time_result_count":0,"relevant_document_id":"harvest-over-time"},
+    {"id":"FAQ-14","query":"Kas meie metsad muutuvad nooremaks?","default_result_count":4,"all_time_result_count":4,"relevant_document_id":"forest-age-trend"},
+    {"id":"FAQ-15","query":"Kui palju lageraiet on viimase 10 aasta jooksul tehtud?","default_result_count":0,"all_time_result_count":1,"relevant_document_id":"clearcut-over-time"},
+    {"id":"FAQ-16","query":"Kas kuusk või mänd domineerib Eestis?","default_result_count":0,"all_time_result_count":0,"relevant_document_id":"pine-versus-spruce"},
+    {"id":"FAQ-17","query":"Kas kaitsealadel raiutakse?","default_result_count":1,"all_time_result_count":1,"relevant_document_id":"logging-in-protected-areas"},
+    {"id":"FAQ-18","query":"Kui palju metsa on minu koduvallas?","default_result_count":0,"all_time_result_count":0,"relevant_document_id":"municipality-forest-area"}
+  ]
+}

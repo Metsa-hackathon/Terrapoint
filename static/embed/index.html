@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="et">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <title>Metsaandmete tõlgendaja</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/static/embed/widget.css?v=2">
+  <script defer src="/static/embed/widget.js?v=2"></script>
+</head>
+<body>
+  <main class="widget" aria-labelledby="widget-title">
+    <header class="hero">
+      <div class="eyebrow">Terrapointi otsustusprototüüp</div>
+      <h1 id="widget-title">Küsi Eesti metsaandmete kohta</h1>
+      <p class="lead">Selgitame ametlikke näitajaid, metoodikat ja piiranguid lihtsas eesti keeles.</p>
+      <p class="review-note"><span aria-hidden="true">●</span> KAURi sisukinnitus on ootel</p>
+    </header>
+
+    <section class="ask-panel" aria-labelledby="ask-title">
+      <h2 id="ask-title" class="sr-only">Esita küsimus</h2>
+      <form id="question-form" novalidate>
+        <label for="question">Sinu küsimus</label>
+        <textarea id="question" name="question" rows="3" minlength="3" maxlength="500" required aria-describedby="question-help" placeholder="Näiteks: kas Eestis raiutakse rohkem kui metsa juurde kasvab?"></textarea>
+        <div class="form-footer">
+          <span id="question-help">Ära sisesta isikuandmeid. Kinnistu küsimuse puhul piisab katastritunnusest.</span>
+          <button id="submit-button" type="submit">
+            <span>Küsi</span>
+            <span class="button-arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+      </form>
+      <div class="examples" aria-labelledby="examples-title">
+        <h2 id="examples-title">Proovi näiteks</h2>
+        <div id="example-list" class="chip-list">
+          <button type="button" class="question-chip" data-question="Kui suur osa Eestist on kaetud metsaga?">Kui palju on Eestis metsa?</button>
+          <button type="button" class="question-chip" data-question="Mis vahe on SMI-l ja metsaregistril?">SMI või metsaregister?</button>
+          <button type="button" class="question-chip" data-question="Kui suur osa metsadest on kaitse all?">Kui palju metsa on kaitse all?</button>
+        </div>
+      </div>
+    </section>
+
+    <p id="request-status" class="request-status" role="status" aria-live="polite"></p>
+    <div id="error-message" class="error-message" role="alert" hidden></div>
+
+    <section id="result" class="result" aria-labelledby="result-title" aria-live="polite" hidden>
+      <div class="result-heading">
+        <div>
+          <p id="claim-type" class="claim-type"></p>
+          <h2 id="result-title" tabindex="-1">Vastus</h2>
+        </div>
+        <span id="confidence" class="confidence"></span>
+      </div>
+      <div id="answer-sections" class="answer-sections"></div>
+      <div id="clarification"></div>
+      <div id="actions" class="actions"></div>
+      <details id="limitations-panel" class="details-panel">
+        <summary>Piirangud ja ebakindlus</summary>
+        <ul id="limitations"></ul>
+      </details>
+      <section class="sources" aria-labelledby="sources-title">
+        <h3 id="sources-title">Kasutatud allikad</h3>
+        <ol id="source-list"></ol>
+      </section>
+      <section id="related-panel" class="related" aria-labelledby="related-title" hidden>
+        <h3 id="related-title">Seotud küsimused</h3>
+        <div id="related-list" class="chip-list"></div>
+      </section>
+    </section>
+
+    <footer>
+      <p>Vastus on prototüübi selgitus, mitte haldusotsus ega konkreetse kinnistu raieluba. Kontrolli olulist otsust alati viidatud ametlikust allikast.</p>
+    </footer>
+  </main>
+</body>
+</html>
