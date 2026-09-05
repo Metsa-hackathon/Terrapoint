@@ -958,40 +958,30 @@ def _subsidy_stand_age(stand: dict):
 
 
 def _chat_completion_payload(model: str, messages: list[dict]) -> dict:
-    """Build an OpenCode Zen Responses API payload (Muse Spark 1.3 Free).
+    """Build an OpenCode Zen chat-completions payload (DeepSeek V4 Flash Free).
 
-    Zen lists ``muse-spark-1.3-contributor-free`` as Responses-only
-    (``https://opencode.ai/zen/v1/responses``), so the legacy
-    ``/v1/chat/completions`` shape with ``messages``/``choices`` is no
-    longer sent. The public SSE contract (``{"content": piece}`` +
-    ``[DONE]``) is unchanged — the caller translates Responses deltas.
+    Zen serves ``deepseek-v4-flash-free`` through the OpenAI-compatible
+    ``https://opencode.ai/zen/v1/chat/completions`` endpoint, so the
+    ``messages``/``choices`` streaming shape is sent. The public SSE
+    contract (``{"content": piece}`` + ``[DONE]``) is unchanged.
     """
-    input_items = []
-    for message in messages or []:
-        role = message.get("role", "user")
-        if role not in ("system", "user", "assistant", "developer"):
-            role = "user"
-        text = message.get("content", "")
-        if not isinstance(text, str):
-            text = str(text)
-        input_items.append({
-            "role": role,
-            "content": [{"type": "input_text", "text": text}],
-        })
     return {
         "model": model,
-        "input": input_items,
+        "messages": messages,
         "stream": True,
-        "store": False,
         "temperature": 0.4,
+        "max_tokens": CHAT_MAX_TOKENS,
+        "reasoning_effort": "low",
         "top_p": 0.9,
-        "reasoning": {"effort": "low"},
-        "max_output_tokens": CHAT_MAX_TOKENS,
     }
 
 
 def _extract_responses_text(payload: dict) -> str:
-    """Extract user-visible text from a Responses `response.completed` event."""
+    """Extract user-visible text from a Responses `response.completed` event.
+
+    Defensive fallback only: the chat endpoint speaks chat-completions, but
+    a provider-side shape change must never silently drop a usable answer.
+    """
     if not isinstance(payload, dict):
         return ""
     direct = payload.get("output_text")
@@ -4253,9 +4243,10 @@ def build_system_prompt(data: dict) -> str:
 async def chat(request: Request):
     """AI metsanduse nõustaja.
 
-    Kasutab OpenCode Zen (Muse Spark 1.3 Free) AI-d Responses API kaudu, et
-    vastata küsimustele kinnistu andmete põhjal. Brauseri saadetud andmed
-    peavad vastama otsingu käigus serveri allkirjastatud tõendile.
+    Kasutab OpenCode Zen (DeepSeek V4 Flash Free) AI-d chat-completions
+    API kaudu, et vastata küsimustele kinnistu andmete põhjal. Brauseri
+    saadetud andmed peavad vastama otsingu käigus serveri allkirjastatud
+    tõendile.
     """
     try:
         boundary_error = _chat_boundary_error(request)
@@ -4318,8 +4309,14 @@ async def chat(request: Request):
         if not api_key:
             return json_response({"error": "AI teenus ei ole seadistatud. Võta ühendust administraatoriga."}, 500)
 
-        api_url = "https://opencode.ai/zen/v1/responses"
-        model = os.environ.get("OPENCODE_ZEN_MODEL", "muse-spark-1.3-contributor-free")
+        api_url = "https://opencode.ai/zen/v1/chat/completions"
+        model = os.environ.get("OPENCODE_ZEN_MODEL", "deepseek-v4-flash-free")
+        if "muse-spark" in model:
+            # Verceli keskkonnamuutuja võib veel viidata eelmisele
+            # Responses-põhisele mudelile, mida see endpoint ei teeninda.
+            # Kukkumise asemel kasuta teadaolevalt töötavat mudelit.
+            print(f"[chat] ignoring unsupported model {model!r}, using deepseek-v4-flash-free", flush=True)
+            model = "deepseek-v4-flash-free"
 
         async def stream_response():
             saw_content = False
@@ -4337,6 +4334,11 @@ async def chat(request: Request):
                         json=_chat_completion_payload(model, messages),
                     ) as resp:
                         if resp.status_code != 200:
+                            try:
+                                error_snippet = (await resp.aread())[:500].decode("utf-8", "replace")
+                            except Exception:
+                                error_snippet = "<unreadable>"
+                            print(f"[chat] upstream {resp.status_code} model={model} body={error_snippet}", flush=True)
                             if resp.status_code == 400:
                                 yield "data: " + orjson.dumps({"error": "Küsimus sisaldas mittesobivat sisendit. Palun sõnasta ümber."}).decode() + "\n\n"
                             elif resp.status_code in (401, 403):
@@ -4348,10 +4350,6 @@ async def chat(request: Request):
                             return
                         async for line in resp.aiter_lines():
                             line = line.strip()
-                            # Zen Responses SSE sends `event:` + `data:` pairs;
-                            # only the data line carries the JSON payload.
-                            if line.startswith("event:"):
-                                continue
                             if not line.startswith("data: "):
                                 continue
                             data_str = line[6:]
@@ -4361,38 +4359,44 @@ async def chat(request: Request):
                                 chunk = orjson.loads(data_str)
                             except orjson.JSONDecodeError:
                                 continue
-                            # Responses API: only output-text deltas are
+                            # Chat-completions shape: only delta.content is
                             # user-visible. Reasoning / refusal / status events
                             # stay server-side and are never forwarded.
                             content_piece = ""
-                            chunk_type = chunk.get("type", "")
-                            if chunk_type == "response.output_text.delta":
-                                delta_text = chunk.get("delta", "")
-                                if isinstance(delta_text, str) and delta_text:
-                                    content_piece = delta_text
-                            elif chunk_type in ("response.completed", "response.output_text.done", "response.done"):
-                                # Final event without prior deltas (e.g. short
-                                # answer): extract once, then keep streaming.
-                                if not saw_content:
-                                    completed_text = _extract_responses_text(chunk)
-                                    if completed_text:
-                                        content_piece = completed_text
+                            choices = chunk.get("choices") or []
+                            if choices:
+                                delta = choices[0].get("delta", {})
+                                # Provider reasoning is internal model
+                                # metadata. Do not expose it through the
+                                # public SSE API, even if the current
+                                # browser happens not to render it.
+                                if delta.get("reasoning_content"):
+                                    continue
+                                delta_content = delta.get("content", "")
+                                if isinstance(delta_content, str) and delta_content:
+                                    content_piece = delta_content
+                                else:
+                                    continue
                             else:
-                                # Legacy chat-completions shape (kept only as a
-                                # defensive fallback, never emitted by Zen for
-                                # Muse Spark): translate delta.content.
-                                choices = chunk.get("choices") or []
-                                if choices:
-                                    delta = choices[0].get("delta", {})
-                                    # Provider reasoning is internal model
-                                    # metadata. Do not expose it through the
-                                    # public SSE API, even if the current
-                                    # browser happens not to render it.
-                                    if delta.get("reasoning_content"):
+                                # Defensive fallback for a Responses-shaped
+                                # event (never emitted by Zen for DeepSeek):
+                                # translate output-text deltas.
+                                chunk_type = chunk.get("type", "")
+                                if chunk_type == "response.output_text.delta":
+                                    delta_text = chunk.get("delta", "")
+                                    if isinstance(delta_text, str) and delta_text:
+                                        content_piece = delta_text
+                                    else:
                                         continue
-                                    delta_content = delta.get("content", "")
-                                    if isinstance(delta_content, str) and delta_content:
-                                        content_piece = delta_content
+                                elif chunk_type in ("response.completed", "response.output_text.done", "response.done"):
+                                    # Final event without prior deltas (e.g. short
+                                    # answer): extract once, then keep streaming.
+                                    if not saw_content:
+                                        completed_text = _extract_responses_text(chunk)
+                                        if completed_text:
+                                            content_piece = completed_text
+                                        else:
+                                            continue
                                     else:
                                         continue
                                 else:

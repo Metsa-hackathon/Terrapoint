@@ -102,13 +102,12 @@ class SecurityBoundaryTests(unittest.TestCase):
     def test_chat_completion_payload_keeps_large_streaming_budget(self):
         payload = _chat_completion_payload("test-model", [{"role": "user", "content": "Kas raiuda?"}])
 
-        # OpenCode Zen Muse Spark uses the Responses API shape.
+        # OpenCode Zen DeepSeek uses the OpenAI-compatible chat-completions shape.
         self.assertTrue(payload["stream"])
-        self.assertFalse(payload.get("store", True))
-        self.assertGreaterEqual(payload["max_output_tokens"], 8192)
-        self.assertEqual(payload["reasoning"]["effort"], "low")
+        self.assertGreaterEqual(payload["max_tokens"], 8192)
+        self.assertEqual(payload["reasoning_effort"], "low")
         self.assertEqual(payload["model"], "test-model")
-        self.assertEqual(payload["input"][0]["role"], "user")
+        self.assertEqual(payload["messages"][0]["role"], "user")
 
     def test_ai_analysis_allows_optional_source_outages(self):
         data = {
