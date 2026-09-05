@@ -43,13 +43,14 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 - **Staatiliste varade maht ja serveerimine** — kasutamata fotod eemaldati,
   kuus töölauavaate puupilti asendati väiksemate WebP-failidega ning WebP/WOFF2
   vastused saavad Verceli Python-käituskeskkonnas õige MIME-tüübi.
-- **AI analüüs kasutab jälle DeepSeek V4 Flash Free mudelit** — ebaõnnestunud
+- **AI analüüs kasutab jälle DeepSeek V4 Flash mudelit** — ebaõnnestunud
   Muse Spark 1.3 (Responses API) katse asendati teadaolevalt töötava
-  OpenCode Zen `/v1/chat/completions` otspunkti ja `deepseek-v4-flash-free`
-  mudeliga. Aegunud `muse-spark` keskkonnaväärtus asendatakse automaatselt,
-  et vana Verceli seadistus vestlust ei lõhuks. Teenusepoolse vea korral
-  logitakse nüüd teenusepakkuja olekukood ja vastuse algus, et järgmine
-  rike oleks Verceli logidest kohe diagnoositav.
+  OpenCode Zen `/v1/chat/completions` otspunkti ja `deepseek-v4-flash`
+  mudeliga (vana `deepseek-v4-flash-free` ID-d Zen enam ei tunne).
+  Aegunud mudelinimed asendatakse koodis automaatselt, et vana Verceli
+  seadistus vestlust ei lõhuks. Teenusepoolse vea korral logitakse nüüd
+  teenusepakkuja olekukood ja vastuse algus, et järgmine rike oleks
+  Verceli logidest kohe diagnoositav.
 
 ## [Määramata] - 2026-07-23
 

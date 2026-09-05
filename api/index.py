@@ -126,6 +126,15 @@ CHAT_SNAPSHOT_TTL_SECONDS = 30 * 60
 CHAT_SNAPSHOT_CLOCK_SKEW_SECONDS = 60
 CHAT_SNAPSHOT_MAX_CHARS = 2048
 CHAT_MAX_TOKENS = int(os.environ.get("OPENCODE_ZEN_MAX_TOKENS", "8192"))
+CHAT_MODEL_DEFAULT = "deepseek-v4-flash"
+# Zeni mudelinimed on aja jooksul muutunud (`deepseek-v4-flash-free` ja
+# `muse-spark-1.3-contributor-free` enam ei eksisteeri). Tundmatu või
+# aegunud väärtus asendatakse teadaolevalt töötavaga, et vana Verceli
+# seadistus vestlust ei lõhuks.
+CHAT_MODEL_LEGACY_IDS = frozenset({
+    "deepseek-v4-flash-free",
+    "muse-spark-1.3-contributor-free",
+})
 CHAT_RATE_LIMIT = 8
 CHAT_RATE_WINDOW_SECONDS = 60
 FORESTRY_SEARCH_RATE_LIMIT = 30
@@ -955,6 +964,15 @@ def _subsidy_stand_age(stand: dict):
         except (TypeError, ValueError):
             continue
     return None
+
+
+def _resolve_chat_model(raw: str | None) -> str:
+    """Return a Zen chat-completions model id, mapping stale ids forward."""
+    model = (raw or "").strip() or CHAT_MODEL_DEFAULT
+    if model in CHAT_MODEL_LEGACY_IDS or "muse-spark" in model:
+        print(f"[chat] mapping stale model {model!r} to {CHAT_MODEL_DEFAULT!r}", flush=True)
+        return CHAT_MODEL_DEFAULT
+    return model
 
 
 def _chat_completion_payload(model: str, messages: list[dict]) -> dict:
@@ -4310,13 +4328,7 @@ async def chat(request: Request):
             return json_response({"error": "AI teenus ei ole seadistatud. Võta ühendust administraatoriga."}, 500)
 
         api_url = "https://opencode.ai/zen/v1/chat/completions"
-        model = os.environ.get("OPENCODE_ZEN_MODEL", "deepseek-v4-flash-free")
-        if "muse-spark" in model:
-            # Verceli keskkonnamuutuja võib veel viidata eelmisele
-            # Responses-põhisele mudelile, mida see endpoint ei teeninda.
-            # Kukkumise asemel kasuta teadaolevalt töötavat mudelit.
-            print(f"[chat] ignoring unsupported model {model!r}, using deepseek-v4-flash-free", flush=True)
-            model = "deepseek-v4-flash-free"
+        model = _resolve_chat_model(os.environ.get("OPENCODE_ZEN_MODEL"))
 
         async def stream_response():
             saw_content = False

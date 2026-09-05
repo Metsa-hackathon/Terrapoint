@@ -18,6 +18,7 @@ from api.index import (
     ChatRequest,
     app,
     _chat_completion_payload,
+    _resolve_chat_model,
     _check_rate_limit,
     _ai_analysis_available,
     _rate_limit_buckets,
@@ -108,6 +109,15 @@ class SecurityBoundaryTests(unittest.TestCase):
         self.assertEqual(payload["reasoning_effort"], "low")
         self.assertEqual(payload["model"], "test-model")
         self.assertEqual(payload["messages"][0]["role"], "user")
+
+    def test_chat_model_mapping_forwards_stale_ids(self):
+        self.assertEqual(_resolve_chat_model(None), "deepseek-v4-flash")
+        self.assertEqual(_resolve_chat_model(""), "deepseek-v4-flash")
+        self.assertEqual(_resolve_chat_model("deepseek-v4-flash-free"), "deepseek-v4-flash")
+        self.assertEqual(
+            _resolve_chat_model("muse-spark-1.3-contributor-free"), "deepseek-v4-flash"
+        )
+        self.assertEqual(_resolve_chat_model("deepseek-v4-flash"), "deepseek-v4-flash")
 
     def test_ai_analysis_allows_optional_source_outages(self):
         data = {
