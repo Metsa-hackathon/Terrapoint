@@ -975,10 +975,24 @@ def _resolve_chat_model(raw: str | None) -> str:
     return model
 
 
-def _chat_completion_payload(model: str, messages: list[dict]) -> dict:
-    """Build an OpenCode Zen chat-completions payload (DeepSeek V4 Flash Free).
+def _chat_upstream_error(status_code: int, body_snippet: str) -> str:
+    """Map a Zen failure to a user-safe Estonian message (no internals)."""
+    lowered = (body_snippet or "").lower()
+    if "creditserror" in lowered or "insufficient balance" in lowered:
+        return "AI teenuse krediit on otsas. Võta ühendust administraatoriga."
+    if status_code == 400:
+        return "Küsimus sisaldas mittesobivat sisendit. Palun sõnasta ümber."
+    if status_code in (401, 403):
+        return "AI teenuse autoriseerimine ebaõnnestus. Võta ühendust administraatoriga."
+    if status_code == 429:
+        return "AI teenus on hõivatud. Oota hetk ja proovi uuesti."
+    return "AI teenusel esines viga. Proovi mõne hetke pärast uuesti."
 
-    Zen serves ``deepseek-v4-flash-free`` through the OpenAI-compatible
+
+def _chat_completion_payload(model: str, messages: list[dict]) -> dict:
+    """Build an OpenCode Zen chat-completions payload (DeepSeek V4 Flash).
+
+    Zen serves ``deepseek-v4-flash`` through the OpenAI-compatible
     ``https://opencode.ai/zen/v1/chat/completions`` endpoint, so the
     ``messages``/``choices`` streaming shape is sent. The public SSE
     contract (``{"content": piece}`` + ``[DONE]``) is unchanged.
@@ -4351,14 +4365,7 @@ async def chat(request: Request):
                             except Exception:
                                 error_snippet = "<unreadable>"
                             print(f"[chat] upstream {resp.status_code} model={model} body={error_snippet}", flush=True)
-                            if resp.status_code == 400:
-                                yield "data: " + orjson.dumps({"error": "Küsimus sisaldas mittesobivat sisendit. Palun sõnasta ümber."}).decode() + "\n\n"
-                            elif resp.status_code in (401, 403):
-                                yield "data: " + orjson.dumps({"error": "AI teenuse autoriseerimine ebaõnnestus. Võta ühendust administraatoriga."}).decode() + "\n\n"
-                            elif resp.status_code == 429:
-                                yield "data: " + orjson.dumps({"error": "AI teenus on hõivatud. Oota hetk ja proovi uuesti."}).decode() + "\n\n"
-                            else:
-                                yield "data: " + orjson.dumps({"error": "AI teenusel esines viga. Proovi mõne hetke pärast uuesti."}).decode() + "\n\n"
+                            yield "data: " + orjson.dumps({"error": _chat_upstream_error(resp.status_code, error_snippet)}).decode() + "\n\n"
                             return
                         async for line in resp.aiter_lines():
                             line = line.strip()

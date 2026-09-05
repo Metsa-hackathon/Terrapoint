@@ -18,6 +18,7 @@ from api.index import (
     ChatRequest,
     app,
     _chat_completion_payload,
+    _chat_upstream_error,
     _resolve_chat_model,
     _check_rate_limit,
     _ai_analysis_available,
@@ -118,6 +119,25 @@ class SecurityBoundaryTests(unittest.TestCase):
             _resolve_chat_model("muse-spark-1.3-contributor-free"), "deepseek-v4-flash"
         )
         self.assertEqual(_resolve_chat_model("deepseek-v4-flash"), "deepseek-v4-flash")
+
+    def test_chat_upstream_error_mapping_stays_user_safe(self):
+        self.assertEqual(
+            _chat_upstream_error(401, '{"type":"error","error":{"type":"CreditsError","message":"Insufficient balance."}}'),
+            "AI teenuse krediit on otsas. Võta ühendust administraatoriga.",
+        )
+        self.assertEqual(
+            _chat_upstream_error(401, "nope"),
+            "AI teenuse autoriseerimine ebaõnnestus. Võta ühendust administraatoriga.",
+        )
+        self.assertEqual(
+            _chat_upstream_error(400, ""),
+            "Küsimus sisaldas mittesobivat sisendit. Palun sõnasta ümber.",
+        )
+        self.assertEqual(
+            _chat_upstream_error(429, ""),
+            "AI teenus on hõivatud. Oota hetk ja proovi uuesti.",
+        )
+        self.assertNotIn("CreditsError", _chat_upstream_error(401, "CreditsError x"))
 
     def test_ai_analysis_allows_optional_source_outages(self):
         data = {
