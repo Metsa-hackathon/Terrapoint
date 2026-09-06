@@ -967,10 +967,10 @@ def _subsidy_stand_age(stand: dict):
 
 
 def _resolve_chat_model(raw: str | None) -> str:
-    """Return a Zen chat-completions model id, mapping stale ids forward."""
+    """Return a Zen Responses model id, mapping retired ids forward."""
     model = (raw or "").strip() or CHAT_MODEL_DEFAULT
-    if model in CHAT_MODEL_LEGACY_IDS or "muse-spark" in model:
-        print(f"[chat] mapping stale model {model!r} to {CHAT_MODEL_DEFAULT!r}", flush=True)
+    if model in CHAT_MODEL_LEGACY_IDS:
+        print(f"[chat] mapping retired model {model!r} to {CHAT_MODEL_DEFAULT!r}", flush=True)
         return CHAT_MODEL_DEFAULT
     return model
 
