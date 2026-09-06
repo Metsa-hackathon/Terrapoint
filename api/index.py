@@ -126,13 +126,12 @@ CHAT_SNAPSHOT_TTL_SECONDS = 30 * 60
 CHAT_SNAPSHOT_CLOCK_SKEW_SECONDS = 60
 CHAT_SNAPSHOT_MAX_CHARS = 2048
 CHAT_MAX_TOKENS = int(os.environ.get("OPENCODE_ZEN_MAX_TOKENS", "8192"))
-CHAT_MODEL_DEFAULT = "deepseek-v4-flash"
-# Zeni mudelinimed on aja jooksul muutunud (`deepseek-v4-flash-free` ja
-# `muse-spark-1.3-contributor-free` enam ei eksisteeri). Tundmatu või
-# aegunud väärtus asendatakse teadaolevalt töötavaga, et vana Verceli
-# seadistus vestlust ei lõhuks.
+CHAT_MODEL_DEFAULT = "deepseek-v4-flash-free"
+# Zeni mudelinimed on aja jooksul muutunud. Responses-põhised
+# `muse-spark` ID-d ei tööta selle chat-completions otspunktiga,
+# mistõttu need asendatakse DeepSeeki tasuta variandiga, et vana
+# Verceli seadistus vestlust ei lõhuks.
 CHAT_MODEL_LEGACY_IDS = frozenset({
-    "deepseek-v4-flash-free",
     "muse-spark-1.3-contributor-free",
 })
 CHAT_RATE_LIMIT = 8
@@ -980,6 +979,8 @@ def _chat_upstream_error(status_code: int, body_snippet: str) -> str:
     lowered = (body_snippet or "").lower()
     if "creditserror" in lowered or "insufficient balance" in lowered:
         return "AI teenuse krediit on otsas. Võta ühendust administraatoriga."
+    if "model is unavailable" in lowered:
+        return "AI mudel ei ole hetkel saadaval. Proovi mõne hetke pärast uuesti."
     if status_code == 400:
         return "Küsimus sisaldas mittesobivat sisendit. Palun sõnasta ümber."
     if status_code in (401, 403):
@@ -990,9 +991,9 @@ def _chat_upstream_error(status_code: int, body_snippet: str) -> str:
 
 
 def _chat_completion_payload(model: str, messages: list[dict]) -> dict:
-    """Build an OpenCode Zen chat-completions payload (DeepSeek V4 Flash).
+    """Build an OpenCode Zen chat-completions payload (DeepSeek V4 Flash Free).
 
-    Zen serves ``deepseek-v4-flash`` through the OpenAI-compatible
+    Zen serves ``deepseek-v4-flash-free`` through the OpenAI-compatible
     ``https://opencode.ai/zen/v1/chat/completions`` endpoint, so the
     ``messages``/``choices`` streaming shape is sent. The public SSE
     contract (``{"content": piece}`` + ``[DONE]``) is unchanged.

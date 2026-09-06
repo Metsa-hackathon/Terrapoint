@@ -112,11 +112,11 @@ class SecurityBoundaryTests(unittest.TestCase):
         self.assertEqual(payload["messages"][0]["role"], "user")
 
     def test_chat_model_mapping_forwards_stale_ids(self):
-        self.assertEqual(_resolve_chat_model(None), "deepseek-v4-flash")
-        self.assertEqual(_resolve_chat_model(""), "deepseek-v4-flash")
-        self.assertEqual(_resolve_chat_model("deepseek-v4-flash-free"), "deepseek-v4-flash")
+        self.assertEqual(_resolve_chat_model(None), "deepseek-v4-flash-free")
+        self.assertEqual(_resolve_chat_model(""), "deepseek-v4-flash-free")
+        self.assertEqual(_resolve_chat_model("deepseek-v4-flash-free"), "deepseek-v4-flash-free")
         self.assertEqual(
-            _resolve_chat_model("muse-spark-1.3-contributor-free"), "deepseek-v4-flash"
+            _resolve_chat_model("muse-spark-1.3-contributor-free"), "deepseek-v4-flash-free"
         )
         self.assertEqual(_resolve_chat_model("deepseek-v4-flash"), "deepseek-v4-flash")
 
@@ -138,6 +138,10 @@ class SecurityBoundaryTests(unittest.TestCase):
             "AI teenus on hõivatud. Oota hetk ja proovi uuesti.",
         )
         self.assertNotIn("CreditsError", _chat_upstream_error(401, "CreditsError x"))
+        self.assertEqual(
+            _chat_upstream_error(400, '{"message":"Model is unavailable."}'),
+            "AI mudel ei ole hetkel saadaval. Proovi mõne hetke pärast uuesti.",
+        )
 
     def test_ai_analysis_allows_optional_source_outages(self):
         data = {
