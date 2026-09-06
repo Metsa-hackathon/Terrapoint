@@ -745,6 +745,8 @@ console.log(JSON.stringify({{missing, zero:target.innerHTML}}));
             function formatNum(value) {{ return String(value); }}
             function formatDateEt(value) {{ return value; }}
             function hasFreshChatSnapshot() {{ throw new Error('snapshot check must be bypassed'); }}
+            globalThis.followupCalls = 0;
+            function aiRenderFollowups(message) {{ globalThis.followupCalls++; }}
             {resolver}
             {clear_input}
             {queue_wait}
@@ -796,7 +798,8 @@ console.log(JSON.stringify({{missing, zero:target.innerHTML}}));
                 failureHistory: aiChatHistory.length,
                 modelBubbleHtml:modelBubble.innerHTML,
                 localBubbleHtml:localBubble.innerHTML,
-                fetchCount
+                fetchCount,
+                followups: globalThis.followupCalls
               }}));
             }})();
         """
@@ -813,6 +816,7 @@ console.log(JSON.stringify({{missing, zero:target.innerHTML}}));
         self.assertIn("AI ebaõnnestus", state["modelBubbleHtml"])
         self.assertIn("Kinnistuandmetest", state["localBubbleHtml"])
         self.assertEqual(state["fetchCount"], 0)
+        self.assertEqual(state["followups"], 3)
 
     def test_dashboard_uses_desktop_space_without_widening_prose_sections(self):
         self.assertIn("--dashboard-max-w: min(calc(100vw - 48px), 1600px);", STYLE_CSS)

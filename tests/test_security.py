@@ -104,21 +104,30 @@ class SecurityBoundaryTests(unittest.TestCase):
     def test_chat_completion_payload_keeps_large_streaming_budget(self):
         payload = _chat_completion_payload("test-model", [{"role": "user", "content": "Kas raiuda?"}])
 
-        # OpenCode Zen DeepSeek uses the OpenAI-compatible chat-completions shape.
+        # OpenCode Zen Muse Spark uses the Responses API shape with a
+        # minimal, live-verified parameter set (no reasoning extras).
         self.assertTrue(payload["stream"])
-        self.assertGreaterEqual(payload["max_tokens"], 8192)
-        self.assertEqual(payload["reasoning_effort"], "low")
+        self.assertFalse(payload.get("store", True))
+        self.assertGreaterEqual(payload["max_output_tokens"], 8192)
+        self.assertNotIn("reasoning", payload)
         self.assertEqual(payload["model"], "test-model")
-        self.assertEqual(payload["messages"][0]["role"], "user")
+        self.assertEqual(payload["input"][0]["role"], "user")
+        self.assertEqual(payload["input"][0]["content"], "Kas raiuda?")
 
     def test_chat_model_mapping_forwards_stale_ids(self):
-        self.assertEqual(_resolve_chat_model(None), "deepseek-v4-flash-free")
-        self.assertEqual(_resolve_chat_model(""), "deepseek-v4-flash-free")
-        self.assertEqual(_resolve_chat_model("deepseek-v4-flash-free"), "deepseek-v4-flash-free")
+        self.assertEqual(_resolve_chat_model(None), "muse-spark-1.3-contributor-free")
+        self.assertEqual(_resolve_chat_model(""), "muse-spark-1.3-contributor-free")
         self.assertEqual(
-            _resolve_chat_model("muse-spark-1.3-contributor-free"), "deepseek-v4-flash-free"
+            _resolve_chat_model("deepseek-v4-flash-free"), "muse-spark-1.3-contributor-free"
         )
-        self.assertEqual(_resolve_chat_model("deepseek-v4-flash"), "deepseek-v4-flash")
+        self.assertEqual(
+            _resolve_chat_model("deepseek-v4-flash"), "muse-spark-1.3-contributor-free"
+        )
+        self.assertEqual(
+            _resolve_chat_model("muse-spark-1.3-contributor-free"),
+            "muse-spark-1.3-contributor-free",
+        )
+        self.assertEqual(_resolve_chat_model("some-future-model"), "some-future-model")
 
     def test_chat_upstream_error_mapping_stays_user_safe(self):
         self.assertEqual(
@@ -140,6 +149,10 @@ class SecurityBoundaryTests(unittest.TestCase):
         self.assertNotIn("CreditsError", _chat_upstream_error(401, "CreditsError x"))
         self.assertEqual(
             _chat_upstream_error(400, '{"message":"Model is unavailable."}'),
+            "AI mudel ei ole hetkel saadaval. Proovi mõne hetke pärast uuesti.",
+        )
+        self.assertEqual(
+            _chat_upstream_error(400, '{"message":"Model foo is not supported"}'),
             "AI mudel ei ole hetkel saadaval. Proovi mõne hetke pärast uuesti.",
         )
 

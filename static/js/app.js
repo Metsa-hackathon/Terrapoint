@@ -797,7 +797,51 @@
             && ageMs < aiSnapshotReceipt.ttlMs - 30000;
     }
 
+    var AI_FOLLOWUP_QUESTIONS = [
+        'Millised on selle kinnistu suurimad riskid?',
+        'Millised toetused võiksid siia sobida?',
+        'Mida peaksin järgmisena tegema?',
+        'Kui palju puitu siin hinnanguliselt on?',
+        'Millised looduskaitse piirangud siin kehtivad?'
+    ];
+    var aiFollowupCursor = 0;
+
+    function aiClearFollowups() {
+        var container = document.getElementById('ai-chat-messages');
+        if (!container) return;
+        var old = container.querySelectorAll('.ai-followups');
+        for (var i = 0; i < old.length; i++) old[i].remove();
+    }
+
+    function aiRenderFollowups(lastUserMessage) {
+        var container = document.getElementById('ai-chat-messages');
+        if (!container || !aiCurrentKataster) return;
+        aiClearFollowups();
+        var norm = String(lastUserMessage || '').trim().toLocaleLowerCase('et-EE');
+        var picks = [];
+        for (var step = 0; step < AI_FOLLOWUP_QUESTIONS.length && picks.length < 3; step++) {
+            var candidate = AI_FOLLOWUP_QUESTIONS[(aiFollowupCursor + step) % AI_FOLLOWUP_QUESTIONS.length];
+            if (norm && candidate.toLocaleLowerCase('et-EE') === norm) continue;
+            picks.push(candidate);
+        }
+        aiFollowupCursor = (aiFollowupCursor + picks.length) % AI_FOLLOWUP_QUESTIONS.length;
+        if (!picks.length) return;
+        var row = document.createElement('div');
+        row.className = 'ai-followups';
+        picks.forEach(function(question) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'ai-followup-btn';
+            btn.textContent = question;
+            btn.addEventListener('click', function() { aiSendMessage(question); });
+            row.appendChild(btn);
+        });
+        container.appendChild(row);
+        aiAutoScroll();
+    }
+
     function aiAppendMessage(role, content) {
+        if (role === 'user') aiClearFollowups();
         var container = document.getElementById('ai-chat-messages');
         var welcome = container.querySelector('.ai-welcome');
         if (welcome) welcome.remove();
@@ -1200,6 +1244,7 @@
             if (aiChatHistory.length > 20) aiChatHistory = aiChatHistory.slice(-20);
             document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + '. Küsi lisaküsimusi';
             aiSetStatus('Vastus kinnistuandmetest on valmis.');
+            aiRenderFollowups(message);
             if (queuedEntry) aiDrainQueue();
             return;
         }
@@ -1406,6 +1451,7 @@
                 if (aiChatHistory.length > 20) aiChatHistory = aiChatHistory.slice(-20);
                 document.querySelector('.ai-chat-subtitle').textContent = 'Kataster ' + aiCurrentKataster + '. Küsi lisaküsimusi';
                 aiSetStatus('AI vastus on valmis.');
+                aiRenderFollowups(message);
                 streamSucceeded = true;
             }
 

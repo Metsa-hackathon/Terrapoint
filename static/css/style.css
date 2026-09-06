@@ -2714,6 +2714,25 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     margin: 0;
     max-width: 320px;
 }
+.ai-followups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 2px 0 2px 32px;
+}
+.ai-followup-btn {
+    padding: 7px 13px;
+    background: var(--white);
+    color: var(--blue-900);
+    border: 1px solid var(--blue-500);
+    border-radius: 999px;
+    font-family: var(--ff-sans);
+    font-size: var(--ai-chat-font-size);
+    cursor: pointer;
+    transition: background var(--t-fast) var(--ease);
+    min-height: 32px;
+}
+.ai-followup-btn:hover { background: var(--paper-2); }
 
 .ai-message {
     display: flex;
