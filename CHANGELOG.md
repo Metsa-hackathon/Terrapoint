@@ -6,6 +6,30 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > domain). `terrapoint.vercel.app` on sama projekti alias — push master
 > branchi uuendab mõlemat korraga.
 
+## [Määramata] - 2026-10-06
+
+### Fixed
+- **Tootmise otsingu ja kaardikonteksti 503-tõrge kõrvaldatud** — home-serveri
+  UFW reegel lubas Terrapointi sillale ainult Traefiku vana aadressi
+  `172.20.0.5`, kuid `coolify-proxy` tegelik aadress oli `172.20.0.4`.
+  Püsiv tulemüürireegel uuendati tegelikule aadressile ning vana luba eemaldati.
+  Luba piirdub liidesega `br-debe31940c26`, sihtaadressiga `172.20.0.1`
+  ja TCP-pordiga `8001`; API ja teisi teenuseid ei taaskäivitatud.
+  Avalikul saidil kontrolliti katastri `78404:409:0113` andmeid ning kaardikihte.
+
+### Operations
+- Kui konteineri taasloomisel muutub proxy IP, tuleb piiratud UFW reegel
+  uuesti tegeliku aadressiga kooskõlla viia. Hostist õnnestuv
+  `/api/health` päring ei tõenda proxy ligipääsu: kontrollida tuleb ka
+  `docker exec coolify-proxy wget -S -O - -T 5 http://172.20.0.1:8001/api/health`
+  ning avalikku otsinguvoogu.
+- **AI-teenuse eraldi tõrge jääb lahendamata** — tootmise OpenCode Zen võti
+  sai teenusepakkujalt `401 Invalid API key`; olemasoleva asendusvõtmega
+  Muse Sparki päring sai `403 FreeTierError`, sest tasuta paketti lubatakse
+  kasutada ainult OpenCode'i sees. AI taastamine vajab veebirakenduses
+  kasutamiseks lubatud teenust ja kehtivat autentimist; võtmeid ei logitud
+  ega tasuta paketi piirangust mööda mindud.
+
 ## [Määramata] - 2026-07-27
 
 ### Added
