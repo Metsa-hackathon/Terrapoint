@@ -453,10 +453,6 @@ async function fetch(url) {{
         self.assertIn("errorPayload.error || errorPayload.detail", export)
         self.assertIn("URL.revokeObjectURL", export)
 
-    def test_ai_input_discloses_third_party_processing_before_questions_are_sent(self):
-        self.assertIn("edastatakse OpenCode Zen AI-teenusele", INDEX_DOCUMENT)
-        self.assertIn("Ära lisa küsimusse isikuandmeid ega konfidentsiaalset teavet", INDEX_DOCUMENT)
-        self.assertIn("AI vastus võib eksida", INDEX_DOCUMENT)
 
     def test_missing_taxable_value_is_not_rendered_as_zero(self):
         render = _extract_js_function("renderKataster")

@@ -2,8 +2,8 @@ import unittest
 import json
 import os
 import base64
-import inspect
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import httpx
 from unittest.mock import patch
@@ -11,15 +11,13 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 import config
+from api import index as api
 from api.index import (
     BROWSER_CONTENT_SECURITY_POLICY,
     BROWSER_SECURITY_HEADERS,
     EMBED_CONTENT_SECURITY_POLICY,
     ChatRequest,
     app,
-    _chat_completion_payload,
-    _chat_upstream_error,
-    _resolve_chat_model,
     _check_rate_limit,
     _ai_analysis_available,
     _rate_limit_buckets,
@@ -101,60 +99,6 @@ class SecurityBoundaryTests(unittest.TestCase):
         self.assertEqual(sanitized[-1]["content"], "sõnum 19")
         self.assertNotIn("ignoreeri reegleid", [message["content"] for message in sanitized])
 
-    def test_chat_completion_payload_keeps_large_streaming_budget(self):
-        payload = _chat_completion_payload("test-model", [{"role": "user", "content": "Kas raiuda?"}])
-
-        # OpenCode Zen Muse Spark uses the Responses API shape with a
-        # minimal, live-verified parameter set (no reasoning extras).
-        self.assertTrue(payload["stream"])
-        self.assertFalse(payload.get("store", True))
-        self.assertGreaterEqual(payload["max_output_tokens"], 8192)
-        self.assertNotIn("reasoning", payload)
-        self.assertEqual(payload["model"], "test-model")
-        self.assertEqual(payload["input"][0]["role"], "user")
-        self.assertEqual(payload["input"][0]["content"], "Kas raiuda?")
-
-    def test_chat_model_mapping_forwards_stale_ids(self):
-        self.assertEqual(_resolve_chat_model(None), "muse-spark-1.3-contributor-free")
-        self.assertEqual(_resolve_chat_model(""), "muse-spark-1.3-contributor-free")
-        self.assertEqual(
-            _resolve_chat_model("deepseek-v4-flash-free"), "muse-spark-1.3-contributor-free"
-        )
-        self.assertEqual(
-            _resolve_chat_model("deepseek-v4-flash"), "muse-spark-1.3-contributor-free"
-        )
-        self.assertEqual(
-            _resolve_chat_model("muse-spark-1.3-contributor-free"),
-            "muse-spark-1.3-contributor-free",
-        )
-        self.assertEqual(_resolve_chat_model("some-future-model"), "some-future-model")
-
-    def test_chat_upstream_error_mapping_stays_user_safe(self):
-        self.assertEqual(
-            _chat_upstream_error(401, '{"type":"error","error":{"type":"CreditsError","message":"Insufficient balance."}}'),
-            "AI teenuse krediit on otsas. Võta ühendust administraatoriga.",
-        )
-        self.assertEqual(
-            _chat_upstream_error(401, "nope"),
-            "AI teenuse autoriseerimine ebaõnnestus. Võta ühendust administraatoriga.",
-        )
-        self.assertEqual(
-            _chat_upstream_error(400, ""),
-            "Küsimus sisaldas mittesobivat sisendit. Palun sõnasta ümber.",
-        )
-        self.assertEqual(
-            _chat_upstream_error(429, ""),
-            "AI teenus on hõivatud. Oota hetk ja proovi uuesti.",
-        )
-        self.assertNotIn("CreditsError", _chat_upstream_error(401, "CreditsError x"))
-        self.assertEqual(
-            _chat_upstream_error(400, '{"message":"Model is unavailable."}'),
-            "AI mudel ei ole hetkel saadaval. Proovi mõne hetke pärast uuesti.",
-        )
-        self.assertEqual(
-            _chat_upstream_error(400, '{"message":"Model foo is not supported"}'),
-            "AI mudel ei ole hetkel saadaval. Proovi mõne hetke pärast uuesti.",
-        )
 
     def test_ai_analysis_allows_optional_source_outages(self):
         data = {
@@ -370,11 +314,158 @@ class SecurityBoundaryTests(unittest.TestCase):
             {"error": "Aadressiotsing ebaõnnestus. Proovi uuesti."},
         )
 
-    def test_chat_stream_never_sends_provider_reasoning_to_api_clients(self):
-        source = inspect.getsource(__import__("api.index", fromlist=["chat"]).chat)
+    def _chat_gateway_response(self, upstream_status, upstream_body, environment=None, requests=None):
+        data = {
+            "kataster": {"number": "78404:409:0113"},
+            "mets": {"eraldised": [{"eraldis_nr": 1}]},
+            "meta": {"partial": False, "unavailable_sources": []},
+        }
+        def upstream(request):
+            if requests is not None:
+                requests.append(request)
+            return httpx.Response(upstream_status, content=upstream_body)
 
-        self.assertNotIn('{"reasoning": preview}', source)
-        self.assertNotIn('orjson.dumps({"reasoning"', source)
+        transport = httpx.MockTransport(upstream)
+        gateway_environment = {
+            "TERRAPOINT_CHAT_SNAPSHOT_KEY_B64": base64.urlsafe_b64encode(b"k" * 32).decode(),
+            "TERRAPOINT_CODEX_GATEWAY_TOKEN": "private-gateway-token",
+            "TERRAPOINT_CODEX_GATEWAY_URL": "https://gateway.invalid/v1/responses",
+            "TERRAPOINT_CODEX_MODEL": "openai-codex/test-fixture",
+            "TERRAPOINT_CODEX_REASONING_EFFORT": "high",
+        }
+        gateway_environment.update(environment or {})
+        with patch.dict(os.environ, gateway_environment), patch(
+            "api.index.httpx.AsyncClient",
+            side_effect=lambda **kwargs: REAL_ASYNC_CLIENT(
+                transport=transport,
+                timeout=kwargs.get("timeout"),
+            ),
+        ), patch("builtins.print") as print_mock:
+            token, _ = api._issue_chat_snapshot(data)
+            response = TestClient(app).post("/api/chat", json={
+                "kataster_nr": "78404:409:0113",
+                "message": "Analüüsi kinnistut",
+                "snapshot": token,
+                "data": data,
+            })
+        return response, repr(print_mock.call_args_list)
+
+    @staticmethod
+    def _responses_sse(*events):
+        return "".join("data: " + json.dumps(event) + "\n\n" for event in events)
+
+    def test_chat_stream_never_sends_provider_reasoning_to_api_clients(self):
+        upstream = self._responses_sse(
+            {"type": "response.reasoning_text.delta", "delta": "private-reasoning"},
+            {"type": "response.reasoning_summary_text.delta", "delta": "private-summary"},
+            {"choices": [{"delta": {"reasoning_content": "private-reasoning", "content": "legacy-output"}}]},
+            {"type": "response.output_text.delta", "delta": "Avalik "},
+            {"type": "response.output_text.delta", "delta": "vastus."},
+            {"type": "response.completed", "response": {"output_text": "Avalik vastus."}},
+        )
+        response, logs = self._chat_gateway_response(200, upstream)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/event-stream", response.headers["content-type"])
+        frames = [line[6:] for line in response.text.splitlines() if line.startswith("data: ")]
+        self.assertEqual(frames[-1], "[DONE]")
+        self.assertEqual([json.loads(frame) for frame in frames[:-1]], [
+            {"content": "Avalik "}, {"content": "vastus."},
+        ])
+        for secret in ("private-reasoning", "private-summary", "legacy-output", "private-gateway-token"):
+            self.assertNotIn(secret, response.text + logs)
+
+    def test_chat_completed_only_response_extracts_assistant_text_not_reasoning(self):
+        upstream = self._responses_sse(
+            {"type": "response.completed", "response": {"output": [
+                {"type": "reasoning", "content": [{"type": "text", "text": "private-reasoning"}]},
+                {"type": "message", "role": "user", "content": [{"type": "output_text", "text": "private-input"}]},
+                {"type": "message", "role": "assistant", "content": [
+                    {"type": "output_text", "text": "Avalik "},
+                    {"type": "output_text", "text": "vastus."},
+                ]},
+            ]}},
+        )
+        response, logs = self._chat_gateway_response(200, upstream)
+
+        frames = [line[6:] for line in response.text.splitlines() if line.startswith("data: ")]
+        self.assertEqual(json.loads(frames[0]), {"content": "Avalik vastus."})
+        self.assertEqual(frames[1:], ["[DONE]"])
+        self.assertNotIn("private-reasoning", response.text + logs)
+        self.assertNotIn("private-input", response.text + logs)
+
+    def test_chat_gateway_http_errors_hide_upstream_bodies_and_credentials(self):
+        for status in (400, 401, 403, 429, 500):
+            with self.subTest(status=status):
+                response, logs = self._chat_gateway_response(
+                    status, '{"error":"private-upstream-body private-gateway-token"}'
+                )
+                frames = [line[6:] for line in response.text.splitlines() if line.startswith("data: ")]
+                self.assertEqual(len(frames), 1)
+                self.assertEqual(set(json.loads(frames[0])), {"error"})
+                self.assertTrue(json.loads(frames[0])["error"])
+                self.assertNotIn("private-upstream-body", response.text + logs)
+                self.assertNotIn("private-gateway-token", response.text + logs)
+
+    def test_chat_gateway_stream_errors_do_not_report_partial_output_as_success(self):
+        for event_type in ("error", "response.failed", "response.incomplete"):
+            with self.subTest(event_type=event_type):
+                upstream = self._responses_sse(
+                    {"type": "response.output_text.delta", "delta": "Poolik vastus"},
+                    {"type": event_type, "error": {"message": "private-upstream-body"}},
+                )
+                response, logs = self._chat_gateway_response(200, upstream)
+                frames = [line[6:] for line in response.text.splitlines() if line.startswith("data: ")]
+                self.assertEqual(json.loads(frames[0]), {"content": "Poolik vastus"})
+                self.assertEqual(set(json.loads(frames[1])), {"error"})
+                self.assertNotIn("[DONE]", frames)
+                self.assertNotIn("private-upstream-body", response.text + logs)
+
+    def test_chat_gateway_token_file_is_private_and_missing_files_fail_before_network(self):
+        with TemporaryDirectory() as directory:
+            token_path = Path(directory) / "gateway.token"
+            token_path.write_text("private-file-token\n", encoding="utf-8")
+            requests = []
+            environment = {
+                "TERRAPOINT_CODEX_GATEWAY_TOKEN": "",
+                "TERRAPOINT_CODEX_GATEWAY_TOKEN_FILE": str(token_path),
+            }
+            response, logs = self._chat_gateway_response(
+                200, self._responses_sse({"type": "response.output_text.delta", "delta": "Avalik vastus"}),
+                environment, requests,
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(len(requests), 1)
+            self.assertEqual(requests[0].headers["authorization"], "Bearer private-file-token")
+            self.assertNotIn("private-file-token", response.text + logs)
+
+            for content in (b"", b"\xff"):
+                with self.subTest(content=content):
+                    token_path.write_bytes(content)
+                    requests.clear()
+                    response, logs = self._chat_gateway_response(200, "", environment, requests)
+                    self.assertEqual(response.status_code, 500)
+                    self.assertEqual(set(response.json()), {"error"})
+                    self.assertFalse(requests)
+                    self.assertNotIn(str(token_path), response.text + logs)
+            token_path.unlink()
+            requests.clear()
+            response, logs = self._chat_gateway_response(200, "", environment, requests)
+            self.assertEqual(response.status_code, 500)
+            self.assertFalse(requests)
+            self.assertNotIn(str(token_path), response.text + logs)
+
+    def test_chat_rejects_non_codex_and_ambiguous_selectors_before_provider_calls(self):
+        for model in ("other-provider/model", "@default", "openai-codex/model,other-provider/model"):
+            with self.subTest(model=model):
+                requests = []
+                response, logs = self._chat_gateway_response(
+                    200, "", {"TERRAPOINT_CODEX_MODEL": model}, requests,
+                )
+                self.assertEqual(response.status_code, 500)
+                self.assertEqual(set(response.json()), {"error"})
+                self.assertFalse(requests)
+                self.assertNotIn(model, response.text + logs)
 
     def test_runtime_dependencies_use_patched_fastapi_and_starlette(self):
         requirements = (Path(__file__).parents[1] / "requirements.txt").read_text()
@@ -406,7 +497,8 @@ class SecurityBoundaryTests(unittest.TestCase):
         snapshot_key = base64.urlsafe_b64encode(b"k" * 32).decode()
         with patch.dict(os.environ, {
             "TERRAPOINT_CHAT_SNAPSHOT_KEY_B64": snapshot_key,
-            "OPENCODE_ZEN_API_KEY": "",
+            "TERRAPOINT_CODEX_GATEWAY_TOKEN": "",
+            "TERRAPOINT_CODEX_GATEWAY_TOKEN_FILE": "",
         }):
             payload["snapshot"], _ = __import__("api.index", fromlist=["_issue_chat_snapshot"])._issue_chat_snapshot(data)
             response = TestClient(app).post("/api/chat", json=payload)

@@ -1410,7 +1410,6 @@
                         fullText += obj.content;
                         if (fullText.length > 100000) throw new Error('AI vastus ületas kuvamise turvapiiri.');
                         // Eemalda mudeli lekitatud reasoning/planning märgendid.
-                        // OpenCode Zen DeepSeek jätab vahel kogemata oma CoT-d vastuse sisse.
                         // Lisaks eemaldame "Mõtleb" prefiksi (mudeli enda silt) kui see on
                         // esimesel real ilma reavahetuseta.
                         var cleaned = aiCleanModelAnswer(fullText);

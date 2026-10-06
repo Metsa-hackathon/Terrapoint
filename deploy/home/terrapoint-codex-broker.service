@@ -1,0 +1,27 @@
+[Unit]
+Description=Terrapoint private OMP Codex credential broker
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=120
+StartLimitBurst=6
+
+[Service]
+Type=simple
+User=arle
+Group=arle
+Environment=HOME=/home/arle
+WorkingDirectory=/home/arle
+# Default authentication reads the existing vault and ~/.omp/auth-broker.token.
+ExecStart=/home/arle/.local/bin/omp auth-broker serve --bind=127.0.0.1:8765
+Restart=on-failure
+RestartSec=10s
+TimeoutStartSec=60s
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=false
+
+[Install]
+WantedBy=multi-user.target

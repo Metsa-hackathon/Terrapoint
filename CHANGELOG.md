@@ -16,6 +16,13 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   Luba piirdub liidesega `br-debe31940c26`, sihtaadressiga `172.20.0.1`
   ja TCP-pordiga `8001`; API ja teisi teenuseid ei taaskäivitatud.
   Avalikul saidil kontrolliti katastri `78404:409:0113` andmeid ning kaardikihte.
+- **AI viidi üle OpenAI Codexile** — mudel on `openai-codex/gpt-6-luna`
+  ja mõtlemistase `high`. OMP autentimisvahendaja kasutab olemasolevat
+  serveripoolset sisselogimist ning värskendab OAuthi tokeneid; Vercelile
+  antakse ainult krüptitult salvestatud inference gateway pääsutoken.
+  Avalik vestlus säilitab allkirjastatud kinnistuandmete kontrolli ja SSE
+  väljundi, kuid ei edasta mudeli sisemist mõttekäiku ega teenuse vearaporteid.
+  Brauseri andmetöötluse teavitus nimetab nüüd OpenAI-d.
 
 ### Operations
 - Kui konteineri taasloomisel muutub proxy IP, tuleb piiratud UFW reegel
@@ -23,12 +30,25 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   `/api/health` päring ei tõenda proxy ligipääsu: kontrollida tuleb ka
   `docker exec coolify-proxy wget -S -O - -T 5 http://172.20.0.1:8001/api/health`
   ning avalikku otsinguvoogu.
-- **AI-teenuse eraldi tõrge jääb lahendamata** — tootmise OpenCode Zen võti
-  sai teenusepakkujalt `401 Invalid API key`; olemasoleva asendusvõtmega
-  Muse Sparki päring sai `403 FreeTierError`, sest tasuta paketti lubatakse
-  kasutada ainult OpenCode'i sees. AI taastamine vajab veebirakenduses
-  kasutamiseks lubatud teenust ja kehtivat autentimist; võtmeid ei logitud
-  ega tasuta paketi piirangust mööda mindud.
+- **OpenCode'i autentimistõrge lahendati pakkuja vahetusega** — vana vigane
+  võti ja veebirakendusele keelatud tasuta pakett ei ole enam vestluse sisendid.
+  Aktiivsed seaded on `TERRAPOINT_CODEX_GATEWAY_URL`,
+  `TERRAPOINT_CODEX_GATEWAY_TOKEN`, `TERRAPOINT_CODEX_MODEL` ning
+  `TERRAPOINT_CODEX_REASONING_EFFORT`; maksimaalne väljundimaht on seadistatav
+  võtmega `TERRAPOINT_CODEX_MAX_TOKENS`.
+- **Home-serveri Codexi teenused** — `deploy/home/terrapoint-codex-broker.service`
+  ja `terrapoint-codex-gateway.service` käivitavad vahendaja kasutaja `arle`
+  olemasolevast OMP credential vault'ist. Broker kuulab ainult loopback-liidesel;
+  Traefik avaldab autentimist nõudva gateway täpset `/v1/responses` rada.
+  UFW luba pordile `4000` piirdub sama proxy IP ja bridge-liidesega nagu
+  Terrapointi API sild; muid gateway ega brokeri radu ei avaldata.
+- **API teenuse credential drop-in** — `terrapoint-codex-api.conf` laadib
+  gateway tokeni ja eraldi 32-baidise kinnistuandmete allkirjastamisvõtme
+  systemd `LoadCredential` kaudu. Kohalikud `_TOKEN_FILE` ja
+  `TERRAPOINT_CHAT_SNAPSHOT_KEY_FILE` viitavad credential-failidele, mitte
+  lähtekoodi või tavalisse konfiguratsiooni kirjutatud saladustele.
+  Vercel jätkab eraldi tundliku `TERRAPOINT_CHAT_SNAPSHOT_KEY_B64` kasutamist.
+  Vana `OPENCODE_ZEN_*` keskkond eemaldatakse API protsessist.
 
 ## [Määramata] - 2026-07-27
 

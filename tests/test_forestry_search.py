@@ -333,7 +333,6 @@ class ForestryWidgetContractTests(unittest.TestCase):
         self.assertNotIn("innerHTML", self.javascript)
         self.assertNotIn("eval(", self.javascript)
         self.assertIn("textContent", self.javascript)
-        self.assertNotIn("OPENCODE_ZEN_API_KEY", self.html + self.javascript)
         self.assertNotIn("FORESTRY_GENERATOR_PROVIDER", self.html + self.javascript)
 
     def test_loader_validates_message_origin_and_source(self):

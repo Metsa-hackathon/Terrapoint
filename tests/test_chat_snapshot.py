@@ -4,6 +4,8 @@ import json
 import os
 import unittest
 from unittest.mock import patch
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from fastapi.testclient import TestClient
 
@@ -42,7 +44,9 @@ class ChatSnapshotTests(unittest.TestCase):
             os.environ,
             {
                 "TERRAPOINT_CHAT_SNAPSHOT_KEY_B64": SNAPSHOT_KEY,
-                "OPENCODE_ZEN_API_KEY": "",
+                "TERRAPOINT_CHAT_SNAPSHOT_KEY_FILE": "",
+                "TERRAPOINT_CODEX_GATEWAY_TOKEN": "",
+                "TERRAPOINT_CODEX_GATEWAY_TOKEN_FILE": "",
             },
             clear=False,
         )
@@ -65,17 +69,49 @@ class ChatSnapshotTests(unittest.TestCase):
         self.assertNotIn("geometry", api._chat_data_projection(data)["kataster"])
         self.assertNotIn("map_layers", api._chat_data_projection(data))
 
-    def test_vercel_requires_a_dedicated_snapshot_key(self):
-        with patch.dict(
-            os.environ,
-            {
-                "VERCEL": "1",
+    def test_gateway_token_never_substitutes_for_a_dedicated_snapshot_key(self):
+        for vercel in ("", "1"):
+            with self.subTest(vercel=vercel), patch.dict(
+                os.environ,
+                {
+                    "VERCEL": vercel,
+                    "TERRAPOINT_CHAT_SNAPSHOT_KEY_B64": "",
+                    "TERRAPOINT_CHAT_SNAPSHOT_KEY_FILE": "",
+                    "TERRAPOINT_CODEX_GATEWAY_TOKEN": "gateway-secret-must-not-sign",
+                },
+                clear=False,
+            ):
+                self.assertIsNone(api._chat_snapshot_signing_key())
+
+    def test_explicit_snapshot_key_file_signs_and_fails_closed_without_a_valid_secret(self):
+        with TemporaryDirectory() as directory:
+            key_path = Path(directory) / "snapshot.key"
+            environment = {
                 "TERRAPOINT_CHAT_SNAPSHOT_KEY_B64": "",
-                "OPENCODE_ZEN_API_KEY": "provider-secret-must-not-sign",
-            },
-            clear=False,
-        ):
-            self.assertIsNone(api._chat_snapshot_signing_key())
+                "TERRAPOINT_CHAT_SNAPSHOT_KEY_FILE": str(key_path),
+            }
+            for key in (b"k" * 32, b"k" * 48):
+                with self.subTest(length=len(key)):
+                    key_path.write_bytes(key)
+                    with patch.dict(os.environ, environment):
+                        token, _ = api._issue_chat_snapshot(analysis_data(), now=1_000)
+                        api._verify_chat_snapshot_for_data(
+                            token, analysis_data(), "78404:409:0113", now=1_100,
+                        )
+                        self.assertEqual(api._chat_snapshot_signing_key(), key)
+            key_path.write_bytes(b"k" * 31)
+            with patch.dict(os.environ, environment):
+                self.assertIsNone(api._chat_snapshot_signing_key())
+                with self.assertRaises(api.ChatSnapshotError) as raised:
+                    api._verify_chat_snapshot("invalid", now=1_100)
+                self.assertEqual(raised.exception.code, "CHAT_SNAPSHOT_UNAVAILABLE")
+                self.assertNotIn(str(key_path), raised.exception.message)
+            key_path.write_bytes(b"k" * 32)
+            with patch.dict(os.environ, {**environment, "TERRAPOINT_CHAT_SNAPSHOT_KEY_B64": "invalid"}):
+                self.assertIsNone(api._chat_snapshot_signing_key())
+            key_path.unlink()
+            with patch.dict(os.environ, environment):
+                self.assertIsNone(api._chat_snapshot_signing_key())
 
     def test_snapshot_rejects_modified_client_facts(self):
         data = analysis_data()
@@ -174,7 +210,7 @@ class ChatSnapshotTests(unittest.TestCase):
         modified = copy.deepcopy(data)
         modified["vaartus"]["base_value_eur"] = 999_999_999
 
-        with self.snapshot_env():
+        with self.snapshot_env(), patch("api.index.httpx.AsyncClient") as client_factory:
             token, _ = api._issue_chat_snapshot(data, now=api.time.time())
             response = TestClient(api.app).post("/api/chat", json={
                 "kataster_nr": "78404:409:0113",
@@ -185,6 +221,7 @@ class ChatSnapshotTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()["code"], "CHAT_SNAPSHOT_INVALID")
+        client_factory.assert_not_called()
 
     def test_old_browser_can_send_snapshot_nested_in_data_during_rollout(self):
         data = analysis_data()
@@ -318,7 +355,8 @@ class ChatSnapshotTests(unittest.TestCase):
             {
                 "VERCEL": "1",
                 "TERRAPOINT_CHAT_SNAPSHOT_KEY_B64": "",
-                "OPENCODE_ZEN_API_KEY": "provider-secret-must-not-sign",
+                "TERRAPOINT_CHAT_SNAPSHOT_KEY_FILE": "",
+                "TERRAPOINT_CODEX_GATEWAY_TOKEN": "gateway-secret-must-not-sign",
             },
             clear=False,
         ):

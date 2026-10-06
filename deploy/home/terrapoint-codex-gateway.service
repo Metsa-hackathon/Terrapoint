@@ -1,0 +1,32 @@
+[Unit]
+Description=Terrapoint authenticated OMP Codex inference gateway
+Requires=terrapoint-codex-broker.service
+Wants=network-online.target
+After=network-online.target docker.service terrapoint-codex-broker.service
+# Docker and the existing proxy bridge are provisioned independently. Ordering
+# does not start Docker or unrelated container workload stacks.
+StartLimitIntervalSec=120
+StartLimitBurst=6
+
+[Service]
+Type=simple
+User=arle
+Group=arle
+Environment=HOME=/home/arle
+Environment=OMP_AUTH_BROKER_URL=http://127.0.0.1:8765
+WorkingDirectory=/home/arle
+# OMP reads ~/.omp/auth-broker.token and ~/.omp/auth-gateway.token itself.
+# Keep default inbound bearer authentication enabled; never use --no-auth.
+ExecStart=/home/arle/.local/bin/omp auth-gateway serve --bind=172.20.0.1:4000
+Restart=on-failure
+RestartSec=10s
+TimeoutStartSec=60s
+TimeoutStopSec=30s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=false
+
+[Install]
+WantedBy=multi-user.target

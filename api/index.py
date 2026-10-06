@@ -125,16 +125,9 @@ MAX_CHAT_NUMERIC_ABS = 1_000_000_000_000_000
 CHAT_SNAPSHOT_TTL_SECONDS = 30 * 60
 CHAT_SNAPSHOT_CLOCK_SKEW_SECONDS = 60
 CHAT_SNAPSHOT_MAX_CHARS = 2048
-CHAT_MAX_TOKENS = int(os.environ.get("OPENCODE_ZEN_MAX_TOKENS", "8192"))
-CHAT_MODEL_DEFAULT = "muse-spark-1.3-contributor-free"
-# Zen pakub DeepSeeki mudeleid chat-completions otspunktis ja Muse Sparki
-# Responses otspunktis. Vestlus kasutab Muse Sparki, mistõttu DeepSeeki
-# ID-d asendatakse vaikeväärtusega, et vana keskkonnaseadistus vestlust
-# ei lõhuks. Teadlikult valitud muu mudel lastakse läbi muutumatult.
-CHAT_MODEL_LEGACY_IDS = frozenset({
-    "deepseek-v4-flash",
-    "deepseek-v4-flash-free",
-})
+CHAT_MAX_TOKENS = int(os.environ.get("TERRAPOINT_CODEX_MAX_TOKENS", "8192"))
+CHAT_MODEL_DEFAULT = "openai-codex/gpt-6-luna"
+CHAT_GATEWAY_URL_DEFAULT = "https://terrapoint.arleserver.cfd/v1/responses"
 CHAT_RATE_LIMIT = 8
 CHAT_RATE_WINDOW_SECONDS = 60
 FORESTRY_SEARCH_RATE_LIMIT = 30
@@ -521,21 +514,15 @@ def _chat_snapshot_signing_key() -> bytes | None:
         except (ValueError, TypeError):
             return None
         return key if len(key) == 32 else None
+    key_file = os.environ.get("TERRAPOINT_CHAT_SNAPSHOT_KEY_FILE", "").strip()
+    if key_file:
+        try:
+            key = Path(key_file).read_bytes()
+        except (OSError, ValueError):
+            return None
+        return key if len(key) >= 32 else None
+    return None
 
-    # Vercel is the public search/chat trust boundary and must use a dedicated
-    # key rather than extending a third-party provider credential's authority.
-    if os.environ.get("VERCEL"):
-        return None
-
-    # Keep direct non-Vercel deployments operational during key rollout.
-    provider_key = os.environ.get("OPENCODE_ZEN_API_KEY", "")
-    if not provider_key:
-        return None
-    return hmac.new(
-        b"terrapoint/chat-snapshot/signing-key/v1",
-        provider_key.encode("utf-8"),
-        hashlib.sha256,
-    ).digest()
 
 
 def _chat_data_projection(data: dict) -> dict:
@@ -966,22 +953,8 @@ def _subsidy_stand_age(stand: dict):
     return None
 
 
-def _resolve_chat_model(raw: str | None) -> str:
-    """Return a Zen Responses model id, mapping retired ids forward."""
-    model = (raw or "").strip() or CHAT_MODEL_DEFAULT
-    if model in CHAT_MODEL_LEGACY_IDS:
-        print(f"[chat] mapping retired model {model!r} to {CHAT_MODEL_DEFAULT!r}", flush=True)
-        return CHAT_MODEL_DEFAULT
-    return model
-
-
-def _chat_upstream_error(status_code: int, body_snippet: str) -> str:
-    """Map a Zen failure to a user-safe Estonian message (no internals)."""
-    lowered = (body_snippet or "").lower()
-    if "creditserror" in lowered or "insufficient balance" in lowered:
-        return "AI teenuse krediit on otsas. Võta ühendust administraatoriga."
-    if "model is unavailable" in lowered or ("model" in lowered and "not supported" in lowered):
-        return "AI mudel ei ole hetkel saadaval. Proovi mõne hetke pärast uuesti."
+def _chat_upstream_error(status_code: int) -> str:
+    """Map gateway failures without reading or exposing upstream error bodies."""
     if status_code == 400:
         return "Küsimus sisaldas mittesobivat sisendit. Palun sõnasta ümber."
     if status_code in (401, 403):
@@ -991,16 +964,8 @@ def _chat_upstream_error(status_code: int, body_snippet: str) -> str:
     return "AI teenusel esines viga. Proovi mõne hetke pärast uuesti."
 
 
-def _chat_completion_payload(model: str, messages: list[dict]) -> dict:
-    """Build an OpenCode Zen Responses payload (Muse Spark).
-
-    Zen serves ``muse-spark-1.3-contributor-free`` through
-    ``https://opencode.ai/zen/v1/responses`` (verified live), so the
-    ``input``/``output_text.delta`` streaming shape is sent. Only
-    ``temperature``/``top_p``/``max_output_tokens`` accompany the payload —
-    extra provider params previously broke the call. The public SSE
-    contract (``{"content": piece}`` + ``[DONE]``) is unchanged.
-    """
+def _chat_responses_payload(model: str, messages: list[dict], effort: str) -> dict:
+    """Build the authenticated Codex gateway's Responses request."""
     input_items = []
     for message in messages or []:
         role = message.get("role", "user")
@@ -1015,27 +980,13 @@ def _chat_completion_payload(model: str, messages: list[dict]) -> dict:
         "input": input_items,
         "stream": True,
         "store": False,
-        "temperature": 0.4,
-        "top_p": 0.9,
+        "reasoning": {"effort": effort},
         "max_output_tokens": CHAT_MAX_TOKENS,
-    }
-    return {
-        "model": model,
-        "messages": messages,
-        "stream": True,
-        "temperature": 0.4,
-        "max_tokens": CHAT_MAX_TOKENS,
-        "reasoning_effort": "low",
-        "top_p": 0.9,
     }
 
 
 def _extract_responses_text(payload: dict) -> str:
-    """Extract user-visible text from a Responses `response.completed` event.
-
-    Defensive fallback only: the chat endpoint speaks chat-completions, but
-    a provider-side shape change must never silently drop a usable answer.
-    """
+    """Extract only assistant output text from a completed Responses event."""
     if not isinstance(payload, dict):
         return ""
     direct = payload.get("output_text")
@@ -1048,16 +999,19 @@ def _extract_responses_text(payload: dict) -> str:
         outputs = response.get("output") or []
     else:
         outputs = payload.get("output") or []
+    text_parts = []
     for item in outputs if isinstance(outputs, list) else []:
-        if not isinstance(item, dict):
+        if not isinstance(item, dict) or item.get("type") != "message" or item.get("role") != "assistant":
             continue
-        for part in item.get("content") or []:
-            if not isinstance(part, dict):
+        content = item.get("content")
+        for part in content if isinstance(content, list) else []:
+            if not isinstance(part, dict) or part.get("type") != "output_text":
                 continue
-            if part.get("type") in ("output_text", "text"):
-                text = part.get("text", "")
-                if isinstance(text, str) and text:
-                    return text
+            text = part.get("text", "")
+            if isinstance(text, str):
+                text_parts.append(text)
+    if text_parts:
+        return "".join(text_parts)
     for candidate in candidates:
         if isinstance(candidate, str) and candidate:
             return candidate
@@ -4299,7 +4253,7 @@ def build_system_prompt(data: dict) -> str:
 async def chat(request: Request):
     """AI metsanduse nõustaja.
 
-    Kasutab OpenCode Zen (Muse Spark) AI-d Responses API kaudu, et
+    Kasutab autentitud OpenAI Codex AI-d Responses API kaudu, et
     vastata küsimustele kinnistu andmete põhjal. Brauseri saadetud
     andmed peavad vastama otsingu käigus serveri allkirjastatud
     tõendile.
@@ -4361,12 +4315,24 @@ async def chat(request: Request):
         messages.extend(sanitized_history)
         messages.append({"role": "user", "content": user_message_raw})
 
-        api_key = os.environ.get("OPENCODE_ZEN_API_KEY", "")
-        if not api_key:
+        gateway_token = os.environ.get("TERRAPOINT_CODEX_GATEWAY_TOKEN", "").strip()
+        if not gateway_token:
+            token_file = os.environ.get("TERRAPOINT_CODEX_GATEWAY_TOKEN_FILE", "").strip()
+            if token_file:
+                try:
+                    gateway_token = Path(token_file).read_text(encoding="utf-8").strip()
+                except (OSError, UnicodeError, ValueError):
+                    gateway_token = ""
+        model = os.environ.get("TERRAPOINT_CODEX_MODEL", CHAT_MODEL_DEFAULT).strip()
+        effort = os.environ.get("TERRAPOINT_CODEX_REASONING_EFFORT", "high").strip()
+        if (
+            not gateway_token
+            or re.fullmatch(r"openai-codex/[A-Za-z0-9._-]+", model) is None
+            or effort not in {"none", "minimal", "low", "medium", "high", "xhigh"}
+        ):
             return json_response({"error": "AI teenus ei ole seadistatud. Võta ühendust administraatoriga."}, 500)
 
-        api_url = "https://opencode.ai/zen/v1/responses"
-        model = _resolve_chat_model(os.environ.get("OPENCODE_ZEN_MODEL"))
+        api_url = os.environ.get("TERRAPOINT_CODEX_GATEWAY_URL", CHAT_GATEWAY_URL_DEFAULT).strip()
 
         async def stream_response():
             saw_content = False
@@ -4377,34 +4343,32 @@ async def chat(request: Request):
                         "POST",
                         api_url,
                         headers={
-                            "Authorization": f"Bearer {api_key}",
+                            "Authorization": f"Bearer {gateway_token}",
                             "Content-Type": "application/json",
                             "Accept": "text/event-stream",
                         },
-                        json=_chat_completion_payload(model, messages),
+                        json=_chat_responses_payload(model, messages, effort),
                     ) as resp:
                         if resp.status_code != 200:
-                            try:
-                                error_snippet = (await resp.aread())[:500].decode("utf-8", "replace")
-                            except Exception:
-                                error_snippet = "<unreadable>"
-                            print(f"[chat] upstream {resp.status_code} model={model} body={error_snippet}", flush=True)
-                            yield "data: " + orjson.dumps({"error": _chat_upstream_error(resp.status_code, error_snippet)}).decode() + "\n\n"
+                            print(f"[chat] upstream status={resp.status_code}", flush=True)
+                            yield "data: " + orjson.dumps({"error": _chat_upstream_error(resp.status_code)}).decode() + "\n\n"
                             return
                         async for line in resp.aiter_lines():
                             line = line.strip()
-                            # Zen Responses SSE sends `event:` + `data:` pairs;
+                            # Responses SSE sends `event:` + `data:` pairs;
                             # only the data line carries the JSON payload.
                             if line.startswith("event:"):
                                 continue
-                            if not line.startswith("data: "):
+                            if not line.startswith("data:"):
                                 continue
-                            data_str = line[6:]
+                            data_str = line[5:].lstrip()
                             if data_str == "[DONE]":
                                 break
                             try:
                                 chunk = orjson.loads(data_str)
                             except orjson.JSONDecodeError:
+                                continue
+                            if not isinstance(chunk, dict):
                                 continue
                             # Responses shape: only output-text deltas are
                             # user-visible. Reasoning / refusal / status events
@@ -4417,7 +4381,12 @@ async def chat(request: Request):
                                     content_piece = delta_text
                                 else:
                                     continue
-                            elif chunk_type in ("response.completed", "response.output_text.done", "response.done"):
+                            elif chunk_type == "response.output_text.done":
+                                if not saw_content and isinstance(chunk.get("text"), str):
+                                    content_piece = chunk["text"]
+                                else:
+                                    continue
+                            elif chunk_type == "response.completed":
                                 # Final event without prior deltas (e.g. short
                                 # answer): extract once, then keep streaming.
                                 if not saw_content:
@@ -4428,25 +4397,11 @@ async def chat(request: Request):
                                         continue
                                 else:
                                     continue
+                            elif chunk_type in ("error", "response.failed", "response.incomplete"):
+                                yield "data: " + orjson.dumps({"error": _chat_upstream_error(502)}).decode() + "\n\n"
+                                return
                             else:
-                                # Defensive fallback for a chat-completions-shaped
-                                # event: translate delta.content.
-                                choices = chunk.get("choices") or []
-                                if choices:
-                                    delta = choices[0].get("delta", {})
-                                    # Provider reasoning is internal model
-                                    # metadata. Do not expose it through the
-                                    # public SSE API, even if the current
-                                    # browser happens not to render it.
-                                    if delta.get("reasoning_content"):
-                                        continue
-                                    delta_content = delta.get("content", "")
-                                    if isinstance(delta_content, str) and delta_content:
-                                        content_piece = delta_content
-                                    else:
-                                        continue
-                                else:
-                                    continue
+                                continue
                             if content_piece:
                                 saw_content = True
                                 yield "data: " + orjson.dumps({"content": content_piece}).decode() + "\n\n"
@@ -4460,9 +4415,7 @@ async def chat(request: Request):
             except httpx.ConnectError:
                 yield "data: " + orjson.dumps({"error": "AI teenusele ei õnnestu ühendust saada. Proovi mõne hetke pärast."}).decode() + "\n\n"
             except Exception as exc:
-                import traceback
-                tb = traceback.format_exc()
-                print(f"[chat] stream error: {type(exc).__name__}: {exc}\n{tb}", flush=True)
+                print(f"[chat] stream error: {type(exc).__name__}", flush=True)
                 yield "data: " + orjson.dumps({"error": "Midagi läks valesti. Proovi uuesti."}).decode() + "\n\n"
 
         from fastapi.responses import StreamingResponse

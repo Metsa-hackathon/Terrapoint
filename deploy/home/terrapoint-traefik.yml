@@ -6,6 +6,12 @@ http:
         - https
       service: terrapoint-home
       tls: {}
+    terrapoint-codex:
+      rule: "Host(`terrapoint.arleserver.cfd`) && Path(`/v1/responses`)"
+      entryPoints:
+        - https
+      service: terrapoint-codex
+      tls: {}
   services:
     terrapoint-home:
       loadBalancer:
@@ -15,3 +21,11 @@ http:
           timeout: 3s
         servers:
           - url: http://172.20.0.1:8001
+    terrapoint-codex:
+      loadBalancer:
+        healthCheck:
+          path: /healthz
+          interval: 10s
+          timeout: 3s
+        servers:
+          - url: http://172.20.0.1:4000
