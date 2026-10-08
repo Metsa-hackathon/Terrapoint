@@ -969,7 +969,7 @@ class SearchEndpointLayerOptionTests(unittest.TestCase):
         with patch.dict(os.environ, {}, clear=True):
             self.assertEqual(
                 api._backend_api_url(),
-                "https://terrapoint.arleserver.cfd/api",
+                "https://terrapoint.arle.top/api",
             )
 
     def test_backend_api_url_treats_blank_override_as_unset(self):
@@ -980,7 +980,7 @@ class SearchEndpointLayerOptionTests(unittest.TestCase):
         ):
             self.assertEqual(
                 api._backend_api_url(),
-                "https://terrapoint.arleserver.cfd/api",
+                "https://terrapoint.arle.top/api",
             )
 
     def test_backend_api_url_rejects_unsafe_overrides(self):

@@ -20,6 +20,7 @@ DEFAULT_TRUSTED_HOSTS = [
     "www.terrapoint.ee",
     "terrapoint.vercel.app",
     "*.vercel.app",
+    "terrapoint.arle.top",
     "terrapoint.arleserver.cfd",
     "localhost",
     "127.0.0.1",

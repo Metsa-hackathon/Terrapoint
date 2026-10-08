@@ -5417,7 +5417,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
             var feedbackController = new AbortController();
             var feedbackTimer = setTimeout(function() { feedbackController.abort(); }, 15000);
-            fetch('https://n8n.arleserver.cfd/webhook/terrapointwebhook', {
+            fetch('https://n8n.arle.top/webhook/terrapointwebhook', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),

@@ -127,7 +127,7 @@ CHAT_SNAPSHOT_CLOCK_SKEW_SECONDS = 60
 CHAT_SNAPSHOT_MAX_CHARS = 2048
 CHAT_MAX_TOKENS = int(os.environ.get("TERRAPOINT_CODEX_MAX_TOKENS", "8192"))
 CHAT_MODEL_DEFAULT = "openai-codex/gpt-6-luna"
-CHAT_GATEWAY_URL_DEFAULT = "https://terrapoint.arleserver.cfd/v1/responses"
+CHAT_GATEWAY_URL_DEFAULT = "https://terrapoint.arle.top/v1/responses"
 CHAT_RATE_LIMIT = 8
 CHAT_RATE_WINDOW_SECONDS = 60
 FORESTRY_SEARCH_RATE_LIMIT = 30
@@ -1020,7 +1020,7 @@ def _extract_responses_text(payload: dict) -> str:
 
 BROWSER_CONTENT_SECURITY_POLICY = (
     "default-src 'self'; base-uri 'self'; object-src 'none'; "
-    "frame-ancestors 'self' https://praktika.arleserver.cfd; "
+    "frame-ancestors 'self' https://praktika.arleserver.cfd https://praktika.arle.top; "
     "form-action 'self'; manifest-src 'self'; worker-src 'none'; "
     "script-src 'self' 'sha256-xqUpUykbxHOS6bApfu5aM+WDp2oldrVcuj4m9hZTGJM='; "
     "script-src-elem 'self' 'sha256-xqUpUykbxHOS6bApfu5aM+WDp2oldrVcuj4m9hZTGJM='; "
@@ -1029,7 +1029,7 @@ BROWSER_CONTENT_SECURITY_POLICY = (
     "style-src-attr 'unsafe-inline'; "
     "font-src 'self'; "
     "img-src 'self' data: blob: https://tiles.maaamet.ee https://gsavalik.envir.ee; "
-    "connect-src 'self' https://gsavalik.envir.ee https://n8n.arleserver.cfd; "
+    "connect-src 'self' https://gsavalik.envir.ee https://n8n.arleserver.cfd https://n8n.arle.top; "
     "upgrade-insecure-requests"
 )
 EMBED_CONTENT_SECURITY_POLICY = (
@@ -1470,8 +1470,8 @@ async def cadastral_object(adob_id: str, request: Request):
     return json_response({"katastri_nr": katastri_nr})
 
 
-DEFAULT_BACKEND_API_URL = "https://terrapoint.arleserver.cfd/api"
-BACKEND_HOSTS = {"terrapoint.arleserver.cfd"}
+DEFAULT_BACKEND_API_URL = "https://terrapoint.arle.top/api"
+BACKEND_HOSTS = {"terrapoint.arle.top", "terrapoint.arleserver.cfd"}
 
 
 def _backend_api_url() -> str:
