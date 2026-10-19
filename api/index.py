@@ -1178,6 +1178,16 @@ mimetypes.add_type("font/woff2", ".woff2")
 
 # Serve static files and frontend
 STATIC_DIR = PROJECT_ROOT / "static"
+
+
+@app.get("/static/api-docs", include_in_schema=False)
+async def static_api_docs_alias():
+    """`cleanUrls` lõikab .html-laienduse, nii et /static/api-docs.html
+    jõuab siia. Marsruut peab olema enne /static mounti, et see jõuaks
+    failini enne StaticFiles-i 404 vastust."""
+    return RedirectResponse("/api/docs", status_code=308)
+
+
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 

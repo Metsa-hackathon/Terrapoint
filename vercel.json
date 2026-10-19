@@ -85,7 +85,7 @@
     }
   ],
   "redirects": [
-    { "source": "/api-docs.html", "destination": "/api/docs", "permanent": true },
-    { "source": "/static/api-docs.html", "destination": "/api/docs", "permanent": true }
+    { "source": "/api-docs", "destination": "/api/docs", "permanent": true },
+    { "source": "/static/api-docs", "destination": "/api/docs", "permanent": true }
   ]
 }
