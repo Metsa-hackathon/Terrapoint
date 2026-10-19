@@ -1198,6 +1198,15 @@ async def api_redoc_redirect():
     return RedirectResponse("/api/docs", status_code=308)
 
 
+@app.get("/api-docs", include_in_schema=False)
+async def api_docs_alias():
+    """`cleanUrls` strips the .html suffix, so /api-docs.html lands here.
+
+    Without this route the historical documentation URL ended in a 404.
+    """
+    return RedirectResponse("/api/docs", status_code=308)
+
+
 def json_response(data: dict, status: int = 200, headers: dict[str, str] | None = None) -> Response:
     return Response(content=orjson.dumps(data), media_type="application/json", status_code=status, headers=headers)
 

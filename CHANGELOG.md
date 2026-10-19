@@ -28,6 +28,10 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   viga („Manifest fetch … failed, code 404"). Nüüd serveeritakse manifest
   sisuga `application/manifest+json` ja `/favicon.ico` suunatakse
   SVG-ikoonile (307).
+- **API-dokumentatsiooni vana aadress lõpetas 404-na** — `cleanUrls`
+  lõikab `.html`-laienduse, mistõttu `/api-docs.html` suunati `/api-docs`
+  aadressile, kus marsruudit polnud. Nüüd suunavad nii `/api-docs.html`
+  kui ka `/static/api-docs.html` ja `/api-docs` dokumendile `/api/docs`.
 - **AI vastuse murdmine mobiilil** — `.ai-message > *` sai `min-width: 0`
   ja sõnumibil `overflow-wrap: anywhere`, et pikk katastritunnus või link
   ei venitaks vestlust üle ekraani.

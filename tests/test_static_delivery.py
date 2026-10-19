@@ -66,6 +66,20 @@ class StaticDeliveryTests(unittest.TestCase):
         # Vendor-failid on versiooniga URL-is, seega võivad olla immutabelsed.
         self.assertIn("immutable", _cache_rule("/static/vendor/(.*)"))
 
+    def test_historical_api_docs_urls_still_reach_the_documentation(self):
+        # `cleanUrls` lõikab .html-laienduse, nii et /api-docs.html jõuab
+        # /api-docs aadressile — ilma marsruudita lõppes see 404-na.
+        response = self.client.get("/api-docs", follow_redirects=False)
+
+        self.assertEqual(response.status_code, 308)
+        self.assertEqual(response.headers["location"], "/api/docs")
+
+        redirect_sources = {
+            rule["source"] for rule in VERCEL_CONFIG.get("redirects", [])
+        }
+        self.assertIn("/api-docs.html", redirect_sources)
+        self.assertIn("/static/api-docs.html", redirect_sources)
+
     def test_unversioned_static_assets_still_revalidate(self):
         cache_control = _cache_rule("/static/(.*)")
 
