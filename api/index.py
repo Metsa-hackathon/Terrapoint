@@ -9,6 +9,7 @@ from __future__ import annotations
 import time
 import asyncio
 import base64
+import contextlib
 import hashlib
 import hmac
 import inspect
@@ -73,7 +74,7 @@ from calculators.valuation import (
 )
 from spatial.bbox import calculate_bbox, bbox_to_wfs_string
 import config
-from api.cache import search_cache, wfs_cache
+from api.cache import search_cache, search_source_cache, wfs_cache
 
 
 logger = logging.getLogger(__name__)
@@ -140,9 +141,29 @@ MAP_LAYER_SOURCE_TIMEOUT_SECONDS = 7.0
 ADDRESS_UPSTREAM_TIMEOUT_SECONDS = 4.0
 ADDRESS_UPSTREAM_ATTEMPTS = 2
 MAX_ADDRESS_QUERY_CHARS = 160
+# Otsingu allikate vahemälu. Metsaregistri ja Maa-ameti WFS on aeglased ning
+# ühised kõigi kasutajate vahel: ilma vahemäluta kordub sama upstreami ootus
+# iga otsingu puhul. Terve allika tulemus hoitakse 30 minutit, osaliselt
+# katkenud allikas (nt aegunud teatise_arhiiv, mis annab 3.5s timeouti) ainult
+# 90 sekundit — nii ei jää katkine allikas püsivalt katkiseks.
+SOURCE_CACHE_TTL_SECONDS = 1800
+SOURCE_CACHE_DEGRADED_TTL_SECONDS = 90
+# Eraldiste detailide (liikide koosseis + kahjustused) faasi ajapiir.
+# Faas jookstub paralleelselt ülejäänud allikatega, seega peab see mahtuma
+# otsingu ülejäänud büdžetti — detailide eest ei tohi otsing 504-ni jõuda.
+DETAILS_PHASE_TIMEOUT_SECONDS = 7.0
+DETAILS_MIN_BUDGET_SECONDS = 2.0
+DETAILS_SAFETY_MARGIN_SECONDS = 1.0
 _rate_limit_buckets: dict[tuple[str, str], list[float]] = {}
 _search_in_flight: dict[str, asyncio.Task] = {}
 _search_waiters: dict[str, int] = {}
+# Allikavahemälu hetkel käivad päringud. Leht laadib korraga /api/map-context
+# ja /api/search — mõlemad vajavad katastri- ja eraldiseandmeid. Ilma
+# ühendamata läheks sama WFS-päring upstreami kaks korda.
+_source_in_flight: dict[str, asyncio.Task] = {}
+# Mitu päringut ootab praegu sama ühise allikapäringu tulemust. Kui kõik
+# ootajad loovutavad (nt aeglasoitus), katkestatakse ka ühine päring.
+_source_flight_waiters: dict[str, int] = {}
 JS_SAFE_INTEGER_MAX = 9_007_199_254_740_991
 DEFAULT_MAP_THEMES = (
     "nature_protection",
@@ -1820,7 +1841,7 @@ def _map_overlap_details(
 
 async def _map_context_core(kataster_nr: str, requested_themes: list[str]) -> dict:
     attempted_at = datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
-    kataster_data = await asyncio.wait_for(query_kataster(kataster_nr), timeout=KATASTER_TIMEOUT_SECONDS)
+    kataster_data = await asyncio.wait_for(_cached_kataster(kataster_nr), timeout=KATASTER_TIMEOUT_SECONDS)
     if not kataster_data:
         raise HTTPException(status_code=404, detail="Krunti ei leitud")
 
@@ -1845,7 +1866,7 @@ async def _map_context_core(kataster_nr: str, requested_themes: list[str]) -> di
             if source_key not in source_keys
         )
     stands_result, layers_result = await asyncio.gather(
-        asyncio.wait_for(query_eraldis(kataster_nr), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS),
+        asyncio.wait_for(_cached_eraldis(kataster_nr), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS),
         query_layers(
             bbox_str,
             source_keys,
@@ -2255,6 +2276,237 @@ async def _gather_in_batches(tasks: list, batch_size: int = 20, overall_timeout:
     return results
 
 
+async def _single_flight(cache_key: str, factory):
+    """Käivita upstreami päring ainult üks kord paralleelsete päringute seas.
+
+    Leht laadib korraga /api/map-context ja /api/search — mõlemad vajavad
+    katastri- ja eraldiseandmeid. Ilma ühendamata läheks sama aeglane
+    WFS-päring upstreami kaks korda ja otsing oleks kaks korda aeglasem.
+
+    Ühine päring jätkub ka siis, kui üks ootaja loovutab (timeout) — teised
+    ootajad saavad ikka tulemuse. Kui aga ootajaid pole enam üldse, siis
+    päring katkestatakse, et aeglane upstream vabaneks kohe.
+    """
+    task = _source_in_flight.get(cache_key)
+    if task is None:
+        task = asyncio.ensure_future(factory())
+        _source_in_flight[cache_key] = task
+
+        def clear_in_flight(completed: asyncio.Task, key: str = cache_key) -> None:
+            if _source_in_flight.get(key) is completed:
+                _source_in_flight.pop(key, None)
+            _source_flight_waiters.pop(key, None)
+            if not completed.cancelled():
+                completed.exception()
+
+        task.add_done_callback(clear_in_flight)
+
+    _source_flight_waiters[cache_key] = _source_flight_waiters.get(cache_key, 0) + 1
+    cancelled = False
+    try:
+        return await asyncio.shield(task)
+    except asyncio.CancelledError:
+        # Ootaja katkestati (nt aeglasoitus).
+        cancelled = True
+        raise
+    finally:
+        remaining = _source_flight_waiters.get(cache_key, 1) - 1
+        if remaining > 0:
+            _source_flight_waiters[cache_key] = remaining
+        else:
+            _source_flight_waiters.pop(cache_key, None)
+        # Kui meid on ainus allesjäänud ootaja, tuleb ühine päring samuti
+        # katkestada, et aeglane upstream vabaneks kohe.
+        if cancelled and remaining <= 0 and not task.done():
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                await task
+
+
+async def _cached_kataster(kataster_nr: str) -> dict | None:
+    """Katastriandmed vahemälust — WFS on aeglane, andmed muutuvad harva."""
+    cache_key = f"kataster:{kataster_nr}"
+    cached = search_source_cache.get(cache_key)
+    if isinstance(cached, dict):
+        # Shallow copy: _search_core täiendab kataster_data-d mets_pindala_ha
+        # väljaga, seda ei tohi sattuda vahemällu sisse.
+        return dict(cached)
+    data = await _single_flight(
+        cache_key,
+        lambda: query_kataster(kataster_nr, include_valuation_metadata=True),
+    )
+    if isinstance(data, dict):
+        search_source_cache.set(cache_key, data, ttl=SOURCE_CACHE_TTL_SECONDS)
+    return data
+
+
+async def _cached_eraldis(kataster_nr: str) -> list[dict]:
+    """Kinnistu eraldised vahemälust."""
+    cache_key = f"eraldis:{kataster_nr}"
+    cached = search_source_cache.get(cache_key)
+    if isinstance(cached, list):
+        return cached
+    eraldised = await _single_flight(cache_key, lambda: query_eraldis(kataster_nr))
+    search_source_cache.set(cache_key, eraldised, ttl=SOURCE_CACHE_TTL_SECONDS)
+    return eraldised
+
+
+async def _cached_teatised(kataster_nr: str) -> tuple[list[dict], list[str]]:
+    """Raieteatised vahemälust (koos katkiste allikate loeteluga).
+
+    Osaliselt katkenud tulemus (nt teatis_arhiiv ei vastanud 3.5s jooksul)
+    hoitakse vahemälus vaid lühikest aega, et upstreami taastumisel
+    kaotatud andmed kiiresti tagasi tuleks.
+    """
+    cache_key = f"teatised:{kataster_nr}"
+    cached = search_source_cache.get(cache_key)
+    if isinstance(cached, tuple) and len(cached) == 2:
+        return cached
+    result = await _single_flight(cache_key, lambda: query_teatised(kataster_nr))
+    if isinstance(result, tuple) and len(result) == 2:
+        teatised, unavailable = result
+    else:
+        # Tests and internal callers may provide an already-normalized list.
+        teatised, unavailable = result, []
+    ttl = SOURCE_CACHE_DEGRADED_TTL_SECONDS if unavailable else SOURCE_CACHE_TTL_SECONDS
+    search_source_cache.set(cache_key, (teatised, unavailable), ttl=ttl)
+    return teatised, unavailable
+
+
+async def _fetch_stand_details(
+    kataster_nr: str,
+    eraldised: list[dict],
+    deadline: float,
+) -> dict:
+    """Eraldiste liikide koosseis ja kahjustused (2 WFS-päringut eraldise kohta).
+
+    Tulemus vahemällustatakse kinnistu kohta, sest Metsaregistri WFS on aeglane
+    ja sama kinnistu päringud korduvad. Vahemälu võti sisaldab eraldiste
+    id-de, et vahemälu ei rakenduks muutunud eraldiste komplektile.
+
+    `deadline` on otsingu üldbüdžeti lõpp (monotoniseeritud aja järgi).
+    Detailide faas jookneb paralleelselt ülejäänud allikatega, seega
+    arvutatakse allesjäänud aeg otsingu algusest, mitte faasi algusest.
+    """
+    stand_ids = [e.get("id") for e in eraldised]
+    cache_key = f"stand_details:{kataster_nr}"
+    cached = search_source_cache.get(cache_key)
+    if isinstance(cached, dict) and cached.get("ids") == stand_ids:
+        return cached
+
+    ELEMENT_FETCH_MAX = 200
+    unavailable_sources: list[str] = []
+    # skip_details: otsingu üldbüdžetist ei jätku detailide (liikide
+    # koosseise) päringute jaoks — vastus peab jõuaks kätte selle asemel,
+    # et otsing tähtaja ületaks ja annaks 504.
+    remaining = deadline - time.monotonic()
+    skip_details = len(eraldised) == 0 or remaining < DETAILS_MIN_BUDGET_SECONDS
+    # Faasi siseseks ajapiiriks jääb kogu ülejäänud büdžet, mitte
+    # fikseeritud 7 sekundit — muidu võib faas ületada üldtähtaega.
+    details_timeout = min(
+        DETAILS_PHASE_TIMEOUT_SECONDS,
+        max(0.5, remaining - DETAILS_SAFETY_MARGIN_SECONDS),
+    )
+    sampled_eraldised = False
+    all_elements: list = []
+    all_kahjustused: list = []
+
+    if eraldised and not skip_details:
+        fetch_eraldised = eraldised
+        if len(eraldised) > ELEMENT_FETCH_MAX:
+            fetch_eraldised = eraldised[:ELEMENT_FETCH_MAX]
+            sampled_eraldised = True
+        try:
+            element_tasks = [
+                query_eraldis_element(e.get("id")) for e in fetch_eraldised
+            ]
+            kahjustused_tasks = [
+                query_kahjustused(e.get("id")) for e in fetch_eraldised
+            ]
+            # Element- ja kahjustuste batched fetch peab jooksma paralleelselt
+            # (vana kood jooksis need järjest, mis võttis 12+6=18s suurte
+            # metsade puhul ja ületas _search 20s üldise wait_for piiri).
+            # Maksimaalselt details_timeout kogu faasile (mõlemad jagavad
+            # event loop'i).
+            element_results, kahjustused_results = await asyncio.gather(
+                _gather_in_batches(
+                    element_tasks,
+                    batch_size=20,
+                    overall_timeout=details_timeout,
+                    fallback_per_task=asyncio.TimeoutError,
+                ),
+                _gather_in_batches(
+                    kahjustused_tasks,
+                    batch_size=20,
+                    overall_timeout=details_timeout,
+                    fallback_per_task=asyncio.TimeoutError,
+                ),
+            )
+            all_elements = [r if isinstance(r, list) else [] for r in element_results]
+            all_kahjustused = [
+                r if isinstance(r, list) else [] for r in kahjustused_results
+            ]
+            # extend with [] for sampled-out eraldised so zip() aligns
+            if sampled_eraldised:
+                all_elements.extend([[]] * (len(eraldised) - len(fetch_eraldised)))
+                all_kahjustused.extend([[]] * (len(eraldised) - len(fetch_eraldised)))
+            if any(not isinstance(r, list) for r in element_results):
+                unavailable_sources.append("metsaregister.eraldis_element")
+            if any(not isinstance(r, list) for r in kahjustused_results):
+                unavailable_sources.append("metsaregister.kahjustused")
+        except Exception:
+            # Catastrophic — fall back to eraldis-level data for all
+            all_elements = []
+            all_kahjustused = []
+            unavailable_sources.extend(
+                ["metsaregister.eraldis_element", "metsaregister.kahjustused"]
+            )
+            for e in eraldised:
+                kood = (
+                    e.get("puuliik_kood_raw")
+                    if "puuliik_kood_raw" in e
+                    else e.get("puuliik_kood")
+                )
+                if kood:
+                    all_elements.append(
+                        [
+                            {
+                                "eraldis_id": e.get("id"),
+                                "puuliik": e.get("puuliik", kood),
+                                "puuliik_kood": kood,
+                                "tagavara_y_ha": e.get("tagavara_y_ha"),
+                                "tagavara_provenance": e.get("tagavara_provenance"),
+                                "vanus": (
+                                    e.get("vanus_raw")
+                                    if "vanus_raw" in e
+                                    else e.get("vanus")
+                                ),
+                            }
+                        ]
+                    )
+                else:
+                    all_elements.append([])
+
+    result = {
+        "ids": stand_ids,
+        "elements": all_elements,
+        "kahjustused": all_kahjustused,
+        "unavailable": unavailable_sources,
+        "sampled": sampled_eraldised,
+        "skipped": skip_details,
+    }
+    if all_elements or all_kahjustused:
+        # Katkise detailidega tulemust ei hoita kaua — järgmine otsing peab
+        # saama katkestuse parandamisel kiiresti uued andmed.
+        ttl = (
+            SOURCE_CACHE_DEGRADED_TTL_SECONDS
+            if unavailable_sources
+            else SOURCE_CACHE_TTL_SECONDS
+        )
+        search_source_cache.set(cache_key, result, ttl=ttl)
+    return result
+
+
 async def _search_core(
     kataster_nr: str,
     start: float,
@@ -2263,7 +2515,7 @@ async def _search_core(
     """Sisemine otsinguloogika — eraldatud, et saaks timeout-i panna."""
     try:
         kataster_data = await asyncio.wait_for(
-            query_kataster(kataster_nr, include_valuation_metadata=True),
+            _cached_kataster(kataster_nr),
             timeout=KATASTER_TIMEOUT_SECONDS,
         )
     except asyncio.TimeoutError:
@@ -2282,23 +2534,75 @@ async def _search_core(
     bbox = calculate_bbox(kataster_data["geometry"])
     bbox_str = bbox_to_wfs_string(bbox)
 
-    results = await asyncio.gather(
-        asyncio.wait_for(query_eraldis(kataster_nr), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS),
-        (
-            asyncio.wait_for(query_all_layers(bbox_str), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS)
-            if include_map_layers
-            else asyncio.wait_for(
-                query_layers(bbox_str, ANALYTICAL_LAYER_KEYS),
+    # Eraldised ja teatised sõltuvad ainult katastritunnusest, seega saab neid
+    # küsida kohe katastri kõrval. Eraldiste põhjal sõltuv liikide koosseis
+    # (2 WFS-päringut eraldise kohta) arendab samal ajal, kui ruumikihid ja
+    # teatised veel laevad — varem oli see järjest, mis sidus otsingu kestuseks
+    # kaks upstreami ootust.
+    eraldis_task = asyncio.ensure_future(
+        asyncio.wait_for(
+            _cached_eraldis(kataster_nr), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS
+        )
+    )
+    other_tasks = [
+        asyncio.ensure_future(
+            asyncio.wait_for(
+                query_all_layers(bbox_str) if include_map_layers else query_layers(bbox_str, ANALYTICAL_LAYER_KEYS),
                 timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS,
             )
         ),
-        asyncio.wait_for(query_teatised(kataster_nr), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS),
-        asyncio.wait_for(query_natura_2000(bbox_str), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS),
-        return_exceptions=True,
+        asyncio.ensure_future(
+            asyncio.wait_for(
+                _cached_teatised(kataster_nr), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS
+            )
+        ),
+        asyncio.ensure_future(
+            asyncio.wait_for(
+                query_natura_2000(bbox_str), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS
+            )
+        ),
+    ]
+    try:
+        eraldis_outcome = await eraldis_task
+    # Üks katkenud allikas ei tohi murda otsingut — eraldiseta jätkatakse.
+    except Exception as exc:  # noqa: BLE001
+        eraldis_outcome = exc
+    raw_eraldised = eraldis_outcome if not isinstance(eraldis_outcome, Exception) else []
+    # Eraldiste detailid (liikide koosseis + kahjustused) laaduvad paralleelselt
+    # ruumikihide ja teatistega — mitte nende järel. Varem oli see järjest,
+    # mistõttu otsingu kestus oli kahe upstreami ootuse summa.
+    # Büdžet: detailide faas peab mahtuma otsingu ülejäänud ajasse, et vastus
+    # jõuaks kätte enne 20s üldtähtaega (muidu 504).
+    search_deadline = time.monotonic() + max(
+        0.0, (start + SEARCH_TIMEOUT_SECONDS) - time.time()
     )
-    unavailable_sources = []
-    eraldised = results[0] if not isinstance(results[0], Exception) else []
-    if isinstance(results[0], Exception):
+    stand_details_task = asyncio.ensure_future(
+        _fetch_stand_details(kataster_nr, raw_eraldised, search_deadline)
+    )
+    try:
+        results = await asyncio.gather(*other_tasks, return_exceptions=True)
+        stand_details = await stand_details_task
+    except asyncio.CancelledError:
+        # Otsingu üldtähtaeg ületus — kõik pooleli olevad ülesanded tuleb
+        # peatada, et taustaga WFS-päringud ei jätaks ühenduskohti kinni.
+        for pending in (*other_tasks, stand_details_task):
+            pending.cancel()
+        raise
+    except Exception:  # noqa: BLE001 — detailide katkemine ei tohi murda otsingut
+        stand_details = {
+            "ids": [],
+            "elements": [],
+            "kahjustused": [],
+            "unavailable": [
+                "metsaregister.eraldis_element",
+                "metsaregister.kahjustused",
+            ],
+            "sampled": False,
+            "skipped": True,
+        }
+    unavailable_sources = list(stand_details["unavailable"])
+    eraldised = eraldis_outcome if not isinstance(eraldis_outcome, Exception) else []
+    if isinstance(eraldis_outcome, Exception):
         unavailable_sources.append("metsaregister.eraldised")
     else:
         normalized_stands = []
@@ -2324,7 +2628,7 @@ async def _search_core(
         if include_map_layers
         else list(ANALYTICAL_LAYER_KEYS)
     )
-    layers_data, unavailable_layers, truncated_layers = results[1] if not isinstance(results[1], Exception) else ({}, queried_layer_keys, [])
+    layers_data, unavailable_layers, truncated_layers = results[0] if not isinstance(results[0], Exception) else ({}, queried_layer_keys, [])
     filtered_layers = {}
     for key, features in layers_data.items():
         filtered, geometry_incomplete = _filter_features_by_geometry_with_status(
@@ -2344,10 +2648,10 @@ async def _search_core(
     # staatuse ja blokeeriks AI analüüsi suurte metsade puhul.
     unavailable_sources.extend(f"layers.{key}" for key in unavailable_layers)
     teatised_features = []
-    if isinstance(results[2], Exception):
+    if isinstance(results[1], Exception):
         unavailable_sources.append("metsaregister.teatised")
     else:
-        notice_result = results[2]
+        notice_result = results[1]
         if isinstance(notice_result, tuple):
             teatised_features, notice_unavailable = notice_result
             unavailable_sources.extend(notice_unavailable)
@@ -2355,8 +2659,8 @@ async def _search_core(
             # Tests and internal callers may provide an already-normalized list.
             teatised_features = notice_result
             unavailable_sources.extend(getattr(teatised_features, "unavailable_sources", []))
-    natura_features = results[3] if not isinstance(results[3], Exception) else []
-    if isinstance(results[3], Exception):
+    natura_features = results[2] if not isinstance(results[2], Exception) else []
+    if isinstance(results[2], Exception):
         unavailable_sources.append("metsaregister.natura_2000")
     natura_features, natura_geometry_incomplete = _filter_features_by_geometry_with_status(
         natura_features,
@@ -2375,10 +2679,6 @@ async def _search_core(
     # esimesed 200 (osaline, aga koosseis on sellegipoolest palju/mitmekesisem)
     # ja märgime meta'as sampled_eraldised.
     elapsed = time.time() - start
-    ELEMENT_FETCH_MAX = 200
-    ELEMENT_FETCH_TIME_BUDGET = 10.0
-    skip_details = len(eraldised) == 0 or elapsed > ELEMENT_FETCH_TIME_BUDGET
-    sampled_eraldised = False
     yrask_features = _filter_features_by_geometry(layers_data.get("yrask_eelis", []), kataster_data.get("geometry"))
     yrask_mke_features = _filter_features_by_geometry(layers_data.get("yrask_mke", []), kataster_data.get("geometry"))
 
@@ -2449,70 +2749,17 @@ async def _search_core(
         "SP": {"seisuhind": 42, "log": 78,  "pulp": 45},   # Sarapuu (hinnanguline)
     }
 
+    # Eraldiste detailid (liikide koosseis + kahjustused) laaduvad paralleelselt
+    # ruumikihide ja teatistega — ülesanne käivitati kohe eraldiste saabumisel,
+    # nii et otsingu kestus on nende kahe upstreami ootuse summa asemel pikim
+    # ootustest.
+    all_elements = stand_details["elements"]
+    all_kahjustused = stand_details["kahjustused"]
+    sampled_eraldised = bool(stand_details["sampled"])
+    skip_details = bool(stand_details["skipped"])
+
     if eraldised:
-        # Fetch element + kahjustused data for all (or sampled) eraldised.
-        # Vana kood jooksis asyncio.gather(*tasks) — üle 30 eraldise tõttu see
-        # ületas WFS ühenduste piiri, skip_details=True läkss käiku ja suurte
-        # metsade liikide koosseis kippus näitama alati ~100% ühte liiki.
-        # Nüüd: _gather_in_batches jawab korraga batch = 20 päringut,
-        # lävend on 200 eraldise peale ja üle 200 eraldise sample'ime.
-        if not skip_details:
-            fetch_eraldised = eraldised
-            if len(eraldised) > ELEMENT_FETCH_MAX:
-                fetch_eraldised = eraldised[:ELEMENT_FETCH_MAX]
-                sampled_eraldised = True
-            try:
-                element_tasks = [query_eraldis_element(e.get("id")) for e in fetch_eraldised]
-                kahjustused_tasks = [query_kahjustused(e.get("id")) for e in fetch_eraldised]
-                # Element- ja kahjustuste batched fetch peab jooksma paralleelselt
-                # (vana kood jooksis need järjest, mis võttis 12+6=18s suurte
-                # metsade puhul ja ületas _search 20s üldise wait_for piiri).
-                # Maksimaalselt 7s kogu faasile (mõlemad jagavad event loop'i).
-                element_results, kahjustused_results = await asyncio.gather(
-                    _gather_in_batches(element_tasks, batch_size=20,
-                                       overall_timeout=7.0, fallback_per_task=asyncio.TimeoutError),
-                    _gather_in_batches(kahjustused_tasks, batch_size=20,
-                                       overall_timeout=7.0, fallback_per_task=asyncio.TimeoutError),
-                )
-                all_elements = [r if isinstance(r, list) else [] for r in element_results]
-                all_kahjustused = [r if isinstance(r, list) else [] for r in kahjustused_results]
-                # extend with [] for sampled-out eraldised so zip() aligns
-                if sampled_eraldised:
-                    all_elements.extend([[]] * (len(eraldised) - len(fetch_eraldised)))
-                    all_kahjustused.extend([[]] * (len(eraldised) - len(fetch_eraldised)))
-                if any(not isinstance(r, list) for r in element_results):
-                    unavailable_sources.append("metsaregister.eraldis_element")
-                if any(not isinstance(r, list) for r in kahjustused_results):
-                    unavailable_sources.append("metsaregister.kahjustused")
-            except Exception:
-                # Catastrophic — fall back to eraldis-level data for all
-                all_elements = []
-                all_kahjustused = []
-                unavailable_sources.extend(["metsaregister.eraldis_element", "metsaregister.kahjustused"])
-                for e in eraldised:
-                    kood = (
-                        e.get("puuliik_kood_raw")
-                        if "puuliik_kood_raw" in e
-                        else e.get("puuliik_kood")
-                    )
-                    if kood:
-                        all_elements.append([{
-                            "eraldis_id": e.get("id"),
-                            "puuliik": e.get("puuliik", kood),
-                            "puuliik_kood": kood,
-                            "tagavara_y_ha": e.get("tagavara_y_ha"),
-                            "tagavara_provenance": e.get("tagavara_provenance"),
-                            "vanus": (
-                                e.get("vanus_raw")
-                                if "vanus_raw" in e
-                                else e.get("vanus")
-                            ),
-                        }])
-                    else:
-                        all_elements.append([])
-        else:
-            all_elements = []
-            all_kahjustused = []
+        if skip_details:
             # Build approximate liikide_koosseis from eraldised-level data
             for e in eraldised:
                 kood = e.get("puuliik_kood")
@@ -4605,12 +4852,27 @@ async def export_eudr(kataster_nr: str, request: Request):
 
 @app.get("/")
 async def root():
-    """Lehe avaleht — esitleb HTML index faili."""
+    """Lehe avaleht — esitleb HTML index faili.
+
+    Leht on staatiline ja sisu poolest identne kõigile külastajatele, seega
+    võib Verceli serv vahemälu seda hoida. Varem oli vastus "no-store",
+    mistõttu iga külastus käivitas uue serverifunktsiooni ja lehe avamise
+    esimene bait võttis 300-450 ms. Nüüd hoiab serv dokumenti minutit ja
+    brauser kinnitab selle iga kord (max-age=0) — deploy on seega kohe
+    nähtav, ent sirvitud leht on kiire.
+    """
     html_path = PROJECT_ROOT / "index.html"
     if html_path.exists():
         return HTMLResponse(
             content=html_path.read_text(encoding="utf-8"),
-            headers={"Cache-Control": "no-cache, no-store, must-revalidate"}
+            headers={
+                "Cache-Control": "public, max-age=0, s-maxage=60, "
+                "stale-while-revalidate=600",
+                # Verceli serv vahemälu kasutab CDN-Cache-Control'i, kui see on
+                # olemas; max-age=0 jätab brauserile ikka kohustusliku
+                # kinnitamise, et deploy kohe nähtavaks muutuks.
+                "CDN-Cache-Control": "public, s-maxage=60, stale-while-revalidate=600",
+            },
         )
     return HTMLResponse(content="<h1>Terrapoint</h1>", status_code=500)
 
@@ -4669,6 +4931,36 @@ async def humans_txt():
     return FileResponse(
         str(path),
         media_type="text/plain; charset=utf-8",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@app.get("/site.webmanifest")
+async def site_webmanifest():
+    """PWA manifest — ilma selleta annab brauser 404 ja logib viga.
+
+    Verceli juurikaustas olevaid faile ei serve'ita FastAPI route'ina
+    automaatselt, seega tuleb fail välja anda käsitsi.
+    """
+    path = PROJECT_ROOT / "site.webmanifest"
+    if not path.exists():
+        return Response(status_code=404)
+    return FileResponse(
+        str(path),
+        media_type="application/manifest+json",
+        headers={"Cache-Control": "public, max-age=604800"},
+    )
+
+
+@app.get("/favicon.ico")
+async def favicon_ico():
+    """Brower küsib /favicon.ico ise, kuigi lehel on <link rel=icon> SVG."""
+    path = PROJECT_ROOT / "static" / "favicon.svg"
+    if not path.exists():
+        return Response(status_code=404)
+    return RedirectResponse(
+        url="/static/favicon.svg",
+        status_code=307,
         headers={"Cache-Control": "public, max-age=86400"},
     )
 

@@ -45,7 +45,11 @@ class MapContextCoreTests(unittest.IsolatedAsyncioTestCase):
             result = await api._map_context_core(KATASTER_NR, ["species_habitats"])
 
         selected_query.assert_awaited_once()
-        parcel_query.assert_awaited_once_with(KATASTER_NR)
+        # Katastriandmed jõuavad otsingusse ja kaardikonteksti kaudu ühise
+        # vahemäluni, mistõttu küsitakse neid koos hindamisinfoga.
+        parcel_query.assert_awaited_once_with(
+            KATASTER_NR, include_valuation_metadata=True
+        )
         self.assertEqual(selected_query.await_args.args[1], ["natura_elupaik"])
         self.assertEqual(result["requested_themes"], ["species_habitats"])
         self.assertEqual(set(result["themes"]), {"species_habitats"})

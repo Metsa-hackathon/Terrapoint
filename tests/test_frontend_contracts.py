@@ -250,7 +250,8 @@ async function fetch(url) {{
         self.assertIn("must-revalidate", cache_control)
 
     def test_changed_stylesheet_busts_the_previous_immutable_url(self):
-        self.assertIn('/static/css/style.css?r=jkl126', INDEX_HTML)
+        self.assertIn('/static/css/style.css?r=jkl127', INDEX_HTML)
+        self.assertNotIn('/static/css/style.css?r=jkl126', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl125', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl124', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl123', INDEX_HTML)

@@ -65,3 +65,7 @@ class TTLCache:
 # Singleton instances
 wfs_cache = TTLCache(default_ttl=7200, max_entries=512)    # 2h for WFS queries
 search_cache = TTLCache(default_ttl=300, max_entries=256)  # 5min for search results
+# 30min for individual search sources (kataster/eraldised/teatised/stand details).
+# WFS-i päringud on aeglased ja ühised kõigi kasutajate vahel: ilma selle
+# vahemäluta maks iga uus otsing sama upstreami ootuse uuesti.
+search_source_cache = TTLCache(default_ttl=1800, max_entries=1024)

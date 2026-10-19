@@ -2746,6 +2746,10 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 .ai-message.user-message { flex-direction: row-reverse; }
+/* Flex child default min-width:auto lets one long unbreakable run (URL,
+   katastritunnus, inline code from the AI answer) force the bubble wider
+   than the phone viewport. Allow shrinking + break anywhere as fallback. */
+.ai-message > * { min-width: 0; }
 .ai-avatar {
     width: 22px; height: 22px;
     border-radius: 50%;
@@ -2774,6 +2778,8 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     border-radius: var(--r-md);
     padding: 10px 14px;
     max-width: min(88%, 72ch);
+    min-width: 0;
+    overflow-wrap: anywhere;
     font-size: var(--ai-chat-font-size);
     line-height: 1.6;
     color: var(--ink-2);

@@ -23,6 +23,41 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   Avalik vestlus säilitab allkirjastatud kinnistuandmete kontrolli ja SSE
   väljundi, kuid ei edasta mudeli sisemist mõttekäiku ega teenuse vearaporteid.
   Brauseri andmetöötluse teavitus nimetab nüüd OpenAI-d.
+- **Puuduvad manifesti ja ikooni marsruudid** — `GET /site.webmanifest`
+  andis 404 JSON-vastuse ning brauser logis iga lehelaadimisel kaks
+  viga („Manifest fetch … failed, code 404"). Nüüd serveeritakse manifest
+  sisuga `application/manifest+json` ja `/favicon.ico` suunatakse
+  SVG-ikoonile (307).
+- **AI vastuse murdmine mobiilil** — `.ai-message > *` sai `min-width: 0`
+  ja sõnumibil `overflow-wrap: anywhere`, et pikk katastritunnus või link
+  ei venitaks vestlust üle ekraani.
+
+### Performance
+- **Otsingu latentsus vähenenud ja upstreami koormus kaheldes** — katastri-
+  ja eraldiseandmed võetakse nüüd ühisest vahemälust (30 min), otsingu ja
+  kaardikonteksti paralleelsed päringud ühendatakse üheks upstreami
+  päringuks (single-flight) ning eraldiste detailide faas (liikide koosseis,
+  kahjustused) käib nüüd paralleelselt ruumikihide ja teatiste päringuga,
+  mitte nende järel. Detailide faas arvestab otsingu üldtähtaega, et vastus
+  ei lähe 504 piirini.
+- **Osaliselt katkenud allika tulemus ei püsi** — degradeerunud allikad
+  (nt `metsaregister.teatis_arhiiv`, mille 3,5 s timeout ületati) puhverdatakse
+  vaid 90 sekundit, mitte 30 minutit, et taastunud upstream ei jääks
+  katkiseks.
+- **Mõõdetud** — katastri `78404:409:0113` külm otsing 6,6 s → 4,9 s, korduv
+  otsing 5 ms → 1 ms; kaardikonteksti ja otsingu paralleelsel laadimisel
+  2 katastri- ja 2 eraldise upstreami päringu asemel 1 + 1
+  (katastri päring 2,98 s).
+- **Avaleht hoitakse servivahemälus** — vastus saab
+  `s-maxage=60, stale-while-revalidate=600` (brauser kinnitab iga kord,
+  `max-age=0`), nii et iga külastus ei käivita uut serverifunktsiooni
+  (TTFB ~0,44 s → servivahemälu tabamusel ~0,11 s). Fontide ja
+  vendor-failide puhverdusaeg pikendati (30 päeva / 1 aasta) ning
+  `style.css`/`hero.js`/`api-docs.css` puhverdamise purustamiseks lisati
+  uued versiooniparametrid.
+- **Testid on isoleeritud** — uus `tests/conftest.py` puhastab vahemälud
+  enne ja pärast iga testi, et ühise katastrinumbri põhjal vahemälu
+  täidetud testid ei mõjutaks järgmisi.
 
 ### Operations
 - Kui konteineri taasloomisel muutub proxy IP, tuleb piiratud UFW reegel

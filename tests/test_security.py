@@ -239,7 +239,7 @@ class SecurityBoundaryTests(unittest.TestCase):
         redoc = client.get("/api/redoc", follow_redirects=False)
 
         self.assertEqual(docs.status_code, 200)
-        self.assertIn("/static/css/api-docs.css?v=1", docs.text)
+        self.assertIn("/static/css/api-docs.css?v=2", docs.text)
         self.assertIn('href="/api/openapi.json"', docs.text)
         self.assertNotIn("<script", docs.text)
         self.assertNotIn("cdn.jsdelivr.net", docs.text)
