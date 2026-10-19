@@ -55,9 +55,10 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   (nt `metsaregister.teatis_arhiiv`, mille 3,5 s timeout ületati) puhverdatakse
   vaid 90 sekundit, mitte 30 minutit, et taastunud upstream ei jääks
   katkiseks.
-- **Mõõdetud** — katastri `78404:409:0113` külm otsing 6,6 s → 4,9 s, korduv
-  otsing 5 ms → 1 ms; kaardikonteksti ja otsingu paralleelsel laadimisel
-  2 katastri- ja 2 eraldise upstreami päringu asemel 1 + 1
+- **Mõõdetud** — katastri `78404:409:0113` külm otsing 6,6 s → kiire etapp
+  2,4 s (täielik etapp 4,9 s), soe otsing 1,2 s → 0,03 s; Verceli kaudu kiire
+  vastus 0,7–1,0 s ja täielik 1,0 s; kaardikonteksti ja otsingu paralleelsel
+  laadimisel 2 katastri- ja 2 eraldise upstreami päringu asemel 1 + 1
   (katastri päring 2,98 s).
 - **Avaleht hoitakse servivahemälus** — vastus saab
   `s-maxage=60, stale-while-revalidate=600` (brauser kinnitab iga kord,
