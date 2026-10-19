@@ -450,7 +450,7 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         started = asyncio.Event()
         release = asyncio.Event()
 
-        async def slow_search_core(*args):
+        async def slow_search_core(*args, **kwargs):
             started.set()
             await release.wait()
             return copy.deepcopy(result)
@@ -476,7 +476,7 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         started = asyncio.Event()
         release = asyncio.Event()
 
-        async def slow_search_core(*args):
+        async def slow_search_core(*args, **kwargs):
             started.set()
             await release.wait()
             return copy.deepcopy(result)
@@ -500,7 +500,7 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         started = asyncio.Event()
         cancelled = asyncio.Event()
 
-        async def slow_search_core(*args):
+        async def slow_search_core(*args, **kwargs):
             started.set()
             try:
                 await asyncio.sleep(10)
@@ -519,7 +519,7 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("78404:409:0113", api._search_in_flight)
 
     async def test_concurrent_different_keys_do_not_share_results(self):
-        async def search_core(kataster_nr, *args):
+        async def search_core(kataster_nr, *args, **kwargs):
             await asyncio.sleep(0)
             return {
                 "kataster": {"number": kataster_nr},

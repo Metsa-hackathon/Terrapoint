@@ -273,12 +273,12 @@ async function fetch(url) {{
         self.assertNotIn('/static/css/style.css?r=jkl104', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl103', INDEX_HTML)
         self.assertNotIn('/static/css/style.css?r=jkl102', INDEX_HTML)
-        self.assertIn('/static/js/app.js?r=jkl007', INDEX_HTML)
+        self.assertIn('/static/js/app.js?r=jkl008', INDEX_HTML)
+        self.assertNotIn('/static/js/app.js?r=jkl007', INDEX_HTML)
         self.assertNotIn('/static/js/app.js?r=jkl006', INDEX_HTML)
         self.assertNotIn('/static/js/app.js?r=jkl005', INDEX_HTML)
         self.assertNotIn('/static/js/app.js?r=jkl004', INDEX_HTML)
         self.assertNotIn('/static/js/app.js?r=jkl003', INDEX_HTML)
-        self.assertNotIn('/static/js/app.js?r=jkl002', INDEX_HTML)
 
     def test_sitemap_uses_only_the_canonical_document_url(self):
         self.assertEqual(SITEMAP_XML.count("<url>"), 1)
@@ -3110,8 +3110,17 @@ console.log(JSON.stringify(mapSourceDetailsHtml({{
         self.assertIn("var mapContextPromise = requestMapContextForParcel(nr);", do_search)
         self.assertLess(
             do_search.index("requestMapContextForParcel(nr)"),
-            do_search.index("await searchParcel(nr, controller)"),
+            do_search.index("await fastPromise"),
         )
+        # Progressiivne laadimine: kiire variant toob põhiandmed, täielik
+        # variant lisab eraldiste detailid.
+        self.assertIn(
+            "searchParcel(nr, controller, {includeDetails: true})", do_search
+        )
+        self.assertIn(
+            "searchParcel(nr, controller, {includeDetails: false})", do_search
+        )
+        self.assertIn("data.meta.details_pending", do_search)
         self.assertNotIn("loadMapLayers(data.map_layers", do_search)
         self.assertNotIn("deriveClientMapThemes", do_search)
         self.assertIn("setLegacyMapFallback(nr, data);", do_search)

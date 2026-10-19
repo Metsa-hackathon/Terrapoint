@@ -33,6 +33,13 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   ei venitaks vestlust üle ekraani.
 
 ### Performance
+- **Otsing laetakse kahes etapis** — uus `include_details=false` lülitab
+  välja eraldiste detailide faasi (liikide koosseis ja kahjustused), nii et
+  kinnistu põhiandmed ja kaart jõuavad ekraanile umbes 1,8 s varem. Brauser
+  küsib kiire ja täieliku vastuse paralleelselt: kiire vastus renderdatakse
+  kohe ning detailide saabudes uuendatakse metsa-, riski-, kitsenduste-,
+  toetus- ja EUDR-osa. Täielik vastus sisaldab samu andmeid nagu varem;
+  `meta.details_pending` näitab vahepealset olekut.
 - **Otsingu latentsus vähenenud ja upstreami koormus kaheldes** — katastri-
   ja eraldiseandmed võetakse nüüd ühisest vahemälust (30 min), otsingu ja
   kaardikonteksti paralleelsed päringud ühendatakse üheks upstreami

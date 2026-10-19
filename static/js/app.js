@@ -667,10 +667,15 @@
         return request;
     }
 
-    async function searchParcel(katasterNr, controller) {
+    async function searchParcel(katasterNr, controller, options) {
+        // includeDetails=false jätab eraldiste detailid (liikide koosseis ja
+        // kahjustused) välja — põhiandmed jõuavad nii palju kiiremini.
+        var includeDetails = !options || options.includeDetails !== false;
         var timer = setTimeout(function() { controller.abort(); }, 40000);
         try {
-            var res = await fetch(API_BASE + '/search/' + encodeURIComponent(katasterNr) + '?include_map_layers=false', {signal: controller.signal});
+            var url = API_BASE + '/search/' + encodeURIComponent(katasterNr) + '?include_map_layers=false'
+                + (includeDetails ? '' : '&include_details=false');
+            var res = await fetch(url, {signal: controller.signal});
             clearTimeout(timer);
             var payload = await res.json().catch(function() { return {}; });
             if (!res.ok) {
@@ -5301,8 +5306,23 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         void mapContextPromise;
 
         try {
-            var data = await searchParcel(nr, controller);
+            // Kaks paralleelset päringut: kiire variant toob põhiandmed,
+            // täielik variant lisab eraldiste detailid. Server kombineerib
+            // mõlemad ühiseks allikavahemälusse, seega upstreami päringuid
+            // ei dubleerita.
+            var fullPromise = searchParcel(nr, controller, {includeDetails: true});
+            var fastPromise = searchParcel(nr, controller, {includeDetails: false});
+            var data = null;
+            try {
+                data = await fastPromise;
+            } catch (fastErr) {
+                data = null;
+            }
             if (requestId !== parcelSearchSequence) return;
+            if (!data) {
+                // Kiire päring ebaõnnestus — proovi täielikku vastust.
+                data = await fullPromise;
+            }
             if (!data || !data.kataster || !data.kataster.number) {
                 throw new Error('Otsinguteenus tagastas puudulikud kinnistuandmed. Proovi uuesti.');
             }
@@ -5343,10 +5363,42 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
             hideLoading();
             showDashboard();
+            var detailsPending = Boolean(data.meta && data.meta.details_pending);
             if (shouldShowBroadPartialWarning(data.meta)) {
                 showError('Otsuse jaoks vajalik põhiandmete allikas ei vastanud. Muud kinnistuandmed kuvati, kuid puuduvat tulemust ei tohi tõlgendada metsa või piirangu puudumisena.');
-            } else if (data.mets && shouldShowDetailLimitWarning(data.meta)) {
+            } else if (!detailsPending && data.mets && shouldShowDetailLimitWarning(data.meta)) {
                 showError('Metsa detailandmete maht või laadimisaeg ületas turvalise piiri. Koosseis ja puidustsenaarium põhinevad üldisematel registriandmetel.');
+            }
+
+            if (detailsPending) {
+                // Detailandmed on veel tulemas — täiendame näitu, kui saabuvad.
+                var fullData = null;
+                try {
+                    fullData = await fullPromise;
+                } catch (fullErr) {
+                    fullData = null;
+                }
+                if (requestId !== parcelSearchSequence) return;
+                if (fullData && fullData.kataster && fullData.kataster.number === nr) {
+                    currentData = fullData;
+                    recordChatSnapshotReceipt(fullData, performance.now());
+                    setLegacyMapFallback(nr, fullData);
+                    enrichVisibleMapStands(nr, fullData);
+                    safe(renderMets, fullData.mets, 'mets', fullData.meta);
+                    safe(renderVaartus, fullData.vaartus, 'vaartus', fullData.meta);
+                    safe(renderSinik, fullData.sinik, 'sinik');
+                    safe(renderRiskid, fullData.riskid, 'riskid');
+                    safe(renderKitsendused, fullData.kitsendused, 'kitsendused', {
+                        spatial_status: fullData.spatial_status,
+                        meta: fullData.meta,
+                    });
+                    safe(renderToetused, fullData.toetused, 'toetused');
+                    safe(renderEudr, fullData, 'eudr');
+                    if (shouldShowBroadPartialWarning(fullData.meta)) {
+                        showError('Otsuse jaoks vajalik põhiandmete allikas ei vastanud. Muud kinnistuandmed kuvati, kuid puuduvat tulemust ei tohi tõlgendada metsa või piirangu puudumisena.');
+                    }
+                    data = fullData;
+                }
             }
 
             // Trigger AI analysis

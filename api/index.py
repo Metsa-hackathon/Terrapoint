@@ -154,6 +154,17 @@ SOURCE_CACHE_DEGRADED_TTL_SECONDS = 90
 DETAILS_PHASE_TIMEOUT_SECONDS = 7.0
 DETAILS_MIN_BUDGET_SECONDS = 2.0
 DETAILS_SAFETY_MARGIN_SECONDS = 1.0
+# Kiire otsinguvariant jätab detailide faasi teisele päringule. Tulemus on
+# sama kui üldiselt "detailid laadimata", kuid allikaid ei loeta kättesaamatuks
+# — need on veel tulemas, mitte katkenud.
+_PENDING_STAND_DETAILS = {
+    "ids": [],
+    "elements": [],
+    "kahjustused": [],
+    "unavailable": [],
+    "sampled": False,
+    "skipped": True,
+}
 _rate_limit_buckets: dict[tuple[str, str], list[float]] = {}
 _search_in_flight: dict[str, asyncio.Task] = {}
 _search_waiters: dict[str, int] = {}
@@ -2133,12 +2144,20 @@ async def search(
     kataster_nr: str,
     request: Request,
     include_map_layers: bool = Query(True),
+    include_details: bool = Query(True),
 ):
     # Kõigepealt valideeri formaat — kaitseb path-traversal SSRF-i eest
     # Vercel→VPS proxy kaudu (nt "/api/search/../api/chat").
     _validate_kataster_nr_or_400(kataster_nr)
-    # Rate limit: kaitse WFS-i ülekoormuse eest (1 kataster = ~30 WFS päringut)
-    allowed, retry_after = _check_rate_limit(_client_identifier(request), "search", 20, 60)
+    # Rate limit: kaitse WFS-i ülekoormuse eest (1 kataster = ~30 WFS päringut).
+    # Kiire ja täielik variant lähevad eri korvi, et üks otsingutegevus
+    # (kaks paralleelset päringut) ei kulutaks kaks korda oma kvoota.
+    allowed, retry_after = _check_rate_limit(
+        _client_identifier(request),
+        "search" if include_details else "search-fast",
+        20,
+        60,
+    )
     if not allowed:
         return json_response({"error": "Liiga palju päringuid. Proovi uuesti mõne sekundi pärast."}, 429, {"Retry-After": str(retry_after)})
     # On Vercel, proxy to VPS to avoid 10s timeout
@@ -2147,14 +2166,21 @@ async def search(
             async with httpx.AsyncClient(timeout=25.0) as client:
                 resp = await client.get(
                     f"{_backend_api_url()}/search/{kataster_nr}",
-                    params={"include_map_layers": str(include_map_layers).lower()},
+                    params={
+                        "include_map_layers": str(include_map_layers).lower(),
+                        "include_details": str(include_details).lower(),
+                    },
                 )
                 return _search_proxy_response(resp, kataster_nr)
         except Exception as exc:
             print(f"[search] VPS proxy error: {type(exc).__name__}", flush=True)
             return json_response({"error": "Otsinguteenusega ei õnnestu hetkel ühendust saada. Proovi uuesti."}, 502)
     try:
-        return await _search(kataster_nr, include_map_layers=include_map_layers)
+        return await _search(
+            kataster_nr,
+            include_map_layers=include_map_layers,
+            include_details=include_details,
+        )
     except HTTPException:
         raise
     except Exception as exc:
@@ -2511,6 +2537,7 @@ async def _search_core(
     kataster_nr: str,
     start: float,
     include_map_layers: bool = True,
+    include_details: bool = True,
 ) -> dict:
     """Sisemine otsinguloogika — eraldatud, et saaks timeout-i panna."""
     try:
@@ -2576,17 +2603,27 @@ async def _search_core(
     search_deadline = time.monotonic() + max(
         0.0, (start + SEARCH_TIMEOUT_SECONDS) - time.time()
     )
-    stand_details_task = asyncio.ensure_future(
-        _fetch_stand_details(kataster_nr, raw_eraldised, search_deadline)
-    )
+    if include_details:
+        stand_details_task = asyncio.ensure_future(
+            _fetch_stand_details(kataster_nr, raw_eraldised, search_deadline)
+        )
+    else:
+        # Kiire variant: eraldiste detailid (liikide koosseis ja kahjustused)
+        # jäetakse paralleelse täispäringu tööle. Leht näitab esmalt põhiandmed
+        # ja täiendab need detailidega, kui need saabuvad.
+        stand_details_task = None
     try:
         results = await asyncio.gather(*other_tasks, return_exceptions=True)
-        stand_details = await stand_details_task
+        if stand_details_task is not None:
+            stand_details = await stand_details_task
+        else:
+            stand_details = _PENDING_STAND_DETAILS
     except asyncio.CancelledError:
         # Otsingu üldtähtaeg ületus — kõik pooleli olevad ülesanded tuleb
         # peatada, et taustaga WFS-päringud ei jätaks ühenduskohti kinni.
         for pending in (*other_tasks, stand_details_task):
-            pending.cancel()
+            if pending is not None:
+                pending.cancel()
         raise
     except Exception:  # noqa: BLE001 — detailide katkemine ei tohi murda otsingut
         stand_details = {
@@ -3773,6 +3810,7 @@ async def _search_core(
             "partial": bool(normalized_unavailable_sources),
             "partial_severity": partial_severity,
             "details_skipped": skip_details,
+            "details_pending": not include_details,
             "sampled_eraldised": sampled_eraldised,
             "unavailable_sources": normalized_unavailable_sources,
             "blocking_sources": blocking_sources,
@@ -3783,23 +3821,31 @@ async def _search_core(
     return result
 
 
-def _search_cache_key(kataster_nr: str, include_map_layers: bool) -> str:
-    return kataster_nr if include_map_layers else f"{kataster_nr}|map-layers=0"
+def _search_cache_key(
+    kataster_nr: str,
+    include_map_layers: bool,
+    include_details: bool = True,
+) -> str:
+    key = kataster_nr if include_map_layers else f"{kataster_nr}|map-layers=0"
+    if not include_details:
+        key += "|details=0"
+    return key
 
 
 async def _search_uncached(
     kataster_nr: str,
     include_map_layers: bool = True,
+    include_details: bool = True,
 ) -> tuple[dict, int]:
     start = time.time()
     try:
-        search_coro = (
-            _search_core(kataster_nr, start)
-            if include_map_layers
-            else _search_core(kataster_nr, start, include_map_layers=False)
-        )
         data = await asyncio.wait_for(
-            search_coro,
+            _search_core(
+                kataster_nr,
+                start,
+                include_map_layers=include_map_layers,
+                include_details=include_details,
+            ),
             timeout=SEARCH_TIMEOUT_SECONDS,
         )
     except asyncio.TimeoutError:
@@ -3815,14 +3861,18 @@ async def _search_uncached(
 
     if not data.get("meta", {}).get("partial"):
         search_cache.set(
-            _search_cache_key(kataster_nr, include_map_layers),
+            _search_cache_key(kataster_nr, include_map_layers, include_details),
             data,
             ttl=300,
         )
     return data, 200
 
 
-async def _search(kataster_nr: str, include_map_layers: bool = True) -> Response:
+async def _search(
+    kataster_nr: str,
+    include_map_layers: bool = True,
+    include_details: bool = True,
+) -> Response:
     """Täielik kinnistu päring: kataster + eraldised + kihid + teatised.
 
     Kogub kõik andmed paralleelselt ja tagastab JSON-vastuse.
@@ -3832,7 +3882,7 @@ async def _search(kataster_nr: str, include_map_layers: bool = True) -> Response
     global _search_cache_hits, _search_cache_misses
 
     # Check cache — store data dict, not Response (Response body is consumed once)
-    cache_key = _search_cache_key(kataster_nr, include_map_layers)
+    cache_key = _search_cache_key(kataster_nr, include_map_layers, include_details)
     cached_data = search_cache.get(cache_key)
     if cached_data is not None:
         _search_cache_hits += 1
@@ -3843,7 +3893,9 @@ async def _search(kataster_nr: str, include_map_layers: bool = True) -> Response
     task = _search_in_flight.get(cache_key)
     if task is None:
         _search_cache_misses += 1
-        task = asyncio.create_task(_search_uncached(kataster_nr, include_map_layers))
+        task = asyncio.create_task(
+            _search_uncached(kataster_nr, include_map_layers, include_details)
+        )
         _search_in_flight[cache_key] = task
 
         def clear_in_flight(completed: asyncio.Task, key: str = cache_key) -> None:

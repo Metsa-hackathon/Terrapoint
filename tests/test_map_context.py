@@ -945,7 +945,9 @@ class SearchEndpointLayerOptionTests(unittest.TestCase):
             response = self.client.get(f"/api/search/{KATASTER_NR}")
 
         self.assertEqual(response.status_code, 200)
-        search.assert_awaited_once_with(KATASTER_NR, include_map_layers=True)
+        search.assert_awaited_once_with(
+            KATASTER_NR, include_map_layers=True, include_details=True
+        )
 
     def test_false_option_skips_layers_in_direct_search(self):
         search = AsyncMock(return_value=api.json_response({"ok": True}))
@@ -958,7 +960,9 @@ class SearchEndpointLayerOptionTests(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 200)
-        search.assert_awaited_once_with(KATASTER_NR, include_map_layers=False)
+        search.assert_awaited_once_with(
+            KATASTER_NR, include_map_layers=False, include_details=True
+        )
 
     def test_invalid_boolean_option_is_rejected(self):
         with patch("api.index._search", new=AsyncMock()) as search:
@@ -1056,7 +1060,10 @@ class SearchEndpointLayerOptionTests(unittest.TestCase):
             )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(captured["params"], {"include_map_layers": "false"})
+        self.assertEqual(
+            captured["params"],
+            {"include_map_layers": "false", "include_details": "true"},
+        )
         self.assertEqual(
             captured["url"],
             f"https://terrapoint.arleserver.cfd:443/api/search/{KATASTER_NR}",
