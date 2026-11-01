@@ -3,8 +3,16 @@
 Kõik olulised muudatused Terrapoint repositooriumis.
 
 > **Domeen**: tootmine töötab aadressil **terrapoint.ee** (Vercel custom
-> domain). `terrapoint.vercel.app` on sama projekti alias — push master
-> branchi uuendab mõlemat korraga.
+> domain). `terrapoint.vercel.app` suunab `vercel.json` redirectiga (308)
+> terrapoint.ee-le; push master branchi uuendab terrapoint.ee-d.
+
+## [Määramata] - 2026-11-01
+
+### Changed
+- **terrapoint.vercel.app suunab püsivalt terrapoint.ee-le** — `vercel.json`
+  redirect hosti järgi (308), tee ja päringu parameetrid säilivad. Hosti
+  `terrapoint.vercel.app` päritolu ja usaldatud host eemaldati `config.py`-st;
+  preview-hostid (`*.vercel.app`) jäävad.
 
 ## [Määramata] - 2026-10-06
 

@@ -14,7 +14,7 @@ Veebileht: https://terrapoint.ee
 /* SITE */
 Viimased uuendused: https://terrapoint.ee/CHANGELOG.md
 Lähtekood: privaatne (suletud lähtekood, käitame ise)
-Hostitud: Vercel (terrapoint.vercel.app, terrapoint.ee)
+Hostitud: Vercel (terrapoint.ee)
 Andmeallikad: Maa-amet, Metsaregister, EELIS, Erametsaliit, KIK,
   Muinsuskaitseamet, Statistikaamet, RMK, Sentinel-2
 

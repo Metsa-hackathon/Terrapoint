@@ -10,7 +10,6 @@ CACHE_TTL_PRICES = 604800
 DEFAULT_CORS_ORIGINS = [
     "https://terrapoint.ee",
     "https://www.terrapoint.ee",
-    "https://terrapoint.vercel.app",
     "http://localhost:8099",
     "http://127.0.0.1:8099",
 ]
@@ -18,7 +17,6 @@ DEFAULT_CORS_ORIGINS = [
 DEFAULT_TRUSTED_HOSTS = [
     "terrapoint.ee",
     "www.terrapoint.ee",
-    "terrapoint.vercel.app",
     "*.vercel.app",
     "terrapoint.arle.top",
     "terrapoint.arleserver.cfd",

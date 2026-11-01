@@ -27,10 +27,10 @@ Metsa väärtuse ja andmete analüüsi veebirakendus. FastAPI backend + HTML/CSS
 - Kui bash käsk tagastab "exit code 1", ära proovi sama käsku uuesti — proovi alternatiivset lahendust.
 
 ## Keskkond
-- **Tootmise domeen**: `terrapoint.ee` (Verceli custom domain, sama projekt
-  mis `terrapoint.vercel.app` — mõlemad on sama Vercel deployment, push
-  master branchi → mõlemad värskenevad kohe)
-- Vercel hostib frontend: `terrapoint.ee` (primary), `terrapoint.vercel.app` (alias)
+- **Tootmise domeen**: `terrapoint.ee` (Verceli custom domain). Push master
+  branchi → terrapoint.ee värskeneb kohe.
+- `terrapoint.vercel.app` suunab `vercel.json` redirectiga (308) terrapoint.ee-le.
+- Vercel hostib frontend ainult `terrapoint.ee` all.
 - Vercel proxyb pikad päringud `terrapoint.arleserver.cfd` home-serveri API-le
 - Backendi URL-i saab muuta `TERRAPOINT_BACKEND_API_URL` keskkonnamuutujaga
 - Traefik proxyb backendi Docker bridge'i `172.20.0.1:8001` kaudu
