@@ -85,6 +85,7 @@
     }
   ],
   "redirects": [
+    { "source": "/", "has": [{ "type": "host", "value": "terrapoint\\.vercel\\.app" }], "destination": "https://terrapoint.ee/", "permanent": true },
     { "source": "/:path*", "has": [{ "type": "host", "value": "terrapoint\\.vercel\\.app" }], "destination": "https://terrapoint.ee/:path*", "permanent": true },
     { "source": "/api-docs", "destination": "/api/docs", "permanent": true },
     { "source": "/static/api-docs", "destination": "/api/docs", "permanent": true }
