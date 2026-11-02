@@ -9,15 +9,9 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 ## [Määramata] - 2026-11-02
 
 ### Changed
-- **Avaleht taastati varasemal kujul** — puuillustratsioonid, parallaks,
-  Bricolage Grotesque'i pealkiri, statistika ja soovitused on tagasi.
-- **Tulemuste vaates on kokkuvõte ees** — enne kaarti kuvatakse kinnistu
-  aadress, katastritunnus, pindala, väärtusvahemik, riskisignaalid ja
-  metsateatised. Tehnilised detailid on taandatud `<details>` elementide
-  taha.
-- **Tulemuste vaate kujundus on korrastatud** — sama sinine värvipalett mis
-  avalehel, eraldusjooned ja loetav metsateatiste tabel; arvud on
-  tabulaarsed ning mobiilivaade virnastub.
+- **Kasutajaliides on taastatud varasemale kujule** — avaleht ja tulemuste vaade
+  on jälle samad, mis enne kujundusmuudatust (kompaktne tulemuste vaade,
+  puuillustratsioonid, parallaks).
 
 ### Fixed
 - **Samaaegsete päringute ootejärjekord** — ühise upstream-päringu

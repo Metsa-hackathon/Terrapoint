@@ -59,9 +59,9 @@
     <link rel="dns-prefetch" href="https://tiles.maaamet.ee">
     <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css?v=1.9.4">
     <script src="/static/vendor/leaflet/leaflet.js?v=1.9.4" defer></script>
-    <link rel="stylesheet" href="/static/css/fonts.css?r=jkl003">
-    <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl036">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl135">
+    <link rel="stylesheet" href="/static/css/fonts.css?r=jkl001">
+    <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl034">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl127">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -369,31 +369,6 @@
          andmed laaditakse peale otsingut) -->
     <section id="dashboard" class="dashboard" aria-label="Kinnistu analüüsi tulemused" tabindex="-1">
         <h1 id="dashboard-title" class="sr-only" hidden>Kinnistu analüüsi tulemused</h1>
-        <div class="result-summary" id="result-summary" role="status" aria-live="polite" aria-atomic="true" hidden>
-            <div class="result-summary-heading">
-                <p class="result-summary-label">Kinnistu kokkuvõte</p>
-                <h2 id="result-summary-title">Kinnistu andmed</h2>
-                <p class="result-summary-number" id="result-summary-number">Katastritunnus teadmata</p>
-            </div>
-            <dl class="result-summary-grid">
-                <div class="result-summary-item">
-                    <dt>Pindala</dt>
-                    <dd id="result-summary-area">Pindala pole teada</dd>
-                </div>
-                <div class="result-summary-item">
-                    <dt>Väärtusvahemik</dt>
-                    <dd id="result-summary-value">Hinnang puudub</dd>
-                </div>
-                <div class="result-summary-item">
-                    <dt>Riskisignaalid</dt>
-                    <dd id="result-summary-risk">Andmed puuduvad</dd>
-                </div>
-                <div class="result-summary-item">
-                    <dt>Metsateatised</dt>
-                    <dd id="result-summary-cutting">Allika olek teadmata</dd>
-                </div>
-            </dl>
-        </div>
 
         <!-- Map Section (always visible) -->
         <div class="map-section">
@@ -458,6 +433,43 @@
             </div>
         </div>
 
+        <!-- Terrapoint AI Chat -->
+        <div class="ai-chat-section" id="ai-chat-section">
+            <div class="ai-chat-header">
+                <img class="ai-chat-logo" src="/static/favicon.svg" alt="" aria-hidden="true">
+                <div>
+                    <h2>AI analüüs</h2>
+                    <p class="ai-chat-subtitle">Kinnistupõhine nõuanne</p>
+                    <p id="ai-chat-status" class="sr-only" aria-live="polite"></p>
+                </div>
+            </div>
+            <div class="ai-chat-messages" id="ai-chat-messages">
+                <div class="ai-message ai-welcome">
+                    <div class="ai-avatar"></div>
+                    <div class="ai-bubble">
+                        <p>Otsi kinnistu ja käivita AI analüüs.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="ai-chat-input-area" id="ai-chat-input-area" style="display:none">
+                <div class="ai-chat-input-wrap">
+                    <textarea id="ai-chat-input" placeholder="Küsi oma metsa kohta..." autocomplete="off" rows="1" aria-label="Küsimus AI-le"></textarea>
+                    <button id="ai-chat-send" aria-label="Saada">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ai-chat-hints" id="ai-chat-hints">
+                    <button class="ai-hint" data-q="Milliseid andmeid ja riske peaksin müügi või hoidmise otsuses kontrollima?">Müüa või hoida?</button>
+                    <button class="ai-hint" data-q="Millised toetused võivad olla asjakohased ja mida tuleb kontrollida?">Toetused</button>
+                    <button class="ai-hint" data-q="Millised on riskid ja kuidas neid maandada?">Riskid</button>
+                    <button class="ai-hint ai-hint-custom" id="ai-quick-ask">Küsi AI-lt</button>
+                    <div id="ai-eraldis-hints"></div>
+                </div>
+                <p class="ai-chat-privacy">Avatud küsimus ja analüüsiks vajalikud kinnistuandmed edastatakse OpenAI AI-teenusele. Ära lisa küsimusse isikuandmeid ega konfidentsiaalset teavet; AI vastus võib eksida.</p>
+            </div>
+        </div>
 
         <!-- Metric Cards Grid (always visible, empty until search) -->
         <div class="metrics-grid">
@@ -676,42 +688,6 @@
                 </div>
             </div>
         </div>
-        <div class="ai-chat-section" id="ai-chat-section">
-            <div class="ai-chat-header">
-                <img class="ai-chat-logo" src="/static/favicon.svg" alt="" aria-hidden="true">
-                <div>
-                    <h2>AI analüüs</h2>
-                    <p class="ai-chat-subtitle">Kinnistupõhine nõuanne</p>
-                    <p id="ai-chat-status" class="sr-only" aria-live="polite"></p>
-                </div>
-            </div>
-            <div class="ai-chat-messages" id="ai-chat-messages">
-                <div class="ai-message ai-welcome">
-                    <div class="ai-avatar"></div>
-                    <div class="ai-bubble">
-                        <p>Otsi kinnistu ja käivita AI analüüs.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="ai-chat-input-area" id="ai-chat-input-area" style="display:none">
-                <div class="ai-chat-input-wrap">
-                    <textarea id="ai-chat-input" placeholder="Küsi oma metsa kohta..." autocomplete="off" rows="1" aria-label="Küsimus AI-le"></textarea>
-                    <button id="ai-chat-send" aria-label="Saada">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="ai-chat-hints" id="ai-chat-hints">
-                    <button class="ai-hint" data-q="Milliseid andmeid ja riske peaksin müügi või hoidmise otsuses kontrollima?">Müüa või hoida?</button>
-                    <button class="ai-hint" data-q="Millised toetused võivad olla asjakohased ja mida tuleb kontrollida?">Toetused</button>
-                    <button class="ai-hint" data-q="Millised on riskid ja kuidas neid maandada?">Riskid</button>
-                    <button class="ai-hint ai-hint-custom" id="ai-quick-ask">Küsi AI-lt</button>
-                    <div id="ai-eraldis-hints"></div>
-                </div>
-                <p class="ai-chat-privacy">Avatud küsimus ja analüüsiks vajalikud kinnistuandmed edastatakse OpenAI AI-teenusele. Ära lisa küsimusse isikuandmeid ega konfidentsiaalset teavet; AI vastus võib eksida.</p>
-            </div>
-        </div>
 
     </section>
 
@@ -900,7 +876,7 @@
         </div>
     </footer>
 
-    <script defer src="/static/js/app.js?r=jkl012"></script>
-    <script defer src="/static/js/hero.js?r=jkl003"></script>
+    <script defer src="/static/js/app.js?r=jkl008"></script>
+    <script defer src="/static/js/hero.js?r=jkl001"></script>
 </body>
 </html>

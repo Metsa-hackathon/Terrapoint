@@ -768,25 +768,6 @@ console.log(JSON.stringify({{missing, zero:target.innerHTML}}));
         self.assertEqual(state["fetchCount"], 0)
         self.assertEqual(state["followups"], 3)
 
-    def test_dashboard_uses_asymmetric_results_layout_and_stacks_on_mobile(self):
-        self.assertIn("--dashboard-max-w: min(calc(100vw - 48px), 1600px);", STYLE_CSS)
-        self.assertRegex(
-            STYLE_CSS,
-            r"@media \(min-width: 769px\) \{\s*\.dashboard > \* \{[^}]*max-width: var\(--dashboard-max-w\);",
-        )
-        self.assertRegex(
-            STYLE_CSS,
-            r"(?m)^body:has\(#landing\[hidden\]\) \.metrics-grid \{\s*grid-template-columns: repeat\(12, minmax\(0, 1fr\)\);",
-        )
-        self.assertRegex(STYLE_CSS, r"(?m)^body:has\(#landing\[hidden\]\) #card-kataster \{ grid-column: 1 / span 5; \}")
-        self.assertRegex(STYLE_CSS, r"(?m)^body:has\(#landing\[hidden\]\) #card-vaartus \{ grid-column: 6 / span 7; \}")
-        self.assertRegex(STYLE_CSS, r"(?m)^body:has\(#landing\[hidden\]\) #card-mets \{ grid-column: 1 / -1; \}")
-        self.assertRegex(
-            STYLE_CSS,
-            r"@media \(max-width: 768px\) \{[\s\S]*?\.metrics-grid \{ grid-template-columns: minmax\(0, 1fr\);",
-        )
-        self.assertRegex(STYLE_CSS, r"\.about-inner\s*\{\s*max-width:\s*980px;")
-        self.assertRegex(STYLE_CSS, r"\.contact-inner\s*\{\s*max-width:\s*760px;")
 
     def test_expanded_explanations_use_full_width_and_preserve_value_formatting(self):
         toggle = re.search(r'function toggleDD\(el, id\).*?\n    }', INDEX_HTML, re.DOTALL)
@@ -983,16 +964,6 @@ console.log(JSON.stringify({{
         self.assertIn("align-items: start;", STYLE_CSS)
         self.assertIn("#dashboard { scroll-margin-top:", STYLE_CSS)
 
-    def test_forest_records_table_spans_the_results_grid_and_stacks_on_mobile(self):
-        self.assertRegex(STYLE_CSS, r"(?m)^body:has\(#landing\[hidden\]\) #card-mets \{ grid-column: 1 / -1; \}")
-        self.assertRegex(
-            STYLE_CSS,
-            r"(?m)^body:has\(#landing\[hidden\]\) \.table-grid-row \{\s*min-height: 42px;[^}]*font-size: 14px;",
-        )
-        self.assertRegex(
-            STYLE_CSS,
-            r"@media \(max-width: 768px\) \{[\s\S]*?body:has\(#landing\[hidden\]\) #card-mets,[\s\S]*?grid-column: 1 / -1;",
-        )
 
     def test_notices_use_compact_scroll_free_rows_with_narrow_fallback(self):
         for label in ('Tüüp', 'Eraldis', 'Staatus', 'Kehtiv kuni', 'Pindala'):
@@ -1478,7 +1449,6 @@ function renderMapWorkspaceState() {{}}
 function aiShowUnavailableData() {{ aiUnavailable = true; }}
 function aiRenderEraldisHints(value) {{ hints = value; }}
 function cancelMapSelection() {{}}
-function clearResultSummary() {{}}
 function closeEraldisSheet() {{ sheet.remove(); }}
 var _aiUserScrolledUp = true;
 {clear_helper.group(0)}
