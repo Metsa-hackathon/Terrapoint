@@ -9,18 +9,15 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 ## [Määramata] - 2026-11-02
 
 ### Changed
-- **Avaleht on rahulikum** — päise taust on tahke (gradient eemaldatud),
-  avalehel on üks otsinguväli (päise otsing ilmub ainult tulemuste vaatesse),
-  dekoratiivne puupilt ja parallaks on eemaldatud, pealkiri ja sissejuhatus
-  on lühemad.
+- **Avaleht taastati varasemal kujul** — puuillustratsioonid, parallaks,
+  Bricolage Grotesque'i pealkiri, statistika ja soovitused on tagasi.
 - **Tulemuste vaates on kokkuvõte ees** — enne kaarti kuvatakse kinnistu
   aadress, katastritunnus, pindala, väärtusvahemik, riskisignaalid ja
   metsateatised. Tehnilised detailid on taandatud `<details>` elementide
-  taha. Kaardi juhtnupud ja sektsioonikaardid on ühtlustatud.
-- **Ühtne disainisüsteem** — tüübiskaala, vahed, värvid ja raadiused on
-  CSS-muutujatena. Fondist jääb alles Geist; Bricolage Grotesque eemaldati,
-  sest seda ei kasutatud. Fookusindikaator, tekstikontrast ja
-  `prefers-reduced-motion` on korrastatud.
+  taha.
+- **Tulemuste vaate kujundus on korrastatud** — sama sinine värvipalett mis
+  avalehel, eraldusjooned ja loetav metsateatiste tabel; arvud on
+  tabulaarsed ning mobiilivaade virnastub.
 
 ### Fixed
 - **Samaaegsete päringute ootejärjekord** — ühise upstream-päringu

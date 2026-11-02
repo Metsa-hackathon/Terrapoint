@@ -1635,7 +1635,7 @@
         btn.type = 'button';
         btn.className = 'eraldis-pick-btn';
         btn.setAttribute('aria-label', 'Vali eraldis AI küsimuseks');
-        btn.innerHTML = '<span class="eraldis-pick-icon">🌲</span> Eraldised (' + eraldised.length + ') <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5L5 6.5L8 3.5"/></svg>';
+        btn.innerHTML = 'Eraldised (' + eraldised.length + ') <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5L5 6.5L8 3.5"/></svg>';
         btn.addEventListener('click', function() { openEraldisSheet(eraldised, btn); });
         wrap.appendChild(btn);
 
@@ -1664,7 +1664,7 @@
 
         var header = document.createElement('div');
         header.className = 'eraldis-sheet-header';
-        header.innerHTML = '<h3>🌲 Vali eraldis (' + eraldised.length + ' tk)</h3><button type="button" class="eraldis-sheet-close" aria-label="Sulge">×</button>';
+        header.innerHTML = '<h3>Vali eraldis (' + eraldised.length + ' tk)</h3><button type="button" class="eraldis-sheet-close" aria-label="Sulge">×</button>';
         sheet.appendChild(header);
 
         var list = document.createElement('div');
@@ -3538,10 +3538,10 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             html += '<div class="supporting-callout" style="margin-top:0.75rem;padding:0.75rem;background:var(--paper-2);border-radius:var(--r-sm)">';
             html += '<div style="font-weight:600;color:var(--text-secondary);margin-bottom:0.4rem">Suurusjärgu võrdlus (varu võrrelduna ühe aasta vooga):</div>';
             if (data.cars_equivalent) {
-                html += '<div style="margin-bottom:0.25rem">🚗 ligikaudu ' + formatNum(data.cars_equivalent) + ' auto aastane CO₂ heide</div>';
+                html += '<div style="margin-bottom:0.25rem">Ligikaudu ' + formatNum(data.cars_equivalent) + ' auto aastane CO₂ heide</div>';
             }
             if (data.trees_equivalent) {
-                html += '<div>🌳 ligikaudu ' + formatNum(data.trees_equivalent) + ' keskmise puu aastane CO₂ sidumine</div>';
+                html += '<div>Ligikaudu ' + formatNum(data.trees_equivalent) + ' keskmise puu aastane CO₂ sidumine</div>';
             }
             html += '</div>';
         }
@@ -4336,15 +4336,15 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
     }
     function setResultSummaryText(id, value) {
         var element = document.getElementById(id);
-        if (element) element.textContent = value || '—';
+        if (element) element.textContent = value || 'Andmed puuduvad';
     }
 
     function clearResultSummary() {
         var summary = document.getElementById('result-summary');
         if (summary) summary.hidden = true;
         setResultSummaryText('result-summary-title', 'Kinnistu andmed');
-        setResultSummaryText('result-summary-number', '—');
-        setResultSummaryText('result-summary-area', '—');
+        setResultSummaryText('result-summary-number', 'Katastritunnus teadmata');
+        setResultSummaryText('result-summary-area', 'Pindala pole teada');
         setResultSummaryText('result-summary-value', 'Hinnang puudub');
         setResultSummaryText('result-summary-risk', 'Andmed puuduvad');
         setResultSummaryText('result-summary-cutting', 'Allika olek teadmata');
@@ -4356,7 +4356,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         if (!summary || !kataster) return;
 
         setResultSummaryText('result-summary-title', kataster.l_aadress || 'Aadress teadmata');
-        setResultSummaryText('result-summary-number', 'Katastritunnus ' + (kataster.number || '—'));
+        setResultSummaryText('result-summary-number', 'Katastritunnus ' + (kataster.number || 'teadmata'));
         setResultSummaryText(
             'result-summary-area',
             typeof kataster.pindala_ha === 'number' ? formatNum(kataster.pindala_ha, 2) + ' ha' : 'Pindala pole teada'
@@ -4663,7 +4663,6 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             dashboard.hidden = false;
             dashboard.style.animation = 'sectionIn 0.5s var(--ease-out)';
         }
-        refreshTetrisCardLayout();
         if (!landingWasVisible) requestAnimationFrame(scrollToDashboard);
     }
 
@@ -4680,124 +4679,9 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
     // ═══ app.js ═══
     var currentData = null;
-    var refreshTetrisCardLayout = function() {};
 
-    function initTetrisCardLayout() {
-        var grid = document.querySelector('.metrics-grid');
-        if (!grid) return;
-
-        var cards = Array.prototype.slice.call(grid.querySelectorAll(':scope > .metric-card'));
-        var scheduled = false;
-
-        function balanceCardsAcrossColumns(visibleCards, columnCount) {
-            var columnHeights = new Array(columnCount).fill(0);
-            var fixedCardCount = Math.min(3, visibleCards.length);
-
-            // The first three cards are locked: one per column on desktop. On
-            // the two-column tablet layout, the third follows immediately
-            // below whichever of the first two columns is shorter.
-            for (var fixedIndex = 0; fixedIndex < fixedCardCount; fixedIndex += 1) {
-                var fixedColumn = fixedIndex < columnCount
-                    ? fixedIndex
-                    : columnHeights.indexOf(Math.min.apply(Math, columnHeights));
-                visibleCards[fixedIndex].style.gridColumn = String(fixedColumn + 1);
-                columnHeights[fixedColumn] += Number(
-                    visibleCards[fixedIndex].style.getPropertyValue('--tetris-row-span')
-                );
-            }
-
-            var movableCards = visibleCards.slice(fixedCardCount);
-            var bestAssignment = [];
-            var bestSpread = Infinity;
-            var bestBottom = Infinity;
-
-            // There are only six movable cards, so checking every column
-            // assignment is inexpensive and produces a straighter bottom
-            // edge than a simple shortest-column greedy pass.
-            function assignCard(cardIndex, heights, assignment) {
-                if (cardIndex === movableCards.length) {
-                    var highest = Math.max.apply(Math, heights);
-                    var lowest = Math.min.apply(Math, heights);
-                    var spread = highest - lowest;
-                    if (spread < bestSpread || (spread === bestSpread && highest < bestBottom)) {
-                        bestSpread = spread;
-                        bestBottom = highest;
-                        bestAssignment = assignment.slice();
-                    }
-                    return;
-                }
-
-                var span = Number(movableCards[cardIndex].style.getPropertyValue('--tetris-row-span'));
-                for (var columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
-                    heights[columnIndex] += span;
-                    assignment.push(columnIndex);
-                    assignCard(cardIndex + 1, heights, assignment);
-                    assignment.pop();
-                    heights[columnIndex] -= span;
-                }
-            }
-
-            assignCard(0, columnHeights.slice(), []);
-            movableCards.forEach(function(card, cardIndex) {
-                card.style.gridColumn = String(bestAssignment[cardIndex] + 1);
-            });
-        }
-
-        function layoutCards() {
-            scheduled = false;
-
-            // A single column already has no holes to fill, and ordinary grid
-            // flow keeps the mobile layout simpler and avoids needless spans.
-            if (window.matchMedia('(max-width: 768px)').matches) {
-                grid.classList.remove('is-tetris');
-                cards.forEach(function(card) {
-                    card.style.removeProperty('--tetris-row-span');
-                    card.style.removeProperty('grid-column');
-                });
-                return;
-            }
-
-            var visibleCards = cards.filter(function(card) {
-                return card.getBoundingClientRect().height > 0;
-            });
-            if (!visibleCards.length) {
-                grid.classList.remove('is-tetris');
-                return;
-            }
-
-            // With one-pixel implicit rows and no row gap, the extra 16 pixels
-            // reserved in each span become the visual gutter below the card.
-            visibleCards.forEach(function(card) {
-                var rowSpan = Math.ceil(card.getBoundingClientRect().height + 16);
-                card.style.setProperty('--tetris-row-span', rowSpan);
-                card.style.removeProperty('grid-column');
-            });
-            var columnCount = window.matchMedia('(max-width: 1180px)').matches ? 2 : 3;
-            balanceCardsAcrossColumns(visibleCards, columnCount);
-            grid.classList.add('is-tetris');
-        }
-
-        function scheduleLayout() {
-            if (scheduled) return;
-            scheduled = true;
-            requestAnimationFrame(layoutCards);
-        }
-
-        refreshTetrisCardLayout = scheduleLayout;
-        window.addEventListener('resize', scheduleLayout);
-
-        if ('ResizeObserver' in window) {
-            var cardResizeObserver = new ResizeObserver(scheduleLayout);
-            cards.forEach(function(card) { cardResizeObserver.observe(card); });
-        }
-        if (document.fonts && document.fonts.ready) {
-            document.fonts.ready.then(scheduleLayout);
-        }
-        scheduleLayout();
-    }
 
     document.addEventListener('DOMContentLoaded', function() {
-        initTetrisCardLayout();
         initMap();
         var mapResetControl = document.getElementById('map-reset-control');
         if (mapResetControl) mapResetControl.addEventListener('click', resetMapView);
@@ -5040,8 +4924,13 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         });
     }
 
-        // Fookust ei hüpata otsingule: klaviatuur saab alustada päisest.
-
+        // Keep the standalone desktop shortcut, but never let an embedded app
+        // steal focus and scroll its parent page down to the iframe.
+        var isTopLevelWindow = window.self === window.top;
+        if (isTopLevelWindow && window.matchMedia('(pointer: fine) and (min-width: 769px)').matches) {
+            if (landInput) landInput.focus({ preventScroll: true });
+            else if (navInput) navInput.focus({ preventScroll: true });
+        }
         // Map hint dismiss (×) and auto-hide once user has clicked the map
         var mapHint = document.getElementById('map-hint');
         var mapHintClose = document.getElementById('map-hint-close');

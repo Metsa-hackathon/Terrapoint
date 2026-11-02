@@ -768,7 +768,7 @@ console.log(JSON.stringify({{missing, zero:target.innerHTML}}));
         self.assertEqual(state["fetchCount"], 0)
         self.assertEqual(state["followups"], 3)
 
-    def test_dashboard_uses_desktop_space_without_widening_prose_sections(self):
+    def test_dashboard_uses_asymmetric_results_layout_and_stacks_on_mobile(self):
         self.assertIn("--dashboard-max-w: min(calc(100vw - 48px), 1600px);", STYLE_CSS)
         self.assertRegex(
             STYLE_CSS,
@@ -776,15 +776,14 @@ console.log(JSON.stringify({{missing, zero:target.innerHTML}}));
         )
         self.assertRegex(
             STYLE_CSS,
-            r"(?m)^\.metrics-grid \{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);",
+            r"(?m)^body:has\(#landing\[hidden\]\) \.metrics-grid \{\s*grid-template-columns: repeat\(12, minmax\(0, 1fr\)\);",
         )
+        self.assertRegex(STYLE_CSS, r"(?m)^body:has\(#landing\[hidden\]\) #card-kataster \{ grid-column: 1 / span 5; \}")
+        self.assertRegex(STYLE_CSS, r"(?m)^body:has\(#landing\[hidden\]\) #card-vaartus \{ grid-column: 6 / span 7; \}")
+        self.assertRegex(STYLE_CSS, r"(?m)^body:has\(#landing\[hidden\]\) #card-mets \{ grid-column: 1 / -1; \}")
         self.assertRegex(
             STYLE_CSS,
-            r"@media \(max-width: 1180px\) \{\s*\.metrics-grid \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\); \}",
-        )
-        self.assertRegex(
-            STYLE_CSS,
-            r"@media \(max-width: 768px\) \{\s*\.metrics-grid \{ grid-template-columns: minmax\(0, 1fr\);",
+            r"@media \(max-width: 768px\) \{[\s\S]*?\.metrics-grid \{ grid-template-columns: minmax\(0, 1fr\);",
         )
         self.assertRegex(STYLE_CSS, r"\.about-inner\s*\{\s*max-width:\s*980px;")
         self.assertRegex(STYLE_CSS, r"\.contact-inner\s*\{\s*max-width:\s*760px;")
@@ -984,23 +983,15 @@ console.log(JSON.stringify({{
         self.assertIn("align-items: start;", STYLE_CSS)
         self.assertIn("#dashboard { scroll-margin-top:", STYLE_CSS)
 
-    def test_result_cards_use_dense_tetris_packing_above_mobile_widths(self):
-        self.assertIn(".metrics-grid.is-tetris {", STYLE_CSS)
-        self.assertIn("grid-auto-flow: row dense;", STYLE_CSS)
-        self.assertIn("grid-auto-rows: 1px;", STYLE_CSS)
-        self.assertIn("grid-row-end: span var(--tetris-row-span);", STYLE_CSS)
-        self.assertIn("function initTetrisCardLayout()", INDEX_HTML)
-        self.assertIn("new ResizeObserver(scheduleLayout)", INDEX_HTML)
-        self.assertIn("Math.ceil(card.getBoundingClientRect().height + 16)", INDEX_HTML)
-        self.assertIn("function balanceCardsAcrossColumns(visibleCards, columnCount)", INDEX_HTML)
-        self.assertIn("var fixedCardCount = Math.min(3, visibleCards.length);", INDEX_HTML)
-        self.assertIn("assignCard(cardIndex + 1, heights, assignment);", INDEX_HTML)
-        self.assertIn("spread < bestSpread", INDEX_HTML)
-        self.assertIn("grid.classList.remove('is-tetris');", INDEX_HTML)
-        self.assertIn("card.style.removeProperty('grid-column');", INDEX_HTML)
+    def test_forest_records_table_spans_the_results_grid_and_stacks_on_mobile(self):
+        self.assertRegex(STYLE_CSS, r"(?m)^body:has\(#landing\[hidden\]\) #card-mets \{ grid-column: 1 / -1; \}")
         self.assertRegex(
             STYLE_CSS,
-            r"@media \(max-width: 768px\) \{[\s\S]*?\.metrics-grid\.is-tetris \{[\s\S]*?grid-auto-rows: auto;",
+            r"(?m)^body:has\(#landing\[hidden\]\) \.table-grid-row \{\s*min-height: 42px;[^}]*font-size: 14px;",
+        )
+        self.assertRegex(
+            STYLE_CSS,
+            r"@media \(max-width: 768px\) \{[\s\S]*?body:has\(#landing\[hidden\]\) #card-mets,[\s\S]*?grid-column: 1 / -1;",
         )
 
     def test_notices_use_compact_scroll_free_rows_with_narrow_fallback(self):
