@@ -3072,14 +3072,15 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
     function renderKataster(data) {
         var el = document.getElementById('kataster-info');
         var html = '';
-        html += '<div class="info-row"><span class="label">Number</span><span class="value">' + escHtml(data.number || '—') + '</span></div>';
+        html += '<div class="info-row"><span class="label">Katastritunnus</span><span class="value">' + escHtml(data.number || '—') + '</span></div>';
         html += '<div class="info-row"><span class="label">Pindala ' + ddInfo('Katastriüksuse registris olev pindala hektarites') + '</span><span class="value">' + formatNum(data.pindala_ha, 2) + ' ha</span></div>';
         if (data.mets_pindala_ha) html += '<div class="info-row"><span class="label">Metsamaa ' + ddInfo('Metsamaa pindala, eraldiste kogupindala') + '</span><span class="value">' + formatNum(data.mets_pindala_ha, 2) + ' ha</span></div>';
+        if (data.l_aadress) html += '<div class="info-row"><span class="label">Aadress</span><span class="value">' + escHtml(data.l_aadress) + '</span></div>';
+        html += '<details class="evidence-details"><summary>Sihtotstarve, omand ja maa maksustamishind</summary><div class="evidence-body">';
         html += '<div class="info-row"><span class="label">Sihtotstarve ' + ddInfo('Maa sihtotstarve: metsamaa, põllumaa, elamumaa vms', valueExplain('sihtotstarve', data.sihtotstarve)) + '</span><span class="value">' + escHtml(data.sihtotstarve || '—') + '</span></div>';
         html += '<div class="info-row"><span class="label">Omandivorm ' + ddInfo('Kinnistu omandivorm: era, riigi või ühisomand', valueExplain('omandivorm', data.omvorm)) + '</span><span class="value">' + escHtml(data.omvorm || '—') + '</span></div>';
         if (data.mk_nimi) html += '<div class="info-row"><span class="label">Maakond</span><span class="value">' + escHtml(data.mk_nimi) + '</span></div>';
         if (data.ov_nimi) html += '<div class="info-row"><span class="label">Omavalitsus</span><span class="value">' + escHtml(data.ov_nimi) + '</span></div>';
-        if (data.l_aadress) html += '<div class="info-row"><span class="label">Aadress</span><span class="value">' + escHtml(data.l_aadress) + '</span></div>';
         // Keep the official land reference separate from the combined estimate.
         var maaMaksuhindAvailable = typeof data.maks_hind === 'number' && Number.isFinite(data.maks_hind);
         var valuationMeta = data.maks_hind_meta || {};
@@ -3089,6 +3090,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             if (valuationMeta.valid_from) valuationTiming += ' · kehtib alates ' + formatDateEt(valuationMeta.valid_from);
         }
         html += '<div class="info-row"><span class="label">Maa maksustamishind ' + ddInfo('Katastris olev korralise masshindamise tulemus. Hindamismudeli aasta ja väärtuse kehtivuse algus pärinevad Maa- ja Ruumiameti hindamisinfosüsteemist. See ei ole aastane maamaks, eraldi kasvava puidu hinnang ega kinnistu tehinguhind.') + '</span><span class="value value-with-detail"><strong>' + (maaMaksuhindAvailable ? formatEur(data.maks_hind) : '—') + '</strong><small>' + escHtml(maaMaksuhindAvailable ? valuationTiming : 'Andmeallikas ei tagastanud väärtust') + '</small></span></div>';
+        html += '</div></details>';
         el.innerHTML = html;
     }
 
@@ -4332,9 +4334,87 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             && ['loading', 'refreshing'].indexOf(mapWorkspaceState.loadingStatus) !== -1
         );
     }
+    function setResultSummaryText(id, value) {
+        var element = document.getElementById(id);
+        if (element) element.textContent = value || '—';
+    }
+
+    function clearResultSummary() {
+        var summary = document.getElementById('result-summary');
+        if (summary) summary.hidden = true;
+        setResultSummaryText('result-summary-title', 'Kinnistu andmed');
+        setResultSummaryText('result-summary-number', '—');
+        setResultSummaryText('result-summary-area', '—');
+        setResultSummaryText('result-summary-value', 'Hinnang puudub');
+        setResultSummaryText('result-summary-risk', 'Andmed puuduvad');
+        setResultSummaryText('result-summary-cutting', 'Allika olek teadmata');
+    }
+
+    function renderResultSummary(data) {
+        var summary = document.getElementById('result-summary');
+        var kataster = data && data.kataster;
+        if (!summary || !kataster) return;
+
+        setResultSummaryText('result-summary-title', kataster.l_aadress || 'Aadress teadmata');
+        setResultSummaryText('result-summary-number', 'Katastritunnus ' + (kataster.number || '—'));
+        setResultSummaryText(
+            'result-summary-area',
+            typeof kataster.pindala_ha === 'number' ? formatNum(kataster.pindala_ha, 2) + ' ha' : 'Pindala pole teada'
+        );
+
+        var valuation = data.vaartus || {};
+        var property = valuation.property_estimate || {};
+        var hasPropertyEstimate = property.land_reference_available !== false
+            && property.low_eur != null
+            && property.high_eur != null;
+        var low = hasPropertyEstimate ? property.low_eur : valuation.range_low_eur;
+        var high = hasPropertyEstimate ? property.high_eur : valuation.range_high_eur;
+        setResultSummaryText(
+            'result-summary-value',
+            low != null && high != null
+                && Number.isFinite(Number(low))
+                && Number.isFinite(Number(high))
+                && Number(low) <= Number(high)
+                ? formatNum(Math.round(Number(low))) + '–' + formatNum(Math.round(Number(high))) + ' €'
+                : 'Hinnang puudub'
+        );
+
+        var riskPanel = document.getElementById('riskid-info');
+        var healthLabel = riskPanel && riskPanel.querySelector('.health-score p');
+        var barkLabel = riskPanel && riskPanel.querySelector('.risk-row .value');
+        var riskParts = [];
+        if (healthLabel && healthLabel.textContent.trim()) riskParts.push(healthLabel.textContent.trim());
+        if (barkLabel && barkLabel.textContent.trim()) {
+            riskParts.push('Üraski risk: ' + barkLabel.textContent.trim());
+        }
+        setResultSummaryText(
+            'result-summary-risk',
+            riskParts.length ? riskParts.join(' · ') : 'Riskisignaale ei saanud kokku võtta'
+        );
+
+        var noticeStatuses = Array.prototype.slice.call(
+            document.querySelectorAll('#teatised-info .teatised-status')
+        );
+        var activeNotices = noticeStatuses.filter(function(status) {
+            return status.classList.contains('status-kehtiv')
+                || status.classList.contains('status-registered');
+        }).length;
+        var noticesComplete = data.teatised_meta && data.teatised_meta.sources_complete === true;
+        var cuttingStatus = activeNotices
+            ? activeNotices + ' kehtivat tööteatist'
+            : noticesComplete
+                ? 'Kehtivat luba ei leitud'
+                : noticeStatuses.length
+                    ? 'Kehtiv luba pole kinnitatud'
+                    : 'Teatiste olek teadmata';
+        setResultSummaryText('result-summary-cutting', cuttingStatus);
+        summary.hidden = false;
+    }
+
 
     function resetAnalyticalResult(requestId) {
         if (requestId !== parcelSearchSequence) return false;
+        clearResultSummary();
         currentData = null;
         aiSnapshotReceipt = null;
         window._timberValue = 0;
@@ -4960,13 +5040,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         });
     }
 
-        // Keep the standalone desktop shortcut, but never let an embedded app
-        // steal focus and scroll its parent page down to the iframe.
-        var isTopLevelWindow = window.self === window.top;
-        if (isTopLevelWindow && window.matchMedia('(pointer: fine) and (min-width: 769px)').matches) {
-            if (landInput) landInput.focus({ preventScroll: true });
-            else if (navInput) navInput.focus({ preventScroll: true });
-        }
+        // Fookust ei hüpata otsingule: klaviatuur saab alustada päisest.
 
         // Map hint dismiss (×) and auto-hide once user has clicked the map
         var mapHint = document.getElementById('map-hint');
@@ -5357,6 +5431,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             });
             safe(renderToetused, data.toetused, 'toetused');
             safe(renderEudr, data, 'eudr');
+            renderResultSummary(data);
 
             document.getElementById('map-controls').style.display = '';
             dismissMapHint();
@@ -5394,6 +5469,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                     });
                     safe(renderToetused, fullData.toetused, 'toetused');
                     safe(renderEudr, fullData, 'eudr');
+                    renderResultSummary(fullData);
                     if (shouldShowBroadPartialWarning(fullData.meta)) {
                         showError('Otsuse jaoks vajalik põhiandmete allikas ei vastanud. Muud kinnistuandmed kuvati, kuid puuduvat tulemust ei tohi tõlgendada metsa või piirangu puudumisena.');
                     }

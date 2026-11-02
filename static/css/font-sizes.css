@@ -1,31 +1,23 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   Terrapoint — Font size knobs
-   Edit a value, save, and hard-refresh the browser (Cmd+Shift+R) to see it.
-
-   Three tiers:
-     Tier 1 — content box titles (.card-header h3)
-     Tier 2 — information rows + explanations
-              (.section-desc, .info-row, .info-row .label,
-               .info-row .value, .callout-breakdown)
-     Tier 3 — tables
-              (.eraldised-table-header, .eraldised-row, .comp-table)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
+/* Ühine tüübiskaala: väiksed sildid, põhitekst ja pealkirjad. */
 :root {
-    --tier-1-title:  17px;
-    --tier-2-row:    16px;
-    --tier-3-table:  13px;
+    --type-xs: 0.75rem;
+    --type-sm: 0.875rem;
+    --type-base: 1rem;
+    --type-lg: 1.125rem;
+    --type-xl: 1.375rem;
+    --type-2xl: 1.75rem;
+    --type-3xl: 2.25rem;
+    --type-display: clamp(2.5rem, 5.2vw, 3.75rem);
+
+    --tier-1-title: var(--type-lg);
+    --tier-2-row: var(--type-base);
+    --tier-3-table: var(--type-sm);
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 640px) {
     :root {
-        --tier-1-title:  16px;
-        --tier-2-row:    15.5px;
-    }
-}
-
-@media (max-width: 768px) {
-    :root {
-        --tier-2-row:    15px;
+        --type-2xl: 1.5rem;
+        --type-3xl: 2rem;
+        --type-display: clamp(2.25rem, 9vw, 2.75rem);
     }
 }

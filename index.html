@@ -59,9 +59,9 @@
     <link rel="dns-prefetch" href="https://tiles.maaamet.ee">
     <link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css?v=1.9.4">
     <script src="/static/vendor/leaflet/leaflet.js?v=1.9.4" defer></script>
-    <link rel="stylesheet" href="/static/css/fonts.css?r=jkl001">
-    <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl034">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl127">
+    <link rel="stylesheet" href="/static/css/fonts.css?r=jkl002">
+    <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl035">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl130">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -242,14 +242,14 @@
             </nav>
         </div>
         <div class="nav-right">
-            <div class="search-box" id="nav-search">
+            <div class="search-box" id="nav-search" hidden>
                 <div class="search-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="7.5"/><path d="m20 20-4.2-4.2"/>
                     </svg>
                 </div>
                 <div class="search-input-wrap">
-                    <input type="text" id="kataster-input" role="combobox" placeholder="Sisesta katastritunnus või aadress" autocomplete="off" inputmode="text" enterkeyhint="search" aria-label="Otsing" aria-autocomplete="list" aria-controls="address-dropdown" aria-expanded="false">
+                    <input type="text" id="kataster-input" role="combobox" placeholder="Sisesta katastritunnus või aadress" autocomplete="off" inputmode="text" enterkeyhint="search" aria-label="Katastritunnuse või aadressi otsing" aria-autocomplete="list" aria-controls="address-dropdown" aria-expanded="false">
                     <div id="address-dropdown" class="address-dropdown" role="listbox" aria-label="Aadressiotsingu tulemused" style="display:none"></div>
                 </div>
                 
@@ -309,22 +309,14 @@
     </div>
 
     <main>
-    <!-- Landing / Intro — angled forest hero (trees at an angle, disappear on scroll) -->
+    <!-- Landing / intro -->
     <section class="landing hero-scene" id="landing" aria-label="Terrapoint sissejuhatus">
-        <div class="hero-trees" aria-hidden="true">
-            <div class="hero-tree hero-tree--left hero-tree--left-1"><picture><source media="(min-width: 769px)" type="image/webp" srcset="/static/img/tree-barrier-left.webp"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" decoding="async"></picture></div>
-            <div class="hero-tree hero-tree--left hero-tree--left-2"><picture><source media="(min-width: 769px)" type="image/webp" srcset="/static/img/tree-barrier-left2.webp"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" decoding="async"></picture></div>
-            <div class="hero-tree hero-tree--left hero-tree--left-3"><picture><source media="(min-width: 769px)" type="image/webp" srcset="/static/img/tree-row-aspen.webp"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" decoding="async"></picture></div>
-            <div class="hero-tree hero-tree--right hero-tree--right-1"><picture><source media="(min-width: 769px)" type="image/webp" srcset="/static/img/tree-barrier-right.webp"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" decoding="async"></picture></div>
-            <div class="hero-tree hero-tree--right hero-tree--right-2"><picture><source media="(min-width: 769px)" type="image/webp" srcset="/static/img/tree-barrier-right2.webp"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" decoding="async"></picture></div>
-            <div class="hero-tree hero-tree--right hero-tree--right-3"><picture><source media="(min-width: 769px)" type="image/webp" srcset="/static/img/tree-row-larch.webp"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" decoding="async"></picture></div>
-        </div>
         <div class="hero-content">
             <div class="landing-eyebrow">
-                Eesti metsaandmed · päring allikatest
+                Metsa- ja kinnistuandmed Eestis
             </div>
-            <h1 class="landing-title">Sinu mets <em>numbrite</em><br>ja <em>kaardi</em> peal.</h1>
-            <p class="landing-sub">Sisesta katastritunnus, aadress või vali kinnistu otse kaardilt. Vaata maa referentsi ja puidustsenaariume, eraldiste seisukorda, süsinikuvaru, ohutegureid ja võimalikke toetusi. Kõik vaid ühe otsingu kaugusel.</p>
+            <h1 class="landing-title">Sinu mets, selgem pilt.</h1>
+            <p class="landing-sub">Sisesta katastritunnus või aadress, et vaadata kinnistu, metsa, väärtuse ja piirangute andmeid.</p>
             <div class="landing-search">
                 <div class="search-box">
                     <div class="search-icon">
@@ -333,7 +325,7 @@
                         </svg>
                     </div>
                     <div class="search-input-wrap">
-                        <input type="text" id="kataster-input-landing" role="combobox" placeholder="nt 78404:409:0113 või Kadaka pst 159" autocomplete="off" inputmode="text" enterkeyhint="search" aria-label="Otsing" aria-autocomplete="list" aria-controls="address-dropdown-landing" aria-expanded="false">
+                        <input type="text" id="kataster-input-landing" role="combobox" placeholder="nt 78404:409:0113 või Kadaka pst 159" autocomplete="off" inputmode="text" enterkeyhint="search" aria-label="Katastritunnuse või aadressi otsing" aria-autocomplete="list" aria-controls="address-dropdown-landing" aria-expanded="false">
                         <div id="address-dropdown-landing" class="address-dropdown" role="listbox" aria-label="Aadressiotsingu tulemused" style="display:none"></div>
                     </div>
                     <button id="search-btn-landing" aria-label="Otsi">
@@ -369,6 +361,31 @@
          andmed laaditakse peale otsingut) -->
     <section id="dashboard" class="dashboard" aria-label="Kinnistu analüüsi tulemused" tabindex="-1">
         <h1 id="dashboard-title" class="sr-only" hidden>Kinnistu analüüsi tulemused</h1>
+        <div class="result-summary" id="result-summary" role="status" aria-live="polite" aria-atomic="true" hidden>
+            <div class="result-summary-heading">
+                <p class="result-summary-label">Kinnistu kokkuvõte</p>
+                <h2 id="result-summary-title">Kinnistu andmed</h2>
+                <p class="result-summary-number" id="result-summary-number">—</p>
+            </div>
+            <dl class="result-summary-grid">
+                <div class="result-summary-item">
+                    <dt>Pindala</dt>
+                    <dd id="result-summary-area">—</dd>
+                </div>
+                <div class="result-summary-item">
+                    <dt>Väärtusvahemik</dt>
+                    <dd id="result-summary-value">Hinnang puudub</dd>
+                </div>
+                <div class="result-summary-item">
+                    <dt>Riskisignaalid</dt>
+                    <dd id="result-summary-risk">Andmed puuduvad</dd>
+                </div>
+                <div class="result-summary-item">
+                    <dt>Metsateatised</dt>
+                    <dd id="result-summary-cutting">Allika olek teadmata</dd>
+                </div>
+            </dl>
+        </div>
 
         <!-- Map Section (always visible) -->
         <div class="map-section">
@@ -433,43 +450,6 @@
             </div>
         </div>
 
-        <!-- Terrapoint AI Chat -->
-        <div class="ai-chat-section" id="ai-chat-section">
-            <div class="ai-chat-header">
-                <img class="ai-chat-logo" src="/static/favicon.svg" alt="" aria-hidden="true">
-                <div>
-                    <h2>AI analüüs</h2>
-                    <p class="ai-chat-subtitle">Kinnistupõhine nõuanne</p>
-                    <p id="ai-chat-status" class="sr-only" aria-live="polite"></p>
-                </div>
-            </div>
-            <div class="ai-chat-messages" id="ai-chat-messages">
-                <div class="ai-message ai-welcome">
-                    <div class="ai-avatar"></div>
-                    <div class="ai-bubble">
-                        <p>Otsi kinnistu ja käivita AI analüüs.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="ai-chat-input-area" id="ai-chat-input-area" style="display:none">
-                <div class="ai-chat-input-wrap">
-                    <textarea id="ai-chat-input" placeholder="Küsi oma metsa kohta..." autocomplete="off" rows="1" aria-label="Küsimus AI-le"></textarea>
-                    <button id="ai-chat-send" aria-label="Saada">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="ai-chat-hints" id="ai-chat-hints">
-                    <button class="ai-hint" data-q="Milliseid andmeid ja riske peaksin müügi või hoidmise otsuses kontrollima?">Müüa või hoida?</button>
-                    <button class="ai-hint" data-q="Millised toetused võivad olla asjakohased ja mida tuleb kontrollida?">Toetused</button>
-                    <button class="ai-hint" data-q="Millised on riskid ja kuidas neid maandada?">Riskid</button>
-                    <button class="ai-hint ai-hint-custom" id="ai-quick-ask">Küsi AI-lt</button>
-                    <div id="ai-eraldis-hints"></div>
-                </div>
-                <p class="ai-chat-privacy">Avatud küsimus ja analüüsiks vajalikud kinnistuandmed edastatakse OpenAI AI-teenusele. Ära lisa küsimusse isikuandmeid ega konfidentsiaalset teavet; AI vastus võib eksida.</p>
-            </div>
-        </div>
 
         <!-- Metric Cards Grid (always visible, empty until search) -->
         <div class="metrics-grid">
@@ -688,6 +668,42 @@
                 </div>
             </div>
         </div>
+        <div class="ai-chat-section" id="ai-chat-section">
+            <div class="ai-chat-header">
+                <img class="ai-chat-logo" src="/static/favicon.svg" alt="" aria-hidden="true">
+                <div>
+                    <h2>AI analüüs</h2>
+                    <p class="ai-chat-subtitle">Kinnistupõhine nõuanne</p>
+                    <p id="ai-chat-status" class="sr-only" aria-live="polite"></p>
+                </div>
+            </div>
+            <div class="ai-chat-messages" id="ai-chat-messages">
+                <div class="ai-message ai-welcome">
+                    <div class="ai-avatar"></div>
+                    <div class="ai-bubble">
+                        <p>Otsi kinnistu ja käivita AI analüüs.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="ai-chat-input-area" id="ai-chat-input-area" style="display:none">
+                <div class="ai-chat-input-wrap">
+                    <textarea id="ai-chat-input" placeholder="Küsi oma metsa kohta..." autocomplete="off" rows="1" aria-label="Küsimus AI-le"></textarea>
+                    <button id="ai-chat-send" aria-label="Saada">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="ai-chat-hints" id="ai-chat-hints">
+                    <button class="ai-hint" data-q="Milliseid andmeid ja riske peaksin müügi või hoidmise otsuses kontrollima?">Müüa või hoida?</button>
+                    <button class="ai-hint" data-q="Millised toetused võivad olla asjakohased ja mida tuleb kontrollida?">Toetused</button>
+                    <button class="ai-hint" data-q="Millised on riskid ja kuidas neid maandada?">Riskid</button>
+                    <button class="ai-hint ai-hint-custom" id="ai-quick-ask">Küsi AI-lt</button>
+                    <div id="ai-eraldis-hints"></div>
+                </div>
+                <p class="ai-chat-privacy">Avatud küsimus ja analüüsiks vajalikud kinnistuandmed edastatakse OpenAI AI-teenusele. Ära lisa küsimusse isikuandmeid ega konfidentsiaalset teavet; AI vastus võib eksida.</p>
+            </div>
+        </div>
 
     </section>
 
@@ -876,7 +892,7 @@
         </div>
     </footer>
 
-    <script defer src="/static/js/app.js?r=jkl008"></script>
-    <script defer src="/static/js/hero.js?r=jkl001"></script>
+    <script defer src="/static/js/app.js?r=jkl010"></script>
+    <script defer src="/static/js/hero.js?r=jkl002"></script>
 </body>
 </html>

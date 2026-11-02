@@ -5,109 +5,105 @@
 
 /* ─── Tokens ─────────────────────────────────────────────────────────────── */
 :root {
-    /* Blue system — multiple tones, never one flat blue */
-    --ink:        #07153d;   /* deep ink — used for display type, never for fills */
-    --ink-soft:   #0f1f54;   /* slightly lifted ink */
-    --blue-950:   #0a1f5c;   /* deep brand */
-    --blue-900:   #0a3d9e;   /* brand primary */
-    --blue-700:   #1565c0;   /* secondary */
-    --blue-600:   #1d4ed8;   /* action */
-    --blue-500:   #3b82f6;   /* interactive */
-    --blue-400:   #60a5fa;   /* highlight */
-    --blue-300:   #93c5fd;   /* muted accent */
-    --blue-200:   #bfdbfe;   /* hairline tint */
-    --blue-100:   #dbeafe;   /* tint */
-    --blue-50:    #eff6ff;   /* wash */
+    /* Metsaportaal: kuus põhitokeneid, ülejäänud nimed on semantilised alias'ed. */
+    --color-ink:          #203329;
+    --color-forest:       #1e6248;
+    --color-forest-light: #448064;
+    --color-paper:        #f4f7f4;
+    --color-line:         #d1ddd5;
+    --white:              #ffffff;
 
-    /* Cyan accent for data callouts only — used sparingly */
-    --cyan-500:   #06b6d4;
+    --ink: var(--color-ink);
+    --ink-soft: var(--color-ink);
+    --blue-950: var(--color-ink);
+    --blue-900: var(--color-forest);
+    --blue-700: var(--color-forest);
+    --blue-600: var(--color-forest);
+    --blue-500: var(--color-forest-light);
+    --blue-400: var(--color-forest-light);
+    --blue-300: var(--color-line);
+    --blue-200: var(--color-line);
+    --blue-100: var(--color-paper);
+    --blue-50: var(--color-paper);
+    --cyan-500: var(--color-forest-light);
 
-    /* Neutral surface ladder */
-    --white:      #ffffff;
-    --paper:      #fbfcfe;   /* page bg — never pure white */
-    --paper-2:    #f5f8fc;   /* subtle panel */
-    --paper-3:    #eef2f8;   /* deeper panel */
-    --paper-4:    #e4eaf2;   /* track */
-    --hair:       #e3e8f0;   /* hairline */
-    --hair-2:     #d4dce7;   /* stronger hairline */
-    --ink-2:      #0f172a;   /* primary text */
-    --ink-3:      #334155;   /* secondary text */
-    --ink-4:      #64748b;   /* tertiary */
-    --ink-5:      #94a3b8;   /* muted */
-    --ink-6:      #cbd5e1;   /* very muted */
+    --paper: var(--color-paper);
+    --paper-2: var(--white);
+    --paper-3: var(--color-paper);
+    --paper-4: var(--color-line);
+    --hair: var(--color-line);
+    --hair-2: #81968a;
+    --ink-2: var(--color-ink);
+    --ink-3: #41594d;
+    --ink-4: #53695e;
+    --ink-5: #53695e;
+    --ink-6: var(--color-line);
 
-    /* Semantic */
-    --success:    #047857;
-    --success-bg: #ecfdf5;
-    --warn:       #b45309;
-    --warn-bg:    #fffbeb;
-    --danger:     #b91c1c;
-    --danger-bg:  #fef2f2;
-    --info:       #1d4ed8;
-    --info-bg:    #eff6ff;
+    --success: #21684b;
+    --success-bg: #edf5ef;
+    --warn: #82570e;
+    --warn-bg: #fff8e7;
+    --danger: #9f3034;
+    --danger-bg: #fff0ee;
+    --info: #245c87;
+    --info-bg: #eef4f8;
+    --data-state-danger: var(--danger);
+    --data-state-warn: var(--warn);
+    --data-state-ok: var(--success);
+    --data-state-info: var(--info);
 
-    /* Semantic data state — used only when a value is truly a state, not a category */
-    --data-state-danger: #b91c1c;
-    --data-state-warn:   #b45309;
-    --data-state-ok:     #047857;
-    --data-state-info:   #1d4ed8;
+    /* Kaardi teemakihid jäävad eri kategooriatena eristatavaks. */
+    --map-age-young: #729b8a;
+    --map-age-middle: #507767;
+    --map-age-maturing: #817d91;
+    --map-age-reached: #655e72;
+    --map-age-unknown: #68736e;
 
-    /* Map — neutral stand age classes, separate from management recommendations */
-    --map-age-young:    #7aa6c2;
-    --map-age-middle:   #4f7c9b;
-    --map-age-maturing: #756b9e;
-    --map-age-reached:  #5b536b;
-    --map-age-unknown:  #6b7280;
+    --surface-callout: var(--color-paper);
+    --surface-callout-border: var(--color-line);
+    --surface-callout-label: var(--color-forest);
+    --surface-callout-text: var(--color-ink);
 
-    /* Promotional callout surface — used for kinnistu turuväärtus box */
-    --surface-callout:        #f0f6ff;  /* very light blue, distinct from paper-2 */
-    --surface-callout-border: #c7dcfb;
-    --surface-callout-label:  #1d4ed8;
-    --surface-callout-text:   #07153d;
-
-    /* Spacing — 4pt scale */
-    --s-1:  4px;
-    --s-2:  8px;
-    --s-3:  12px;
-    --s-4:  16px;
-    --s-5:  20px;
-    --s-6:  24px;
-    --s-7:  32px;
-    --s-8:  40px;
-    --s-9:  48px;
+    /* 4 px sammuga ruumiskaala */
+    --s-1: 4px;
+    --s-2: 8px;
+    --s-3: 12px;
+    --s-4: 16px;
+    --s-5: 20px;
+    --s-6: 24px;
+    --s-7: 32px;
+    --s-8: 40px;
+    --s-9: 48px;
     --s-10: 64px;
     --s-11: 80px;
     --s-12: 96px;
 
-    /* Radius */
-    --r-xs:  4px;
-    --r-sm:  6px;
-    --r:     10px;
-    --r-md:  12px;
-    --r-lg:  16px;
-    --r-xl:  20px;
-    --r-2xl: 28px;
+    /* Üks raadiuse- ja varjuskaala; pillid kasutavad ümarat erikuju. */
+    --r-xs: 4px;
+    --r-sm: 6px;
+    --r: 8px;
+    --r-md: 10px;
+    --r-lg: 12px;
+    --r-xl: 16px;
+    --r-2xl: 20px;
     --r-full: 9999px;
+    --sh-1: 0 1px 2px rgba(32, 51, 41, 0.05);
+    --sh-2: 0 2px 6px rgba(32, 51, 41, 0.08);
+    --sh-3: 0 4px 12px rgba(32, 51, 41, 0.1);
+    --sh-4: 0 8px 24px rgba(32, 51, 41, 0.12);
+    --sh-5: 0 16px 40px rgba(32, 51, 41, 0.14);
+    --sh-blue: var(--sh-2);
+    --sh-inset: inset 0 1px 2px rgba(32, 51, 41, 0.04);
 
-    /* Shadow — restrained. Lift, not float. */
-    --sh-1: 0 1px 0 rgba(15, 23, 42, 0.04);
-    --sh-2: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 0 rgba(15, 23, 42, 0.03);
-    --sh-3: 0 2px 4px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.05);
-    --sh-4: 0 4px 8px rgba(15, 23, 42, 0.05), 0 12px 28px rgba(15, 23, 42, 0.07);
-    --sh-5: 0 8px 16px rgba(15, 23, 42, 0.06), 0 24px 48px rgba(15, 23, 42, 0.09);
-    --sh-blue: 0 4px 14px rgba(10, 61, 158, 0.18), 0 1px 3px rgba(10, 61, 158, 0.12);
-    --sh-inset: inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(15, 23, 42, 0.04);
+    /* One family for the interface; monospace only for identifiers and values. */
+    --ff-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --ff-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --ff-display: var(--ff-sans);
+    --ff-estonian: var(--ff-sans);
+    --panel-title-font-size: var(--type-lg);
+    --panel-font-size: var(--type-base);
+    --panel-supporting-font-size: var(--type-sm);
 
-    /* Type */
-    --ff-sans: "Geist", "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-    --ff-mono: "Geist Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    --ff-display: "Geist", "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-    --ff-estonian: "Geist", "Inter Tight", system-ui, sans-serif; /* Geist covers Estonian diacritics */
-    --panel-title-font-size: 16px;
-    --panel-font-size: 14px;
-    --panel-supporting-font-size: 12px;
-
-    /* Motion */
     --ease: cubic-bezier(0.32, 0.72, 0, 1);
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -115,7 +111,6 @@
     --t-base: 200ms;
     --t-slow: 320ms;
 
-    /* Layout */
     --nav-h: 64px;
     --max-w: min(80vw, 1600px);
     --dashboard-max-w: min(calc(100vw - 48px), 1600px);
@@ -1016,137 +1011,19 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 .skeleton-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 
 /* ═══ HERO LANDING ═════════════════════════════════════════════════════════ */
-/* ═══ HERO SCENE — transparent tree barriers, trunk anchored to the screen
-   edge, leaning inward (60° → 90°), rising up and away on scroll. ═══ */
 .landing {
     position: relative;
-    min-height: clamp(640px, 92vh, 920px);
-    padding: clamp(40px, 7vh, 84px) 24px clamp(28px, 5vh, 56px);
-    text-align: center;
-    background:
-        radial-gradient(ellipse 70% 45% at 50% 0%, rgba(255,255,255,0.55), transparent 65%),
-        linear-gradient(180deg, #eef4fc 0%, #e6eff7 55%, #dce6f0 100%);
-    --s: 0;
+    min-height: auto;
+    padding: clamp(56px, 9vh, 92px) 24px clamp(44px, 7vh, 72px);
+    text-align: left;
+    background: var(--paper);
     color: var(--ink);
 }
 .landing > .hero-content {
     position: relative;
-    z-index: 3;
-    max-width: 920px;
-    margin: 0 auto;
-    transform: translateY(calc(var(--s-content) * -8vh));
-    opacity: calc(1 - var(--s-content));
-    will-change: transform, opacity;
-}
-.landing::before { content: none; }
-
-/* 3 trees per side, spaced out vertically along each edge. Each tree's
-   trunk is anchored to the screen edge via translateX(±50%). The scroll
-   motion is a PURE rotation on the trunk axis (the tree pivots from
-   its leaned angle to upright) — no lift, no circular path. A soft
-   ground/fog gradient at the bottom of the tree layer hides the flat
-   cut at the end of each trunk so we don't see the "end of the trunk". */
-.hero-trees {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    overflow: hidden;
     z-index: 1;
-}
-/* Ground/fog: gradient at the bottom of the HERO SECTION (on .landing,
-   not on the trees container) so it reliably paints above the trees
-   (the trees are inside .hero-trees with their own stacking context;
-   the ground is in the .landing context, above .hero-trees, below
-   .hero-content). Fully opaque at the very bottom so the rembg cut
-   at the end of each trunk is not visible — the cut blends into the
-   same color as the hero's bottom background. */
-.landing::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 22vh;
-    background: linear-gradient(to top,
-        #dce6f0 0%,
-        #dce6f0 40%,
-        rgba(220, 230, 240, 0.5) 70%,
-        transparent 100%);
-    pointer-events: none;
-    z-index: 2;
-}
-.hero-tree {
-    position: absolute;
-    width: auto;
-    --tilt: 0deg;
-    transform-origin: 50% 100%;
-    will-change: opacity;
-    opacity: var(--s-op);
-}
-.hero-tree--left {
-    left: 2vw;
-    transform: translateX(-50%);
-}
-.hero-tree--right {
-    right: 2vw;
-    transform: translateX(50%);
-}
-/* Push the 4 middle + upper trees further OUTSIDE the frame (trunks
-   off-screen) so only their foliage is visible inside the hero. The
-   2 bottom trees keep their trunks near the edge (2vw in). */
-.hero-tree--left-2,
-.hero-tree--left-3 { left: -4vw; }
-.hero-tree--right-2,
-.hero-tree--right-3 { right: -4vw; }
-/* 3 trees per side, spaced out along the edge with a clear gap between
-   each pair. Lean is ~55° from vertical (more horizontal — the user
-   said the previous 40° was "angled too up"). */
-.hero-tree--left-1  { bottom: 0;   height: 60vh; --tilt:  55deg; }
-.hero-tree--left-2  { bottom: 36vh; height: 52vh; --tilt:  57deg; }
-.hero-tree--left-3  { bottom: 56vh; height: 44vh; --tilt:  53deg; }
-.hero-tree--right-1 { bottom: 0;   height: 58vh; --tilt: -55deg; }
-.hero-tree--right-2 { bottom: 36vh; height: 50vh; --tilt: -57deg; }
-.hero-tree--right-3 { bottom: 56vh; height: 42vh; --tilt: -53deg; }
-
-.hero-tree picture {
-    display: block;
-    height: 100%;
-}
-.hero-tree img {
-    display: block;
-    height: 100%;
-    width: auto;
-    transform-origin: 50% 100%;
-    will-change: transform;
-    filter: drop-shadow(0 24px 36px rgba(7, 21, 61, 0.13));
-    /* Scroll motion: pure rotation on the trunk axis. From the leaned
-       base tilt to 0° (upright). No translateY. */
-    transform: rotate(calc(var(--tilt) * (1 - var(--s))));
-}
-/* Per-tree ground patch: a large, very soft radial gradient at the
-   base of every tree that hides the rembg cut at the end of the
-   trunk. The element is intentionally much larger than the visible
-   solid area and the gradient fades to transparent well before the
-   element's edges, so the patch's rectangular shape is never
-   visible — it reads as soft fog blending into the hero background.
-   The solid color matches the hero's bottom bg (#dce6f0) so the
-   trunk base blends in. */
-.hero-tree::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    bottom: 0;
-    width: 560px;
-    height: 160px;
-    transform: translateX(-50%);
-    background: radial-gradient(ellipse 55% 60% at center 70%,
-        #dce6f0 0%,
-        #dce6f0 18%,
-        rgba(220, 230, 240, 0.45) 45%,
-        rgba(220, 230, 240, 0.15) 70%,
-        transparent 100%);
-    pointer-events: none;
-    z-index: 2;
+    max-width: 1080px;
+    margin: 0 auto;
 }
 
 .landing-eyebrow {
@@ -1166,7 +1043,7 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
 }
 
 .landing-title {
-    font-family: "Bricolage Grotesque", "Geist", "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-family: var(--ff-display);
     font-size: clamp(38px, 6vw, 64px);
     line-height: 1.04;
     color: var(--ink);
@@ -1174,16 +1051,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     margin-bottom: 14px;
     font-weight: 700;
     font-optical-sizing: auto;
-}
-.landing-title em {
-    font-style: italic;
-    color: var(--blue-700);
-    font-weight: 700;
-}
-.landing-title .ampersand {
-    color: var(--blue-400);
-    font-style: italic;
-    font-weight: 500;
 }
 
 .landing-sub {
@@ -4425,15 +4292,6 @@ footer {
 /* Tablet */
 @media (max-width: 1024px) {
     .facts-strip { grid-template-columns: repeat(2, 1fr); }
-    /* Trees: medium on tablets, pushed further outside than desktop. */
-    .hero-tree--left-1  { left: 0;    bottom: 0;   height: 44vh; }
-    .hero-tree--left-2  { left: -6vw; bottom: 28vh; height: 36vh; }
-    .hero-tree--left-3  { left: -6vw; bottom: 50vh; height: 30vh; }
-    .hero-tree--right-1 { right: 0;   bottom: 0;   height: 42vh; }
-    .hero-tree--right-2 { right: -6vw; bottom: 28vh; height: 34vh; }
-    .hero-tree--right-3 { right: -6vw; bottom: 50vh; height: 28vh; }
-    .landing::after { height: 18vh; }
-    .hero-tree::after { width: 420px; height: 120px; }
 }
 
 /* Small tablet / large phone */
@@ -4451,8 +4309,6 @@ footer {
     #map { height: 420px; }
     .map-reset-control { top: 12px; right: 12px; }
     .section-head h2 { font-size: 24px; }
-    /* Trees: hidden on phone / small tablet — desktop keeps the full forest. */
-    .hero-trees { display: none; }
 }
 
 @container (max-width: 420px) {
@@ -4501,7 +4357,6 @@ footer {
         padding: 36px 16px 28px;
         min-height: 560px;
     }
-    .landing::after { height: 8vh; }
     .landing-title { font-size: 38px; line-height: 1.04; }
     .landing-sub { font-size: 15px; line-height: 1.5; margin-bottom: 20px; }
     .landing-search .search-box { height: 52px; padding: 0 4px 0 14px; }
@@ -4690,7 +4545,6 @@ footer {
     .fact-value { font-size: 17px; }
     .landing-title { font-size: 30px; line-height: 1.05; }
     .landing-sub { font-size: 14px; }
-    .landing::after { height: 6vh; }
     .big-number { font-size: 28px; }
     .brand-mark { display: inline-flex; align-items: center; }
     .brand-name { display: none; }
@@ -5362,3 +5216,552 @@ footer {
 .feedback-status-err {
     color: var(--danger);
 }
+/* ─── Selgem kasutajaliides ──────────────────────────────────────────────── */
+[hidden] { display: none !important; }
+
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+    outline: 3px solid var(--color-forest);
+    outline-offset: 3px;
+}
+
+html {
+    scroll-padding-top: calc(var(--nav-h) + var(--s-3));
+}
+
+body {
+    color: var(--ink-2);
+    background: var(--paper);
+    background-image: none;
+    background-attachment: scroll;
+    overflow-x: hidden;
+}
+
+.hero {
+    height: var(--nav-h);
+    padding: 0 clamp(16px, 3vw, 40px);
+    background: var(--white);
+    border-bottom: 1px solid var(--hair);
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+.nav-left { gap: var(--s-4); }
+.brand {
+    min-height: 44px;
+    color: var(--ink);
+}
+.brand-mark {
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+    color: var(--color-forest);
+}
+.brand-name {
+    color: var(--ink);
+    font-size: 20px;
+    font-weight: 600;
+}
+.brand-name strong { color: var(--color-forest); }
+.nav-center {
+    gap: var(--s-1);
+    margin-left: var(--s-4);
+}
+.nav-center a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--s-3);
+    border-radius: var(--r-sm);
+    color: var(--ink-3);
+    font-size: var(--type-sm);
+}
+.nav-center a:hover {
+    color: var(--color-forest);
+    background: var(--paper);
+}
+.hamburger {
+    color: var(--ink);
+    border: 1px solid transparent;
+}
+.hamburger:hover {
+    color: var(--color-forest);
+    background: var(--paper);
+}
+.nav-right { gap: var(--s-3); }
+#nav-search {
+    max-width: 390px;
+    height: 44px;
+    border-radius: var(--r-md);
+    box-shadow: none;
+}
+#nav-search[hidden] { display: none !important; }
+
+.search-box {
+    border-color: var(--hair-2);
+    border-radius: var(--r-md);
+    box-shadow: none;
+}
+.search-box:focus-within {
+    border-color: var(--color-forest);
+    box-shadow: 0 0 0 3px rgba(30, 98, 72, 0.14);
+}
+.search-box button {
+    width: 44px;
+    height: 44px;
+    background: var(--color-forest);
+    border-radius: var(--r-sm);
+    box-shadow: none;
+}
+.search-box button::before { display: none; }
+.search-box button:hover {
+    background: var(--color-ink);
+    box-shadow: none;
+    transform: none;
+}
+.landing-search .search-box button {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-sm);
+}
+
+.landing {
+    min-height: clamp(500px, 70vh, 700px);
+    padding: clamp(56px, 9vh, 92px) 24px clamp(48px, 7vh, 72px);
+    text-align: left;
+    background: var(--paper);
+}
+.landing > .hero-content {
+    width: 100%;
+    max-width: 1080px;
+}
+.landing-eyebrow {
+    display: block;
+    margin: 0 0 var(--s-3);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--color-forest);
+    font-size: var(--type-sm);
+    font-weight: 600;
+}
+.landing-title {
+    max-width: 800px;
+    margin-bottom: var(--s-4);
+    font-family: var(--ff-display);
+    font-size: var(--type-display);
+    line-height: 1.08;
+    color: var(--ink);
+}
+.landing-sub {
+    max-width: 660px;
+    margin: 0 0 var(--s-6);
+    color: var(--ink-3);
+    font-size: var(--type-lg);
+    line-height: 1.55;
+}
+.landing-search {
+    max-width: 680px;
+    margin: 0;
+}
+.landing-search .search-box {
+    height: 56px;
+    padding: 0 var(--s-1) 0 var(--s-4);
+    border-radius: var(--r-md);
+    box-shadow: none;
+}
+.landing-search .search-box input {
+    padding: 0 var(--s-3);
+    font-size: var(--type-base);
+}
+.landing-hints {
+    justify-content: flex-start;
+    gap: var(--s-2);
+    margin-top: var(--s-3);
+}
+.landing-hint {
+    min-height: 44px;
+    padding: 0 var(--s-3);
+    border-color: var(--hair-2);
+    border-radius: var(--r-sm);
+    background: var(--white);
+    color: var(--ink-3);
+    font-family: var(--ff-sans);
+    font-size: var(--type-sm);
+}
+.landing-hint:hover {
+    color: var(--color-forest);
+    border-color: var(--color-forest);
+    background: var(--white);
+    transform: none;
+}
+.landing-hint .kbd {
+    padding: 2px 5px;
+    border-color: var(--hair);
+    border-radius: var(--r-xs);
+    background: var(--paper);
+    color: var(--ink-3);
+    font-size: var(--type-xs);
+}
+.landing-meta {
+    justify-content: flex-start;
+    max-width: 760px;
+    gap: 0;
+    margin-top: var(--s-7);
+    padding-top: var(--s-4);
+    border-top: 1px solid var(--hair);
+}
+.landing-meta-item {
+    align-items: flex-start;
+    gap: 2px;
+    padding-right: var(--s-5);
+}
+.landing-meta-item + .landing-meta-item {
+    margin-left: var(--s-5);
+    padding-left: var(--s-5);
+    border-left: 1px solid var(--hair);
+}
+.landing-meta-num {
+    color: var(--ink);
+    font-size: var(--type-lg);
+    font-weight: 600;
+    line-height: 1.25;
+}
+.landing-meta-label {
+    color: var(--ink-4);
+    font-size: var(--type-xs);
+    font-weight: 500;
+    text-transform: none;
+}
+
+.dashboard {
+    gap: var(--s-5);
+    padding: var(--s-5) 0 var(--s-10);
+    background: var(--paper);
+}
+
+.result-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 2.15fr);
+    align-items: center;
+    gap: var(--s-6);
+    padding: var(--s-5) !important;
+    border: 1px solid var(--hair);
+    border-radius: var(--r-md);
+    background: var(--white);
+    box-shadow: none;
+}
+.result-summary-heading { min-width: 0; }
+.result-summary-label {
+    margin-bottom: var(--s-1);
+    color: var(--color-forest);
+    font-size: var(--type-sm);
+    font-weight: 600;
+}
+.result-summary-heading h2 {
+    color: var(--ink);
+    font-size: var(--type-xl);
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+.result-summary-number {
+    margin-top: var(--s-1);
+    color: var(--ink-4);
+    font-family: var(--ff-mono);
+    font-size: var(--type-sm);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+.result-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--s-3);
+    min-width: 0;
+}
+.result-summary-item {
+    min-width: 0;
+    padding-left: var(--s-3);
+    border-left: 1px solid var(--hair);
+}
+.result-summary-item dt {
+    margin-bottom: var(--s-1);
+    color: var(--ink-4);
+    font-size: var(--type-xs);
+    line-height: 1.35;
+}
+.result-summary-item dd {
+    color: var(--ink);
+    font-size: var(--type-sm);
+    font-weight: 600;
+    line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.map-wrapper {
+    border-color: var(--hair);
+    border-radius: var(--r-md);
+    box-shadow: none;
+}
+.map-reset-control {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-sm);
+    box-shadow: var(--sh-1);
+}
+.map-reset-control:hover {
+    color: var(--color-forest);
+    background: var(--paper);
+}
+#map .leaflet-control-zoom a {
+    width: 44px;
+    height: 44px;
+    line-height: 44px;
+    color: var(--ink);
+    background: var(--white);
+}
+.map-workspace-opener,
+.map-workspace-close,
+.map-view-preset,
+.map-inline-retry {
+    min-height: 44px;
+}
+
+.metrics-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--s-4);
+    align-items: start;
+}
+.metrics-grid.is-tetris {
+    grid-auto-flow: row;
+    grid-auto-rows: auto;
+    row-gap: var(--s-4);
+}
+.metrics-grid.is-tetris > .metric-card {
+    grid-row-end: auto;
+    margin-bottom: 0;
+}
+.metric-card,
+.ai-chat-section {
+    border: 1px solid var(--hair);
+    border-radius: var(--r-md);
+    background: var(--white);
+    box-shadow: none;
+}
+.metric-card {
+    padding: var(--s-5);
+    overflow: visible;
+    animation: none;
+}
+.metric-card:hover,
+.metric-card:focus-within {
+    border-color: var(--hair-2);
+    box-shadow: none;
+}
+.metric-card.highlight-card {
+    border-color: var(--hair);
+    background: var(--white);
+    box-shadow: none;
+}
+.metric-card.highlight-card::after { display: none; }
+.metric-card .card-header {
+    align-items: center;
+    gap: var(--s-3);
+    margin-bottom: var(--s-2);
+}
+.metric-card .card-icon {
+    width: 32px;
+    height: 32px;
+    margin-top: 0;
+    border-radius: var(--r-sm);
+    background: var(--paper);
+    color: var(--color-forest);
+}
+.metric-card .card-icon svg { width: 18px; height: 18px; }
+.metric-card .card-header h3 {
+    color: var(--ink);
+    font-size: var(--type-lg) !important;
+    line-height: 1.35;
+}
+.metric-card .section-desc {
+    margin: 0 0 var(--s-2);
+    padding-bottom: var(--s-3);
+    border-bottom: 1px solid var(--hair);
+    color: var(--ink-3);
+    font-size: var(--type-sm) !important;
+    line-height: 1.5;
+}
+.metric-card .info-row {
+    gap: var(--s-3);
+    min-height: 44px;
+    padding: var(--s-2) 0;
+    border-bottom: 1px solid var(--hair);
+}
+.metric-card .info-row:last-child { border-bottom: 0; }
+.metric-card .info-row .label { color: var(--ink-3); }
+.metric-card .info-row .value {
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+}
+.metric-card :is(
+    .callout-surface,
+    .supporting-callout,
+    .estimate-breakdown,
+    .asset-trust-strip,
+    .eligible-banner
+) {
+    border: 0;
+    border-radius: var(--r);
+    background: var(--paper);
+    box-shadow: none;
+}
+.metric-card .asset-passport {
+    border: 0;
+    border-bottom: 1px solid var(--hair);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+.metric-card .asset-passport > summary { min-height: 44px; }
+.metric-card details > summary { min-height: 44px; }
+
+.ai-chat-section { padding: var(--s-5); }
+.ai-chat-header h2 {
+    color: var(--ink);
+    font-size: var(--type-lg);
+}
+.ai-chat-input-wrap button {
+    min-width: 44px;
+    min-height: 44px;
+}
+.ai-chat-hints button { min-height: 44px; }
+
+.about,
+.contact,
+.sources,
+.feedback {
+    background: var(--paper);
+}
+.about-inner,
+.contact-inner,
+.sources-inner,
+.feedback-inner {
+    width: min(calc(100% - 48px), 1120px);
+}
+.feedback-input,
+.feedback-textarea {
+    min-height: 44px;
+    border-color: var(--hair-2);
+    color: var(--ink);
+}
+.feedback-input:focus,
+.feedback-textarea:focus {
+    border-color: var(--color-forest);
+    box-shadow: 0 0 0 3px rgba(30, 98, 72, 0.14);
+}
+.feedback-submit {
+    min-height: 44px;
+    background: var(--color-forest);
+}
+.feedback-submit:hover { background: var(--color-ink); }
+
+@media (max-width: 1024px) {
+    .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 768px) {
+    .hero { padding: 0 var(--s-3); }
+    .nav-left { gap: var(--s-2); }
+    .nav-center { display: none; }
+    .dashboard { gap: var(--s-4); }
+    .result-summary {
+        grid-template-columns: 1fr;
+        gap: var(--s-4);
+    }
+    .result-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .result-summary-item:nth-child(odd) {
+        padding-left: 0;
+        border-left: 0;
+    }
+    .metrics-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-3); }
+    .metrics-grid.is-tetris { row-gap: var(--s-3); }
+    .metric-card { padding: var(--s-4); }
+    .landing {
+        min-height: auto;
+        padding: 48px var(--s-4) var(--s-6);
+    }
+    .landing-sub {
+        max-width: 560px;
+        font-size: var(--type-base);
+    }
+    .landing-search .search-box { height: 56px; }
+    .landing-meta { margin-top: var(--s-5); }
+    .about-inner,
+    .contact-inner,
+    .sources-inner,
+    .feedback-inner {
+        width: calc(100% - 32px);
+    }
+}
+
+@media (max-width: 420px) {
+    .hero { height: 56px; }
+    .brand-name { font-size: 17px; }
+    #nav-search {
+        height: 44px;
+        max-width: none;
+    }
+    #nav-search input { font-size: var(--type-sm); }
+    .landing { padding: 40px var(--s-3) var(--s-5); }
+    .landing-title { font-size: var(--type-display); }
+    .landing-sub { margin-bottom: var(--s-4); }
+    .landing-hints { gap: var(--s-2); }
+    .landing-hint { padding: 0 var(--s-2); }
+    .landing-meta {
+        flex-wrap: wrap;
+        gap: var(--s-2) 0;
+    }
+    .landing-meta-item { padding-right: var(--s-2); }
+    .landing-meta-item + .landing-meta-item {
+        margin-left: var(--s-2);
+        padding-left: var(--s-2);
+    }
+    .result-summary { padding: var(--s-4) !important; }
+    .result-summary-grid { gap: var(--s-3) var(--s-2); }
+    .result-summary-item { padding-left: var(--s-2); }
+    .result-summary-item:nth-child(odd) { padding-left: 0; }
+    #map { height: 380px; }
+    #map .leaflet-control-zoom a {
+        width: 44px;
+        height: 44px;
+        line-height: 44px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+.search-input-wrap { align-self: stretch; }
+.search-box input { min-height: 44px; }
+.sidebar-close,
+.map-hint-close,
+.map-confirm-btn {
+    min-width: 44px;
+    min-height: 44px;
+}
+.metric-card .kitsendused-desc-toggle { min-height: 44px; }
+.ai-chat-input-wrap input,
+.ai-chat-input-wrap textarea { min-height: 44px; }
+.map-reset-control,
+.map-workspace-opener,
+.map-workspace-close,
+.map-view-preset,
+.map-inline-retry,
+#map .leaflet-control-zoom a { border-color: var(--hair-2); }
