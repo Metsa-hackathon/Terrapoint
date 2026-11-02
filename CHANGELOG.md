@@ -6,6 +6,35 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > domain). `terrapoint.vercel.app` suunab `vercel.json` redirectiga (308)
 > terrapoint.ee-le; push master branchi uuendab terrapoint.ee-d.
 
+## [Määramata] - 2026-11-02
+
+### Changed
+- **Avaleht on rahulikum** — päise taust on tahke (gradient eemaldatud),
+  avalehel on üks otsinguväli (päise otsing ilmub ainult tulemuste vaatesse),
+  dekoratiivne puupilt ja parallaks on eemaldatud, pealkiri ja sissejuhatus
+  on lühemad.
+- **Tulemuste vaates on kokkuvõte ees** — enne kaarti kuvatakse kinnistu
+  aadress, katastritunnus, pindala, väärtusvahemik, riskisignaalid ja
+  metsateatised. Tehnilised detailid on taandatud `<details>` elementide
+  taha. Kaardi juhtnupud ja sektsioonikaardid on ühtlustatud.
+- **Ühtne disainisüsteem** — tüübiskaala, vahed, värvid ja raadiused on
+  CSS-muutujatena. Fondist jääb alles Geist; Bricolage Grotesque eemaldati,
+  sest seda ei kasutatud. Fookusindikaator, tekstikontrast ja
+  `prefers-reduced-motion` on korrastatud.
+
+### Fixed
+- **Samaaegsete päringute ootejärjekord** — ühise upstream-päringu
+  (single-flight) ootajate loendamise võistlusolukord on parandatud; teine
+  samaaegne ootaja ei jää enam ilma tulemuseta.
+- **Otsingu allikad algavad paralleelselt** — eraldiste ja raieteatiste
+  päringud algavad katastriandmete laadimisega samal ajal ning katkestatakse,
+  kui katastrit ei leita või selle laadimine ebaõnnestub.
+- **Katastritunnuse kontroll on range** — `fullmatch` nii `services/kataster.py`-s
+  kui `services/validation.py`-s, nii et osaline vaste (nt lisatud tekst)
+  enam läbi ei lähe.
+- **Vahemälu puhastub enne tõrjumist** — aegunud kirjed eemaldatakse enne,
+  kui FIFO-tõrjumine hakkab kehtivaid kirjeid välja viskama.
+
 ## [Määramata] - 2026-11-01
 
 ### Changed
