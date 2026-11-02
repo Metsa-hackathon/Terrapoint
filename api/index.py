@@ -2340,7 +2340,6 @@ async def _single_flight(cache_key: str, factory):
         def clear_in_flight(completed: asyncio.Task, key: str = cache_key) -> None:
             if _source_in_flight.get(key) is completed:
                 _source_in_flight.pop(key, None)
-            _source_flight_waiters.pop(key, None)
             if not completed.cancelled():
                 completed.exception()
 
@@ -2559,42 +2558,12 @@ async def _search_core(
     include_details: bool = True,
 ) -> dict:
     """Sisemine otsinguloogika — eraldatud, et saaks timeout-i panna."""
-    try:
-        kataster_data = await asyncio.wait_for(
-            _cached_kataster(kataster_nr),
-            timeout=KATASTER_TIMEOUT_SECONDS,
-        )
-    except asyncio.TimeoutError:
-        raise HTTPException(
-            status_code=502,
-            detail="Katastri andmeallikas ei vastanud tähtaja jooksul. Proovi uuesti.",
-        ) from None
-    if not kataster_data:
-        return {"error": "Krunti ei leitud", "_status": 404}
-
-    centroid = _geometry_centroid_coordinates(kataster_data.get("geometry"))
-    if centroid is None:
-        raise HTTPException(status_code=502, detail="Kinnistu geomeetria ei ole saadaval")
-    kataster_data = {**kataster_data, "centroid": centroid}
-
-    bbox = calculate_bbox(kataster_data["geometry"])
-    bbox_str = bbox_to_wfs_string(bbox)
-
-    # Eraldised ja teatised sõltuvad ainult katastritunnusest, seega saab neid
-    # küsida kohe katastri kõrval. Eraldiste põhjal sõltuv liikide koosseis
-    # (2 WFS-päringut eraldise kohta) arendab samal ajal, kui ruumikihid ja
-    # teatised veel laevad — varem oli see järjest, mis sidus otsingu kestuseks
-    # kaks upstreami ootust.
-    eraldis_task = asyncio.ensure_future(
-        asyncio.wait_for(
-            _cached_eraldis(kataster_nr), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS
-        )
-    )
-    other_tasks = [
+    # Need allikad vajavad katastritunnust, mitte kinnistu geomeetriat, seega
+    # alusta nende päringuid katastriandmete laadimisega samal ajal.
+    independent_tasks = [
         asyncio.ensure_future(
             asyncio.wait_for(
-                query_all_layers(bbox_str) if include_map_layers else query_layers(bbox_str, ANALYTICAL_LAYER_KEYS),
-                timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS,
+                _cached_eraldis(kataster_nr), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS
             )
         ),
         asyncio.ensure_future(
@@ -2602,12 +2571,54 @@ async def _search_core(
                 _cached_teatised(kataster_nr), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS
             )
         ),
-        asyncio.ensure_future(
-            asyncio.wait_for(
-                query_natura_2000(bbox_str), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS
-            )
-        ),
     ]
+    tasks_handed_off = False
+    try:
+        try:
+            kataster_data = await asyncio.wait_for(
+                _cached_kataster(kataster_nr),
+                timeout=KATASTER_TIMEOUT_SECONDS,
+            )
+        except asyncio.TimeoutError:
+            raise HTTPException(
+                status_code=502,
+                detail="Katastri andmeallikas ei vastanud tähtaja jooksul. Proovi uuesti.",
+            ) from None
+        if not kataster_data:
+            return {"error": "Krunti ei leitud", "_status": 404}
+
+        centroid = _geometry_centroid_coordinates(kataster_data.get("geometry"))
+        if centroid is None:
+            raise HTTPException(status_code=502, detail="Kinnistu geomeetria ei ole saadaval")
+        kataster_data = {**kataster_data, "centroid": centroid}
+
+        bbox = calculate_bbox(kataster_data["geometry"])
+        bbox_str = bbox_to_wfs_string(bbox)
+
+        # Eraldiste põhjal sõltuv liikide koosseis (2 WFS-päringut eraldise
+        # kohta) algab eraldiste saabudes ja jookseb paralleelselt ruumikihiga.
+        eraldis_task, teatised_task = independent_tasks
+        other_tasks = [
+            asyncio.ensure_future(
+                asyncio.wait_for(
+                    query_all_layers(bbox_str) if include_map_layers else query_layers(bbox_str, ANALYTICAL_LAYER_KEYS),
+                    timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS,
+                )
+            ),
+            teatised_task,
+            asyncio.ensure_future(
+                asyncio.wait_for(
+                    query_natura_2000(bbox_str), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS
+                )
+            ),
+        ]
+        tasks_handed_off = True
+    finally:
+        if not tasks_handed_off:
+            for task in independent_tasks:
+                task.cancel()
+            await asyncio.gather(*independent_tasks, return_exceptions=True)
+
     try:
         eraldis_outcome = await eraldis_task
     # Üks katkenud allikas ei tohi murda otsingut — eraldiseta jätkatakse.

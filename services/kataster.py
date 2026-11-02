@@ -28,7 +28,7 @@ class KatasterWFSError(Exception):
 
 def _validate_kataster_nr(kataster_nr: str) -> str:
     """Sanitize kataster_nr to prevent CQL injection."""
-    if not _KATASTER_RE.match(kataster_nr or ""):
+    if not _KATASTER_RE.fullmatch(kataster_nr or ""):
         # Ära peegelda kasutaja sisendit veateates — väldib logide mürgitust
         # ja tulevasi XSS-mustreid, kui veateade peaks kunagi HTML-i jõudma.
         raise HTTPException(status_code=400, detail="Vigane katastritunnus")

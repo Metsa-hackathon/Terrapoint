@@ -17,6 +17,15 @@ class TTLCache:
         self._max_entries = max_entries
         self._lock = threading.Lock()
 
+    def _purge_expired(self, now: float) -> None:
+        expired_keys = [
+            key
+            for key, (expires_at, _value) in self._data.items()
+            if now > expires_at
+        ]
+        for key in expired_keys:
+            del self._data[key]
+
     def get(self, key: str) -> object | None:
         with self._lock:
             entry = self._data.get(key)
@@ -34,6 +43,8 @@ class TTLCache:
             # Refreshing an existing key must not evict an unrelated entry.
             # Reinsert it so the insertion-ordered dict keeps FIFO eviction fair.
             self._data.pop(key, None)
+            if len(self._data) >= self._max_entries:
+                self._purge_expired(time.monotonic())
             while len(self._data) >= self._max_entries:
                 self._data.pop(next(iter(self._data)))
             self._data[key] = (expires_at, value)
@@ -59,6 +70,7 @@ class TTLCache:
     @property
     def size(self) -> int:
         with self._lock:
+            self._purge_expired(time.monotonic())
             return len(self._data)
 
 

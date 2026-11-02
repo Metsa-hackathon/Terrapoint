@@ -14,6 +14,7 @@ def _validate_kataster_nr_or_400(kataster_nr: str) -> str:
     Kasutame nii Vercel→VPS proxy's kui ka otse-päringutes, et vältida
     path-traversal SSRF-i (nt '/api/search/../api/chat').
     """
-    if not kataster_nr or not KATASTER_RE.match(kataster_nr):
+    if not kataster_nr or not KATASTER_RE.fullmatch(kataster_nr):
         raise HTTPException(status_code=400, detail="Vigane katastritunnus")
     return kataster_nr
+
