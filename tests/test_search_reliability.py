@@ -1204,6 +1204,21 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
                 if inspect.getcoroutinestate(task) != inspect.CORO_CLOSED:
                     task.close()
 
+    async def test_gather_in_batches_keeps_results_finished_before_timeout(self):
+        # Üks aeglane element-päring ei tohi visata ära teiste juba valminud tulemusi.
+        async def quick(i):
+            return [i]
+
+        async def hung(i):
+            await asyncio.sleep(10)
+            return [i]
+
+        tasks = [quick(i) for i in range(14)] + [hung(14)]
+        results = await api._gather_in_batches(tasks, batch_size=20, overall_timeout=0.2,
+                                               fallback_per_task=list)
+        self.assertEqual(results[:14], [[i] for i in range(14)])
+        self.assertEqual(results[14], [])
+
     def test_malformed_notice_fields_are_unknown_instead_of_zero_or_executable_text(self):
         normalized, complete = api._normalized_notice_properties({
             "teatise_nr": {"unexpected": True},

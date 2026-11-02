@@ -2295,29 +2295,53 @@ async def _gather_in_batches(tasks: list, batch_size: int = 20, overall_timeout:
     ühenduste arv peab alla ~40 (20 element + 20 kahjustus). Üldine timeout
     kaitseb aeglase WFS-i eest kogu bloki peale.
 
-    Tagastab tulemuste loendi (eraldiste järjekorras). Kui overall_timeout
-    saabub, tagastab senised tulemused ja ülejäänutele rakendatakse
-    fallback_per_task (vaikimisi []).
+    Tagastab tulemuste loendi (ülesannete järjekorras). Iga koht on ülesande
+    tulemus või viga. Ülesanded, mis overall_timeout-ks ei valmi, katkestatakse
+    ja saavad fallback_per_task (vaikimisi []). Juba valminud tulemused
+    säilivad ka siis, kui mõni teine ülesanne jääb aeglaseks.
     """
-    results: list = [None] * len(tasks)
-    if not tasks:
-        return results
+    unfinished = object()
+    results: list = [unfinished] * len(tasks)
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + overall_timeout
+    next_start = 0
     try:
-        async def _run_with_timeout():
-            for batch_start in range(0, len(tasks), batch_size):
-                batch_slice = tasks[batch_start:batch_start + batch_size]
-                batch_results = await asyncio.gather(*batch_slice, return_exceptions=True)
-                for idx, result in enumerate(batch_results, batch_start):
-                    results[idx] = result
-        await asyncio.wait_for(_run_with_timeout(), timeout=overall_timeout)
-    except asyncio.TimeoutError:
-        for i in range(len(results)):
-            if results[i] is None:
-                results[i] = fallback_per_task() if callable(fallback_per_task) else (fallback_per_task or [])
+        while next_start < len(tasks):
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                break
+            batch_start = next_start
+            next_start = min(batch_start + batch_size, len(tasks))
+            futures = {
+                asyncio.ensure_future(coro): index
+                for index, coro in enumerate(tasks[batch_start:next_start], batch_start)
+            }
+            try:
+                done, pending = await asyncio.wait(list(futures), timeout=remaining)
+            except BaseException:
+                for future in futures:
+                    future.cancel()
+                await asyncio.gather(*futures, return_exceptions=True)
+                raise
+            for future in done:
+                if future.cancelled():
+                    continue
+                error = future.exception()
+                results[futures[future]] = error if error is not None else future.result()
+            if pending:
+                for future in pending:
+                    future.cancel()
+                await asyncio.gather(*pending, return_exceptions=True)
+                break
     finally:
-        for task in tasks:
-            if inspect.iscoroutine(task):
-                task.close()
+        # Ülesanded, millele ei jõutud task'i luua, tuleb sulgeda — muidu
+        # asyncio hoiatab "coroutine was never awaited".
+        for coro in tasks[next_start:]:
+            if inspect.iscoroutine(coro):
+                coro.close()
+    for index, value in enumerate(results):
+        if value is unfinished:
+            results[index] = fallback_per_task() if callable(fallback_per_task) else (fallback_per_task or [])
     return results
 
 

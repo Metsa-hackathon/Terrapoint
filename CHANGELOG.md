@@ -34,6 +34,9 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   enam läbi ei lähe.
 - **Vahemälu puhastub enne tõrjumist** — aegunud kirjed eemaldatakse enne,
   kui FIFO-tõrjumine hakkab kehtivaid kirjeid välja viskama.
+- **Eraldiste liikide koosseis jääb osaliselt alles** — üks aeglane eraldise
+  päring ei tühista enam juba valminud tulemusi (`_gather_in_batches`). Vastus
+  on märgitud osaliseks, kuid valminud eraldiste koosseis kuvatakse.
 
 ## [Määramata] - 2026-11-01
 
