@@ -9,6 +9,8 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 ## [Määramata] - 2026-11-02
 
 ### Changed
+- **Puuduvad staatilised failid ei jää vahemällu** — 404 saab `no-store` päise ja
+  `/index.html` suunab avalehele (308), nagu Vercel tegi.
 - **Staatilised failid saadavad brauseri vahemälureegli** — `/static/*` failid
   saavad originil samad `Cache-Control` päised, mis Vercel'is olid; vajalik
   Cloudflare'i tunneli üleminekuks.

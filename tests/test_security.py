@@ -554,6 +554,18 @@ class StaticCacheTests(unittest.TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(response.headers["cache-control"], expected)
 
+    def test_missing_static_file_is_not_cached(self):
+        response = TestClient(api.app).get("/static/vendor/leaflet/does-not-exist.js")
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.headers["cache-control"], "no-store")
+
+
+class IndexHtmlRedirectTests(unittest.TestCase):
+    def test_index_html_permanently_redirects_to_root(self):
+        response = TestClient(api.app).get("/index.html", follow_redirects=False)
+        self.assertEqual(response.status_code, 308)
+        self.assertEqual(response.headers["location"], "/")
+
 
 if __name__ == "__main__":
     unittest.main()

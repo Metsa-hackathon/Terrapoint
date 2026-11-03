@@ -36,6 +36,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import Response, HTMLResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.types import Scope
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from contextlib import asynccontextmanager
@@ -1196,6 +1197,12 @@ async def static_api_docs_alias():
     return RedirectResponse("/api/docs", status_code=308)
 
 
+@app.get("/index.html", include_in_schema=False)
+async def index_html_alias():
+    """Sama, mis Vercel `cleanUrls`: /index.html suunab avalehele (308)."""
+    return RedirectResponse("/", status_code=308)
+
+
 def _static_cache_control(path: str) -> str:
     """Brauseri vahemälureeglid staatilistele failidele."""
     path = path.lstrip("/")
@@ -1208,7 +1215,12 @@ def _static_cache_control(path: str) -> str:
 
 class CachedStaticFiles(StaticFiles):
     async def get_response(self, path: str, scope: Scope):
-        response = await super().get_response(path, scope)
+        try:
+            response = await super().get_response(path, scope)
+        except StarletteHTTPException as exc:
+            # Cloudflare hoiab 404 vaikimisi 3 min vahemälus; deploy ajal puuduv
+            # fail ei tohi sealt jääda serveeritavaks.
+            raise HTTPException(exc.status_code, headers={"Cache-Control": "no-store"}) from exc
         response.headers["Cache-Control"] = _static_cache_control(path)
         return response
 
