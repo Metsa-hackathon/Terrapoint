@@ -36,9 +36,12 @@ Metsa väärtuse ja andmete analüüsi veebirakendus. FastAPI backend + HTML/CSS
   Cloudflare'i tunneli konfiguratsioonis (API), mitte kohaliku failina.
 - Deploy: push `master` → koduserveri `terrapoint-deploy.timer` (`/root/projects/terrapoint/deploy.sh`).
   Vercel ehitab master'it veel, aga ei teeninda domeeni.
+- AI-vestlus (`/api/chat`, SSE) töötab originil: gateway token ja snapshot key loetakse failidest (`TERRAPOINT_CODEX_GATEWAY_TOKEN_FILE`, `TERRAPOINT_CHAT_SNAPSHOT_KEY_FILE`); originil ei ole Vercel'i env-muutujaid.
 - Cloudflare'i sätted, mida ära muuda: e-posti kaitse VÄLJAS (muudab `mailto:` lingi),
   Browser Cache TTL = respect existing headers (muidu 4 h, origin 1 h), Always Use HTTPS SEES,
-  DNSSEC VÄLJAS (`.ee`-s DS puudub; kui lubad, lisa DS Veebimajutusse).
+  DNSSEC VÄLJAS (`.ee`-s DS puudub; kui lubad, lisa DS Veebimajutusse),
+  Browser Integrity Check VÄLJAS (2026-11-03: `libwww-perl` UA sai 403 error 1010, API skriptid peavad töötama),
+  Security level `medium` JÄTA (threat-score challenge kaitseb kodu-originit; kui API klient saab 403 `cf-mitigated: challenge`, langeta `low`-ks).
 - Veebimajutuse paneel: `admin.veebimajutus.ee` (Parool, ID-kaart, Mobiil-ID või Smart-ID; Google ei ole valik).
 - `terrapoint.vercel.app` suunab `vercel.json` redirectiga (308) terrapoint.ee-le.
 - Vercel proxyb `/api/search/` ja `/api/map-context/` päringud `terrapoint.arle.top`-i

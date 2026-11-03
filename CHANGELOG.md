@@ -16,6 +16,9 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 - **Cloudflare'i sätted vastavad Vercel'i väljundile** — e-posti kaitse on
   välja lülitatud (kontakti `mailto:` link jääb samaks), brauseri vahemälu
   järgib originit (`/static/*` 1 h), HTTPS sundimine on sees, DNSSEC on väljas.
+- **Cloudflare'i Browser Integrity Check on välja** — `libwww-perl` kliendid said
+  403 error 1010, mida Vercel ei teinud; API skriptid saavad nüüd sama vastuse
+  nagu Vercel'ist. Turvatase `medium` jäi sisse.
 
 ## [Määramata] - 2026-11-02
 
