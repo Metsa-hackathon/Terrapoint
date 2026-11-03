@@ -42,3 +42,10 @@ Metsa väärtuse ja andmete analüüsi veebirakendus. FastAPI backend + HTML/CSS
   `terrapoint.ee` (cache võib vajada hard refresh: Cmd/Ctrl+Shift+R)
 - MD failid: `CLAUDE.md` (agent kontekst), `CHANGELOG.md` (ajalugu).
   Ei ole eraldi `AGENTS.md` / `OPENCODE.md` — kogu agent info on `CLAUDE.md`-s.
+
+## UI kontroll brauseris (kasutaja reegel)
+- Iga UI muudatus (`index.html`, `static/css/*`, `static/js/*`, UI-nähtav vastus): enne "valmis" ütlemist vaata lehte headless brauseris. Testid ja diff ei tõesta, et leht töötab.
+- Brauser: süsteemne `python3` Playwright (1.60.0). Kontrollitud 2026-11-02: `chromium.launch(headless=True, args=["--no-sandbox"])` käivitab Playwrighti Chromiumi (148) ja `chromium.launch(executable_path="/usr/bin/google-chrome", headless=True, args=["--no-sandbox"])` käivitab Chrome'i (153). Repo `.venv`-s Playwrighti ei ole.
+- Voog: käivita rakendus (`.venv/bin/python -m uvicorn api.index:app --host 127.0.0.1 --port 8160`, enne seadista `TERRAPOINT_CHAT_SNAPSHOT_KEY_B64` juhusliku 32-baidise võtmega), ava `/`, kirjuta `78404:409:0113` väljale `#kataster-input-landing`, vajuta Enter, oota ~18 s. Tulemuste vaates on päises `#kataster-input`.
+- Kontrolli: desktop 1280×800 ja mobiil 390×844; `pageerror` ja konsoolivead 0; ebaõnnestunud päringuid ei tohi olla; mobiilil horisontaalset ülevoolu ei tohi olla. Ekraanipilt tuleb ise vaadata. Kui välimus peab jääma samaks, võrdle teksti ja pikselit eelmise versiooniga.
+- Ajutised ekraanipildid ja tekstivõtted jäta `/tmp/` alla, mitte repo sisse. Sulge oma brauserivahelehed ja peata oma serverid.

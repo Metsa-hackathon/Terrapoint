@@ -12,6 +12,8 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 - **Kasutajaliides on taastatud varasemale kujule** — avaleht ja tulemuste vaade
   on jälle samad, mis enne kujundusmuudatust (kompaktne tulemuste vaade,
   puuillustratsioonid, parallaks).
+- **Meist-silt eemaldati** — About-sektsioonist kadus tume "Meist" nupusilt;
+  sektsiooni pealkiri on nüüd esimene element.
 
 ### Fixed
 - **Samaaegsete päringute ootejärjekord** — ühise upstream-päringu
@@ -28,6 +30,19 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 - **Eraldiste liikide koosseis jääb osaliselt alles** — üks aeglane eraldise
   päring ei tühista enam juba valminud tulemusi (`_gather_in_batches`). Vastus
   on märgitud osaliseks, kuid valminud eraldiste koosseis kuvatakse.
+- **Kiire ja täieliku vastuse erinevus** — kiire vastuse puuliigikoosseis ja
+  puiduhinnang on esialgsed, kuni detailid on laaditud; puuduvate elementide
+  korral on koosseis osaline ega normaliseeru 100%-ni.
+- **Puuduvad väärtused ei ole nullid** — puistu vanus kuvatakse "määramata",
+  mitte "0 a", ning puuduv tagavara ei kuvata "0 m³/ha".
+- **Eestikeelne vorming** — "Katastritunnus" asemel "Number", sihtotstarve
+  "Maatulundusmaa" asemel "MAATULUNDUSMAA", EUDR-pindala "20,2 ha".
+- **Metsateatised on loetavamad** — otsus, kavandatud maht ja inventuur on
+  eraldi ridadel; osalise allika märge on nähtav; kehtiv teatis on märgitud
+  "Kehtiv" ja kehtivuse kuupäev on veerus "Kehtiv kuni".
+- **Satelliitallikas ja AI-olek** — kaardi allikas kuvatakse nimega
+  "Sentinel-2 satelliitpildid (EstHub)", mitte tooreštringina "esthub";
+  AI-analüüsi olekutekst on ainult ühes kohas.
 
 ## [Määramata] - 2026-11-01
 
