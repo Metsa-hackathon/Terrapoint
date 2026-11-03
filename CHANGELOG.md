@@ -9,6 +9,9 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 ## [Määramata] - 2026-11-02
 
 ### Changed
+- **Staatilised failid saadavad brauseri vahemälureegli** — `/static/*` failid
+  saavad originil samad `Cache-Control` päised, mis Vercel'is olid; vajalik
+  Cloudflare'i tunneli üleminekuks.
 - **Kasutajaliides on taastatud varasemale kujule** — avaleht ja tulemuste vaade
   on jälle samad, mis enne kujundusmuudatust (kompaktne tulemuste vaade,
   puuillustratsioonid, parallaks).

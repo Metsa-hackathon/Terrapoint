@@ -35,6 +35,7 @@ from starlette.datastructures import MutableHeaders
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import Response, HTMLResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.types import Scope
 from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from contextlib import asynccontextmanager
@@ -1195,8 +1196,25 @@ async def static_api_docs_alias():
     return RedirectResponse("/api/docs", status_code=308)
 
 
+def _static_cache_control(path: str) -> str:
+    """Brauseri vahemälureeglid staatilistele failidele."""
+    path = path.lstrip("/")
+    if path.startswith("vendor/"):
+        return "public, max-age=31536000, immutable"
+    if path.startswith(("fonts/", "img/")):
+        return "public, max-age=2592000"
+    return "public, max-age=3600, must-revalidate"
+
+
+class CachedStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope: Scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = _static_cache_control(path)
+        return response
+
+
 if STATIC_DIR.exists():
-    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+    app.mount("/static", CachedStaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
 @app.get("/api/docs", include_in_schema=False)

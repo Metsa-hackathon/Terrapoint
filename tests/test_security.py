@@ -539,5 +539,21 @@ class ClientIdentifierTests(unittest.TestCase):
             self.assertEqual(api._client_identifier(request), "127.0.0.1")
 
 
+class StaticCacheTests(unittest.TestCase):
+    def test_static_files_get_browser_cache_policy_per_path(self):
+        client = TestClient(api.app)
+        cases = {
+            "/static/css/style.css": "public, max-age=3600, must-revalidate",
+            "/static/fonts/OFL-Bricolage-Grotesque.txt": "public, max-age=2592000",
+            "/static/img/team-hackathon-2026.jpg": "public, max-age=2592000",
+            "/static/vendor/leaflet/LICENSE": "public, max-age=31536000, immutable",
+        }
+        for path, expected in cases.items():
+            with self.subTest(path=path):
+                response = client.get(path)
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.headers["cache-control"], expected)
+
+
 if __name__ == "__main__":
     unittest.main()
