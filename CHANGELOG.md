@@ -41,9 +41,10 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 - **Metsateatised on loetavamad** — otsus, kavandatud maht ja inventuur on
   eraldi ridadel; osalise allika märge on nähtav; kehtiv teatis on märgitud
   "Kehtiv" ja kehtivuse kuupäev on veerus "Kehtiv kuni".
-- **Satelliitallikas ja AI-olek** — kaardi allika nimi on "Sentinel-2
-  satelliitpildid (EstHub)"; toore võtmena "esthub" enam ei kuvata;
-  AI-analüüsi olekutekst on ainult ühes kohas.
+- **Satelliitallikas ja AI-olek** — EstHubi link on jaotises "Edasine kontroll"
+  nimega "Sentinel-2 satelliitpildid (EstHub)"; kaardi aluskiht on Maa-ameti
+  ortofoto, mitte EstHub. Toore "esthub" silt teisendatakse loetavaks; AI-analüüsi
+  olekutekst on ainult ühes kohas.
 
 ## [Määramata] - 2026-11-01
 
