@@ -2980,18 +2980,33 @@ async def _search_core(
 
             # Use absolute volume (m³) for proportions; fall back to equal if all zero
             total_volume = sum(s["total_volume_m3"] for s in species_list)
-            if total_volume > 0:
+            composition_complete = (
+                not skip_details
+                and not sampled_eraldised
+                and "metsaregister.eraldis_element" not in unavailable_sources
+                and species_data_complete
+            )
+            stand_stock_volume = sum(
+                (e.get("tagavara_y_ha") or 0) * (e.get("pindala_ha") or 0)
+                for e in eraldised
+            )
+            composition_denominator = total_volume
+            if not composition_complete:
+                composition_denominator = stand_stock_volume if stock_complete else 0
+                if stock_complete and stand_stock_volume > 0:
+                    composition_denominator = max(total_volume, stand_stock_volume)
+            if composition_denominator > 0:
                 # First pass: raw percentages, filter <1%
                 raw_pcts = []
                 for s in species_list:
-                    pct = round(s["total_volume_m3"] / total_volume * 100)
+                    pct = round(s["total_volume_m3"] / composition_denominator * 100)
                     if pct < 1:
                         continue
                     raw_pcts.append((s, pct))
-                # Normalize so sum is exactly 100
+                # Only complete composition data can be normalized to exactly 100.
                 pct_sum = sum(p for _, p in raw_pcts)
-                if pct_sum != 100 and raw_pcts:
-                    # Adjust the largest species to fix rounding drift
+                if composition_complete and pct_sum != 100 and raw_pcts:
+                    # Adjust the largest species to fix rounding drift.
                     raw_pcts.sort(key=lambda x: x[1], reverse=True)
                     raw_pcts[0] = (raw_pcts[0][0], raw_pcts[0][1] + (100 - pct_sum))
                 for s, pct in raw_pcts:
@@ -3001,7 +3016,7 @@ async def _search_core(
                         "vanus": round(s["vanus_sum"] / s["count"]) if s["count"] else 0,
                         "osakaal": pct,
                     })
-            else:
+            elif composition_complete:
                 # Fall back to area-based proportions from eraldised
                 eraldis_species_area = {}
                 for e in eraldised:
@@ -3529,7 +3544,7 @@ async def _search_core(
             beetle["detail"] += " Kõik üraskikihid ei vastanud."
         elif not spruce_data_complete:
             beetle["label"] += " · puistu detailid osalised"
-            beetle["detail"] += " Kuuse suurim vanus võib olla alahinnatud."
+            beetle["detail"] += " Vanus võib olla alahinnatud."
         riskid["yrask"] = dict(beetle)
         riskid["yrask_hinnang"] = dict(beetle)
 

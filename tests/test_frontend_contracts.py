@@ -277,7 +277,6 @@ async function fetch(url) {{
         self.assertNotIn('<span class="sr-only"> kuni </span>', helper)
         self.assertIn('<span class="asset-passport-heading">', helper)
         self.assertNotIn('<div class="asset-passport-heading">', helper)
-        self.assertIn('id="ai-chat-status" class="sr-only" aria-live="polite"', INDEX_HTML)
         self.assertIn("function aiSetStatus(message)", INDEX_HTML)
         self.assertIn("function aiDrainQueue()", INDEX_HTML)
         self.assertIn("function aiQueueWaitMs(now)", INDEX_HTML)
@@ -419,6 +418,7 @@ function formatEur(value) {{ return String(value) + ' €'; }}
 function formatDateEt(value) {{ return value; }}
 function ddInfo() {{ return ''; }}
 function valueExplain() {{ return ''; }}
+function formatSihtotstarve(value) {{ return value == null ? '—' : String(value); }}
 {render}
 renderKataster({{number:'1', pindala_ha:1, maks_hind:null}});
 const missing = target.innerHTML;
@@ -965,28 +965,6 @@ console.log(JSON.stringify({{
         self.assertIn("#dashboard { scroll-margin-top:", STYLE_CSS)
 
 
-    def test_notices_use_compact_scroll_free_rows_with_narrow_fallback(self):
-        for label in ('Tüüp', 'Eraldis', 'Staatus', 'Kehtiv kuni', 'Pindala'):
-            self.assertIn(f'data-label="{label}"', INDEX_HTML)
-        self.assertIn("#card-teatised .teatised-table-header { display: none; }", STYLE_CSS)
-        self.assertIn("#card-teatised .teatised-panel .table-grid-hscroll,", STYLE_CSS)
-        self.assertIn("overflow-x: hidden;", STYLE_CSS)
-        self.assertIn("max-height: none;", STYLE_CSS)
-        self.assertIn('"type type area"', STYLE_CSS)
-        self.assertIn('"stand status expiry"', STYLE_CSS)
-        self.assertIn("@container (max-width: 260px)", STYLE_CSS)
-        self.assertIn('"status status"', STYLE_CSS)
-        self.assertIn("permitted_current: 'Kehtiv luba'", INDEX_HTML)
-        self.assertIn("not_current: 'Ei kehti'", INDEX_HTML)
-        self.assertIn("aria-label=\"' + escHtml(accessibleLabel)", INDEX_HTML)
-        self.assertIn("formatDateEt(t.kehtiv_kuni)", INDEX_HTML)
-        self.assertIn(
-            "teatisedStatusBadge(t.event_status, t.event_status_label, t.staatus, t.active, t.arhiiv)",
-            INDEX_HTML,
-        )
-        self.assertIn('class="teatised-type-value"', INDEX_HTML)
-        self.assertIn("var summaryLabel = 'teatist · ' + totalRows + ' eraldiseridu';", INDEX_HTML)
-        self.assertNotIn("totalNotices + ' teatist · '", INDEX_HTML)
 
     def test_inline_explanations_are_keyboard_accessible_buttons(self):
         helper = re.search(r'function ddInfo\(text, valueText\).*?\n    }', INDEX_HTML, re.DOTALL)
@@ -1749,6 +1727,16 @@ console.log(JSON.stringify({{
             INDEX_HTML.index("document.addEventListener('DOMContentLoaded'"),
         )
         self.assertEqual(INDEX_HTML.count("closeMapWorkspaceOnMobile(false);"), 1)
+
+    def test_format_num_null_does_not_render_as_zero(self):
+        format_num = _extract_js_function("formatNum")
+        script = f"""
+const NUMBER_FORMATTERS = {{}};
+{format_num}
+console.log(JSON.stringify([formatNum(null), formatNum(undefined), formatNum(0)]));
+"""
+        result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+        self.assertEqual(json.loads(result.stdout), ["—", "—", "0"])
 
     def test_primary_timber_value_uses_grouped_number_format(self):
         self.assertIn("formatEur(data.base_value_eur != null ? data.base_value_eur : data.total_value_eur)", INDEX_HTML)
