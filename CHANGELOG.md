@@ -2,9 +2,20 @@
 
 Kõik olulised muudatused Terrapoint repositooriumis.
 
-> **Domeen**: tootmine töötab aadressil **terrapoint.ee** (Vercel custom
-> domain). `terrapoint.vercel.app` suunab `vercel.json` redirectiga (308)
-> terrapoint.ee-le; push master branchi uuendab terrapoint.ee-d.
+> **Domeen**: tootmine töötab aadressil **terrapoint.ee** (Cloudflare →
+> koduserveri tunnel). `terrapoint.vercel.app` suunab `vercel.json` redirectiga
+> (308) terrapoint.ee-le; push master branchi deployib koduserveri.
+
+## [Määramata] - 2026-11-03
+
+### Changed
+- **Domeen liigub Cloudflare'i** — `terrapoint.ee` ja `www` jõuavad koduserveri
+  tunneli (`home-apps`) kaudu otse originisse. Nimeserverid on Veebimajutuses
+  `brady.ns.cloudflare.com` ja `elma.ns.cloudflare.com`; levik võib vanades
+  resolverites kesta kuni 6 h.
+- **Cloudflare'i sätted vastavad Vercel'i väljundile** — e-posti kaitse on
+  välja lülitatud (kontakti `mailto:` link jääb samaks), brauseri vahemälu
+  järgib originit (`/static/*` 1 h), HTTPS sundimine on sees, DNSSEC on väljas.
 
 ## [Määramata] - 2026-11-02
 

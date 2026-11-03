@@ -27,19 +27,30 @@ Metsa väärtuse ja andmete analüüsi veebirakendus. FastAPI backend + HTML/CSS
 - Kui bash käsk tagastab "exit code 1", ära proovi sama käsku uuesti — proovi alternatiivset lahendust.
 
 ## Keskkond
-- **Tootmise domeen**: `terrapoint.ee` (Verceli custom domain). Push master
-  branchi → terrapoint.ee värskeneb kohe.
+- **Tootmise domeen**: `terrapoint.ee` ja `www.terrapoint.ee` (Cloudflare, alates 2026-11-03).
+  Registripidaja on Veebimajutus (Elkdata OÜ); nimeserverid on `brady.ns.cloudflare.com` ja
+  `elma.ns.cloudflare.com`. Vanad resolverid hoiavad Verceli NS-e vahemälus kuni 6 h (TTL 21600).
+- Teekond: Cloudflare (tsoon `terrapoint.ee`) → Cloudflare Tunnel `home-apps` →
+  `http://127.0.0.1:8099` (uvicorn, systemd `terrapoint-api`). Ingress: `terrapoint.ee` ja
+  `www.terrapoint.ee` otse originisse, catch-all `http_status:404`. Ingressi muudetakse
+  Cloudflare'i tunneli konfiguratsioonis (API), mitte kohaliku failina.
+- Deploy: push `master` → koduserveri `terrapoint-deploy.timer` (`/root/projects/terrapoint/deploy.sh`).
+  Vercel ehitab master'it veel, aga ei teeninda domeeni.
+- Cloudflare'i sätted, mida ära muuda: e-posti kaitse VÄLJAS (muudab `mailto:` lingi),
+  Browser Cache TTL = respect existing headers (muidu 4 h, origin 1 h), Always Use HTTPS SEES,
+  DNSSEC VÄLJAS (`.ee`-s DS puudub; kui lubad, lisa DS Veebimajutusse).
+- Veebimajutuse paneel: `admin.veebimajutus.ee` (Parool, ID-kaart, Mobiil-ID või Smart-ID; Google ei ole valik).
 - `terrapoint.vercel.app` suunab `vercel.json` redirectiga (308) terrapoint.ee-le.
-- Vercel hostib frontend ainult `terrapoint.ee` all.
-- Vercel proxyb pikad päringud `terrapoint.arleserver.cfd` home-serveri API-le
-- Backendi URL-i saab muuta `TERRAPOINT_BACKEND_API_URL` keskkonnamuutujaga
-- Traefik proxyb backendi Docker bridge'i `172.20.0.1:8001` kaudu
-- Home-serveri API kuulab ainult `127.0.0.1:8099`; socat ingress on `deploy/home/`
+- Vercel proxyb `/api/search/` ja `/api/map-context/` päringud `terrapoint.arle.top`-i
+  (`DEFAULT_BACKEND_API_URL`; Traefik `coolify-proxy` → `172.20.0.1:8001`). Origin seda teed ei vaja.
+- Backendi URL-i saab muuta `TERRAPOINT_BACKEND_API_URL` keskkonnamuutujaga.
+- Home-serveri API kuulab ainult `127.0.0.1:8099`; socat ingress on `deploy/home/`.
 
 ## Olulised reeglid
-- Kõik peab olema Verceliga ühilduv — frontend deployitakse Vercelile
-- Pärast `git push` oota ~30s Verceli deploy'ks, siis kontrolli brauseris
-  `terrapoint.ee` (cache võib vajada hard refresh: Cmd/Ctrl+Shift+R)
+- Originil (`api/index.py`) on `vercel.json` päiste ja vahemälu peegel (`BROWSER_SECURITY_HEADERS`,
+  `CachedStaticFiles`, `/index.html` ja `/api-docs*` redirectid). Muuda mõlemat koos; CSP-räsi ei muuda.
+- Pärast `git push` oota kuni 5 min, kuni `/var/lib/terrapoint/.last-deploy-commit` on sama mis
+  `git rev-parse --short HEAD`, siis kontrolli brauseris `terrapoint.ee` (cache võib vajada hard refresh: Cmd/Ctrl+Shift+R).
 - MD failid: `CLAUDE.md` (agent kontekst), `CHANGELOG.md` (ajalugu).
   Ei ole eraldi `AGENTS.md` / `OPENCODE.md` — kogu agent info on `CLAUDE.md`-s.
 
