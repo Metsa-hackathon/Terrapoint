@@ -9,6 +9,7 @@ import httpx
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
+from starlette.requests import Request
 
 import config
 from api import index as api
@@ -505,6 +506,37 @@ class SecurityBoundaryTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 500)
         self.assertIn("AI teenus ei ole seadistatud", response.json()["error"])
+
+
+class ClientIdentifierTests(unittest.TestCase):
+    @staticmethod
+    def _request(peer, headers):
+        return Request(
+            {
+                "type": "http",
+                "method": "GET",
+                "path": "/api/search/78404:409:0113",
+                "headers": [(name.lower().encode(), value.encode()) for name, value in headers.items()],
+                "client": peer,
+            }
+        )
+
+    def test_loopback_peer_uses_cloudflare_visitor_ip(self):
+        request = self._request(("127.0.0.1", 50000), {"CF-Connecting-IP": "198.51.100.23"})
+        self.assertEqual(api._client_identifier(request), "198.51.100.23")
+
+    def test_remote_peer_cannot_choose_its_identity(self):
+        request = self._request(("203.0.113.9", 50000), {"CF-Connecting-IP": "198.51.100.23"})
+        self.assertEqual(api._client_identifier(request), "203.0.113.9")
+
+    def test_malformed_cloudflare_header_falls_back_to_peer(self):
+        request = self._request(("127.0.0.1", 50000), {"CF-Connecting-IP": "not-an-ip"})
+        self.assertEqual(api._client_identifier(request), "127.0.0.1")
+
+    def test_cloudflare_header_is_ignored_on_vercel(self):
+        request = self._request(("127.0.0.1", 50000), {"CF-Connecting-IP": "198.51.100.23"})
+        with patch.dict(os.environ, {"VERCEL": "1"}):
+            self.assertEqual(api._client_identifier(request), "127.0.0.1")
 
 
 if __name__ == "__main__":

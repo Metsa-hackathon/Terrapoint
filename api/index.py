@@ -13,6 +13,7 @@ import contextlib
 import hashlib
 import hmac
 import inspect
+import ipaddress
 import logging
 import math
 import mimetypes
@@ -920,15 +921,21 @@ def _historical_clearcut_status(
     }
 
 
+_LOOPBACK_PEERS = frozenset({"127.0.0.1", "::1"})
+
+
 def _client_identifier(request: Request) -> str:
-    # Trust only the direct peer IP. X-Forwarded-For is attacker-controlled
-    # (anyone can set it on a direct request) — Vercel edge sets it correctly,
-    # but anything hitting the VPS directly could spoof the rate-limit key.
-    # If you ever need to honor a trusted proxy, validate the peer is in
-    # the trusted set first (e.g. 10.0.4.1 for our Traefik).
-    if request.client and request.client.host:
-        return request.client.host[:64]
-    return "unknown"
+    # Origin listens on 127.0.0.1 only, so every request arrives from a local
+    # peer: cloudflared, or the Traefik/socat hop. Cloudflare sets
+    # CF-Connecting-IP to the visitor's IP, so it is trusted only from a loopback
+    # peer. Never on Vercel, where the header is client-controlled.
+    peer = request.client.host if request.client and request.client.host else ""
+    if peer in _LOOPBACK_PEERS and not os.environ.get("VERCEL"):
+        try:
+            return str(ipaddress.ip_address(request.headers.get("cf-connecting-ip", "").strip()))
+        except ValueError:
+            pass
+    return peer[:64] if peer else "unknown"
 
 
 def _check_rate_limit(identifier: str, bucket: str, limit: int, window_seconds: int, now: float | None = None) -> tuple[bool, int]:

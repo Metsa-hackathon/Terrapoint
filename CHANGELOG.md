@@ -16,6 +16,9 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   sektsiooni pealkiri on nüüd esimene element.
 
 ### Fixed
+- **Päringu limiit kliendi järgi** — originil võetakse kliendi IP Cloudflare'i
+  päisest `CF-Connecting-IP` ainult kohalikult tunnelilt; varem jagasid kõik
+  päringud ühte limiiti (`127.0.0.1`).
 - **Samaaegsete päringute ootejärjekord** — ühise upstream-päringu
   (single-flight) ootajate loendamise võistlusolukord on parandatud; teine
   samaaegne ootaja ei jää enam ilma tulemuseta.
