@@ -10,7 +10,7 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 
 ### Changed
 - **Puuduvad staatilised failid ei jää vahemällu** — 404 saab `no-store` päise;
-  `/index.html` ja `/api-docs.html` suunavad (308) nagu Vercel tegi.
+  `/index.html`, `/api-docs.html` ja `/static/api-docs.html` suunavad (308) nagu Vercel tegi.
 - **Staatilised failid saadavad brauseri vahemälureegli** — `/static/*` failid
   saavad originil samad `Cache-Control` päised, mis Vercel'is olid; vajalik
   Cloudflare'i tunneli üleminekuks.

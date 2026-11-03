@@ -69,7 +69,7 @@ class StaticDeliveryTests(unittest.TestCase):
     def test_historical_api_docs_urls_still_reach_the_documentation(self):
         # `cleanUrls` lõikab .html-laienduse, nii et /api-docs.html jõuab
         # /api-docs aadressile — ilma marsruudita lõppes see 404-na.
-        for path in ("/api-docs", "/api-docs.html", "/static/api-docs"):
+        for path in ("/api-docs", "/api-docs.html", "/static/api-docs", "/static/api-docs.html"):
             with self.subTest(path=path):
                 response = self.client.get(path, follow_redirects=False)
 

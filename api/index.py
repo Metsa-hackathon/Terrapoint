@@ -1197,6 +1197,12 @@ async def static_api_docs_alias():
     return RedirectResponse("/api/docs", status_code=308)
 
 
+@app.get("/static/api-docs.html", include_in_schema=False)
+async def static_api_docs_html_alias():
+    """Vana .html-aadress: Vercel `cleanUrls` suunas selle samuti dokumendile."""
+    return RedirectResponse("/api/docs", status_code=308)
+
+
 @app.get("/index.html", include_in_schema=False)
 async def index_html_alias():
     """Sama, mis Vercel `cleanUrls`: /index.html suunab avalehele (308)."""
