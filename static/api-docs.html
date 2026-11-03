@@ -22,6 +22,7 @@
                 <div><dt><code>GET /api/cadastre/objects/{adob_id}</code></dt><dd>Kaardiobjekti tunnuse seostamine katastritunnusega.</dd></div>
                 <div><dt><code>GET /api/search/{kataster_nr}</code></dt><dd>Kinnistu põhiandmed, arvutuslikud stsenaariumid, allikate olekud ja kaardikihid.</dd></div>
                 <div><dt><code>GET /api/map-context/{kataster_nr}</code></dt><dd>Valitud kaarditeemade allikaolekud ja kinnistuga kattuvad objektid.</dd></div>
+                <div><dt><code>GET /api/satellite/{kataster_nr}</code></dt><dd>Viimane selge EstHubi Sentinel-2 satelliitpilt kinnistu alalt (WebP data-URL + WGS84 piirid) või olek <code>empty</code>, kui viimase 14 päeva jooksul pilti ei ole.</dd></div>
                 <div><dt><code>GET /api/export/eudr/{kataster_nr}</code></dt><dd>Geolokatsiooni lähtefail; mitte EUDR vastavustõend ega hoolsuskohustuse deklaratsioon.</dd></div>
                 <div><dt><code>POST /api/chat</code></dt><dd>Serveri allkirjastatud kinnistuandmetega piiratud AI-küsimus.</dd></div>
             </dl>

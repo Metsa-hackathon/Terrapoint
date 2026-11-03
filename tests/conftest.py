@@ -21,6 +21,7 @@ def _clear_api_caches():
         api_cache.search_cache.clear()
         api_cache.search_source_cache.clear()
         api_cache.wfs_cache.clear()
+        api_cache.satellite_cache.clear()
         api._search_in_flight.clear()
         api._search_waiters.clear()
 

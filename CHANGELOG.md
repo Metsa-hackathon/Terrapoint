@@ -8,6 +8,34 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 
 ## [Määramata] - 2026-11-03
 
+### Added
+- **EstHubi Sentinel-2 satelliitpilt kaardil** — uus `GET /api/satellite/{kataster_nr}`
+  toob Maa- ja Ruumiameti EstHubi päevamosaiigist (`wms-sentinel-2-rgb`)
+  viimase **selge** pildi kinnistu alalt ja tagastab selle väikese WebP
+  data-URL-ina koos WGS84 piiridega; kaart paigutab pildi ortofoto peale eraldi
+  kihina (pane `map-satellite`, z-index 340, katastri ja eraldiste all).
+  Kaardi all vasakul on olekuriba „Sentinel-2 · pp.kk.aaaa", mis lülitab kihi
+  välja ja sisse. EstHubi link kolis „Edasise kontrolli" alt allikakaardile 01,
+  sest Terrapoint pärib seda nüüd automaatselt.
+  - Teenus vastab ainult **EPSG:3301** (L-EST97) projektsioonis, seega pöörame
+    kinnistu piirid `services/satellite.py`-s ise L-EST97-sse (Lamberti
+    konformne kooniline, GRS80) ja tagasi; Leaflet joonistab pildi WGS84
+    nurgapunktide vahele. Pööramine on testitud Kadaka pst kinnistu ja
+    avaldatud L-EST97 koordinaatidega (täpsus < 2 m).
+  - Päevamosaiik ei kata iga päev kogu Eestit: puuduva ala eest tuleb teenusest
+    täiesti läbipaistev pilt (mõõdetud: 1668 baiti 640 px juures). Seetõttu
+    otsitakse kuni 14 päeva tagasi päeva, millel on ka tegelikku kaugseiret
+    (alfa-kanali katvus ≥ 10%).
+  - Pilves päev näeb välja nagu valge laud: keskmine heledus eraldab selge
+    metsa (~60–90) pilveloori t (~230–253). Uusim selge päev võidab, aga kui
+    ükski päev ei ole selge, näidatakse uusimat olemasolevat ja märgitakse see
+    „pilves"; uusim kuupäev on alati olekuriba vihjes.
+  - Pilt on 512 px WebP (q80, läbipaistvusega): 8–20 KB PNG 486–1000 KB asemel.
+    Vahemälu 30 min kinnistu ja päeva kaupa, päringupiirang 30/min kliendi ja
+    12/min kinnistu kohta, Vercel'i juures proxy originile nagu `map-context`.
+  - `pillow==12.3.0` on nüüd sõltuvus (alfa-kanali katvus, pilvesuse hinnang,
+    WebP-kodeering).
+
 ### Changed
 - **Domeen liigub Cloudflare'i** — `terrapoint.ee` ja `www` jõuavad koduserveri
   tunneli (`home-apps`) kaudu otse originisse. Nimeserverid on Veebimajutuses

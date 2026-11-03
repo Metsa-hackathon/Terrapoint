@@ -61,7 +61,7 @@
     <script src="/static/vendor/leaflet/leaflet.js?v=1.9.4" defer></script>
     <link rel="stylesheet" href="/static/css/fonts.css?r=jkl001">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl034">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl128">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl130">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -430,6 +430,11 @@
                         </div>
                     </div>
                 </div>
+                <button type="button" class="map-satellite-control" id="map-satellite-control" aria-pressed="true" hidden>
+                    <span class="map-satellite-swatch" aria-hidden="true"></span>
+                    <span class="map-satellite-label" id="map-satellite-label">Sentinel-2 satelliitpilt</span>
+                    <span class="map-satellite-state" id="map-satellite-state"></span>
+                </button>
             </div>
         </div>
 
@@ -762,9 +767,12 @@
                             <h3 class="source-name">Kinnistu ja aluskaart</h3>
                         </div>
                     </div>
-                    <p class="source-desc">Katastriüksuse tunnus, piir, pindala, aadress, sihtotstarve, omandivorm, maksustamishind ja ortofoto.</p>
-                    <div class="source-use"><span>Terrapoint kasutab</span><p>Kinnistu tuvastamiseks, pindala kontrolliks, maa referentsiks ja kaardivaateks.</p></div>
-                    <a class="source-link" href="https://geoportaal.maaamet.ee" target="_blank" rel="noopener">Ava Maa- ja Ruumiameti geoportaal <span aria-hidden="true">↗</span></a>
+                    <p class="source-desc">Katastriüksuse tunnus, piir, pindala, aadress, sihtotstarve, omandivorm, maksustamishind, ortofoto ja EstHubi Sentinel-2 satelliitpilt.</p>
+                    <div class="source-use"><span>Terrapoint kasutab</span><p>Kinnistu tuvastamiseks, pindala kontrolliks, maa referentsiks, kaardivaateks ja viimase satelliitpildi aluseks.</p></div>
+                    <div class="source-links" role="group" aria-label="Maa- ja Ruumiameti allikad">
+                        <a class="source-link" href="https://geoportaal.maaamet.ee" target="_blank" rel="noopener">Ava Maa- ja Ruumiameti geoportaal <span aria-hidden="true">↗</span></a>
+                        <a class="source-link" href="https://esthub.maaruum.ee/est/satiladu-p1.html" target="_blank" rel="noopener">Sentinel-2 satelliidipäevad (EstHub) <span aria-hidden="true">↗</span></a>
+                    </div>
                 </article>
 
                 <article class="source-card">
@@ -818,11 +826,10 @@
                 <div>
                     <span class="sources-secondary-label">Edasine kontroll</span>
                     <h3 id="sources-secondary-title">Lingid iseseisvaks lisakontrolliks</h3>
-                    <p>Terrapoint ei päri neid nelja allikat automaatselt ega kasuta neid kuvatud arvutuste sisendina. Need on lingid kasutajale täiendava konteksti kontrollimiseks.</p>
+                    <p>Terrapoint ei päri neid kolme allikat automaatselt ega kasuta neid kuvatud arvutuste sisendina. Need on lingid kasutajale täiendava konteksti kontrollimiseks.</p>
                 </div>
                 <div class="sources-secondary-links">
                     <a href="https://geoportaal.maaamet.ee/est/ruumiandmed/korgusandmed-p114.html" target="_blank" rel="noopener">LiDAR ja kõrgusmudel <span aria-hidden="true">↗</span></a>
-                    <a href="https://esthub.maaruum.ee" target="_blank" rel="noopener">Sentinel-2 satelliitpildid (EstHub) <span aria-hidden="true">↗</span></a>
                     <a href="https://stat.ee" target="_blank" rel="noopener">Statistikaamet <span aria-hidden="true">↗</span></a>
                     <a href="https://rmk.ee" target="_blank" rel="noopener">RMK uuringud <span aria-hidden="true">↗</span></a>
                 </div>
@@ -872,7 +879,7 @@
         </div>
     </footer>
 
-    <script defer src="/static/js/app.js?r=jkl010"></script>
+    <script defer src="/static/js/app.js?r=jkl011"></script>
     <script defer src="/static/js/hero.js?r=jkl001"></script>
 </body>
 </html>

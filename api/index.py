@@ -60,6 +60,7 @@ from services.layers import (
     reduce_theme,
 )
 from services.subsidies import check_subsidies
+from services.satellite import SatelliteError, satellite_context
 from services.data_passports import build_asset_passports
 from services.forestry_search import get_forestry_search_engine
 from calculators.carbon import forest_carbon_potential
@@ -77,7 +78,7 @@ from calculators.valuation import (
 )
 from spatial.bbox import calculate_bbox, bbox_to_wfs_string
 import config
-from api.cache import search_cache, search_source_cache, wfs_cache
+from api.cache import search_cache, search_source_cache, satellite_cache, wfs_cache
 
 
 logger = logging.getLogger(__name__)
@@ -207,6 +208,11 @@ ANALYTICAL_LAYER_KEYS = (
 )
 MAP_CONTEXT_CLIENT_RATE_LIMIT = 120
 MAP_CONTEXT_RESOURCE_RATE_LIMIT = 30
+# Satelliitpilt käivitab mitu WMS-päringut ühe kinnistu kohta; hoia kvoot
+# väiksem kui kaardikontekstil, sest iga külm vaade teeb kuni 14 katset.
+SATELLITE_CLIENT_RATE_LIMIT = 30
+SATELLITE_RESOURCE_RATE_LIMIT = 12
+SATELLITE_CACHE_TTL_SECONDS = 1800
 ESTONIA_TIME_ZONE = ZoneInfo("Europe/Tallinn")
 
 
@@ -1440,6 +1446,10 @@ async def health():
                 "size": wfs_cache.size,
                 "ttl_seconds": 7200,
             },
+            "satellite": {
+                "size": satellite_cache.size,
+                "ttl_seconds": SATELLITE_CACHE_TTL_SECONDS,
+            },
         },
         "timestamp": time.time(),
     }
@@ -2205,6 +2215,119 @@ async def map_context(
             500,
             {"Cache-Control": "private, no-store"},
         )
+
+
+async def _satellite_cached(kataster_nr: str) -> dict:
+    """Kinnistu satelliitpilt vahemälust või EstHubist.
+
+    Võti sisaldab Eesti kuupäeva, sest päevamosaiik uueneb ööpäevas.
+    """
+    cache_key = satellite_cache.make_key(kataster_nr, _estonian_today().isoformat())
+    cached = satellite_cache.get(cache_key)
+    if cached is not None:
+        return cached
+    data = await satellite_context(kataster_nr)
+    satellite_cache.set(cache_key, data, ttl=SATELLITE_CACHE_TTL_SECONDS)
+    return data
+
+
+def _satellite_proxy_response(response: httpx.Response, kataster_nr: str) -> Response:
+    headers = {"Cache-Control": "private, max-age=600"}
+    if response.status_code != 200:
+        retry_after = getattr(response, "headers", {}).get("retry-after")
+        if retry_after:
+            headers["Retry-After"] = retry_after
+        headers["Cache-Control"] = "private, no-store"
+        return Response(
+            content=response.content,
+            status_code=response.status_code,
+            media_type="application/json",
+            headers=headers,
+        )
+    try:
+        data = orjson.loads(response.content)
+    except orjson.JSONDecodeError:
+        data = None
+    if (
+        not isinstance(data, dict)
+        or data.get("parcel_id") != kataster_nr
+        or data.get("state") not in ("available", "empty", "unavailable")
+    ):
+        return json_response(
+            {"error": "Satelliidipildi laadimine ebaõnnestus. Proovi uuesti."},
+            502,
+            {"Cache-Control": "private, no-store"},
+        )
+    return json_response(data, headers=headers)
+
+
+@app.get("/api/satellite/{kataster_nr:path}")
+async def satellite_scene(kataster_nr: str, request: Request):
+    """Viimane EstHubi Sentinel-2 pilt kinnistu alalt (data-URL + WGS84 piirid)."""
+    try:
+        _validate_kataster_nr_or_400(kataster_nr)
+    except HTTPException as exc:
+        exc.headers = {**(exc.headers or {}), "Cache-Control": "private, no-store"}
+        raise
+    allowed, retry_after = _check_rate_limit(
+        _client_identifier(request),
+        "satellite",
+        SATELLITE_CLIENT_RATE_LIMIT,
+        60,
+    )
+    if not allowed:
+        return json_response(
+            {"error": "Liiga palju päringuid. Proovi uuesti mõne sekundi pärast."},
+            429,
+            {"Retry-After": str(retry_after), "Cache-Control": "private, no-store"},
+        )
+    allowed, retry_after = _check_rate_limit(
+        _client_identifier(request),
+        f"satellite:{kataster_nr}",
+        SATELLITE_RESOURCE_RATE_LIMIT,
+        60,
+    )
+    if not allowed:
+        return json_response(
+            {"error": "Liiga palju päringuid. Proovi uuesti mõne sekundi pärast."},
+            429,
+            {"Retry-After": str(retry_after), "Cache-Control": "private, no-store"},
+        )
+    if os.environ.get("VERCEL"):
+        try:
+            async with httpx.AsyncClient(timeout=25.0) as client:
+                response = await client.get(f"{_backend_api_url()}/satellite/{kataster_nr}")
+            return _satellite_proxy_response(response, kataster_nr)
+        except Exception:
+            logger.exception("Satellite VPS proxy failed")
+            return json_response(
+                {"error": "Satelliiditeenusega ei õnnestu hetkel ühendust saada. Proovi uuesti."},
+                502,
+                {"Cache-Control": "private, no-store"},
+            )
+    try:
+        data = await _single_flight(
+            f"satellite:{kataster_nr}",
+            lambda: _satellite_cached(kataster_nr),
+        )
+    except SatelliteError:
+        logger.warning("Satellite upstream unavailable")
+        return json_response(
+            {"error": "Satelliiditeenus ei vasta. Proovi uuesti."},
+            502,
+            {"Cache-Control": "private, no-store"},
+        )
+    except HTTPException as exc:
+        exc.headers = {**(exc.headers or {}), "Cache-Control": "private, no-store"}
+        raise
+    except Exception:
+        logger.exception("Satellite request failed")
+        return json_response(
+            {"error": "Satelliidipildi laadimine ebaõnnestus. Proovi uuesti."},
+            500,
+            {"Cache-Control": "private, no-store"},
+        )
+    return json_response(data, headers={"Cache-Control": "private, max-age=600"})
 
 
 @app.get("/api/search/{kataster_nr:path}")
