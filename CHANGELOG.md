@@ -34,14 +34,15 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   puiduhinnang on esialgsed, kuni detailid on laaditud; puuduvate elementide
   korral on koosseis osaline ega normaliseeru 100%-ni.
 - **Puuduvad väärtused ei ole nullid** — puistu vanus kuvatakse "määramata",
-  mitte "0 a", ning puuduv tagavara ei kuvata "0 m³/ha".
-- **Eestikeelne vorming** — "Katastritunnus" asemel "Number", sihtotstarve
-  "Maatulundusmaa" asemel "MAATULUNDUSMAA", EUDR-pindala "20,2 ha".
+  mitte "0 a"; kui tagavara puudub, ei kuvata seda "0 m³/ha" kujul.
+- **Eestikeelne vorming** — katastritunnuse silt on "Katastritunnus" (varem
+  "Number"), sihtotstarve "Maatulundusmaa" (varem "MAATULUNDUSMAA"), EUDR-pindala
+  "20,2 ha" (varem "20.2 ha").
 - **Metsateatised on loetavamad** — otsus, kavandatud maht ja inventuur on
   eraldi ridadel; osalise allika märge on nähtav; kehtiv teatis on märgitud
   "Kehtiv" ja kehtivuse kuupäev on veerus "Kehtiv kuni".
-- **Satelliitallikas ja AI-olek** — kaardi allikas kuvatakse nimega
-  "Sentinel-2 satelliitpildid (EstHub)", mitte tooreštringina "esthub";
+- **Satelliitallikas ja AI-olek** — kaardi allika nimi on "Sentinel-2
+  satelliitpildid (EstHub)"; toore võtmena "esthub" enam ei kuvata;
   AI-analüüsi olekutekst on ainult ühes kohas.
 
 ## [Määramata] - 2026-11-01
