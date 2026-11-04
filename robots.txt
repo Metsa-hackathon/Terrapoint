@@ -1,4 +1,4 @@
-# terrapoint.ee — robots.txt
+# terrapoint.ee robots.txt
 # Eesti metsaandmete analüüsi tööriist
 
 User-agent: *

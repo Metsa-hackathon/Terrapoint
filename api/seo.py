@@ -67,7 +67,7 @@ def _head(page: SeoPage) -> str:
         '    <meta property="og:image:type" content="image/png">',
         '    <meta property="og:image:width" content="1200">',
         '    <meta property="og:image:height" content="630">',
-        f'    <meta property="og:image:alt" content="{esc(page.h1 + " — " + SITE_NAME)}">',
+        f'    <meta property="og:image:alt" content="{esc(page.h1 + ": " + SITE_NAME)}">',
         '    <meta property="article:published_time" content="' + page.published + 'T09:00:00+02:00">',
         '    <meta property="article:modified_time" content="' + page.updated + 'T09:00:00+02:00">',
         '    <meta name="twitter:card" content="summary_large_image">',
@@ -168,7 +168,7 @@ def _header() -> str:
     )
     return (
         '<header class="site-header">'
-        '<a class="brand" href="/" aria-label="Terrapoint — avaleht">Terra<span>Point</span></a>'
+        '<a class="brand" href="/" aria-label="Terrapoint, avaleht">Terra<span>Point</span></a>'
         f'<nav class="site-nav" aria-label="Sisu">{nav}</nav>'
         "</header>"
     )
@@ -194,7 +194,7 @@ def _footer(page: SeoPage) -> str:
     )
     return (
         '<footer class="site-footer">'
-        f'<p><strong>{esc(SITE_NAME)}</strong> — {esc(SITE_TAGLINE)}. '
+        f'<p><strong>{esc(SITE_NAME)}</strong>: {esc(SITE_TAGLINE)}. '
         "Andmed pärinevad avalikest registritest; Terrapoint ei asenda ametlikku "
         "väljavõtet ega hinnangut.</p>"
         f'<nav aria-label="Terrapointi teised juhendid"><ul class="footer-links">{links}</ul></nav>'
@@ -282,7 +282,7 @@ def render_page(page: SeoPage) -> str:
         body.append("<h2>Allikad</h2>")
         body.append('<ul class="sources">')
         for source in page.sources:
-            note = f" — {esc(source.note)}" if source.note else ""
+            note = f": {esc(source.note)}" if source.note else ""
             body.append(
                 f'<li><a href="{esc(source.url)}" target="_blank" rel="noopener noreferrer">'
                 f"{esc(source.label)}</a>{note}</li>"
@@ -300,7 +300,7 @@ def render_page(page: SeoPage) -> str:
         '<aside class="cta" aria-label="Terrapointi proovimine">'
         "<h2>Proovi oma kinnistut</h2>"
         "<p>Sisesta katastritunnus või aadress ja vaata, mida registrid selle "
-        "kinnistu kohta ütlevad — koos allikate ja ajaseisuga.</p>"
+        "kinnistu kohta ütlevad, koos allikate ja ajaseisuga.</p>"
         '<p><a class="cta-button" href="/">Ava Terrapoint</a></p>'
         "</aside>"
     )
@@ -325,7 +325,7 @@ def sitemap_xml() -> str:
     <priority>1.0</priority>
     <image:image>
       <image:loc>{SITE_URL}/static/og-image.png</image:loc>
-      <image:title>Terrapoint — Eesti metsaandmete analüüs</image:title>
+      <image:title>Terrapoint: Eesti metsaandmete analüüs</image:title>
     </image:image>
   </url>"""
     ]
@@ -408,7 +408,7 @@ def robots_txt() -> str:
         ("Bingbot", ["Allow: /"]),
         ("CCBot", ["Allow: /"]),
     ]
-    lines = ["# terrapoint.ee — robots.txt", "# Eesti metsaandmete analüüsi tööriist", ""]
+    lines = ["# terrapoint.ee robots.txt", "# Eesti metsaandmete analüüsi tööriist", ""]
     for agent, rules in groups:
         lines.append(f"User-agent: {agent}")
         lines.extend(rules)
