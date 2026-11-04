@@ -65,7 +65,8 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   omand ja asukoht”), sest pealkiri ütleb selle ise. Sõnastus on lihtsam:
   „CO₂-ekvivalent / ha” → „CO₂ / ha”, „Puidustsenaariumide keskpunkt / ha” →
   „Keskpunkt hektari kohta”, „Hindamise ajakontekst teadmata” → „Hindamise aeg
-  teadmata”, „Terrapointi kaugandmete terviseskoor” → „Kaugseire terviseskoor”.
+  teadmata”, „Terrapointi kaugandmete terviseskoor” → „Automaatne terviseskoor”
+  (skoor tuleb valdavalt Metsaregistri andmetest, ainult osa on kaugseire).
 - **Süsinikukaardilt kadus emoji-võrdlus** (auto ja „keskmise puu” aastane heide
   ja sidumine) — illustratiivne, mitte andmed.
 - **Metsateatiste kaart ei veni enam üheksa arhiivikirje pikkuseks**: nimekiri on
@@ -79,7 +80,24 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 - **Kitsenduste tabeli kokkuvõte** kordas kaardi pealkirja; nüüd on seal
   „1 kitsendus” ja kirjeldusega rea tähis on ⓘ, mitte seletamata `*`.
 - Mõõdetud tulemus (kinnistu 11201:001:0067, desktop 1280): kaardiruudustiku
-  kõrgus 2755 px → 2112 px, lehe kõrgus 7246 px → 6604 px.
+  kõrgus 2755 px → 2112 px.
+
+### Fixed
+- **Kitsenduste kaart: ala nimi on nüüd nähtav tekst, mitte hover-tooltip** —
+  varem näitas rida ainult tüüpi („Kaitseala”) ja nime sai kätte alles `ⓘ`
+  peale hõljumise või klõpsuga CSS-pseudo-elemendist, mistõttu ekraanilugeja,
+  puuteekraan ja kopeerimine seda ei näinud. Nüüd on nimi ala rea teine rida
+  („Nõmme-Mustamäe maastikukaitseala”), rea link „EELIS →” püsib terve ka
+  390 px ekraanil (varem lõigati „EE”), ja kaardi lõpus on üks lause, mida
+  kitsendus tähendab („Tingimused ja ulatuse määrab kaitse-eeskiri või
+  veekaitsevööndi kord. Loetelu on kaardikihtide kattuvus, mitte õiguslik
+  otsus.”). Kontrollitud 78404:409:0113 (3 kitsendust, desktop ja mobiil).
+- **Kihi võti ei jõua enam kirjeldusena kaardile** — `api/index.py` kasutas
+  nime puudumisel varuväärtusena kihi võtit, seega `kaitsevoondid` või
+  `veekaitse` kuvati ala nimena. Nüüd jääb kirjeldus tühjaks ja rida näitab
+  ainult tüüpi; uus test `test_restriction_rows_never_expose_the_raw_layer_key`.
+- Tühja tulemuse tekst ütleb, mida kontrolliti (kaitsealad, piiranguvööndid,
+  vee- ja ranna piirangud, muinsuskaitse), mitte ainult „kitsendusi ei leitud”.
 
 ## [Määramata] - 2026-11-03
 

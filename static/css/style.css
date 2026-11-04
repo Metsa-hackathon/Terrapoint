@@ -4160,7 +4160,13 @@ footer {
 }
 .kitsendused-table-header,
 .kitsendused-row {
-    grid-template-columns: minmax(0, 1fr) 84px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+}
+.kitsendused-row .kitsendused-link {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
 }
 .table-grid-header > *,
 .table-grid-row > * {
@@ -4241,101 +4247,31 @@ footer {
     text-align: left;
 }
 .kitsendused-row strong { font-weight: 600; color: var(--ink-2); }
-.kitsendused-desc-toggle {
-    display: inline-flex;
-    align-items: center;
-    max-width: 100%;
-    min-height: 24px;
-    padding: 2px 0;
-    border: 0;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    text-align: left;
-    cursor: pointer;
-}
-.kitsendused-desc-toggle:focus-visible {
-    outline: 2px solid var(--blue-500);
-    outline-offset: 3px;
-    border-radius: 2px;
-}
-.kitsendused-row.has-kitsendused-desc {
-    position: relative;
-    overflow: visible;
-}
-.kitsendused-row.has-kitsendused-desc:hover,
-.kitsendused-row.has-kitsendused-desc:focus,
-.kitsendused-row.has-kitsendused-desc:focus-within,
-.kitsendused-row.has-kitsendused-desc.show-kitsendused-desc {
-    z-index: 40;
-}
-.kitsendused-desc-mark {
-    display: inline-block;
-    margin-left: 3px;
+/* Ala nimi on alati nähtav: hover-tooltipi asemel loetav tekst, mis töötab ka
+   puuteekraanil ja ekraanilugejaga. */
+.kitsendused-name {
+    display: block;
+    margin-top: 2px;
     color: var(--ink-4);
-    font-weight: 500;
-    font-size: 0.85em;
-    line-height: 1;
-}
-.kitsendused-row.has-kitsendused-desc::before,
-.kitsendused-row.has-kitsendused-desc::after {
-    position: absolute;
-    pointer-events: none;
-    opacity: 0;
-    visibility: hidden;
-    z-index: 35;
-    transition: opacity 0.12s var(--ease) 0.35s, transform 0.12s var(--ease) 0.35s, visibility 0s linear 0.47s;
-}
-.kitsendused-row.has-kitsendused-desc::before {
-    content: "";
-    top: calc(100% + 2px);
-    left: 22px;
-    transform: translateY(-2px);
-    border: 5px solid transparent;
-    border-bottom-color: var(--ink);
-}
-.kitsendused-row.has-kitsendused-desc::after {
-    content: attr(data-description);
-    top: calc(100% + 12px);
-    left: 8px;
-    transform: translateY(-2px);
-    width: max-content;
-    max-width: min(360px, calc(100vw - 48px));
-    padding: 7px 9px;
-    border-radius: 6px;
-    background: var(--ink);
-    color: var(--white);
-    box-shadow: var(--sh-2);
-    font-size: 11px;
-    font-weight: 600;
-    line-height: 1.25;
-    white-space: normal;
+    font-size: 12px;
+    line-height: 1.4;
     overflow-wrap: anywhere;
 }
-.kitsendused-row.has-kitsendused-desc:hover::before,
-.kitsendused-row.has-kitsendused-desc:hover::after,
-.kitsendused-row.has-kitsendused-desc:focus::before,
-.kitsendused-row.has-kitsendused-desc:focus::after,
-.kitsendused-row.has-kitsendused-desc:focus-within::before,
-.kitsendused-row.has-kitsendused-desc:focus-within::after,
-.kitsendused-row.has-kitsendused-desc.show-kitsendused-desc::before,
-.kitsendused-row.has-kitsendused-desc.show-kitsendused-desc::after {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-    transition-delay: 0.35s, 0.35s, 0s;
+/* Nimi peab olema terve: rea üldine "nowrap + ellipsis" lõikaks ala nime poolelt. */
+.kitsendused-row > div:first-child {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
 }
-.kitsendused-row.has-kitsendused-desc.show-kitsendused-desc::before,
-.kitsendused-row.has-kitsendused-desc.show-kitsendused-desc::after {
-    transition-delay: 0s;
+.kitsendused-note {
+    margin: 10px 0 0;
+    color: var(--ink-4);
+    font-size: 12px;
+    line-height: 1.45;
 }
 .kitsendused-row .kitsendused-link a { font-size: var(--tier-3-table); }
 .eraldised-empty { padding: 24px 16px; text-align: center; color: var(--ink-4); font-size: 11px; }
 /* Expanded card when eraldised details is open */
-.metric-card:has(.eraldised-expand[open]) {
-    grid-column: 1 / -1 !important;
-    transition: grid-column 0.3s ease;
-}
 
 /* ═══ DROPDOWN FILTER ═══ */
 .filter-dropdown { position: relative; }
@@ -4647,7 +4583,13 @@ footer {
     .eraldised-table-panel .table-grid-hscroll { overflow-x: visible; }
     .kitsendused-table-header,
     .kitsendused-row {
-        grid-template-columns: minmax(120px, 1fr) 72px;
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+    /* Kitsenduste tabelis on kaks veergu ja link peab terveks jääma: max-content
+       laius lükkas lingi kaardi servast välja (mobiilis nähtav ainult "EE"). */
+    #kitsendused-info .table-grid-scroll {
+        width: 100%;
+        min-width: 0;
     }
     #kitsendused-info .kitsendused-table tr {
         grid-template-columns: minmax(70px, 0.9fr) minmax(104px, 1.45fr) 72px;

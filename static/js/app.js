@@ -4023,7 +4023,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             var t = Math.max(0, Math.min(100, Number(displayedHealthScore) || 0));
             var assessment = data.terviseskoor_selgitus || data.terviseindeks_selgitus || {};
             var barColor = t >= 90 ? 'var(--data-state-ok)' : t >= 60 ? 'var(--data-state-warn)' : 'var(--data-state-danger)';
-            html += '<div class="health-score"><div><span>Kaugseire terviseskoor</span><strong>' + t + '/100</strong></div><p>' + escHtml(assessment.label || 'Automaatne registri- ja kihipõhine hinnang') + '</p></div>';
+            html += '<div class="health-score"><div><span>Automaatne terviseskoor</span><strong>' + t + '/100</strong></div><p>' + escHtml(assessment.label || 'Automaatne registri- ja kihipõhine hinnang') + '</p></div>';
             html += '<div class="progress-bar"><div class="fill" style="width:' + t + '%;background:' + barColor + '"></div></div>';
             html += confidenceHtml(assessment.confidence, 'Andmete usaldus');
             html += '<div class="health-components"><h4>Skoori komponendid</h4>';
@@ -4223,7 +4223,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             } else if (!restrictionState.sourcesComplete) {
                 el.innerHTML = '<p class="muted">Kõiki piiranguallikaid ei õnnestunud kontrollida. Piirangute puudumist ei saa kinnitada.</p>';
             } else {
-                el.innerHTML = '<p class="muted">Kontrollitud allikatest kitsendusi ei leitud.</p>';
+                el.innerHTML = '<p class="muted">Kontrollitud allikatest (kaitsealad, piiranguvööndid, vee- ja ranna piirangud, muinsuskaitse) kitsendusi ei leitud.</p>';
             }
             if (linkEl) {
                 linkEl.style.display = restrictionState.canClaimEmpty ? 'none' : '';
@@ -4248,9 +4248,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 var tyyp = k.tyyp || '';
                 var displayType = restrictionLabels[tyyp] || String(tyyp).replace(/_/g, ' ').replace(/^./, function(char) { return char.toUpperCase(); });
                 var kirjeldus = k.kirjeldus || '';
-                var hasDescription = kirjeldus && kirjeldus.trim().toLowerCase() !== displayType.trim().toLowerCase();
-                var rowClass = 'table-grid-row kitsendused-row' + (hasDescription ? ' has-kitsendused-desc' : '');
-                var rowAttrs = hasDescription ? ' data-description="' + escHtml(kirjeldus) + '"' : '';
+                var hasDescription = Boolean(kirjeldus) && kirjeldus.trim().toLowerCase() !== displayType.trim().toLowerCase();
                 var link = eelisLink;
                 var linkText = 'EELIS';
                 if (tyyp.indexOf('kaitsealad') >= 0 || tyyp.indexOf('loodusala') >= 0 || tyyp.indexOf('piirang') >= 0 || tyyp.indexOf('sood') >= 0) {
@@ -4264,14 +4262,12 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 } else if (tyyp.indexOf('yrask') >= 0) {
                     link = eelisLink; linkText = 'EELIS';
                 }
-                rows += '<div class="' + rowClass + '"' + rowAttrs + '>';
-                if (hasDescription) {
-                    rows += '<div><button type="button" class="kitsendused-desc-toggle" aria-expanded="false" aria-label="Näita kirjeldust: '
-                        + escHtml(displayType) + '"><strong>' + escHtml(displayType)
-                        + '</strong><span class="kitsendused-desc-mark" aria-hidden="true">ⓘ</span></button></div>';
-                } else {
-                    rows += '<div title="' + escHtml(displayType) + '"><strong>' + escHtml(displayType) + '</strong></div>';
-                }
+                rows += '<div class="table-grid-row kitsendused-row">';
+                // Ala nimi on nähtav tekst, mitte hover-tooltip: seda peab saama
+                // lugeda ka puuteekraanil, klaviatuuriga ja ekraanilugejaga.
+                rows += '<div><strong>' + escHtml(displayType) + '</strong>'
+                    + (hasDescription ? '<span class="kitsendused-name">' + escHtml(kirjeldus) + '</span>' : '')
+                    + '</div>';
                 rows += '<div class="kitsendused-link"><a href="' + escHtml(link) + '" target="_blank" rel="noopener" class="muted-link">' + escHtml(linkText) + ' →</a></div>';
                 rows += '</div>';
             });
@@ -4288,17 +4284,11 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         html += '<div class="table-grid-header kitsendused-table-header"><div>Tüüp</div><div>Lisainfo</div></div>';
         html += '<div class="table-grid-scroll" tabindex="0" role="region" aria-label="Kitsenduste tabel">' + kitsRows(data) + '</div>';
         html += '</div>'; // end table-grid-hscroll
+        html += '<p class="kitsendused-note">Tingimused ja ulatuse määrab kaitse-eeskiri või veekaitsevööndi kord. '
+            + 'Loetelu on kaardikihtide kattuvus, mitte õiguslik otsus.</p>';
         html += '</details>';
         el.innerHTML = html;
         if (linkEl) linkEl.style.display = '';
-        el.querySelectorAll('.kitsendused-desc-toggle').forEach(function(button) {
-            button.addEventListener('click', function() {
-                var row = button.closest('.kitsendused-row');
-                if (!row) return;
-                var expanded = row.classList.toggle('show-kitsendused-desc');
-                button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-            });
-        });
     }
 
     function renderToetused(data) {

@@ -2973,13 +2973,20 @@ async def _search_core(
     for key in kitsendused_keys:
         for feat in layers_data.get(key, []):
             props = feat.get("properties", {})
+            # Kirjelduseks ainult tegelik nimi: kihi võti ("kaitsevoondid",
+            # "veekaitse") ei ole kasutajale info ja jõudis varem kaardile
+            # hover-tekstina. Puuduv nimi jääb tühjaks, mitte ei lase
+            # sisemist tunnust välja.
             kirjeldus = (
                 props.get("nimi")
                 or props.get("nimetus")
                 or props.get("KITSENDUSE_LIIK")
                 or props.get("kirjeldus")
-                or key
+                or ""
             )
+            kirjeldus = str(kirjeldus).strip()
+            if kirjeldus.casefold() in {key.casefold(), key.replace("_", " ").casefold()}:
+                kirjeldus = ""
             kitsendused.append({"tyyp": key, "kirjeldus": kirjeldus})
 
     eraldised_features = []

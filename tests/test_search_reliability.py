@@ -1742,6 +1742,33 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["teatised_meta"]["teatisi_kokku"], 5)
         self.assertEqual(result["teatised_meta"]["ridu_kokku"], 6)
 
+    async def test_restriction_rows_never_expose_the_raw_layer_key(self):
+        """Kaardil näidatakse ala nime; kihi võti ('kaitsevoondid') on sisemine tunnus."""
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        layers = {
+            "kaitsevoondid": [{"type": "Feature", "geometry": geometry, "properties": {"id": 1}}],
+            "veekaitse": [{"type": "Feature", "geometry": geometry, "properties": {"id": 2, "nimi": "veekaitse"}}],
+            "kaitsealad": [{"type": "Feature", "geometry": geometry, "properties": {"id": 3, "nimi": "Nõmme-Mustamäe maastikukaitseala"}}],
+        }
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value={
+                "number": "78404:409:0113", "geometry": geometry, "pindala_ha": 1,
+            })),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=(layers, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        by_type = {item["tyyp"]: item["kirjeldus"] for item in result["kitsendused"]}
+        self.assertEqual(by_type["kaitsevoondid"], "")
+        self.assertEqual(by_type["veekaitse"], "")
+        self.assertEqual(by_type["kaitsealad"], "Nõmme-Mustamäe maastikukaitseala")
+
     async def test_search_deduplicates_kpois_umbrella_records_already_in_specialized_sources(self):
         geometry = {
             "type": "Polygon",

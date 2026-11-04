@@ -985,7 +985,7 @@ console.log(JSON.stringify({{
         self.assertIn("Hinnangu usaldus", INDEX_HTML)
         self.assertIn("Kuidas hinnang kujuneb", INDEX_HTML)
         self.assertIn("terviseindeks_selgitus", INDEX_HTML)
-        self.assertIn("Kaugseire terviseskoor", INDEX_HTML)
+        self.assertIn("Automaatne terviseskoor", INDEX_HTML)
         self.assertIn("data.terviseskoor != null", INDEX_HTML)
         self.assertIn("data.yrask_hinnang || data.yrask", INDEX_HTML)
         self.assertIn("Maa maksustamishind puudub; kinnistu koguhinnangut ei kuvata", INDEX_HTML)
@@ -3522,6 +3522,14 @@ console.log(JSON.stringify({{unavailable, complete: element.innerHTML}}));
         self.assertIn('aria-label="Metsaeraldiste tabel"', INDEX_HTML)
         self.assertIn("sidebar.inert = !open", INDEX_HTML)
         self.assertIn("returnFocus.focus({preventScroll: true})", INDEX_HTML)
+
+    def test_restriction_names_are_visible_text_not_a_hover_tooltip(self):
+        render = _extract_js_function("renderKitsendused")
+        self.assertIn("kitsendused-name", render)
+        self.assertNotIn("data-description", render)
+        self.assertNotIn("kitsendused-desc-toggle", render)
+        self.assertIn("kitsendused-note", render)
+        self.assertNotIn("kitsendused-desc-mark", STYLE_CSS)
 
     def test_eudr_uses_geometry_derived_backend_centroid(self):
         render = _extract_js_function("renderEudr")
