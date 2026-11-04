@@ -102,6 +102,11 @@ Metsa väärtuse ja andmete analüüsi veebirakendus. FastAPI backend + HTML/CSS
 - Mahukad nimekirjad hoitakse `.toetus-list-scroll` sees (720 px, sisemine
   kerimine); mobiilis on see klass `max-height: none` (test
   `test_subsidy_counts_have_explicit_contrast_and_mobile_avoids_nested_scroll`).
+- Kaartidel ei ole sisu loetlevaid alapealkirju (`.section-desc` on eemaldatud,
+  2026-11-04): pealkiri ütleb sisu ise. Uut kaarti lisades ära enumerateeri
+  välju; pane vajadusel ainult piirang või hoiatus. Pikk tabel (`Metsateatised`)
+  on piiratud sisemise kerimisega (460 px), muidu venitab üks kaart veeru
+  tuhandete piksliteni.
 
 ## UI kontroll brauseris (kasutaja reegel)
 - Iga UI muudatus (`index.html`, `static/css/*`, `static/js/*`, UI-nähtav vastus): enne "valmis" ütlemist vaata lehte headless brauseris. Testid ja diff ei tõesta, et leht töötab.

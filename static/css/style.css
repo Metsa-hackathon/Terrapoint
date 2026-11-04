@@ -2038,7 +2038,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     font-size: var(--panel-title-font-size) !important;
 }
 
-.metric-card .section-desc,
 .metric-card .data-quality-alert,
 .metric-card .data-quality-alert *,
 .metric-card small,
@@ -2192,18 +2191,8 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     word-break: normal;
 }
 .metric-card.highlight-card .card-header h3 { color: var(--ink); }
-.section-desc {
-    font-size: 14.5px;
-    color: var(--ink-4);
-    margin: 3px 0 0;
-    line-height: 1.5;
-    letter-spacing: -0.005em;
-    padding-bottom: 14px;
-}
-
 @media (max-width: 768px) {
     .metric-card { padding: 18px 18px 16px; }
-    .section-desc { font-size: 14px; }
 }
 
 @keyframes cardIn {
@@ -2237,9 +2226,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     letter-spacing: -0.005em;
     min-width: 0;
     flex: 1 1 auto;
-}
-.metric-card.highlight-card .section-desc {
-    transform: none;
 }
 .metric-card.highlight-card .info-row {
     transform: none;
@@ -4286,8 +4272,9 @@ footer {
 .kitsendused-desc-mark {
     display: inline-block;
     margin-left: 3px;
-    color: var(--blue-700);
-    font-weight: 800;
+    color: var(--ink-4);
+    font-weight: 500;
+    font-size: 0.85em;
     line-height: 1;
 }
 .kitsendused-row.has-kitsendused-desc::before,
@@ -4416,8 +4403,15 @@ footer {
     overflow-x: hidden;
 }
 #card-teatised .teatised-panel .table-grid-scroll {
-    max-height: none;
+    /* Kinnita teatiste nimekiri, et arhiivikirjete rida ei venitaks kaarti tuhandete
+       piksliteni; sisemine kerimine hoiab kaardi ülejäänud veeruga tasakaalus. */
+    max-height: 460px;
     background: none;
+}
+.teatised-post-inventory {
+    margin: 0 0 10px;
+    font-size: 12.5px;
+    line-height: 1.45;
 }
 #card-teatised .teatised-row {
     width: 100%;
@@ -4476,6 +4470,7 @@ footer {
     color: var(--ink-4);
     font-size: 10px;
 }
+#card-teatised .teatised-row.is-archived > div:nth-child(4)::before { content: ""; }
 #card-teatised .teatised-row > div:nth-child(5) {
     grid-area: area;
     color: var(--ink-3);

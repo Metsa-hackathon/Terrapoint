@@ -288,7 +288,7 @@ async function fetch(url) {{
         self.assertNotIn("var nextMsg = aiMessageQueue.shift()", INDEX_HTML)
         self.assertNotIn("aiMessageQueue.push(pendingUserMsg)", INDEX_HTML)
         self.assertIn("kõrge: 'Kõrge lähteandmestik'", helper)
-        self.assertIn("Puidustsenaariumide keskpunkt / ha", INDEX_HTML)
+        self.assertIn("Keskpunkt hektari kohta", INDEX_HTML)
         self.assertIn("Sortimendita keskpunkt", INDEX_HTML)
         self.assertIn('<div>Eraldis ja lähteandmed</div><div style="text-align:right">Puidustsenaarium</div>', INDEX_HTML)
         self.assertNotIn("Puidu keskväärtus / ha", INDEX_HTML)
@@ -812,13 +812,14 @@ console.log(JSON.stringify({{missing, zero:target.innerHTML}}));
 
     def test_forest_data_age_and_historical_clearcuts_are_explained(self):
         self.assertIn("Terrapointi värskushoiatuse lävend", INDEX_HTML)
-        self.assertIn("Metsateatis näitab kavandatud või lubatud raiet", INDEX_HTML)
+        self.assertIn("teatis näitab kavandatud raiet, mitte tehtud raiet", INDEX_HTML)
         self.assertIn("Ajalooline lageraie tuvastus", INDEX_HTML)
         self.assertIn("2011–2016", INDEX_HTML)
         self.assertIn("üldjuhul olema uuenenud 5 aasta jooksul", INDEX_HTML)
         self.assertIn("10 aasta jooksul", INDEX_HTML)
         self.assertIn("safe(renderTeatised, data.teatised, 'teatised', data.teatised_meta)", INDEX_HTML)
-        self.assertIn("totalRows + ' eraldiseridu'", INDEX_HTML)
+        self.assertIn("if (totalRows !== totalNotices) summaryLabel += ' · ' + totalRows + ' rida';", INDEX_HTML)
+        self.assertNotIn("eraldiseridu", INDEX_HTML)
         self.assertNotIn("Krundil on tuvastatud hiljutine lageraie", INDEX_HTML)
 
     def test_dashboard_uses_one_official_compartment_number_everywhere(self):
@@ -984,7 +985,7 @@ console.log(JSON.stringify({{
         self.assertIn("Hinnangu usaldus", INDEX_HTML)
         self.assertIn("Kuidas hinnang kujuneb", INDEX_HTML)
         self.assertIn("terviseindeks_selgitus", INDEX_HTML)
-        self.assertIn("Terrapointi kaugandmete terviseskoor", INDEX_HTML)
+        self.assertIn("Kaugseire terviseskoor", INDEX_HTML)
         self.assertIn("data.terviseskoor != null", INDEX_HTML)
         self.assertIn("data.yrask_hinnang || data.yrask", INDEX_HTML)
         self.assertIn("Maa maksustamishind puudub; kinnistu koguhinnangut ei kuvata", INDEX_HTML)

@@ -59,6 +59,28 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   kinnistutel: arhiiviteatised ilmuvad (nt 27.10.2026 seisuga 9–11 teatist
   kinnistu kohta, varem 0–1) ja `sources_complete` on `true`.
 
+### Changed
+- **Tulemuste kaardid on rahulikumad** — eemaldatud on üheksa kaardi alapealkirja,
+  mis loetlesid ainult kaardi sisu (nt „Katastritunnus, pindala, sihtotstarve,
+  omand ja asukoht”), sest pealkiri ütleb selle ise. Sõnastus on lihtsam:
+  „CO₂-ekvivalent / ha” → „CO₂ / ha”, „Puidustsenaariumide keskpunkt / ha” →
+  „Keskpunkt hektari kohta”, „Hindamise ajakontekst teadmata” → „Hindamise aeg
+  teadmata”, „Terrapointi kaugandmete terviseskoor” → „Kaugseire terviseskoor”.
+- **Süsinikukaardilt kadus emoji-võrdlus** (auto ja „keskmise puu” aastane heide
+  ja sidumine) — illustratiivne, mitte andmed.
+- **Metsateatiste kaart ei veni enam üheksa arhiivikirje pikkuseks**: nimekiri on
+  piiratud 460 px sisemise kerimisega, arhiivikirjed ei näita enam „kuni —” ja
+  igas reas korduv „Inventuur: teatis on hilisem” asendub ühe märkusega kaardi
+  ülaosas. Kokkuvõte on „9 teatist”, mitte „9 teatist · 9 eraldiseridu”.
+- **EUDR-kaardi lähteandmete loend on kokkuvolditud** („Kõik lähteandmeväljad
+  (7/7)”), et kaart ei oleks pikk nimekiri.
+- **Katvusmärge on lühem**: „Andmed katavad 5,38 ha 6,34 ha-st” + „Eraldis 4
+  jääb summast välja (0,96 ha), sest Metsaregistris puuduvad tagavaraandmed.”
+- **Kitsenduste tabeli kokkuvõte** kordas kaardi pealkirja; nüüd on seal
+  „1 kitsendus” ja kirjeldusega rea tähis on ⓘ, mitte seletamata `*`.
+- Mõõdetud tulemus (kinnistu 11201:001:0067, desktop 1280): kaardiruudustiku
+  kõrgus 2755 px → 2112 px, lehe kõrgus 7246 px → 6604 px.
+
 ## [Määramata] - 2026-11-03
 
 ### Added

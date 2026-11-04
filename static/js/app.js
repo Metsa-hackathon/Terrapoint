@@ -1098,7 +1098,7 @@
                 }
                 timing += '.';
             } else {
-                timing = ' Hindamise ajakontekst ei ole praegu ametlikust allikast kinnitatud.';
+                timing = ' Hindamise aega ei ole ametlikust allikast kinnitatud.';
             }
             return answer(
                 'land_taxable_value',
@@ -3205,7 +3205,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 messages.push('Vähemalt ühe eraldise inventeerimisandmed on üle 10 aasta vanad ega pruugi praegust metsa piisavalt täpselt kirjeldada.');
             }
         } else if (inventory.vanem_kui_5a_eraldisi) {
-            messages.push('Vähemalt ühe eraldise inventeerimisandmed on üle 5 aasta vanad. 5 aasta piir on Terrapointi värskushoiatuse lävend, mitte seadusest tulenev aegumistähtaeg.');
+            messages.push('Vähemalt ühe eraldise inventeerimisandmed on üle 5 aasta vanad (Terrapointi värskushoiatuse lävend, mitte seadusest tulenev tähtaeg).');
         }
         if (missingDates) {
             messages.push(missingDates + ' eraldise inventeerimiskuupäev puudub, mistõttu nende andmete vanust ei saa hinnata.');
@@ -3218,7 +3218,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             var missingVolume = inventory.inventuurijargse_teatise_maht_puudub || 0;
             var volumeText = 'teadaolev kavandatud maht ' + formatNum(plannedVolume) + ' m³';
             if (missingVolume) volumeText += ', maht puudub ' + missingVolume + ' teatisel';
-            messages.push('Pärast inventuuri on heaks kiidetud ' + postNotices + ' metsateatist (' + volumeText + '). Metsateatis näitab kavandatud või lubatud raiet, mitte kinnitatud teostust; Terrapoint ei lahuta seda mahtu automaatselt.');
+            messages.push('Pärast inventuuri on kinnitatud ' + postNotices + ' metsateatist (' + volumeText + '); teatis näitab kavandatud raiet, mitte tehtud raiet, ja Terrapoint ei lahuta seda mahtu automaatselt.');
         }
         if (unmatchedNotices) {
             messages.push(unmatchedNotices + ' heaks kiidetud teatise suhet inventuuriga ei saanud puuduva kuupäeva või ebakindla eraldise seose tõttu hinnata.');
@@ -3273,7 +3273,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         // Keep the official land reference separate from the combined estimate.
         var maaMaksuhindAvailable = typeof data.maks_hind === 'number' && Number.isFinite(data.maks_hind);
         var valuationMeta = data.maks_hind_meta || {};
-        var valuationTiming = 'Hindamise ajakontekst teadmata';
+        var valuationTiming = 'Hindamise aeg teadmata';
         if (valuationMeta.state === 'available' && valuationMeta.assessment_year) {
             valuationTiming = valuationMeta.assessment_year + '. a hindamismudel';
             if (valuationMeta.valid_from) valuationTiming += ' · kehtib alates ' + formatDateEt(valuationMeta.valid_from);
@@ -3504,7 +3504,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         var dominantSpeciesComplete = data.liigiandmed_taielikud !== false
             && data.peapuuliigi_andmed_taielikud !== false;
         if (!dominantSpeciesComplete || data.vanuseandmed_taielikud === false) {
-            html += '<div class="data-quality-alert warning"><strong>Osa puistu põhiandmeid puudub</strong><span>Puuliigi, vanuse või tagavara puuduvat registrivälja ei asendata otsuse tegemisel oletusega.</span></div>';
+            html += '<div class="data-quality-alert warning"><strong>Osa puistu põhiandmeid puudub</strong><span>Puuduvat puuliigi, vanuse või tagavara välja ei asendata oletusega.</span></div>';
         }
         var mainSpecies = !dominantSpeciesComplete
             ? 'Määramata — liigi- või tagavaraandmed osalised'
@@ -3676,23 +3676,26 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
     function stockCoverageNote(data, primaryValue) {
         if (!data || data.stock_data_complete !== false) return '';
         var stands = Array.isArray(data.stock_missing_eraldised) ? data.stock_missing_eraldised : [];
-        var standsText = stands.length
-            ? ' (eraldis ' + stands.map(function(nr) { return escHtml(String(nr)); }).join(', ') + ')'
-            : '';
+        var standNumbers = stands.map(function(nr) { return escHtml(String(nr)); }).join(', ');
+        var standsText = stands.length ? ' (eraldis ' + standNumbers + ')' : '';
+        var exclusionText = stands.length === 1
+            ? 'Eraldis ' + standNumbers + ' jääb summast välja'
+            : stands.length
+                ? 'Eraldised ' + standNumbers + ' jäävad summast välja'
+                : 'Metsamaa pind, mille kohta andmed puuduvad, jääb summast välja';
         var known = formatNum(data.stock_known_area_ha, 2);
         var missing = formatNum(data.stock_missing_area_ha, 2);
         if (primaryValue == null) {
             return '<div class="data-quality-alert warning valuation-status">'
                 + '<strong>Tagavaraandmed puuduvad ' + missing + ' ha kohta</strong>'
-                + '<span>Metsaregistris ei ole nende eraldiste kohta tagavara-, kõrguse- ega vanuseandmeid'
-                + standsText + '. Kinnistu koondnäitajat ei avaldata, sest arvutus kataks ainult '
+                + '<span>Metsaregistris puuduvad nende eraldiste tagavara-, kõrguse- ja vanuseandmed'
+                + standsText + '. Koondnäitajat ei avaldata, sest arvutus kataks ainult '
                 + escHtml(String(data.stock_coverage_percent != null ? data.stock_coverage_percent : 0))
                 + '% metsapinnast.</span></div>';
         }
         return '<div class="data-quality-alert warning valuation-status">'
-            + '<strong>Arvutus katab ' + known + ' ha ' + formatNum(data.forest_area_ha, 2) + ' ha-st</strong>'
-            + '<span>' + missing + ' ha kohta puuduvad Metsaregistris tagavaraandmed' + standsText
-            + '; need eraldised ei ole summas.</span></div>';
+            + '<strong>Andmed katavad ' + known + ' ha ' + formatNum(data.forest_area_ha, 2) + ' ha-st</strong>'
+            + '<span>' + exclusionText + ' (' + missing + ' ha), sest Metsaregistris puuduvad tagavaraandmed.</span></div>';
     }
 
     function renderVaartus(data, meta) {
@@ -3736,7 +3739,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         if (!hasAssetPassports || timberValueAvailable) {
             var scenarioValuePerHa = data.base_value_per_ha != null ? data.base_value_per_ha : data.value_per_ha;
             var scenarioMidpointPerM3 = data.base_price_per_m3 != null ? data.base_price_per_m3 : data.price_per_m3;
-            if (scenarioValuePerHa != null) html += '<div class="info-row"><span class="label">Puidustsenaariumide keskpunkt / ha ' + ddInfo('Küttepuidu alumise ja palgi ülemise stsenaariumi aritmeetiline keskpunkt jagatud Metsaregistri eraldiste kogupindalaga. See ei ole turuväärtus.') + '</span><span class="value">' + formatEur(scenarioValuePerHa) + ' / ha</span></div>';
+            if (scenarioValuePerHa != null) html += '<div class="info-row"><span class="label">Keskpunkt hektari kohta ' + ddInfo('Küttepuidu alumise ja palgi ülemise stsenaariumi aritmeetiline keskpunkt jagatud Metsaregistri eraldiste kogupindalaga. See ei ole turuväärtus.') + '</span><span class="value">' + formatEur(scenarioValuePerHa) + ' / ha</span></div>';
             if (scenarioMidpointPerM3 != null) html += '<div class="info-row"><span class="label">Sortimendita keskpunkt ' + ddInfo('Küttepuidu alumise ja palgi ülemise kännuraha stsenaariumi aritmeetiline keskpunkt €/m³. Tegelik sortimendijaotus vajab diameetri-, kvaliteedi- ja kahjustusandmeid.') + '</span><span class="value">' + formatNum(scenarioMidpointPerM3, 2) + ' €/m³</span></div>';
         }
         if (!hasAssetPassports) html += '<div class="info-row"><span class="label">Elus puistutagavara ' + ddInfo('Metsaregistri 1. rinde, 2. rinde ja üksikpuude elus tagavara × eraldiste pindala. Surnud ja lamapuit ei kuulu müüdava puidu kogusesse.') + '</span><span class="value">' + formatNum(data.tagavara_m3) + ' m³</span></div>';
@@ -3762,21 +3765,9 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         var html = '';
         html += '<div class="big-number"><span id="anim-co2">0</span><span class="unit"> tCO₂</span></div>';
         html += stockCoverageNote(data, data.co2_tons_total);
-        html += '<div class="info-row"><span class="label">CO₂-ekvivalent / ha ' + ddInfo('Elusas kuivas biomassis hinnatud süsinikuvaru väljendatuna CO₂-ekvivalendina. See on varu, mitte aastane sidumiskiirus ega süsinikukrediit.') + '</span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
+        html += '<div class="info-row"><span class="label">CO₂ / ha ' + ddInfo('Kuivas biomassis olev süsinik CO₂-na väljendatuna. See on varu, mitte aastane sidumine ega süsinikukrediit.') + '</span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
         html += '<div class="info-row"><span class="label">Kuiv biomass / ha ' + ddInfo('Elusa maapealse ja juurebiomassi IPCC teguritel põhinev hinnang. Arvutus ei hõlma mulda, surnud puitu ega varise süsinikku.') + '</span><span class="value">' + formatNum(data.total_biomass_tons_ha, 1) + ' t</span></div>';
 
-        // Rough scale illustration; never present stock as an annual flow.
-        if (data.cars_equivalent || data.trees_equivalent) {
-            html += '<div class="supporting-callout" style="margin-top:0.75rem;padding:0.75rem;background:var(--paper-2);border-radius:var(--r-sm)">';
-            html += '<div style="font-weight:600;color:var(--text-secondary);margin-bottom:0.4rem">Suurusjärgu võrdlus (varu võrrelduna ühe aasta vooga):</div>';
-            if (data.cars_equivalent) {
-                html += '<div style="margin-bottom:0.25rem">🚗 ligikaudu ' + formatNum(data.cars_equivalent) + ' auto aastane CO₂ heide</div>';
-            }
-            if (data.trees_equivalent) {
-                html += '<div>🌳 ligikaudu ' + formatNum(data.trees_equivalent) + ' keskmise puu aastane CO₂ sidumine</div>';
-            }
-            html += '</div>';
-        }
         el.innerHTML = html;
         var animEl = el.querySelector('#anim-co2');
         setTimeout(function() {
@@ -3899,12 +3890,13 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         html += '</div>';
 
         // Source-data availability, not a requirements checklist.
+        html += '<details class="evidence-details"><summary>Kõik lähteandmeväljad (' + availableFields + '/' + totalFields + ')</summary>';
         html += '<div class="info-row-list" style="margin-bottom:14px">';
         checks.forEach(function(c) {
             var icon = c.ok ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color:var(--success)"><polyline points="20 6 9 17 4 12"/></svg>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink-5)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
             html += '<div class="info-row"><span class="label">' + icon + ' ' + escHtml(c.label) + '</span><span class="value">' + escHtml(c.value) + '</span></div>';
         });
-        html += '</div>';
+        html += '</div></details>';
 
         // Kaitsestaatus badge-d
         html += '<div style="margin-bottom:14px">';
@@ -4031,7 +4023,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             var t = Math.max(0, Math.min(100, Number(displayedHealthScore) || 0));
             var assessment = data.terviseskoor_selgitus || data.terviseindeks_selgitus || {};
             var barColor = t >= 90 ? 'var(--data-state-ok)' : t >= 60 ? 'var(--data-state-warn)' : 'var(--data-state-danger)';
-            html += '<div class="health-score"><div><span>Terrapointi kaugandmete terviseskoor</span><strong>' + t + '/100</strong></div><p>' + escHtml(assessment.label || 'Automaatne registri- ja kihipõhine hinnang') + '</p></div>';
+            html += '<div class="health-score"><div><span>Kaugseire terviseskoor</span><strong>' + t + '/100</strong></div><p>' + escHtml(assessment.label || 'Automaatne registri- ja kihipõhine hinnang') + '</p></div>';
             html += '<div class="progress-bar"><div class="fill" style="width:' + t + '%;background:' + barColor + '"></div></div>';
             html += confidenceHtml(assessment.confidence, 'Andmete usaldus');
             html += '<div class="health-components"><h4>Skoori komponendid</h4>';
@@ -4169,9 +4161,13 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         var totalNotices = meta && meta.teatisi_kokku != null ? meta.teatisi_kokku : data.length;
         var totalRows = meta && meta.ridu_kokku != null ? meta.ridu_kokku : data.length;
         var shownRows = meta && meta.ridu_kuvatud != null ? meta.ridu_kuvatud : data.length;
-        var summaryLabel = 'teatist · ' + totalRows + ' eraldiseridu';
+        var summaryLabel = 'teatist';
+        if (totalRows !== totalNotices) summaryLabel += ' · ' + totalRows + ' rida';
         if (shownRows < totalRows) summaryLabel += ' · kuvatud ' + shownRows;
         html += tablePanelSummary(totalNotices, summaryLabel);
+        if (data.some(function(t) { return t && t.parast_inventuuri === true; })) {
+            html += '<p class="muted teatised-post-inventory">Osa teatisi on inventuurist hilisemad, seega inventuuriandmed võivad olla aegunud.</p>';
+        }
 
         html += '<div class="table-grid-hscroll">';
         html += '<div class="table-grid-header teatised-table-header">';
@@ -4185,11 +4181,10 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
              var eraldisCell = eraldisNr !== null
                  ? '<span class="teatised-eraldis-nr" title="' + escHtml(eraldisText) + '"><span class="teatised-eraldis-prefix">Eraldis </span>' + escHtml(eraldisNr) + '</span>'
                  : '<span class="muted">—</span>';
-            html += '<div class="table-grid-row teatised-row">';
+            html += '<div class="table-grid-row teatised-row' + (t.arhiiv ? ' is-archived' : '') + '">';
             var noticeMeta = [];
             if (t.otsus_kinnitatud_kp) noticeMeta.push('Otsus: ' + formatDateEt(t.otsus_kinnitatud_kp));
             if (t.maht != null) noticeMeta.push('Kavandatud maht: ' + formatNum(t.maht) + ' m³');
-            if (t.parast_inventuuri) noticeMeta.push('Inventuur: teatis on hilisem');
             html += '<div class="teatised-type" data-label="Tüüp"><div class="teatised-type-value">' + escHtml(t.tyyp || '—')
                 + (noticeMeta.length ? '<span class="teatised-type-meta">' + noticeMeta.map(function(item) {
                     return '<span>' + escHtml(item) + '</span>';
@@ -4273,7 +4268,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 if (hasDescription) {
                     rows += '<div><button type="button" class="kitsendused-desc-toggle" aria-expanded="false" aria-label="Näita kirjeldust: '
                         + escHtml(displayType) + '"><strong>' + escHtml(displayType)
-                        + '</strong><span class="kitsendused-desc-mark" aria-hidden="true">*</span></button></div>';
+                        + '</strong><span class="kitsendused-desc-mark" aria-hidden="true">ⓘ</span></button></div>';
                 } else {
                     rows += '<div title="' + escHtml(displayType) + '"><strong>' + escHtml(displayType) + '</strong></div>';
                 }
@@ -4288,7 +4283,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             html += '<p class="muted" style="margin-bottom:10px">Osa piiranguallikaid jäi kontrollimata; loetelu ei pruugi olla täielik.</p>';
         }
         html += '<details class="eraldised-panel table-panel kitsendused-panel" open>';
-        html += tablePanelSummary(data.length, 'Kitsendused ja piirangud');
+        html += tablePanelSummary(data.length, data.length === 1 ? 'kitsendus' : 'kitsendust');
         html += '<div class="table-grid-hscroll">';
         html += '<div class="table-grid-header kitsendused-table-header"><div>Tüüp</div><div>Lisainfo</div></div>';
         html += '<div class="table-grid-scroll" tabindex="0" role="region" aria-label="Kitsenduste tabel">' + kitsRows(data) + '</div>';
@@ -4463,7 +4458,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             recommended.forEach(function(t) { html += renderCard(t); });
             html += '</div></div>';
         } else {
-            html += '<p class="toetus-empty">Kinnistuandmetega seotud avatud, aastaringset või tulevast meedet ei leitud.</p>';
+            html += '<p class="toetus-empty">Selle kinnistuga seotud avatud meedet ei leitud.</p>';
         }
 
         if (watchlist.length > 0) {
