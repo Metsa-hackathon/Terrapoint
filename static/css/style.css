@@ -1498,16 +1498,6 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     background: var(--ink-6);
 }
 .map-satellite-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.map-satellite-state {
-    flex: 0 0 auto;
-    color: var(--warn);
-    font-family: var(--ff-mono);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-.map-satellite-state:empty { display: none; }
 
 /* Pehmenda pildi serva, et satelliitpilt sulanduks ortofotoga ega näeks
    välja nagu kleebis. Keskosa jääb muutmata. */

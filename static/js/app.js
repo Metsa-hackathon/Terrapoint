@@ -2554,41 +2554,25 @@
         var control = document.getElementById('map-satellite-control');
         if (!control) return;
         var label = document.getElementById('map-satellite-label');
-        var state = document.getElementById('map-satellite-state');
         if (mode === 'hidden') {
             control.hidden = true;
             control.disabled = false;
             control.removeAttribute('aria-pressed');
             control.removeAttribute('title');
             if (label) label.textContent = '';
-            if (state) state.textContent = '';
             return;
         }
         control.hidden = false;
         if (mode === 'ready') {
             var sceneDate = satelliteDateLabel(scene && scene.date);
-            var newestDate = satelliteDateLabel(scene && scene.newest_date);
             control.disabled = false;
             control.setAttribute('aria-pressed', satelliteVisible ? 'true' : 'false');
             control.setAttribute('aria-label', 'Sentinel-2 satelliitpilt ' + sceneDate + (satelliteVisible ? ', peida kiht' : ', näita kihti'));
-            // Pilt on päris kaugseis: pilved, udu ja pilvevari on pildi osa,
-            // mitte andmeviga. Ütleme seda kaardil, sest muidu tundub hägune
-            // pilt rikkis kihina.
-            // Server valib selge päeva; kui ükski päev ei olnud päris selge,
-            // märgib ta selle `partial_cloud` lipuga.
-            var partialCloud = Boolean(scene && scene.partial_cloud === true && !scene.obscured);
-            control.title = (scene && scene.obscured
-                ? 'EstHubi uusim pilt (' + sceneDate + ') on pilvega kaetud.'
-                : 'EstHubi Sentinel-2 päevapilt (' + sceneDate + ').')
-                + (newestDate && newestDate !== sceneDate ? ' Uusim pilt ' + newestDate + ' on pilvega kaetud.' : '')
-                + ' Pilved, udu ja pilvevari on pildi osa, mitte andmeviga; alusandmed ja arvutused ei tule sellest pildist.'
+            // Kaardil näidatakse ainult kuupäeva: pilvehinnang on kihi valiku
+            // sisemine detail, mitte kasutajale nähtav olek.
+            control.title = 'EstHubi Sentinel-2 päevapilt (' + sceneDate + ').'
                 + ' Klõpsa kihi peitmiseks või näitamiseks.';
             if (label) label.textContent = 'Sentinel-2 · ' + sceneDate;
-            if (state) {
-                state.textContent = scene && scene.obscured
-                    ? 'pilves'
-                    : (partialCloud ? 'osaliselt pilves' : '');
-            }
             return;
         }
         control.disabled = true;
@@ -2596,14 +2580,12 @@
         if (mode === 'loading') {
             control.title = 'EstHubi viimast Sentinel-2 satelliitpilti laaditakse.';
             if (label) label.textContent = 'Sentinel-2 pilt laadib…';
-            if (state) state.textContent = '';
             return;
         }
         control.title = mode === 'empty'
             ? 'EstHubi andmetel ei ole selle ala kohta viimase ' + (scene && scene.lookback_days ? scene.lookback_days : 14) + ' päeva jooksul satelliitpilti.'
             : 'Satelliitpilti ei õnnestunud laadida.';
         if (label) label.textContent = mode === 'empty' ? 'Satelliitpilti ei leitud' : 'Satelliitpilt pole saadaval';
-        if (state) state.textContent = '';
     }
 
     function removeSatelliteLayer() {

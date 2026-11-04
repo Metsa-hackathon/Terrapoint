@@ -6,6 +6,21 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > koduserveri tunnel). `terrapoint.vercel.app` suunab `vercel.json` redirectiga
 > (308) terrapoint.ee-le; push master branchi deployib koduserveri.
 
+## [Määramata] - 2026-11-04 (UI)
+
+### Muudetud
+- **Satelliitkihi olekuriba ei näita enam pilveolekut.** Kaardi all vasakul oleval
+  nupul on ainult „Sentinel-2 · pp.kk.aaaa” ja vihje; „pilves / osaliselt pilves”
+  silt ning selle CSS (`.map-satellite-state`) on eemaldatud. Päeva valik
+  (väikseima pilveosakaaluga päev) jääb serverisse alles — muutus on ainult
+  kasutajaliideses.
+- **Puuduvate tagavaraandmetega eraldiste loetelu on kasvav ja kordusteta.**
+  `stock_missing_eraldised` sorteeritakse ametliku numbri järgi ja iga number
+  esineb üks kord, seega märge loeb „Eraldised 1, 2, 3, 4 … jäävad summast välja”
+  (Metsaregister võib sama eraldise numbri all tagastada mitu kirjet). Test:
+  `test_missing_stand_numbers_are_sorted_and_unique`.
+- Staatiliste failide vahemäluvõtmed `style.css` jkl138 ja `app.js` jkl019.
+
 ## [Määramata] - 2026-11-04
 
 ### Added

@@ -432,6 +432,65 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
             any("0,50 ha" in limitation for limitation in passports["forest_volume"]["limitations"])
         )
 
+    async def test_missing_stand_numbers_are_sorted_and_unique(self):
+        """Puuduvate eraldiste loetelu on kasvav ja iga number üks kord.
+
+        Metsaregister võib sama eraldise numbri all tagastada mitu kirjet, aga
+        kasutajale näidatav loetelu peab olema „1, 2, 3 …”, mitte registri
+        juhuslik järjekord kordustega.
+        """
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        kataster = {
+            "number": "78404:409:0113",
+            "geometry": geometry,
+            "pindala_ha": 10,
+            "maks_hind": 4_200,
+        }
+
+        def stand(stand_id, number, area, available):
+            return {
+                "id": stand_id,
+                "eraldis_nr": number,
+                "geometry": geometry,
+                "pindala_ha": area,
+                "puuliik_kood": "MA",
+                "puuliik": "mänd",
+                "vanus": 80 if available else 0,
+                "tagavara_y_ha": 250 if available else None,
+                "tagavara_provenance": "official" if available else "unavailable",
+                "korgus": 25 if available else None,
+                "boniteedi_kood": 2,
+                "invent_kp": "2025-01-01",
+                "registreerimise_kp": "2025-01-01",
+            }
+
+        stands = [
+            stand(1, 12, 2.0, False),
+            stand(2, 1, 3.0, True),
+            stand(3, 7, 1.0, False),
+            stand(4, 1, 2.0, False),
+            stand(5, 7, 0.5, False),
+            stand(6, 3, 1.5, True),
+        ]
+
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=stands)),
+            patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
+            patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        self.assertEqual(result["mets"]["stock_missing_eraldised"], [1, 7, 12])
+        self.assertEqual(result["vaartus"]["stock_missing_eraldised"], [1, 7, 12])
+        self.assertAlmostEqual(result["mets"]["stock_missing_area_ha"], 5.5)
+
     async def test_species_composition_per_hectare_uses_the_covered_area(self):
         geometry = {
             "type": "Polygon",

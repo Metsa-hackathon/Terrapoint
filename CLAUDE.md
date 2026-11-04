@@ -89,6 +89,26 @@ Metsa väärtuse ja andmete analüüsi veebirakendus. FastAPI backend + HTML/CSS
 - MD failid: `CLAUDE.md` (agent kontekst), `CHANGELOG.md` (ajalugu).
   Ei ole eraldi `AGENTS.md` / `OPENCODE.md` — kogu agent info on `CLAUDE.md`-s.
 
+## SEO töö käib GSC kaudu
+- Kasutaja reegel (2026-11-04): **iga SEO muudatuse kontroll ja lõpetamine käib Google
+  Search Console'is** — vaata Performance/Coverage/URL Inspection, esita sitemap ja
+  taotle indekseerimist, siis kinnita tulemus GSC-s.
+- Ainult lugemine: ADC (`gcloud auth application-default`) annab `webmasters.readonly` —
+  `/home/arle/tmp/gsc/gsc.py sites|query --site sc-domain:terrapoint.ee`,
+  `/home/arle/tmp/gsc/gsc_inspect.py sc-domain:terrapoint.ee` (URL Inspection).
+  Kirjutavad toimingud (sitemapi esitamine) annavad 403; tee need jagatud töölaua
+  Chromes CDP kaudu (`search.google.com/search-console/sitemaps?resource_id=sc-domain%3Aterrapoint.ee`,
+  sitemapiks täis-URL `https://terrapoint.ee/sitemap.xml`).
+- Seis 2026-11-04 (GSC): sitemap uuesti esitatud → loetud samal päeval, 7 lehte;
+  "Request indexing" tehtud 5 uuele lehele (metsaandmed-katastritunnuse-jargi,
+  metsa-hind, metsatoetused, eudr-geolokatsioon, andmeallikad). **/kkk jäi tegemata:
+  GSC päevane "Request indexing" kvoot täis** — taotle järgmisel päeval.
+  Baseline: 1 indekseeritud, 6 indekseerimata (2×404 ajalooline, 2×redirect,
+  2×canonical); 28 päeva 6 klikki / 121 kuvamist / pos 8.5.
+- 404 `/100</strong></div><p>` (GSC „Not found”) võib Googleboti JS-ist URL-i
+  otsimise tõttu uuesti tekkida: `static/js/app.js` terviseskoori plokk sisaldab
+  sama HTML-fragmenti stringina. See ei ole andmeviga ega vaja parandust.
+
 ## SEO ja GEO (sisulehed)
 - Indekseeritav sisu ei tohi sõltuda JavaScriptist: AI-kraalerid (GPTBot,
   PerplexityBot jt) ei käivita JS-i. Seepärast on sisulehed serveripoolselt

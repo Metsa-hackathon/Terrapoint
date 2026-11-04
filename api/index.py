@@ -3133,17 +3133,24 @@ async def _search_core(
         stock_coverage = (stock_known_area_ha / total_pindala) if total_pindala else 0.0
         # Alla selle katvuse ei anna osaline summa kinnistu kohta ausat pilti.
         stock_covered = bool(stock_stands) and stock_coverage >= MIN_STOCK_COVERAGE
+        # Kasutajale näidatakse eraldiste numbreid kasvavas järjekorras ja iga
+        # number korra: Metsaregister võib sama eraldise numbri all tagastada
+        # mitu kirjet, aga loeteluna on „1, 2, 3, 4 …” jälgitav, kordustega
+        # jada ei ole.
+        missing_stand_numbers = sorted(
+            {
+                _normalize_eraldis_nr(stand.get("eraldis_nr"))
+                for stand in stock_missing_stands
+                if _normalize_eraldis_nr(stand.get("eraldis_nr")) is not None
+            }
+        )
         stock_coverage_fields = {
             "stock_data_complete": stock_complete,
             "forest_area_ha": round(total_pindala, 2),
             "stock_coverage_percent": round(stock_coverage * 100),
             "stock_known_area_ha": round(stock_known_area_ha, 2),
             "stock_missing_area_ha": stock_missing_area_ha,
-            "stock_missing_eraldised": [
-                stand.get("eraldis_nr")
-                for stand in stock_missing_stands
-                if stand.get("eraldis_nr") is not None
-            ],
+            "stock_missing_eraldised": missing_stand_numbers,
         }
 
         # Weighted average tagavara and vanus
