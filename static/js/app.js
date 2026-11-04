@@ -4470,18 +4470,18 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             html += '<details class="toetus-details"><summary class="muted-summary">';
             html += '<span class="toetus-details-label">Jälgi ametliku vooru avanemist</span>';
             html += '<span class="toetus-details-count">' + watchlist.length + '</span></summary>';
-            html += '<div class="toetus-list toetus-list-ineligible">';
+            html += '<div class="toetus-list-scroll"><div class="toetus-list toetus-list-ineligible">';
             watchlist.forEach(function(t) { html += renderCard(t); });
-            html += '</div></details>';
+            html += '</div></div></details>';
         }
 
         if (needsCheck.length > 0) {
             html += '<details class="toetus-details"><summary class="muted-summary">';
             html += '<span class="toetus-details-label">Võib olla asjakohane, kontrolli tingimusi</span>';
             html += '<span class="toetus-details-count">' + needsCheck.length + '</span></summary>';
-            html += '<div class="toetus-list toetus-list-ineligible">';
+            html += '<div class="toetus-list-scroll"><div class="toetus-list toetus-list-ineligible">';
             needsCheck.forEach(function(t) { html += renderCard(t); });
-            html += '</div></details>';
+            html += '</div></div></details>';
         }
 
         if (other.length > 0) {
@@ -4490,9 +4490,9 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             html += '<span class="toetus-details-label">Muud meetmed ja lõppenud voorud</span>';
             html += '<span class="toetus-details-count">' + other.length + '</span>';
             html += '</summary>';
-            html += '<div class="toetus-list toetus-list-ineligible">';
+            html += '<div class="toetus-list-scroll"><div class="toetus-list toetus-list-ineligible">';
             other.forEach(function(t) { html += renderCard(t); });
-            html += '</div></details>';
+            html += '</div></div></details>';
         }
 
         el.innerHTML = html;
@@ -4844,7 +4844,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             dashboard.hidden = false;
             dashboard.style.animation = 'sectionIn 0.5s var(--ease-out)';
         }
-        refreshTetrisCardLayout();
+        refreshCardColumns();
         if (!landingWasVisible) requestAnimationFrame(scrollToDashboard);
     }
 
@@ -4861,124 +4861,106 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
     // ═══ app.js ═══
     var currentData = null;
-    var refreshTetrisCardLayout = function() {};
+    var refreshCardColumns = function() {};
 
-    function initTetrisCardLayout() {
+    // Kaardid jagatakse üks kord veergudesse ja jäävad sinna. Sektsiooni
+    // avamine kasvatab ainult seda kaarti oma veerus (vajadusel lükkab allpool
+    // olevaid kaarte), aga ei tõsta kaarte teistesse veergudesse ega vii neid
+    // vaateväljast välja. Ümberjagamine toimub ainult vaate laiuse muutumisel
+    // ja uue otsingu tulemuste joonistamisel.
+    function initCardColumns() {
         var grid = document.querySelector('.metrics-grid');
         if (!grid) return;
 
         var cards = Array.prototype.slice.call(grid.querySelectorAll(':scope > .metric-card'));
+        if (!cards.length) return;
+        var columns = [];
         var scheduled = false;
+        var distributedFor = '';
+        var distributedColumnCount = 0;
 
-        function balanceCardsAcrossColumns(visibleCards, columnCount) {
-            var columnHeights = new Array(columnCount).fill(0);
-            var fixedCardCount = Math.min(3, visibleCards.length);
+        function columnCountForViewport() {
+            if (window.matchMedia('(max-width: 768px)').matches) return 1;
+            if (window.matchMedia('(max-width: 1180px)').matches) return 2;
+            return 3;
+        }
 
-            // The first three cards are locked: one per column on desktop. On
-            // the two-column tablet layout, the third follows immediately
-            // below whichever of the first two columns is shorter.
-            for (var fixedIndex = 0; fixedIndex < fixedCardCount; fixedIndex += 1) {
-                var fixedColumn = fixedIndex < columnCount
-                    ? fixedIndex
-                    : columnHeights.indexOf(Math.min.apply(Math, columnHeights));
-                visibleCards[fixedIndex].style.gridColumn = String(fixedColumn + 1);
-                columnHeights[fixedColumn] += Number(
-                    visibleCards[fixedIndex].style.getPropertyValue('--tetris-row-span')
-                );
+        function ensureColumns(columnCount) {
+            while (columns.length > columnCount) {
+                var removed = columns.pop();
+                if (removed && removed.parentNode) removed.parentNode.removeChild(removed);
             }
-
-            var movableCards = visibleCards.slice(fixedCardCount);
-            var bestAssignment = [];
-            var bestSpread = Infinity;
-            var bestBottom = Infinity;
-
-            // There are only six movable cards, so checking every column
-            // assignment is inexpensive and produces a straighter bottom
-            // edge than a simple shortest-column greedy pass.
-            function assignCard(cardIndex, heights, assignment) {
-                if (cardIndex === movableCards.length) {
-                    var highest = Math.max.apply(Math, heights);
-                    var lowest = Math.min.apply(Math, heights);
-                    var spread = highest - lowest;
-                    if (spread < bestSpread || (spread === bestSpread && highest < bestBottom)) {
-                        bestSpread = spread;
-                        bestBottom = highest;
-                        bestAssignment = assignment.slice();
-                    }
-                    return;
-                }
-
-                var span = Number(movableCards[cardIndex].style.getPropertyValue('--tetris-row-span'));
-                for (var columnIndex = 0; columnIndex < columnCount; columnIndex += 1) {
-                    heights[columnIndex] += span;
-                    assignment.push(columnIndex);
-                    assignCard(cardIndex + 1, heights, assignment);
-                    assignment.pop();
-                    heights[columnIndex] -= span;
-                }
+            while (columns.length < columnCount) {
+                var column = document.createElement('div');
+                column.className = 'metrics-column';
+                grid.appendChild(column);
+                columns.push(column);
             }
+            return columns;
+        }
 
-            assignCard(0, columnHeights.slice(), []);
-            movableCards.forEach(function(card, cardIndex) {
-                card.style.gridColumn = String(bestAssignment[cardIndex] + 1);
+        // Lühima veeru reegel hoiab veergude kõrgused ühtlasena. Esimesed
+        // kaardid (päiseread) lukustatakse üks veeru kohta, nagu varem.
+        function distributeCards(columnList) {
+            var heights = columnList.map(function() { return 0; });
+            var locked = Math.min(columnList.length, cards.length);
+            cards.forEach(function(card, index) {
+                var target = index < locked
+                    ? index % columnList.length
+                    : heights.indexOf(Math.min.apply(Math, heights));
+                columnList[target].appendChild(card);
+                var cardHeight = card.getBoundingClientRect().height || 0;
+                heights[target] += cardHeight + 16;
             });
         }
 
-        function layoutCards() {
+        function layoutCards(force) {
             scheduled = false;
-
-            // A single column already has no holes to fill, and ordinary grid
-            // flow keeps the mobile layout simpler and avoids needless spans.
-            if (window.matchMedia('(max-width: 768px)').matches) {
-                grid.classList.remove('is-tetris');
-                cards.forEach(function(card) {
-                    card.style.removeProperty('--tetris-row-span');
-                    card.style.removeProperty('grid-column');
-                });
-                return;
-            }
-
-            var visibleCards = cards.filter(function(card) {
+            var columnCount = columnCountForViewport();
+            var visibleCount = cards.filter(function(card) {
                 return card.getBoundingClientRect().height > 0;
-            });
-            if (!visibleCards.length) {
-                grid.classList.remove('is-tetris');
+            }).length;
+            var signature = columnCount + ':' + visibleCount;
+            if (!force && distributedFor === signature && distributedColumnCount === columnCount) {
                 return;
             }
-
-            // With one-pixel implicit rows and no row gap, the extra 16 pixels
-            // reserved in each span become the visual gutter below the card.
-            visibleCards.forEach(function(card) {
-                var rowSpan = Math.ceil(card.getBoundingClientRect().height + 16);
-                card.style.setProperty('--tetris-row-span', rowSpan);
-                card.style.removeProperty('grid-column');
+            var columnList = ensureColumns(columnCount);
+            // Mõõtmine peab toimuma veeru laiusel, seega paiguta enne kõik
+            // kaardid veergudesse ja alles siis mõõda nende kõrgusi.
+            cards.forEach(function(card, index) {
+                columnList[index % columnList.length].appendChild(card);
             });
-            var columnCount = window.matchMedia('(max-width: 1180px)').matches ? 2 : 3;
-            balanceCardsAcrossColumns(visibleCards, columnCount);
-            grid.classList.add('is-tetris');
+            distributeCards(columnList);
+            distributedFor = signature;
+            distributedColumnCount = columnCount;
         }
 
-        function scheduleLayout() {
+        function scheduleLayout(force) {
             if (scheduled) return;
             scheduled = true;
-            requestAnimationFrame(layoutCards);
+            requestAnimationFrame(function() { layoutCards(force); });
         }
 
-        refreshTetrisCardLayout = scheduleLayout;
-        window.addEventListener('resize', scheduleLayout);
+        refreshCardColumns = function() { scheduleLayout(true); };
+        window.addEventListener('resize', function() { scheduleLayout(false); });
 
         if ('ResizeObserver' in window) {
-            var cardResizeObserver = new ResizeObserver(scheduleLayout);
+            // Kaardi kasvamine ei tohi ümberjagamist käivitada — see oli põhjus,
+            // miks avatud sektsioonid kaarte teistesse veergudesse liigutasid.
+            var cardResizeObserver = new ResizeObserver(function() {
+                var columnCount = columnCountForViewport();
+                if (columnCount !== distributedColumnCount) scheduleLayout(false);
+            });
             cards.forEach(function(card) { cardResizeObserver.observe(card); });
         }
         if (document.fonts && document.fonts.ready) {
-            document.fonts.ready.then(scheduleLayout);
+            document.fonts.ready.then(function() { scheduleLayout(false); });
         }
-        scheduleLayout();
+        scheduleLayout(false);
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        initTetrisCardLayout();
+        initCardColumns();
         initMap();
         var mapResetControl = document.getElementById('map-reset-control');
         if (mapResetControl) mapResetControl.addEventListener('click', resetMapView);

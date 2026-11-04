@@ -26,9 +26,26 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   - `services/data_passports.py` saab `stock_coverage`-i: andmepassid märgivad
     osalise katvuse korral mahu ja hinnavahemiku saadavaks ning lisavad piirangusse
     katvuse ja puuduvad eraldised.
+  - Hektarinäitajad (`value_per_ha`, `base_value_per_ha`, puuliikide
+    `tagavara_y_ha`) jagatakse nüüd **kaetud** pindalaga, mitte kogu metsamaa
+    pindalaga: osalise katvuse korral oleks 9,5 ha andmetest arvutatud väärtus
+    jagatud 10 ha-ga ja langenud 5% võrra. Uus test kontrollib mõlemat jagajat
+    (`test_species_composition_per_hectare_uses_the_covered_area`).
   - Kliendivaates on hinnangu- ja süsinikukaardil märge „Arvutus katab X ha Y ha-st”
     koos puuduvate eraldistega; kui katvus on liiga väike, öeldakse seda selgelt
     ja pealkirjanumbrit ei kuvata.
+- **Sektsioonide avamine ei liiguta enam teisi kaarte** — tulemuste kaardid
+  jaotas JavaScript ühises `grid-auto-rows: 1px` ruudustikus iga mõõtmise järel
+  uuesti veergudesse. Kui kasutaja avas mahuka sektsiooni (nt „Muud meetmed ja
+  lõppenud voorud”, 12 kaarti), muutusid kõigi kaartide kõrgused ja
+  `ResizeObserver` käivitas uue paigutuse: kaardid hüppasid teistesse
+  veergudesse ja jäid ekraanilt välja. Nüüd on iga veerg iseseisev `.metrics-column`
+  virn (flex): kaart jagatakse veergu üks kord, avanemine kasvatab ainult seda
+  kaarti ja lükkab allpool olevaid kaarte samas veerus. Ümberjagamine toimub
+  ainult vaate laiuse muutumisel (3/2/1 veergu) ja uue otsingu tulemuste
+  joonistamisel. Avatud nimekirjad kasutavad olemasolevat `.toetus-list-scroll`
+  piiri (720 px, sisemine kerimine), mistõttu üks avanemine ei tee enam
+  10 000 px kõrgust kaarti; mobiilis jääb nimekiri täiskõrgusega, nagu enne.
 - **Metsateatised jäid allika ajalõpu tõttu kuvamata** — `query_teatised` päris
   GeoServerist `teatis` ja `teatis_arhiiv` kihte 3,5 s ajalõpuga ja ilma
   korduskatseta. Mõõdetud 2026-11-04: `teatis` 0,45 s soojalt, kuni 15,7 s külmalt;

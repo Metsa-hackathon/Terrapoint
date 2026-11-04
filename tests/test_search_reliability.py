@@ -415,12 +415,91 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(result["sinik"]["co2_tons_total"])
         self.assertFalse(result["sinik"]["carbon_data_complete"])
         self.assertIn("0,50 ha", result["sinik"]["credit_income_limitation"])
+        # €/ha jagatakse sama pindalaga, mille kohta summa arvutati
+        # (9,5 ha teadaolevat, mitte 10 ha kogu metsapind).
+        self.assertEqual(
+            result["vaartus"]["value_per_ha"],
+            round(result["vaartus"]["total_value_eur"] / 9.5),
+        )
+        self.assertEqual(
+            result["vaartus"]["base_value_per_ha"],
+            round(result["vaartus"]["total_value_eur"] / 9.5),
+        )
         passports = {passport["id"]: passport for passport in result["vaartus"]["andmepassid"]}
         self.assertTrue(passports["forest_volume"]["available"])
         self.assertTrue(passports["timber_value"]["available"])
         self.assertTrue(
             any("0,50 ha" in limitation for limitation in passports["forest_volume"]["limitations"])
         )
+
+    async def test_species_composition_per_hectare_uses_the_covered_area(self):
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        kataster = {
+            "number": "78404:409:0113",
+            "geometry": geometry,
+            "pindala_ha": 10,
+            "maks_hind": 4_200,
+        }
+        known_stand = {
+            "id": 11,
+            "eraldis_nr": 1,
+            "geometry": geometry,
+            "pindala_ha": 9.5,
+            "puuliik_kood": "MA",
+            "puuliik": "mänd",
+            "vanus": 80,
+            "tagavara_y_ha": 200,
+            "tagavara_provenance": "official",
+            "korgus": 25,
+            "boniteedi_kood": 2,
+            "invent_kp": "2025-01-01",
+            "registreerimise_kp": "2025-01-01",
+        }
+        unknown_stand = {
+            "id": 12,
+            "eraldis_nr": 2,
+            "geometry": geometry,
+            "pindala_ha": 0.5,
+            "puuliik_kood": "KU",
+            "puuliik": "kuusk",
+            "vanus": 0,
+            "tagavara_y_ha": None,
+            "tagavara_provenance": "unavailable",
+            "boniteedi_kood": 2,
+            "invent_kp": "2025-01-01",
+            "registreerimise_kp": "2025-01-01",
+        }
+        elements = [{
+            "eraldis_id": 11,
+            "puuliik_kood": "MA",
+            "vanus": 80,
+            "tagavara": 200,
+            "tagavara_y_ha": 200,
+            "taius": 80,
+            "provenance": "official",
+        }]
+
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=[known_stand, unknown_stand])),
+            patch(
+                "api.index.query_eraldis_element",
+                new=AsyncMock(side_effect=lambda stand_id: list(elements) if stand_id == 11 else []),
+            ),
+            patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        composition = result["mets"]["liikide_koosseis"]
+        self.assertTrue(composition)
+        self.assertEqual(composition[0]["tagavara_y_ha"], 200.0)
+        self.assertEqual(result["mets"]["tagavara_y_ha"], 200.0)
 
     async def test_low_stock_coverage_withholds_estimates_but_names_missing_stands(self):
         geometry = {

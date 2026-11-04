@@ -3224,7 +3224,13 @@ async def _search_core(
                 for s, pct in raw_pcts:
                     koosseis_with_osakaal.append({
                         "puuliik": s["puuliik"], "puuliik_kood": s["puuliik_kood"],
-                        "tagavara_y_ha": round(s["total_volume_m3"] / total_pindala, 1) if total_pindala else 0,
+                        # Mahud pärinevad ainult tagavaraandmetega eraldistelt,
+                        # seega jagame sama pindalaga nagu koondtagavara —
+                        # kogu kinnistu pindala (sh andmeteta eraldised) annaks
+                        # osalisel katvusel süstemaatiliselt väiksema m³/ha.
+                        "tagavara_y_ha": round(
+                            s["total_volume_m3"] / (stock_known_area_ha or total_pindala), 1
+                        ) if (stock_known_area_ha or total_pindala) else 0,
                         "vanus": round(s["vanus_sum"] / s["count"]) if s["count"] else 0,
                         "osakaal": pct,
                     })
@@ -3576,8 +3582,11 @@ async def _search_core(
             "base_value_eur": timber_value if stock_covered else None,
             "range_low_eur": timber_estimate["low_eur"],
             "range_high_eur": timber_estimate["high_eur"],
-            "value_per_ha": round(timber_value / total_pindala) if stock_covered and total_pindala > 0 else None,
-            "base_value_per_ha": round(timber_value / total_pindala) if stock_covered and total_pindala > 0 else None,
+            # Nimetaja on sama pindala, mille kohta summa arvutati: osalisel
+            # katvusel ei tohi €/ha sisaldada andmeteta eraldisi, muidu on
+            # see sama kaardi märkega ("need eraldised ei ole summas") vastuolus.
+            "value_per_ha": round(timber_value / stock_known_area_ha) if stock_covered and stock_known_area_ha > 0 else None,
+            "base_value_per_ha": round(timber_value / stock_known_area_ha) if stock_covered and stock_known_area_ha > 0 else None,
             "price_per_m3": price_m3 if stock_covered else None,
             "base_price_per_m3": price_m3 if stock_covered else None,
             "tagavara_m3": round(total_m3) if stock_covered else None,

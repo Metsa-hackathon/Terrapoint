@@ -1985,32 +1985,22 @@ details[open] > .muted-summary::before { transform: rotate(90deg); }
     gap: 16px;
     align-items: start;
 }
-.metrics-grid.is-tetris {
-    /* JavaScript measures each card, locks the first three across the top,
-       then assigns the rest to columns whose final heights are most even. */
-    grid-auto-flow: row dense;
-    grid-auto-rows: 1px;
-    column-gap: 16px;
-    row-gap: 0;
-}
-.metrics-grid.is-tetris > .metric-card {
-    grid-row-end: span var(--tetris-row-span);
-    margin-bottom: 16px;
+/* Iga veerg on iseseisev virn: kaardi avanemine (nt Toetused) kasvatab ainult
+   seda kaarti ja lükkab allpool olevaid kaarte samas veerus. Varem jagas
+   JavaScript kõiki kaarte ühises ruudustikus ümber, mistõttu ühe sektsiooni
+   avamine tõstis kaarte teistesse veergudesse ja need kadusid vaateväljast. */
+.metrics-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
 }
 @media (max-width: 1180px) {
     .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 768px) {
     .metrics-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-    .metrics-grid.is-tetris {
-        grid-auto-flow: row;
-        grid-auto-rows: auto;
-        row-gap: 12px;
-    }
-    .metrics-grid.is-tetris > .metric-card {
-        grid-row-end: auto;
-        margin-bottom: 0;
-    }
+    .metrics-column { gap: 12px; }
 }
 .metric-card {
     grid-column: span 1;

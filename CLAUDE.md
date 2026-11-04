@@ -89,6 +89,20 @@ Metsa väärtuse ja andmete analüüsi veebirakendus. FastAPI backend + HTML/CSS
 - MD failid: `CLAUDE.md` (agent kontekst), `CHANGELOG.md` (ajalugu).
   Ei ole eraldi `AGENTS.md` / `OPENCODE.md` — kogu agent info on `CLAUDE.md`-s.
 
+## Tulemuste kaartide paigutus
+- `.metrics-grid` on kolme veeru ruudustik, mille lapsed on `.metrics-column` virnad
+  (`display: flex; flex-direction: column`). `initCardColumns()` (`static/js/app.js`)
+  jagab kaardid veergudesse üks kord (lühima veeru reegel, esimesed kaardid üks
+  veeru kohta) ja jagab uuesti ainult vaate laiuse muutumisel või
+  `refreshCardColumns()` väljakutsel uue otsingu järel.
+- **Ära pane `ResizeObserver`-it kaardi kasvamise peale ümber jagama.** Varem
+  paigutas JS kaardid ühises `grid-auto-rows: 1px` ruudustikus iga mõõtmise järel
+  uuesti: mahuka sektsiooni (nt 12 kaardiga „Muud meetmed”) avamine muutis kõigi
+  kõrgusi, kaardid hüppasid teistesse veergudesse ja kadusid ekraanilt.
+- Mahukad nimekirjad hoitakse `.toetus-list-scroll` sees (720 px, sisemine
+  kerimine); mobiilis on see klass `max-height: none` (test
+  `test_subsidy_counts_have_explicit_contrast_and_mobile_avoids_nested_scroll`).
+
 ## UI kontroll brauseris (kasutaja reegel)
 - Iga UI muudatus (`index.html`, `static/css/*`, `static/js/*`, UI-nähtav vastus): enne "valmis" ütlemist vaata lehte headless brauseris. Testid ja diff ei tõesta, et leht töötab.
 - Brauser: süsteemne `python3` Playwright (1.60.0). Kontrollitud 2026-11-02: `chromium.launch(headless=True, args=["--no-sandbox"])` käivitab Playwrighti Chromiumi (148) ja `chromium.launch(executable_path="/usr/bin/google-chrome", headless=True, args=["--no-sandbox"])` käivitab Chrome'i (153). Repo `.venv`-s Playwrighti ei ole.
