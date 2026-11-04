@@ -60,8 +60,11 @@ SATELLITE_MAX_CLEAR_LUMINANCE = 140.0
 # olla keskmiselt tume ja siiski osaliselt pilves, seetõttu hoiame eraldi
 # pilveosakaalu (mõõdetud 2026-11-04: selge sügisene mets 0–3%, pilveloor 74–100%).
 SATELLITE_CLOUD_LUMINANCE = 150.0
-# Osalise pilvekihi teade kaardil: alla selle on pilt praktiliselt selge.
-SATELLITE_PARTIAL_CLOUD_FRACTION = 0.05
+# Selge päeva pilveosakaalu ülempiir. Lumeniit ja põllu- või raiesmikupinnad
+# loetakse samuti „pilveks”, seega mõõdetud selge päev võib olla kuni ~20%
+# (Soomaa 147 ha kinnistu 2026-11-04: 19,4%), pilveloor aga 74–100%. Lävend
+# pannakse mõõdetud vahemikku, mitte selle alumisse otsa.
+SATELLITE_CLEAR_CLOUD_MAX = 0.45
 SATELLITE_REQUEST_TIMEOUT_SECONDS = 12.0
 SATELLITE_MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 SATELLITE_MAX_IMAGE_PIXELS = 2048
@@ -327,8 +330,9 @@ async def latest_satellite_scene(
     pilves; kui ükski vaadeldud päev ei ole selge, on ``date`` uusim kaetud
     päev ja ``obscured`` True. ``newest_date`` on alati uusim päev, millel on
     üldse kaugseiret — kasutajaliides saab öelda, kui värskem pilt on pilves.
-    ``cloud_fraction`` on valitud päeva pilveosakaal, et kaart saaks öelda
-    „osaliselt pilves” ka siis, kui päev valiti parimaks, mitte täiuslikuks.
+    ``cloud_fraction`` on valitud päeva pilveosakaal ja ``partial_cloud`` ütleb,
+    et ükski päev ei olnud päris selge, seega kaart märgib pildi „osaliselt
+    pilves”.
     """
     last_day = today or datetime.now(SATELLITE_TIME_ZONE).date()
     candidates = [last_day - timedelta(days=offset) for offset in range(SATELLITE_LOOKBACK_DAYS)]
@@ -364,7 +368,7 @@ async def latest_satellite_scene(
                     best_covered = result
                 if (
                     not result["obscured"]
-                    and result["cloud_fraction"] < SATELLITE_PARTIAL_CLOUD_FRACTION
+                    and result["cloud_fraction"] < SATELLITE_CLEAR_CLOUD_MAX
                 ):
                     clear_hits.append(result)
             if clear_hits:
@@ -374,11 +378,18 @@ async def latest_satellite_scene(
                     "newest_date": newest_covered["day"].isoformat(),
                     "obscured": False,
                     "cloud_fraction": round(picked["cloud_fraction"], 3),
+                    "partial_cloud": False,
                 }
     if newest_covered is None:
         if attempts and failures == attempts:
             raise SatelliteError("EstHubi satelliiditeenus ei vasta")
-        return {"date": None, "newest_date": None, "obscured": False, "cloud_fraction": None}
+        return {
+            "date": None,
+            "newest_date": None,
+            "obscured": False,
+            "cloud_fraction": None,
+            "partial_cloud": False,
+        }
     # Ükski päev ei ole selge: vali kõige väiksema pilveosakaaluga päev.
     # ``obscured`` jääb True ainult siis, kui ka see parim päev on pilvelooriga.
     picked = best_covered or newest_covered
@@ -387,6 +398,9 @@ async def latest_satellite_scene(
         "newest_date": newest_covered["day"].isoformat(),
         "obscured": bool(picked["obscured"]),
         "cloud_fraction": round(picked["cloud_fraction"], 3),
+        # Osaliselt pilves = ükski päev ei olnud päris selge, aga parim valitud
+        # päev ei ole ka täis-pilveloor. See on valiku tulemus, mitte pikslilävend.
+        "partial_cloud": not picked["obscured"],
     }
 
 
@@ -452,6 +466,7 @@ async def satellite_context(kataster_nr: str) -> dict:
         "newest_date": scene["newest_date"],
         "obscured": scene["obscured"],
         "cloud_fraction": scene.get("cloud_fraction"),
+        "partial_cloud": bool(scene.get("partial_cloud")),
         "image": "data:image/webp;base64," + base64.b64encode(webp).decode("ascii"),
         "width": width,
         "height": height,

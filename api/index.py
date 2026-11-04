@@ -61,6 +61,8 @@ from services.layers import (
 )
 from services.subsidies import check_subsidies
 from services.satellite import SatelliteError, satellite_context
+from api import seo as seo_site
+from seo_pages import PAGES as SEO_PAGES
 from services.data_passports import build_asset_passports
 from services.forestry_search import get_forestry_search_engine
 from calculators.carbon import forest_carbon_potential
@@ -1078,8 +1080,8 @@ BROWSER_CONTENT_SECURITY_POLICY = (
     "default-src 'self'; base-uri 'self'; object-src 'none'; "
     "frame-ancestors 'self' https://praktika.arleserver.cfd https://praktika.arle.top; "
     "form-action 'self'; manifest-src 'self'; worker-src 'none'; "
-    "script-src 'self' 'sha256-xqUpUykbxHOS6bApfu5aM+WDp2oldrVcuj4m9hZTGJM='; "
-    "script-src-elem 'self' 'sha256-xqUpUykbxHOS6bApfu5aM+WDp2oldrVcuj4m9hZTGJM='; "
+    "script-src 'self' 'sha256-j1llpWYtXVTa3cLHYMQY059Jthoo6f3wsenp+loY+98='; "
+    "script-src-elem 'self' 'sha256-j1llpWYtXVTa3cLHYMQY059Jthoo6f3wsenp+loY+98='; "
     "style-src 'self'; "
     "style-src-elem 'self'; "
     "style-src-attr 'unsafe-inline'; "
@@ -1139,6 +1141,38 @@ def _is_loopback_request(scope: dict) -> bool:
     return bool(hostname and hostname.lower().rstrip(".") in {"localhost", "127.0.0.1", "::1"})
 
 
+class WwwToApexRedirectMiddleware:
+    """Suuna `www.terrapoint.ee` 301-ga kanoonilisele hostile.
+
+    Mõlemad hostid olid enne eraldi vastusega 200, seega otsingumootoril oli
+    kaks kräbeldavat koopiat. Kanooniline silt aitas, aga 301 on selgem ja
+    odavam. Muud hostid (localhost, testid) jäävad puutumata.
+    """
+
+    CANONICAL_HOST = "terrapoint.ee"
+    REDIRECT_HOSTS = frozenset({"www.terrapoint.ee"})
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        host_header = next(
+            (value.decode("latin-1") for name, value in scope.get("headers", ()) if name.lower() == b"host"),
+            "",
+        )
+        host = host_header.split(":", 1)[0].strip().lower()
+        if host not in self.REDIRECT_HOSTS:
+            await self.app(scope, receive, send)
+            return
+        path = scope.get("path", "/") or "/"
+        query = scope.get("query_string", b"").decode("latin-1")
+        location = f"https://{self.CANONICAL_HOST}{path}" + (f"?{query}" if query else "")
+        await Response(status_code=301, headers={"Location": location})(scope, receive, send)
+
+
 class BrowserSecurityHeadersMiddleware:
     """Attach canonical browser headers without buffering streaming responses."""
 
@@ -1193,6 +1227,7 @@ app = FastAPI(
 app.add_middleware(CORSMiddleware, allow_origins=config.CORS_ORIGINS, allow_methods=["GET", "POST", "OPTIONS"], allow_headers=["Content-Type", "Authorization"])
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=config.TRUSTED_HOSTS)
 app.add_middleware(BrowserSecurityHeadersMiddleware)
+app.add_middleware(WwwToApexRedirectMiddleware)
 
 # Verceli Python runtime'i süsteemne MIME-tabel ei sisalda alati WebP- ega
 # WOFF2-laiendit. Registreeri need enne StaticFiles instantsi loomist, et
@@ -1243,6 +1278,10 @@ class CachedStaticFiles(StaticFiles):
             # fail ei tohi sealt jääda serveeritavaks.
             raise HTTPException(exc.status_code, headers={"Cache-Control": "no-store"}) from exc
         response.headers["Cache-Control"] = _static_cache_control(path)
+        if path.startswith("embed/") and path.endswith(".html"):
+            # `/embed/forest` on mõeldud iframe'i jaoks noindex'iga; sama fail
+            # /static/... teed pidi oli eraldi indekseeritav duplikaat.
+            response.headers["X-Robots-Tag"] = "noindex, nofollow"
         return response
 
 
@@ -5253,31 +5292,57 @@ async def root():
 # robots.txt ja sitemap.xml otse backendist väljastama, muidu Google
 # saab 404 ja ei indekseeri lehte.
 
-@app.get("/robots.txt")
+@app.get("/robots.txt", include_in_schema=False)
 async def robots_txt():
-    """robots.txt otsingumootoritele. Lubab kõik peale /api/."""
-    path = PROJECT_ROOT / "robots.txt"
-    if not path.exists():
-        return Response(status_code=404)
-    return FileResponse(
-        str(path),
+    """robots.txt: otsingumootorid ja AI-kraalerid ühest allikast."""
+    return Response(
+        content=seo_site.robots_txt(),
         media_type="text/plain; charset=utf-8",
-        headers={"Cache-Control": "public, max-age=86400"},
+        headers={"Cache-Control": "public, max-age=3600"},
     )
 
 
-@app.get("/sitemap.xml")
+@app.get("/sitemap.xml", include_in_schema=False)
 async def sitemap_xml():
-    """XML sitemap otsingumootoritele."""
-    path = PROJECT_ROOT / "sitemap.xml"
-    if not path.exists():
-        return Response(status_code=404)
-    return FileResponse(
-        str(path),
+    """XML sitemap: avaleht + kõik sisulehed, lastmod sisu kuupäevast."""
+    return Response(
+        content=seo_site.sitemap_xml(),
         media_type="application/xml; charset=utf-8",
-        headers={"Cache-Control": "public, max-age=86400", "X-Robots-Tag": "all"},
+        headers={"Cache-Control": "public, max-age=3600", "X-Robots-Tag": "all"},
     )
 
+
+@app.get("/llms.txt", include_in_schema=False)
+async def llms_txt():
+    """Masinloetav kokkuvõte (llms.txt). Google'ile kaalu ei anna, teistele abiks."""
+    return Response(
+        content=seo_site.llms_txt(),
+        media_type="text/plain; charset=utf-8",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+
+# ─── Sisulehed (serveripoolselt renderdatud) ───────────────────────────────
+# Iga leht tuleb seo_pages.PAGES-ist, seega metaandmed, sitemap ja tekst ei
+# lähe omavahel lahku. Ilma nende lehtedeta nägi kraaler ainult ühte URL-i.
+for _seo_page in SEO_PAGES:
+
+    def _register(page=_seo_page):
+        slug = page.slug
+
+        @app.get(f"/{slug}", include_in_schema=False, name=f"seo_{slug}")
+        async def _seo_page_view() -> HTMLResponse:  # noqa: D401 - simple view
+            return HTMLResponse(
+                content=seo_site.render_page(page),
+                headers={
+                    "Cache-Control": "public, max-age=0, s-maxage=300, "
+                    "stale-while-revalidate=3600",
+                    "CDN-Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600",
+                },
+            )
+
+    _register()
 
 @app.get("/.well-known/security.txt")
 async def security_txt():

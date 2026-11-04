@@ -8,6 +8,54 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 
 ## [Määramata] - 2026-11-04
 
+### Added
+- **Kuus serveripoolselt renderdatud sisulehte (SEO/GEO)** — varem oli
+  indekseeritav ainult avaleht (`sitemap.xml` viitas ühele URL-ile) ja kogu
+  toote sisu tekkis alles JavaScriptiga, seega otsingumootor ja AI-kraaler
+  nägid ainult turundusteksti. Nüüd tulevad lehed serverist HTML-ina, igaüks
+  oma pealkirja, kirjelduse, kanoonilise URL-i, leivapuru ja JSON-LD-ga
+  (`WebPage` + `BreadcrumbList`, `/andmeallikad` lisaks `Dataset`):
+  `/metsaandmed-katastritunnuse-jargi`, `/metsa-hind`, `/metsatoetused`,
+  `/eudr-geolokatsioon`, `/andmeallikad`, `/kkk`.
+  - Sisu ja metaandmed on ühes kohas (`seo_pages.py`), renderdaja
+    `api/seo.py`; `sitemap.xml` genereeritakse samast allikast (7 URL-i,
+    `lastmod` sisu kuupäevast), seega ei lähe tekst ja sitemap lahku.
+  - Iga leht on ≥350 sõna, vastab esimese lõiguga otsinguküsimusele,
+    sisaldab „Lühivastus” plokki, allikaid väliste linkidega ja ristviiteid
+    teistele lehtedele; lehed on avalehelt footeris lingitud (crawlitav
+    ka ilma JS-ita).
+- **`/llms.txt`** — masinloetav kokkuvõte (faktid, lehed, masinliidesed).
+  Google ei kasuta seda, teised AI-süsteemid võivad.
+- **robots.txt nimetab AI-kraalerid** — `OAI-SearchBot`, `Claude-SearchBot`,
+  `PerplexityBot`, `ChatGPT-User`, `Perplexity-User`, `Google-Extended`,
+  `GPTBot`, `ClaudeBot`, `Applebot`, `Bingbot`, `CCBot` eraldi gruppidena
+  (otsinguviidatavus ja treeningluba on eri asjad), `Disallow: /api/` jääb.
+
+### Fixed
+- **Avalehe metaandmed** — pealkiri 67 → 47 tähemärki, kirjeldus 197 → 145
+  (SERP ei lõika enam); eemaldatud `meta keywords`, olematu `twitter:site`
+  (@terrapoint) ja `og:locale:alternate=en_US`, sest ingliskeelset lehte ei
+  ole; teine `<h1>` DOM-is sai `<h2>`-ks.
+- **FAQPage struktuurne info ilma nähtava vasteta** — seitse küsimust olid
+  ainult JSON-LD-s. Nüüd on avalehel `#kkk` plokk sama tekstiga (Google nõuab,
+  et struktuurne info vastaks lehel nähtavale) ja link `/kkk` lehele.
+- **`/static/embed/index.html` oli eraldi indekseeritav duplikaat** —
+  `/embed/forest` on noindex, sama fail `static/` teed pidi ei olnud. Nüüd
+  `X-Robots-Tag: noindex, nofollow` kõigile `static/embed/*.html` failidele.
+- **`www.terrapoint.ee` vastas 200-ga** — nüüd 301 kanoonilisele
+  `terrapoint.ee`-le (tee + päringusõne säilivad).
+- **`humans.txt` ja `/api/docs` olid lehele linkimata** — nüüd footeris.
+
+### Changed
+- `vercel.json` ja FastAPI CSP sisaldavad uut inline-JSON-LD räsi; test
+  `test_csp_limits_network_hosts_and_inline_execution` haarab edaspidi
+  iga JSON-LD muudatuse.
+- `tests/test_seo.py` (uus, 12 testi) lukustab: pealkiri ≤60 ja kirjeldus
+  50–160 tähemärki, `canonical` == `og:url`, JSON-LD on päris JSON ja
+  vastab lehele, nähtav FAQ katab skeemi vastused, sitemap katab kõik lehed,
+  robots lubab AI-otsingu kraalerid, iga leht on avalehelt lingitud.
+
+
 ### Fixed
 - **Üks inventuurita eraldis ei nulli enam kogu kinnistu andmeid** — Metsaregistris
   on eraldisi, mille kohta ei ole tagavara-, kõrguse- ega vanuseandmeid (näiteks

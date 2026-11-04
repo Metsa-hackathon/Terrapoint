@@ -3902,6 +3902,39 @@ footer {
     font-weight: 400;
 }
 .footer-sources { color: var(--ink-4); font-size: 13px; font-family: var(--ff-mono); letter-spacing: 0.02em; }
+/* Juhendilehed on ka crawlitavad ja nähtavad, seega päises/footeris lingitud. */
+.footer-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin: 14px 0 6px;
+    font-size: 13px;
+}
+.footer-nav a { color: var(--ink-3); }
+.footer-nav a:hover { color: var(--blue-700); }
+.footer-updated { margin: 0; color: var(--ink-5); font-size: 11.5px; }
+
+/* KKK plokk: sama sisu, mis FAQPage JSON-LD-is. */
+.faq-section { padding: 48px 24px; background: var(--paper-2, #f5f7fb); }
+.faq-inner { max-width: 860px; margin: 0 auto; }
+.faq-title {
+    font-family: var(--ff-display, inherit);
+    font-size: clamp(26px, 4vw, 36px);
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    margin: 0 0 22px;
+    color: var(--ink);
+}
+.faq-list { display: flex; flex-direction: column; gap: 10px; }
+.faq-list details {
+    background: var(--white);
+    border: 1px solid var(--hair);
+    border-radius: var(--r, 12px);
+    padding: 12px 16px;
+}
+.faq-list summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+.faq-list details p { margin: 10px 0 0; color: var(--ink-3); font-size: 15.5px; line-height: 1.6; }
+.faq-more { margin: 16px 0 0; font-size: 15px; }
 
 /* ═══ LEAFLET OVERRIDES ═══════════════════════════════════════════════════ */
 .leaflet-bar,

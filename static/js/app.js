@@ -2538,9 +2538,6 @@
     // WGS84 piiridega; siin paigutatakse see ortofoto peale eraldi kihina.
     // Aluskaart ise jääb Maa- ja Ruumiameti ortofotoks.
     var SATELLITE_FETCH_TIMEOUT_MS = 30000;
-    // Server loeb pildi „osaliselt pilves” alates sellest pilveosakaalust
-    // (services/satellite.py SATELLITE_PARTIAL_CLOUD_FRACTION).
-    var SATELLITE_PARTIAL_CLOUD_FRACTION = 0.05;
     var satelliteScene = null;
     var satelliteLayer = null;
     var satelliteVisible = true;
@@ -2577,9 +2574,9 @@
             // Pilt on päris kaugseis: pilved, udu ja pilvevari on pildi osa,
             // mitte andmeviga. Ütleme seda kaardil, sest muidu tundub hägune
             // pilt rikkis kihina.
-            var cloudFraction = scene && typeof scene.cloud_fraction === 'number' ? scene.cloud_fraction : null;
-            var partialCloud = !scene.obscured && cloudFraction != null
-                && cloudFraction >= SATELLITE_PARTIAL_CLOUD_FRACTION;
+            // Server valib selge päeva; kui ükski päev ei olnud päris selge,
+            // märgib ta selle `partial_cloud` lipuga.
+            var partialCloud = Boolean(scene && scene.partial_cloud === true && !scene.obscured);
             control.title = (scene && scene.obscured
                 ? 'EstHubi uusim pilt (' + sceneDate + ') on pilvega kaetud.'
                 : 'EstHubi Sentinel-2 päevapilt (' + sceneDate + ').')

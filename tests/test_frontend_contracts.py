@@ -18,7 +18,6 @@ FONT_SIZES_CSS = (PROJECT_ROOT / "static/css/font-sizes.css").read_text(encoding
 API_PY = (PROJECT_ROOT / "api/index.py").read_text(encoding="utf-8")
 VERCEL_CONFIG = json.loads((PROJECT_ROOT / "vercel.json").read_text(encoding="utf-8"))
 VERCEL_HEALTH_PY = (PROJECT_ROOT / "api/runtime_health.py").read_text(encoding="utf-8")
-SITEMAP_XML = (PROJECT_ROOT / "sitemap.xml").read_text(encoding="utf-8")
 PYTHON_VERSION = (PROJECT_ROOT / ".python-version").read_text(encoding="utf-8").strip()
 
 
@@ -235,12 +234,21 @@ async function fetch(url) {{
         self.assertNotIn("immutable", cache_control)
         self.assertIn("must-revalidate", cache_control)
 
-    def test_sitemap_uses_only_the_canonical_document_url(self):
-        self.assertEqual(SITEMAP_XML.count("<url>"), 1)
-        self.assertIn("<loc>https://terrapoint.ee/</loc>", SITEMAP_XML)
-        self.assertNotIn("terrapoint.ee/#", SITEMAP_XML)
-        self.assertIn("<lastmod>2026-07-27</lastmod>", SITEMAP_XML)
-        self.assertNotIn("Metsa väärtus", SITEMAP_XML)
+    def test_sitemap_covers_every_indexable_page(self):
+        """Sitemap tuleb seo_pages.py-st, seega iga sisuleht peab seal olema."""
+        from api import seo as seo_site
+        from seo_pages import PAGES
+
+        sitemap = seo_site.sitemap_xml()
+        self.assertEqual(sitemap.count("<url>"), 1 + len(PAGES))
+        self.assertIn("<loc>https://terrapoint.ee/</loc>", sitemap)
+        self.assertNotIn("terrapoint.ee/#", sitemap)
+        for page in PAGES:
+            self.assertIn(f"<loc>https://terrapoint.ee/{page.slug}</loc>", sitemap)
+            self.assertIn(f"<lastmod>{page.updated}</lastmod>", sitemap)
+        # iga leht on ka lingitud avalehelt (crawlitav ilma JS-ita)
+        for page in PAGES:
+            self.assertIn(f'href="/{page.slug}"', INDEX_DOCUMENT)
 
     def test_fonts_are_self_hosted_with_local_license_files(self):
         self.assertNotIn('fonts.googleapis.com', INDEX_DOCUMENT)

@@ -89,6 +89,27 @@ Metsa väärtuse ja andmete analüüsi veebirakendus. FastAPI backend + HTML/CSS
 - MD failid: `CLAUDE.md` (agent kontekst), `CHANGELOG.md` (ajalugu).
   Ei ole eraldi `AGENTS.md` / `OPENCODE.md` — kogu agent info on `CLAUDE.md`-s.
 
+## SEO ja GEO (sisulehed)
+- Indekseeritav sisu ei tohi sõltuda JavaScriptist: AI-kraalerid (GPTBot,
+  PerplexityBot jt) ei käivita JS-i. Seepärast on sisulehed serveripoolselt
+  renderdatud — sisu `seo_pages.py`, renderdaja `api/seo.py`, marsruudid
+  `api/index.py`-s (`for _seo_page in SEO_PAGES`).
+- Uue lehe lisamine: lisa `SeoPage` `seo_pages.py`-sse (pealkiri ≤60,
+  kirjeldus 50–160, ≥350 sõna, allikad, `related`). Sitemap, footer-lingid ja
+  `llms.txt` tulevad samast allikast; avalehe footeris peab link olema
+  (`tests/test_seo.py` kontrollib).
+- **CSP räsi**: avalehe inline JSON-LD on CSP-s `sha256-…`-ga. Iga
+  `index.html` JSON-LD muudatus nõuab uut räsi nii `api/index.py`-s kui
+  `vercel.json`-is; `test_csp_limits_network_hosts_and_inline_execution`
+  kukub kohe, kui see puudub.
+- `meta keywords`, `twitter:site`, `og:locale:alternate` on teadlikult väljas
+  (Google ignoreerib; meil ei ole X-kontot ega ingliskeelset lehte).
+- robots.txt ja sitemap.xml genereeritakse koodist (`api/seo.py`), mitte
+  staatilistest failidest — ära lisa repo juurde `sitemap.xml`-i tagasi.
+- FAQPage: Google'i rikkad tulemused on alates 2026. aastast kõigile
+  suletud; skeem jääb alles ainult seetõttu, et selle sisu on lehel nähtav.
+  Ära lisa uut FAQPage'i lootusega SERP-rikkusele.
+
 ## Tulemuste kaartide paigutus
 - `.metrics-grid` on kolme veeru ruudustik, mille lapsed on `.metrics-column` virnad
   (`display: flex; flex-direction: column`). `initCardColumns()` (`static/js/app.js`)

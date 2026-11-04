@@ -1,0 +1,284 @@
+/* Terrapointi sisulehtede stiil (serveripoolselt renderdatud).
+   Iseseisev väike leht: sama palett nagu rakenduses, aga ilma rakenduse
+   JS- ja paigutusstiilidest sõltumata. Ei sisalda pildifaile ega fonte —
+   fondid tulevad /static/css/fonts.css kaudu. */
+
+:root {
+    --ink: #071535;
+    --ink-2: #1d2b4a;
+    --ink-3: #46536f;
+    --ink-4: #6b778f;
+    --ink-5: #93a0b8;
+    --paper: #f5f7fb;
+    --white: #ffffff;
+    --hair: #e3e8f1;
+    --hair-2: #cfd8e6;
+    --blue-600: #0a3d9e;
+    --blue-700: #082f78;
+    --blue-300: #7fa2e8;
+    --success: #0f7a4f;
+    --warn: #9a6400;
+    --warn-bg: #fdf5e3;
+    --radius: 12px;
+    --max: 780px;
+    --ff-sans: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --ff-display: 'Bricolage Grotesque', 'Geist', system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --ink: #eef2fb;
+        --ink-2: #d7deee;
+        --ink-3: #b3bdd2;
+        --ink-4: #8f9bb3;
+        --ink-5: #6f7a90;
+        --paper: #0b1220;
+        --white: #111a2c;
+        --hair: #1f2a3f;
+        --hair-2: #2b3852;
+        --blue-300: #8fb0f0;
+        --blue-600: #8fb0f0;
+        --warn-bg: #2a2113;
+    }
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink-2);
+    font-family: var(--ff-sans);
+    font-size: 17px;
+    line-height: 1.65;
+    letter-spacing: -0.005em;
+}
+
+.site-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 24px;
+    padding: 16px 24px;
+    background: var(--white);
+    border-bottom: 1px solid var(--hair);
+}
+
+.brand {
+    font-family: var(--ff-display);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+    text-decoration: none;
+    letter-spacing: -0.02em;
+}
+
+.brand span { color: var(--blue-600); }
+
+.site-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    font-size: 14.5px;
+}
+
+.site-nav a {
+    color: var(--ink-3);
+    text-decoration: none;
+    padding: 4px 0;
+    border-bottom: 2px solid transparent;
+}
+
+.site-nav a:hover,
+.site-nav a:focus-visible {
+    color: var(--blue-700);
+    border-bottom-color: var(--blue-300);
+}
+
+main {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 32px 24px 56px;
+}
+
+.breadcrumbs { font-size: 13px; color: var(--ink-4); }
+
+.breadcrumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 20px;
+    padding: 0;
+    list-style: none;
+}
+
+.breadcrumbs li + li::before { content: "›"; margin-right: 6px; color: var(--ink-5); }
+
+.breadcrumbs a { color: var(--ink-3); text-decoration: none; }
+.breadcrumbs a:hover { text-decoration: underline; }
+.breadcrumbs [aria-current="page"] { color: var(--ink); }
+
+h1 {
+    font-family: var(--ff-display);
+    font-size: clamp(28px, 4vw, 40px);
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin: 0 0 16px;
+}
+
+h2 {
+    font-family: var(--ff-display);
+    font-size: clamp(21px, 2.6vw, 26px);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin: 40px 0 12px;
+}
+
+p { margin: 0 0 14px; }
+
+.lede {
+    font-size: 18.5px;
+    line-height: 1.6;
+    color: var(--ink-2);
+    margin-bottom: 24px;
+}
+
+.answer-box {
+    background: var(--white);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--blue-600);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin: 0 0 8px;
+}
+
+.answer-label {
+    margin: 0 0 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--blue-700);
+}
+
+.answer-box p:last-child { margin-bottom: 0; }
+
+ul, ol { margin: 0 0 16px; padding-left: 22px; }
+li { margin-bottom: 6px; }
+
+.table-wrap { overflow-x: auto; margin: 0 0 18px; }
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+    background: var(--white);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius);
+}
+
+th, td {
+    text-align: left;
+    vertical-align: top;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--hair);
+}
+
+th {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-4);
+    background: var(--paper);
+}
+
+tbody tr:last-child td { border-bottom: 0; }
+
+.faq details {
+    background: var(--white);
+    border: 1px solid var(--hair);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    margin-bottom: 10px;
+}
+
+.faq summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--ink);
+    list-style-position: inside;
+}
+
+.faq summary::marker { color: var(--ink-5); }
+.faq details p { margin: 10px 0 0; }
+
+.sources, .related { font-size: 15.5px; }
+.sources a, .related a { color: var(--blue-700); }
+
+.cta {
+    margin: 40px 0 20px;
+    padding: 22px;
+    background: var(--white);
+    border: 1px solid var(--hair-2);
+    border-radius: var(--radius);
+}
+
+.cta h2 { margin-top: 0; }
+.cta p:last-child { margin-bottom: 0; }
+
+.cta-button {
+    display: inline-block;
+    padding: 11px 20px;
+    border-radius: 999px;
+    background: var(--blue-600);
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.cta-button:hover, .cta-button:focus-visible { background: var(--blue-700); }
+
+.page-dates {
+    font-size: 13.5px;
+    color: var(--ink-4);
+    border-top: 1px solid var(--hair);
+    padding-top: 14px;
+}
+
+.site-footer {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 24px;
+    font-size: 14px;
+    color: var(--ink-4);
+}
+
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    margin: 12px 0;
+    padding: 0;
+    list-style: none;
+}
+
+.footer-links a, .footer-links-extra a { color: var(--ink-3); }
+.footer-links-extra { margin: 0 0 10px; }
+.footer-meta { font-size: 12.5px; color: var(--ink-5); margin: 0; }
+
+a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--blue-600);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
+
+@media (max-width: 640px) {
+    body { font-size: 16px; }
+    main { padding: 24px 18px 44px; }
+    .site-header { padding: 12px 18px; }
+    table { font-size: 14px; }
+}

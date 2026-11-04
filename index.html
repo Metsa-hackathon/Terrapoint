@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Terrapoint — Eesti metsaandmete analüüs | Maa ja puidu stsenaariumid</title>
-    <meta name="description" content="Terrapoint — Eesti tasuta metsaandmete analüüs. Sisesta katastritunnus ja vaata maa referentsi, puidustsenaariume, eraldisi, süsinikuvaru, riske ning toetusi koos allikate ajaseisu ja piirangutega.">
-    <meta name="keywords" content="Terrapoint, metsa andmed, metsa väärtus, kataster, katastritunnus, metsaeraldised, süsinikuvaru, metsatoetused, kitsendused, Eesti mets, metsa analüüs, maa-amet, metsaregister, puidu hind, metsa omanik, Natura 2000, EL deforestatsioon, metsakaart, kinnistu andmed">
+    <title>Metsaandmed katastritunnuse järgi | Terrapoint</title>
+    <meta name="description" content="Terrapoint koondab ühe katastritunnuse alla Metsaregistri eraldised, puidu hinnavahemiku, süsinikuvaru, kitsendused ja toetused — allikate ja ajaseisuga.">
     <meta name="author" content="Terrapoint">
     <meta name="publisher" content="Terrapoint">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1, max-preview:-1">
@@ -15,9 +14,6 @@
     <meta name="geo.placename" content="Estonia">
     <meta name="geo.position" content="58.5953;25.0136">
     <meta name="ICBM" content="58.5953, 25.0136">
-    <meta name="rating" content="general">
-    <meta name="distribution" content="global">
-    <meta name="revisit-after" content="7 days">
     <link rel="canonical" href="https://terrapoint.ee/">
     <link rel="alternate" hreflang="et" href="https://terrapoint.ee/">
     <link rel="alternate" hreflang="x-default" href="https://terrapoint.ee/">
@@ -34,13 +30,12 @@
     <link rel="apple-touch-icon" href="/static/favicon.svg">
     <link rel="mask-icon" href="/static/favicon.svg" color="#0a3d9e">
     <link rel="manifest" href="/site.webmanifest">
-    <meta property="og:title" content="Terrapoint — Eesti metsaandmete analüüs">
-    <meta property="og:description" content="Maa referents, puidustsenaariumid, eraldised, süsinikuvaru, riskid ja toetused ühe otsinguga koos andmete päritolu ning ajaseisuga.">
+    <meta property="og:title" content="Metsaandmed katastritunnuse järgi | Terrapoint">
+    <meta property="og:description" content="Terrapoint koondab ühe katastritunnuse alla Metsaregistri eraldised, puidu hinnavahemiku, süsinikuvaru, kitsendused ja toetused — allikate ja ajaseisuga.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://terrapoint.ee/">
     <meta property="og:site_name" content="Terrapoint">
     <meta property="og:locale" content="et_EE">
-    <meta property="og:locale:alternate" content="en_US">
     <meta property="og:image" content="https://terrapoint.ee/static/og-image.png">
     <meta property="og:image:secure_url" content="https://terrapoint.ee/static/og-image.png">
     <meta property="og:image:type" content="image/png">
@@ -48,11 +43,10 @@
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="Terrapoint — Eesti metsaandmete analüüsi tööriist: maa referents, puidustsenaariumid, eraldised, süsinikuvaru, riskid ja toetused.">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Terrapoint — Eesti metsaandmete analüüs">
-    <meta name="twitter:description" content="Maa referents, puidustsenaariumid, eraldised, süsinikuvaru, riskid ja toetused ühe otsinguga koos andmete päritolu ning ajaseisuga.">
+    <meta name="twitter:title" content="Metsaandmed katastritunnuse järgi | Terrapoint">
+    <meta name="twitter:description" content="Terrapoint koondab ühe katastritunnuse alla Metsaregistri eraldised, puidu hinnavahemiku, süsinikuvaru, kitsendused ja toetused — allikate ja ajaseisuga.">
     <meta name="twitter:image" content="https://terrapoint.ee/static/og-image.png">
     <meta name="twitter:image:alt" content="Terrapoint — Eesti metsaandmete analüüsi tööriist">
-    <meta name="twitter:site" content="@terrapoint">
     <meta name="twitter:label1" content="Otsing">
     <meta name="twitter:data1" content="Katastri number või aadress">
     <link rel="preconnect" href="https://tiles.maaamet.ee">
@@ -61,7 +55,7 @@
     <script src="/static/vendor/leaflet/leaflet.js?v=1.9.4" defer></script>
     <link rel="stylesheet" href="/static/css/fonts.css?r=jkl001">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl034">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl136">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl137">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -125,6 +119,8 @@
           "browserRequirements": "requiresJavaScript",
           "softwareVersion": "2.1.0",
           "isAccessibleForFree": true,
+          "datePublished": "2026-07-27",
+          "dateModified": "2026-11-04",
           "offers": {
             "@type": "Offer",
             "price": "0",
@@ -368,7 +364,7 @@
     <!-- Dashboard (nähtav kohe lehe alguses — kaart + 9 preview sektsiooni,
          andmed laaditakse peale otsingut) -->
     <section id="dashboard" class="dashboard" aria-label="Kinnistu analüüsi tulemused" tabindex="-1">
-        <h1 id="dashboard-title" class="sr-only" hidden>Kinnistu analüüsi tulemused</h1>
+        <h2 id="dashboard-title" class="sr-only" hidden>Kinnistu analüüsi tulemused</h2>
 
         <!-- Map Section (always visible) -->
         <div class="map-section">
@@ -710,6 +706,45 @@
         </div>
     </section>
 
+    <!-- KKK: sama sisu, mis FAQPage JSON-LD-is (Google nõuab, et struktuurne
+         info vastaks lehel nähtavale tekstile) -->
+    <section class="faq-section" id="kkk" aria-label="Korduma kippuvad küsimused">
+        <div class="faq-inner">
+            <h2 class="faq-title">Korduma kippuvad <em>küsimused</em></h2>
+            <div class="faq-list">
+                <details>
+                    <summary>Mis on Terrapoint?</summary>
+                    <p>Terrapoint on Eesti metsaandmete analüüsi veebirakendus, mis koondab riiklikest registritest metsa- ja kinnistuandmed ühte otsingusse. Sisesta katastritunnus või aadress ja vaata maa referentsi, puidustsenaariume, eraldisi, süsinikuvaru, riske ja toetusi.</p>
+                </details>
+                <details>
+                    <summary>Kas Terrapoint on tasuta?</summary>
+                    <p>Jah, Terrapoint on tasuta kasutamiseks. Registripäringud tehakse otsingu ajal, kuid iga lähteandme ajaseis võib erineda; Terrapoint kuvab teadaoleva päritolu, kuupäeva ja piirangud.</p>
+                </details>
+                <details>
+                    <summary>Milliseid andmeid Terrapoint näitab?</summary>
+                    <p>Terrapoint näitab katastriüksuse andmeid, metsaeraldisi, maa referentsi ja puidustsenaariume, süsinikuvaru, metsateatisi, ohutegureid, EUDR geolokatsiooni eelsõela, toetusi ja hüvitisi ning kitsendusi ja piiranguid.</p>
+                </details>
+                <details>
+                    <summary>Kust Terrapoint andmed pärinevad?</summary>
+                    <p>Automaatpäringud kasutavad Maa- ja Ruumiameti katastrit ja ortofotot, Metsaregistrit, EELISe ning Keskkonnaagentuuri ruumikihte, kitsenduste WFS-i ja kultuurimälestiste registrit. Hinna- ja toetusinfo pärineb iga näitaja juures viidatud avaldatud allikast; süsinikutegurid on viidatud IPCC metoodikale.</p>
+                </details>
+                <details>
+                    <summary>Kuidas kujuneb kasvava puidu stsenaarium?</summary>
+                    <p>Kasvava puidu vahemik kasutab eraldiste tagavara ja puuliikide hinnapiire. Alumine stsenaarium lähtub küttepuidust ning ülemine toetatud liigi palgist; tulemus ei ole kinnistu turuväärtus ega tehinguhinna prognoos.</p>
+                </details>
+                <details>
+                    <summary>Kas Terrapoint töötab kogu Eestis?</summary>
+                    <p>Jah, Terrapoint töötab kõikide Eesti katastriüksuste jaoks, mille andmed on riiklikes registrites saadaval.</p>
+                </details>
+                <details>
+                    <summary>Kuidas Terrapointiga kontakti võtta?</summary>
+                    <p>Kirjuta aadressile arle.reidma@gmail.com küsimuste, soovide või koostööettepanekutega.</p>
+                </details>
+            </div>
+            <p class="faq-more"><a href="/kkk">Kõik küsimused ja vastused</a></p>
+        </div>
+    </section>
+
     <!-- Kontakt -->
     <section class="contact" id="kontakt" aria-label="Kontakt">
         <div class="contact-inner">
@@ -867,10 +902,19 @@
         <div class="footer-content">
             <p class="footer-brand">Terrapoint &copy; 2026</p>
             <p class="footer-sources">Andmed: Keskkonnaagentuur, Maa- ja Ruumiamet, Eesti Erametsaliit ning viidatud ametlikud allikad</p>
+            <nav class="footer-nav" aria-label="Juhendid ja andmed">
+                <a href="/metsaandmed-katastritunnuse-jargi">Metsaandmed katastritunnuse järgi</a>
+                <a href="/metsa-hind">Metsa hind ja väärtus</a>
+                <a href="/metsatoetused">Metsatoetused</a>
+                <a href="/eudr-geolokatsioon">EUDR geolokatsioon</a>
+                <a href="/andmeallikad">Andmeallikad ja metoodika</a>
+                <a href="/kkk">KKK</a>
+            </nav>
+            <p class="footer-updated">Sisu uuendatud 04.11.2026 · <a href="/humans.txt">Meist ja allikatest</a> · <a href="/api/docs">API dokumentatsioon</a></p>
         </div>
     </footer>
 
-    <script defer src="/static/js/app.js?r=jkl017"></script>
+    <script defer src="/static/js/app.js?r=jkl018"></script>
     <script defer src="/static/js/hero.js?r=jkl001"></script>
 </body>
 </html>
