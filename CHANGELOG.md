@@ -6,6 +6,15 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > koduserveri tunnel). `terrapoint.vercel.app` suunab `vercel.json` redirectiga
 > (308) terrapoint.ee-le; push master branchi deployib koduserveri.
 
+## [Määramata] - 2026-11-04 (tagasi pilt, manifest)
+
+### Muudetud
+- **„Meist" sektsioonis on jälle üks terviklik grupipilt.** Kolm portreekaadrit
+  võeti maha (kasutaja soov 2026-11-04), `team_2026_*.webp` failid kustutatud ja
+  `.about-photo` CSS taastatud. Vahemäluvõti `style.css` jkl142.
+- **`site.webmanifest` nimes ei ole mõttekriipsu**: „Terrapoint: Eesti metsaandmete
+  analüüs", sama kuju nagu JSON-LD-s.
+
 ## [Määramata] - 2026-11-04 (keel ja pildid)
 
 ### Muudetud
