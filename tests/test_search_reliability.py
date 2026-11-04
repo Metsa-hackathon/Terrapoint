@@ -345,6 +345,144 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(passports["land_reference"]["available"])
         self.assertFalse(passports["property_estimate"]["available"])
 
+    async def test_partial_stock_coverage_publishes_estimates_with_disclosure(self):
+        """Üks inventuurita eraldis ei tohi nullida kogu kinnistu hinnangut.
+
+        Metsaregistris on eraldisi, mille kohta ei ole tagavara-, kõrguse- ega
+        vanuseandmeid. Kui arvutus katab piisava osa pindalast, avaldatakse
+        hinnang koos katvuse ja puuduvate eraldistega.
+        """
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        kataster = {
+            "number": "78404:409:0113",
+            "geometry": geometry,
+            "pindala_ha": 10,
+            "maks_hind": 4_200,
+        }
+        known_stand = {
+            "id": 1,
+            "eraldis_nr": 1,
+            "geometry": geometry,
+            "pindala_ha": 9.5,
+            "puuliik_kood": "MA",
+            "puuliik": "mänd",
+            "vanus": 80,
+            "tagavara_y_ha": 250,
+            "tagavara_provenance": "official",
+            "korgus": 25,
+            "boniteedi_kood": 2,
+            "invent_kp": "2025-01-01",
+            "registreerimise_kp": "2025-01-01",
+        }
+        uninventoried_stand = {
+            "id": 2,
+            "eraldis_nr": 7,
+            "geometry": geometry,
+            "pindala_ha": 0.5,
+            "puuliik_kood": "KU",
+            "puuliik": "kuusk",
+            "vanus": 0,
+            "tagavara_y_ha": None,
+            "tagavara_provenance": "unavailable",
+            "boniteedi_kood": 2,
+            "invent_kp": "2025-01-01",
+            "registreerimise_kp": "2025-01-01",
+        }
+
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=[known_stand, uninventoried_stand])),
+            patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
+            patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        self.assertFalse(result["mets"]["stock_data_complete"])
+        self.assertEqual(result["mets"]["stock_missing_eraldised"], [7])
+        self.assertEqual(result["mets"]["stock_coverage_percent"], 95)
+        self.assertAlmostEqual(result["mets"]["stock_missing_area_ha"], 0.5)
+        self.assertEqual(result["mets"]["puuliik"], "mänd")
+        self.assertEqual(result["mets"]["tagavara_y_ha"], 250.0)
+        self.assertIsNotNone(result["vaartus"]["total_value_eur"])
+        self.assertIsNotNone(result["vaartus"]["tagavara_m3"])
+        self.assertFalse(result["vaartus"]["stock_data_complete"])
+        self.assertIsNotNone(result["sinik"]["co2_tons_total"])
+        self.assertFalse(result["sinik"]["carbon_data_complete"])
+        self.assertIn("0,50 ha", result["sinik"]["credit_income_limitation"])
+        passports = {passport["id"]: passport for passport in result["vaartus"]["andmepassid"]}
+        self.assertTrue(passports["forest_volume"]["available"])
+        self.assertTrue(passports["timber_value"]["available"])
+        self.assertTrue(
+            any("0,50 ha" in limitation for limitation in passports["forest_volume"]["limitations"])
+        )
+
+    async def test_low_stock_coverage_withholds_estimates_but_names_missing_stands(self):
+        geometry = {
+            "type": "Polygon",
+            "coordinates": [[[24.0, 59.0], [24.1, 59.0], [24.1, 59.1], [24.0, 59.0]]],
+        }
+        kataster = {
+            "number": "78404:409:0113",
+            "geometry": geometry,
+            "pindala_ha": 10,
+            "maks_hind": 4_200,
+        }
+        stands = [
+            {
+                "id": 1,
+                "eraldis_nr": 1,
+                "geometry": geometry,
+                "pindala_ha": 2,
+                "puuliik_kood": "MA",
+                "puuliik": "mänd",
+                "vanus": 80,
+                "tagavara_y_ha": 250,
+                "tagavara_provenance": "official",
+                "korgus": 25,
+                "boniteedi_kood": 2,
+                "invent_kp": "2025-01-01",
+                "registreerimise_kp": "2025-01-01",
+            },
+            {
+                "id": 2,
+                "eraldis_nr": 3,
+                "geometry": geometry,
+                "pindala_ha": 8,
+                "puuliik_kood": "KU",
+                "puuliik": "kuusk",
+                "vanus": 0,
+                "tagavara_y_ha": None,
+                "tagavara_provenance": "unavailable",
+                "boniteedi_kood": 2,
+                "invent_kp": "2025-01-01",
+                "registreerimise_kp": "2025-01-01",
+            },
+        ]
+
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value=kataster)),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=stands)),
+            patch("api.index.query_eraldis_element", new=AsyncMock(return_value=[])),
+            patch("api.index.query_kahjustused", new=AsyncMock(return_value=[])),
+            patch("api.index.query_all_layers", new=AsyncMock(return_value=({}, [], []))),
+            patch("api.index.query_teatised", new=AsyncMock(return_value=[])),
+            patch("api.index.query_natura_2000", new=AsyncMock(return_value=[])),
+        ):
+            result = await api._search_core("78404:409:0113", api.time.time())
+
+        self.assertEqual(result["mets"]["stock_coverage_percent"], 20)
+        self.assertEqual(result["mets"]["stock_missing_eraldised"], [3])
+        self.assertIsNone(result["mets"]["tagavara_y_ha"])
+        self.assertIsNone(result["vaartus"]["total_value_eur"])
+        self.assertIsNone(result["sinik"]["co2_tons_total"])
+        self.assertIn("8,00 ha", result["sinik"]["credit_income_limitation"])
+
     async def test_search_normalizes_invalid_official_numbers_and_serializes_without_internal_ids(self):
         geometry = {
             "type": "Polygon",

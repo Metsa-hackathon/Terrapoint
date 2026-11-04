@@ -3,7 +3,61 @@ import unittest
 from services.data_passports import build_asset_passports
 
 
+def _coverage_passports(stock_coverage):
+    return build_asset_passports(
+        stands=[
+            {"eraldis_nr": 1, "pindala_ha": 9.5, "tagavara_provenance": "official", "tagavara_y_ha": 250},
+            {"eraldis_nr": 7, "pindala_ha": 0.5, "tagavara_provenance": "unavailable", "tagavara_y_ha": None},
+        ],
+        inventory={
+            "staatus": "värske",
+            "vanim_invent_kp": "2024-01-15",
+            "uusim_invent_kp": "2025-02-01",
+            "inventuuri_vanus_max_a": 2,
+        },
+        reliability={"score": 60, "level": "keskmine", "reasons": []},
+        timber_estimate={"low_eur": 15_000, "base_eur": 17_000, "high_eur": 20_000},
+        property_estimate={
+            "land_reference_available": True,
+            "land_reference_eur": 4_200,
+            "low_eur": 18_800,
+            "high_eur": 25_200,
+            "has_transaction_comparables": False,
+        },
+        total_volume_m3=2_375,
+        stock_coverage=stock_coverage,
+    )
+
+
 class AssetPassportTests(unittest.TestCase):
+    def test_stock_coverage_keeps_partial_volume_available_and_documented(self):
+        passports = {
+            passport["id"]: passport
+            for passport in _coverage_passports({
+                "available": True,
+                "known_area_ha": 9.5,
+                "missing_area_ha": 0.5,
+                "missing_stands": [7],
+            })
+        }
+
+        self.assertTrue(passports["forest_volume"]["available"])
+        self.assertEqual(passports["forest_volume"]["value"], 2_375)
+        self.assertTrue(passports["timber_value"]["available"])
+        self.assertTrue(passports["property_estimate"]["available"])
+        self.assertTrue(
+            any("9,50 ha" in limitation and "0,50 ha" in limitation
+                for limitation in passports["forest_volume"]["limitations"])
+        )
+
+    def test_without_coverage_the_strict_rule_still_applies(self):
+        passports = {passport["id"]: passport for passport in _coverage_passports(None)}
+
+        self.assertFalse(passports["forest_volume"]["available"])
+        self.assertFalse(passports["timber_value"]["available"])
+        self.assertFalse(passports["property_estimate"]["available"])
+
+
     def test_builds_ordered_volume_and_value_passports(self):
         passports = build_asset_passports(
             stands=[

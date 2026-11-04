@@ -49,6 +49,14 @@ async def _wfs_get(url: str, timeout: float = 10.0, retries: int = 3) -> list[di
     raise MetsaregisterWFSError("WFS failed without a response")
 
 _KATASTER_RE = KATASTER_RE
+# Teatiste ja teatiste arhiivi WFS-päringud on GeoServeri külmal küljel
+# 3,5 s piiri peal (mõõdetud 2026-11-04: teatis 0,45 s soojalt, kuni 15,7 s
+# külmalt; arhiiv 1,4 s soojalt). Liiga lühike aeg märkis arhiivi iga kinnistu
+# juures "kättesaamatuks" ja metsateatised jäid seetõttu kuvamata.
+TEATIS_LAYER_TIMEOUT_SECONDS = 5.0
+# Natura 2000 alade päring on samuti aeglane; hoidke see katuse all, mis
+# mahub otsingu üldise aja sisse (SEARCH_TIMEOUT_SECONDS = 20 s).
+NATURA_LAYER_TIMEOUT_SECONDS = 6.0
 
 
 def _validate_kataster_nr(kataster_nr: str) -> str:
@@ -359,7 +367,7 @@ async def query_natura_2000(bbox_str: str) -> list[dict]:
         f"&srsName=EPSG:4326&outputFormat=application/json"
         f"&bbox={bbox_str},EPSG:4326"
     )
-    return await _wfs_get(url, timeout=10.0, retries=1)
+    return await _wfs_get(url, timeout=NATURA_LAYER_TIMEOUT_SECONDS, retries=1)
 
 
 async def query_teatised(kataster_nr: str) -> tuple[list[dict], list[str]]:
@@ -382,8 +390,8 @@ async def query_teatised(kataster_nr: str) -> tuple[list[dict], list[str]]:
         )
 
     current, archived = await asyncio.gather(
-        _wfs_get(layer_url("teatis"), timeout=3.5, retries=0),
-        _wfs_get(layer_url("teatis_arhiiv"), timeout=3.5, retries=0),
+        _wfs_get(layer_url("teatis"), timeout=TEATIS_LAYER_TIMEOUT_SECONDS, retries=1),
+        _wfs_get(layer_url("teatis_arhiiv"), timeout=TEATIS_LAYER_TIMEOUT_SECONDS, retries=1),
         return_exceptions=True,
     )
     if isinstance(current, Exception) and isinstance(archived, Exception):

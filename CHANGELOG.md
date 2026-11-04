@@ -6,6 +6,42 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > koduserveri tunnel). `terrapoint.vercel.app` suunab `vercel.json` redirectiga
 > (308) terrapoint.ee-le; push master branchi deployib koduserveri.
 
+## [Määramata] - 2026-11-04
+
+### Fixed
+- **Üks inventuurita eraldis ei nulli enam kogu kinnistu andmeid** — Metsaregistris
+  on eraldisi, mille kohta ei ole tagavara-, kõrguse- ega vanuseandmeid (näiteks
+  vastregistreeritud ala). Varem nõudis `stock_complete` kõigi eraldiste täielikke
+  andmeid: üks selline eraldis muutis korraga tundmatuks kinnistu tagavara,
+  peapuuliigi, puidu hinnavahemiku ja süsinikuvaru. Nüüd arvutatakse koondnäitajad
+  teadaolevate eraldiste põhjal ja avaldamise tingib **katvus**: kui arvutus katab
+  vähemalt 75% metsapinnast (`MIN_STOCK_COVERAGE`), avaldatakse hinnang koos
+  katvuse väljadega; alla selle jäävad koondnäitajad `null`-iks ja vastus ütleb,
+  mitme hektari ja milliste eraldiste andmed puuduvad. Mõõdetud 2026-11-04
+  Harjumaa maatulundusmaade valimil (19 kinnistut): 15 olid täielikud, 3 said
+  osalise hinnangu (2–15% pindalast puudu), 1 jäi põhjendatult avaldamata (72% puudu).
+  - Uued väljad `mets`, `sinik` ja `vaartus` plokkides: `stock_data_complete`,
+    `forest_area_ha`, `stock_coverage_percent`, `stock_known_area_ha`,
+    `stock_missing_area_ha`, `stock_missing_eraldised`.
+  - `services/data_passports.py` saab `stock_coverage`-i: andmepassid märgivad
+    osalise katvuse korral mahu ja hinnavahemiku saadavaks ning lisavad piirangusse
+    katvuse ja puuduvad eraldised.
+  - Kliendivaates on hinnangu- ja süsinikukaardil märge „Arvutus katab X ha Y ha-st”
+    koos puuduvate eraldistega; kui katvus on liiga väike, öeldakse seda selgelt
+    ja pealkirjanumbrit ei kuvata.
+- **Metsateatised jäid allika ajalõpu tõttu kuvamata** — `query_teatised` päris
+  GeoServerist `teatis` ja `teatis_arhiiv` kihte 3,5 s ajalõpuga ja ilma
+  korduskatseta. Mõõdetud 2026-11-04: `teatis` 0,45 s soojalt, kuni 15,7 s külmalt;
+  `teatis_arhiiv` 1,4 s soojalt — kahe päringu paralleelsel käivitamisel ületas
+  arhiiv 3,5 s ja märgiti iga kinnistu juures kättesaamatuks, mistõttu arhiivis
+  olevad teatised ei jõudnud kunagi kliendini. Nüüd 5,0 s ja üks korduskatse
+  (`TEATIS_LAYER_TIMEOUT_SECONDS`), teatisepaari oma eelarve 11 s
+  (`TEATIS_SOURCE_TIMEOUT_SECONDS`) senise 8 s asemel. Natura 2000 päring sai
+  samuti kohased piirid (6 s + 1 korduskatse, eelarve 10 s), sest sisemine 10 s
+  ajalõpp oli välise 8 s eelarve taga alati lõigatud. Kontroll Kadaka ja Harjumaa
+  kinnistutel: arhiiviteatised ilmuvad (nt 27.10.2026 seisuga 9–11 teatist
+  kinnistu kohta, varem 0–1) ja `sources_complete` on `true`.
+
 ## [Määramata] - 2026-11-03
 
 ### Added

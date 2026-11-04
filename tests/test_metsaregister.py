@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, patch
 
 from services import metsaregister
 from services.metsaregister import (
+    TEATIS_LAYER_TIMEOUT_SECONDS,
     MetsaregisterWFSError,
     query_eraldis,
     query_eraldis_element,
@@ -116,6 +117,26 @@ class MetsaregisterDataTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(await query_eraldis("78404:409:0113"), [])
 
         self.assertEqual(wfs_get.await_args.kwargs, {"timeout": 3.5, "retries": 1})
+
+    async def test_notice_layers_get_their_own_generous_timeout(self):
+        """Teatis ja arhiiv on GeoServeri külmal serval aeglased (kuni ~15 s).
+
+        Liiga lühike aeg (3,5 s, 0 kordust) märkis arhiivi iga kinnistu juures
+        kättesaamatuks ja metsateatised jäid seetõttu kuvamata.
+        """
+        with patch(
+            "services.metsaregister._wfs_get",
+            new=AsyncMock(return_value=[]),
+        ) as wfs_get:
+            await query_teatised("78404:409:0113")
+
+        self.assertEqual(wfs_get.await_count, 2)
+        for call in wfs_get.await_args_list:
+            self.assertEqual(
+                call.kwargs,
+                {"timeout": TEATIS_LAYER_TIMEOUT_SECONDS, "retries": 1},
+            )
+            self.assertGreaterEqual(call.kwargs["timeout"], 5.0)
 
     async def test_missing_stock_is_marked_as_terrapoint_estimate(self):
         features = [{

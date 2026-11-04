@@ -61,6 +61,26 @@ Metsa väärtuse ja andmete analüüsi veebirakendus. FastAPI backend + HTML/CSS
 - **Serveri väljuvad aadressid, mida CSP ei puuduta**: satelliitpilt liigub läbi backend proxy,
   seega `img-src`/`connect-src` ei vaja `teenus.maaamet.ee`-d (data-URL on juba lubatud).
 
+## Andmevool: puuduvad eraldise andmed
+
+- Metsaregistris on eraldisi, mille kohta ei ole tagavara-, kõrguse- ega vanuseandmeid
+  (nt vastregistreeritud ala). `_search_core`-s jagatakse eraldised `stock_stands` ja
+  `stock_missing_stands`; koondnäitajad (tagavara, peapuuliik, rahaline hinnang, süsinik,
+  andmepassid) arvutatakse teadaolevate eraldiste põhjal ja nende pindalaga kaalutult.
+- Avaldamise tingib katvus: `MIN_STOCK_COVERAGE = 0.75`. Sellest suurem katvus avaldab
+  hinnangu koos `stock_coverage_percent`, `stock_known_area_ha`, `stock_missing_area_ha` ja
+  `stock_missing_eraldised` väljadega; väiksema katvuse korral jäävad koondnäitajad `null`
+  ja `sinik.credit_income_limitation` ütleb, mitme hektari andmed puuduvad.
+  Kliendivaates joonistab selle `stockCoverageNote()` hinnangu- ja süsinikukaardile.
+- `services/data_passports.build_asset_passports(..., stock_coverage=...)`: ilma selleta
+  kehtib range reegel (kõik eraldised või mitte midagi). Passid on katvuse korral saadaval
+  ja lisavad piirangutesse katvuse ning puuduvad eraldised.
+- Teatised: `TEATIS_LAYER_TIMEOUT_SECONDS = 5.0` + 1 korduskatse ja eraldi allika-eelarve
+  `TEATIS_SOURCE_TIMEOUT_SECONDS = 11.0`. GeoServeri `teatis`/`teatis_arhiiv` on külmalt
+  kuni ~15 s; varem 3,5 s / 0 kordust märkis arhiivi iga kinnistu juures kättesaamatuks.
+  Natura 2000: sisemine 6 s + 1 korduskatse, eelarve 10 s (sisemine aeg peab mahtuma
+  välisesse eelarvesse, muidu lõigatakse päring alati ära).
+
 ## Olulised reeglid
 - Originil (`api/index.py`) on `vercel.json` päiste ja vahemälu peegel (`BROWSER_SECURITY_HEADERS`,
   `CachedStaticFiles`, `/index.html` ja `/api-docs*` redirectid). Muuda mõlemat koos; CSP-räsi ei muuda.

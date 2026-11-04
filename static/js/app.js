@@ -3670,6 +3670,31 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         return html;
     }
 
+    // Metsaregistris on eraldisi, mille kohta puuduvad tagavara- ja
+    // inventuuriandmed. Server arvutab koondnäitajad üle teadaoleva osa ja
+    // märgib katvuse; see märge ütleb kasutajale, mitut hektarit arvutus katab.
+    function stockCoverageNote(data, primaryValue) {
+        if (!data || data.stock_data_complete !== false) return '';
+        var stands = Array.isArray(data.stock_missing_eraldised) ? data.stock_missing_eraldised : [];
+        var standsText = stands.length
+            ? ' (eraldis ' + stands.map(function(nr) { return escHtml(String(nr)); }).join(', ') + ')'
+            : '';
+        var known = formatNum(data.stock_known_area_ha, 2);
+        var missing = formatNum(data.stock_missing_area_ha, 2);
+        if (primaryValue == null) {
+            return '<div class="data-quality-alert warning valuation-status">'
+                + '<strong>Tagavaraandmed puuduvad ' + missing + ' ha kohta</strong>'
+                + '<span>Metsaregistris ei ole nende eraldiste kohta tagavara-, kõrguse- ega vanuseandmeid'
+                + standsText + '. Kinnistu koondnäitajat ei avaldata, sest arvutus kataks ainult '
+                + escHtml(String(data.stock_coverage_percent != null ? data.stock_coverage_percent : 0))
+                + '% metsapinnast.</span></div>';
+        }
+        return '<div class="data-quality-alert warning valuation-status">'
+            + '<strong>Arvutus katab ' + known + ' ha ' + formatNum(data.forest_area_ha, 2) + ' ha-st</strong>'
+            + '<span>' + missing + ' ha kohta puuduvad Metsaregistris tagavaraandmed' + standsText
+            + '; need eraldised ei ole summas.</span></div>';
+    }
+
     function renderVaartus(data, meta) {
         var el = document.getElementById('vaartus-info');
         if (!data) { el.innerHTML = '<p class="muted">' + missingForestDataMessage(meta, true) + '</p>'; return; }
@@ -3706,6 +3731,8 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             html += '</div>';
         }
 
+        html += stockCoverageNote(data, data.total_value_eur != null ? data.total_value_eur : data.base_value_eur);
+
         if (!hasAssetPassports || timberValueAvailable) {
             var scenarioValuePerHa = data.base_value_per_ha != null ? data.base_value_per_ha : data.value_per_ha;
             var scenarioMidpointPerM3 = data.base_price_per_m3 != null ? data.base_price_per_m3 : data.price_per_m3;
@@ -3734,6 +3761,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         if (!data) { el.innerHTML = '<p class="muted">Süsiniku andmeid pole</p>'; return; }
         var html = '';
         html += '<div class="big-number"><span id="anim-co2">0</span><span class="unit"> tCO₂</span></div>';
+        html += stockCoverageNote(data, data.co2_tons_total);
         html += '<div class="info-row"><span class="label">CO₂-ekvivalent / ha ' + ddInfo('Elusas kuivas biomassis hinnatud süsinikuvaru väljendatuna CO₂-ekvivalendina. See on varu, mitte aastane sidumiskiirus ega süsinikukrediit.') + '</span><span class="value">' + formatNum(data.co2_tons_ha, 1) + ' t</span></div>';
         html += '<div class="info-row"><span class="label">Kuiv biomass / ha ' + ddInfo('Elusa maapealse ja juurebiomassi IPCC teguritel põhinev hinnang. Arvutus ei hõlma mulda, surnud puitu ega varise süsinikku.') + '</span><span class="value">' + formatNum(data.total_biomass_tons_ha, 1) + ' t</span></div>';
 
@@ -3752,7 +3780,9 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         el.innerHTML = html;
         var animEl = el.querySelector('#anim-co2');
         setTimeout(function() {
-            if (animEl && animEl.isConnected) animateNumber(animEl, data.co2_tons_total, '', 0);
+            if (!animEl || !animEl.isConnected) return;
+            if (data.co2_tons_total == null) { animEl.textContent = '—'; return; }
+            animateNumber(animEl, data.co2_tons_total, '', 0);
         }, 300);
     }
 

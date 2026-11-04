@@ -141,6 +141,15 @@ MAX_FORESTRY_SEARCH_BODY_BYTES = 16_384
 SEARCH_TIMEOUT_SECONDS = 20.0
 KATASTER_TIMEOUT_SECONDS = 6.0
 PRIMARY_SOURCE_TIMEOUT_SECONDS = 8.0
+# Teatiste paar (teatis + arhiiv) teeb kaks WFS-päringut, mis GeoServeri
+# külmal serval võivad kumbki ületada 3,5 s. Oma eelarve hoiab nad
+# PRIMARY_SOURCE_TIMEOUT_SECONDS-i piirist väljas, aga SEARCH_TIMEOUT_SECONDS-i sees.
+TEATIS_SOURCE_TIMEOUT_SECONDS = 11.0
+NATURA_SOURCE_TIMEOUT_SECONDS = 10.0
+# Kui suur osa metsapindalast peab olema tagavaraandmetega kaetud, et kinnistu
+# koondnäitajaid (tagavara, rahaline hinnang, süsinik) üldse avaldada.
+# Alla selle ei ole osaline summa kinnistu kohta aus number.
+MIN_STOCK_COVERAGE = 0.75
 MAP_LAYER_SOURCE_TIMEOUT_SECONDS = 7.0
 ADDRESS_UPSTREAM_TIMEOUT_SECONDS = 4.0
 ADDRESS_UPSTREAM_ATTEMPTS = 2
@@ -2764,7 +2773,7 @@ async def _search_core(
         ),
         asyncio.ensure_future(
             asyncio.wait_for(
-                _cached_teatised(kataster_nr), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS
+                _cached_teatised(kataster_nr), timeout=TEATIS_SOURCE_TIMEOUT_SECONDS
             )
         ),
     ]
@@ -2804,7 +2813,7 @@ async def _search_core(
             teatised_task,
             asyncio.ensure_future(
                 asyncio.wait_for(
-                    query_natura_2000(bbox_str), timeout=PRIMARY_SOURCE_TIMEOUT_SECONDS
+                    query_natura_2000(bbox_str), timeout=NATURA_SOURCE_TIMEOUT_SECONDS
                 )
             ),
         ]
@@ -3060,11 +3069,36 @@ async def _search_core(
 
         # Aggregate across all eraldised (weighted by pindala)
         total_pindala = _forest_area_ha(eraldised)
-        stock_complete = all(
-            eraldis.get("tagavara_provenance") != "unavailable"
-            and _finite_nonnegative_number(eraldis.get("tagavara_y_ha")) is not None
-            for eraldis in eraldised
-        )
+        # Registris on eraldisi, mille kohta ei ole veel inventuuri: ei
+        # tagavara, kõrgust ega vanust (näiteks vastregistreeritud ala).
+        # Üks selline eraldis ei tohi nullida kogu kinnistu arvutust, aga
+        # osaline arvutus peab ütlema, mitut hektarit see katab.
+        stock_stands = [
+            stand
+            for stand in eraldised
+            if stand.get("tagavara_provenance") != "unavailable"
+            and _finite_nonnegative_number(stand.get("tagavara_y_ha")) is not None
+        ]
+        stock_stand_ids = {id(stand) for stand in stock_stands}
+        stock_missing_stands = [stand for stand in eraldised if id(stand) not in stock_stand_ids]
+        stock_complete = not stock_missing_stands
+        stock_known_area_ha = _forest_area_ha(stock_stands)
+        stock_missing_area_ha = max(0.0, round(total_pindala - stock_known_area_ha, 2))
+        stock_coverage = (stock_known_area_ha / total_pindala) if total_pindala else 0.0
+        # Alla selle katvuse ei anna osaline summa kinnistu kohta ausat pilti.
+        stock_covered = bool(stock_stands) and stock_coverage >= MIN_STOCK_COVERAGE
+        stock_coverage_fields = {
+            "stock_data_complete": stock_complete,
+            "forest_area_ha": round(total_pindala, 2),
+            "stock_coverage_percent": round(stock_coverage * 100),
+            "stock_known_area_ha": round(stock_known_area_ha, 2),
+            "stock_missing_area_ha": stock_missing_area_ha,
+            "stock_missing_eraldised": [
+                stand.get("eraldis_nr")
+                for stand in stock_missing_stands
+                if stand.get("eraldis_nr") is not None
+            ],
+        }
 
         # Weighted average tagavara and vanus
         age_data_complete = all(
@@ -3088,11 +3122,15 @@ async def _search_core(
             ) in SPECIES_NAMES
             for e in eraldised
         )
+        if stock_known_area_ha > 0:
+            avg_tagavara = sum(
+                (e.get("tagavara_y_ha") or 0) * (e.get("pindala_ha") or 0) for e in stock_stands
+            ) / stock_known_area_ha
+        else:
+            avg_tagavara = 0
         if total_pindala > 0:
-            avg_tagavara = sum((e.get("tagavara_y_ha") or 0) * (e.get("pindala_ha") or 0) for e in eraldised) / total_pindala
             avg_vanus = sum((e.get("vanus") or 0) * (e.get("pindala_ha") or 0) for e in eraldised) / total_pindala
         else:
-            avg_tagavara = eraldised[0].get("tagavara_y_ha") or 0
             avg_vanus = eraldised[0].get("vanus") or 0
 
         # Peapuuliik = species with largest total absolute volume (m³) across all
@@ -3100,7 +3138,9 @@ async def _search_core(
         # and a forester's intuition: a 0.5 ha old-growth spruce stand with 400
         # m³/ha is more dominant than a 5 ha sparse 10-year-old pine clear-cut
         # with 20 m³/ha, even though the pine has 10× the area.
-        dominant_species_code = _dominant_species_code(eraldised)
+        # Peapuuliik valitakse nende eraldiste seast, mille tagavara on teada;
+        # inventuurita eraldis ei tohi peapuuliiki tundmatuks muuta.
+        dominant_species_code = _dominant_species_code(stock_stands)
         # The compatibility top-level age indicator is explicitly scoped to
         # the largest stand, not whichever species dominates parcel volume.
         primary = max(eraldised, key=lambda e: (e.get("pindala_ha") or 0))
@@ -3160,12 +3200,12 @@ async def _search_core(
             )
             stand_stock_volume = sum(
                 (e.get("tagavara_y_ha") or 0) * (e.get("pindala_ha") or 0)
-                for e in eraldised
+                for e in stock_stands
             )
             composition_denominator = total_volume
             if not composition_complete:
-                composition_denominator = stand_stock_volume if stock_complete else 0
-                if stock_complete and stand_stock_volume > 0:
+                composition_denominator = stand_stock_volume if stock_stands else 0
+                if stock_stands and stand_stock_volume > 0:
                     composition_denominator = max(total_volume, stand_stock_volume)
             if composition_denominator > 0:
                 # First pass: raw percentages, filter <1%
@@ -3217,8 +3257,8 @@ async def _search_core(
 
         # Carbon is aggregated per stand species. Treating a mixed parcel as
         # entirely its dominant species creates a systematic biomass error.
-        carbon = forest_carbon_potential(eraldised) if stock_complete else None
-        carbon_complete = carbon is not None
+        carbon = forest_carbon_potential(stock_stands) if stock_covered else None
+        carbon_complete = carbon is not None and stock_complete
         primary_age = (
             primary.get("vanus_raw")
             if "vanus_raw" in primary
@@ -3411,13 +3451,14 @@ async def _search_core(
             "liigiandmed_taielikud": species_data_complete,
             "peapuuliigi_andmed_taielikud": (
                 species_data_complete
-                and stock_complete
+                and stock_covered
                 and dominant_species_code is not None
             ),
             "vanus": int(avg_vanus),
             "vanuseandmed_taielikud": age_data_complete,
-            "tagavara_y_ha": round(avg_tagavara, 1) if stock_complete else None,
-            "elus_tagavara_ha": round(avg_tagavara, 1) if stock_complete else None,
+            "tagavara_y_ha": round(avg_tagavara, 1) if stock_covered else None,
+            "elus_tagavara_ha": round(avg_tagavara, 1) if stock_covered else None,
+            **stock_coverage_fields,
             "boniteet": primary.get("boniteet"),
             "korgus": primary.get("korgus"),
             "pindala_ha": total_pindala,
@@ -3526,22 +3567,23 @@ async def _search_core(
             kataster_data.get("maks_hind"),
             timber_estimate,
         )
-        if not stock_complete:
+        if not stock_covered:
             timber_estimate = {"low_eur": None, "base_eur": None, "high_eur": None}
             property_estimate.update({"low_eur": None, "base_eur": None, "high_eur": None})
 
         vaartus_result = {
-            "total_value_eur": timber_value if stock_complete else None,
-            "base_value_eur": timber_value if stock_complete else None,
+            "total_value_eur": timber_value if stock_covered else None,
+            "base_value_eur": timber_value if stock_covered else None,
             "range_low_eur": timber_estimate["low_eur"],
             "range_high_eur": timber_estimate["high_eur"],
-            "value_per_ha": round(timber_value / total_pindala) if stock_complete and total_pindala > 0 else None,
-            "base_value_per_ha": round(timber_value / total_pindala) if stock_complete and total_pindala > 0 else None,
-            "price_per_m3": price_m3 if stock_complete else None,
-            "base_price_per_m3": price_m3 if stock_complete else None,
-            "tagavara_m3": round(total_m3) if stock_complete else None,
-            "log_price": log_price if stock_complete else None,
-            "pulp_price": pulp_price if stock_complete else None,
+            "value_per_ha": round(timber_value / total_pindala) if stock_covered and total_pindala > 0 else None,
+            "base_value_per_ha": round(timber_value / total_pindala) if stock_covered and total_pindala > 0 else None,
+            "price_per_m3": price_m3 if stock_covered else None,
+            "base_price_per_m3": price_m3 if stock_covered else None,
+            "tagavara_m3": round(total_m3) if stock_covered else None,
+            "log_price": log_price if stock_covered else None,
+            "pulp_price": pulp_price if stock_covered else None,
+            **stock_coverage_fields,
             "price_source": "Eesti Erametsaliit",
             "price_updated": "2026-Q1",
             "price_as_of": "2026-03",
@@ -3567,19 +3609,32 @@ async def _search_core(
             "maa_maksuhind": kataster_data.get("maks_hind"),
         }
 
+        known_area_text = f"{stock_known_area_ha:.2f}".replace(".", ",")
+        missing_area_text = f"{stock_missing_area_ha:.2f}".replace(".", ",")
+        if carbon is not None and not stock_complete:
+            carbon_limitation = (
+                f"Süsinikuvaru on arvutatud {known_area_text} ha kohta; "
+                f"{missing_area_text} ha eraldiste kohta puuduvad "
+                "Metsaregistris tagavaraandmed."
+            )
+        elif carbon is not None:
+            carbon_limitation = carbon.get("credit_income_limitation")
+        else:
+            carbon_limitation = (
+                "Süsinikuarvutus vajab eraldiste liigi- ja tagavaraandmeid; registris "
+                f"puuduvad need {missing_area_text} ha kohta."
+            )
         sinik_result = {
-            "co2_tons_total": carbon.get("co2_tons_total") if carbon_complete else None,
-            "co2_tons_ha": carbon.get("co2_tons_ha") if carbon_complete else None,
-            "total_biomass_tons_ha": carbon.get("biomass_tons_ha") if carbon_complete else None,
+            "co2_tons_total": carbon.get("co2_tons_total") if carbon is not None else None,
+            "co2_tons_ha": carbon.get("co2_tons_ha") if carbon is not None else None,
+            "total_biomass_tons_ha": carbon.get("biomass_tons_ha") if carbon is not None else None,
             "potential_income_eur": None,
             "credit_income_estimate_available": False,
-            "credit_income_limitation": (
-                carbon.get("credit_income_limitation") if carbon_complete
-                else "Süsinikuarvutus vajab kõigi eraldiste toetatud liigi- ja tagavaraandmeid."
-            ),
+            "credit_income_limitation": carbon_limitation,
             "carbon_data_complete": carbon_complete,
-            "cars_equivalent": carbon.get("cars_equivalent") if carbon_complete else None,
-            "trees_equivalent": carbon.get("trees_equivalent") if carbon_complete else None,
+            "cars_equivalent": carbon.get("cars_equivalent") if carbon is not None else None,
+            "trees_equivalent": carbon.get("trees_equivalent") if carbon is not None else None,
+            **stock_coverage_fields,
         }
 
     mets_pindala_ha = _forest_area_ha(eraldised) if eraldised else 0
@@ -3915,7 +3970,7 @@ async def _search_core(
             kataster_data.get("maks_hind"),
             timber_estimate,
         )
-        if not stock_complete:
+        if not stock_covered:
             timber_estimate = {"low_eur": None, "base_eur": None, "high_eur": None}
             property_estimate.update({"low_eur": None, "base_eur": None, "high_eur": None})
         vaartus_result.update({
@@ -3931,6 +3986,12 @@ async def _search_core(
                 property_estimate,
                 total_m3,
                 kataster_data.get("maks_hind_meta"),
+                stock_coverage={
+                    "available": stock_covered,
+                    "known_area_ha": stock_known_area_ha,
+                    "missing_area_ha": stock_missing_area_ha,
+                    "missing_stands": stock_coverage_fields["stock_missing_eraldised"],
+                },
             ),
         })
         health_assessment = calculate_health_assessment(

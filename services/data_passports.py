@@ -102,7 +102,15 @@ def build_asset_passports(
     property_estimate: dict,
     total_volume_m3: float,
     land_reference_meta: dict | None = None,
+    stock_coverage: dict | None = None,
 ) -> list[dict]:
+    """Koosta andmepassid.
+
+    ``stock_coverage`` kirjeldab, kui suurt osa metsapinnast koondarvutus
+    katab (``available``, ``known_area_ha``, ``missing_area_ha``,
+    ``missing_stands``). Ilma selleta kehtib range reegel: ükski eraldis ei
+    tohi tagavaraandmetest ilma jääda.
+    """
     def has_usable_stock(stand: dict) -> bool:
         value = stand.get("tagavara_y_ha")
         return _finite_number(value) and value >= 0
@@ -121,6 +129,13 @@ def build_asset_passports(
     )
     unknown_stands = len(stands) - official_stands - estimated_stands - unavailable_stands
     usable_stands = official_stands + estimated_stands + unknown_stands
+    usable_coverage = stock_coverage if isinstance(stock_coverage, dict) else None
+    if usable_coverage is not None:
+        # Kinnistu koondnäitajad on avaldatavad, kui arvutus katab piisava osa
+        # pindalast; puuduva osa ulatus on eraldi väljades ja piirangutes.
+        stock_available = bool(usable_coverage.get("available")) and usable_stands > 0
+    else:
+        stock_available = usable_stands > 0 and unavailable_stands == 0
     if estimated_stands and official_stands:
         volume_provenance = "mixed"
         volume_provenance_label = "Registriandmed + Terrapointi hinnang"
@@ -155,13 +170,22 @@ def build_asset_passports(
         volume_limitations.append(
             f"{unavailable_stands} eraldise tagavara ei olnud registris ega seda saanud olemasolevatest andmetest hinnata."
         )
+    if usable_coverage is not None and usable_coverage.get("missing_area_ha"):
+        known_area = usable_coverage.get("known_area_ha")
+        missing_area = usable_coverage.get("missing_area_ha")
+        volume_limitations.append(
+            "Arvutus katab "
+            + (f"{known_area:.2f}".replace(".", ",") if isinstance(known_area, (int, float)) else "teadaoleva osa")
+            + " ha; "
+            + f"{missing_area:.2f}".replace(".", ",")
+            + " ha eraldiste tagavaraandmed puuduvad, seega need ei ole summas."
+        )
 
     value_confidence = _value_confidence(reliability)
     land_available = (
         property_estimate.get("land_reference_available") is True
         and _finite_number(property_estimate.get("land_reference_eur"))
     )
-    stock_available = usable_stands > 0 and unavailable_stands == 0
     timber_range_available = _valid_range(timber_estimate, require_base=True)
     timber_available = (
         stock_available
@@ -204,9 +228,9 @@ def build_asset_passports(
         {
             "id": "forest_volume",
             "label": "Kasvava metsa kogumaht",
-            "available": usable_stands > 0 and unavailable_stands == 0,
+            "available": stock_available,
             "unavailable_label": "Eraldiste tagavara lähteandmed puuduvad",
-            "value": round(total_volume_m3) if usable_stands > 0 and unavailable_stands == 0 else None,
+            "value": round(total_volume_m3) if stock_available else None,
             "unit": "m³",
             "provenance": volume_provenance,
             "provenance_label": volume_provenance_label,
