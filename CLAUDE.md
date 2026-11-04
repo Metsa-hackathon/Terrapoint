@@ -101,6 +101,10 @@ Metsa väärtuse ja andmete analüüsi veebirakendus. FastAPI backend + HTML/CSS
   püüab vahe kinni.
 - Staatiliste failide vahemäluvõti (`?r=jklNNN`) tuleb iga `style.css`/`app.js`
   muudatuse järel tõsta, muidu jääb brauserisse vana fail.
+- **Ära päri uut `?r=` võtit enne, kui deploy on maas.** Cloudflare vahemälu
+  võti on täis-URL (koos päringuga) ja TTL 1 h, seega esimene päring enne
+  deploy'd jätab selle võtme alla vana faili ja brauser saab endiselt vana
+  koodi. Oota `.last-deploy-commit` = HEAD ja alles siis ava leht.
 
 ## SEO töö käib GSC kaudu
 - Kasutaja reegel (2026-11-04): **iga SEO muudatuse kontroll ja lõpetamine käib Google
