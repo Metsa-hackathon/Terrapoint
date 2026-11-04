@@ -56,6 +56,12 @@ SATELLITE_MIN_COVERAGE = 0.1
 # Selge mets on Eestis ~60–90, tugev pilveloor 230–253 (mõõdetud 2026-11-03
 # Kadaka pst kinnistul 21 päeva jooksul).
 SATELLITE_MAX_CLEAR_LUMINANCE = 140.0
+# Pilvepiksel: heledus, millest alates loeme piksli pilveks või uduks. Päev võib
+# olla keskmiselt tume ja siiski osaliselt pilves, seetõttu hoiame eraldi
+# pilveosakaalu (mõõdetud 2026-11-04: selge sügisene mets 0–3%, pilveloor 74–100%).
+SATELLITE_CLOUD_LUMINANCE = 150.0
+# Osalise pilvekihi teade kaardil: alla selle on pilt praktiliselt selge.
+SATELLITE_PARTIAL_CLOUD_FRACTION = 0.05
 SATELLITE_REQUEST_TIMEOUT_SECONDS = 12.0
 SATELLITE_MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 SATELLITE_MAX_IMAGE_PIXELS = 2048
@@ -238,12 +244,15 @@ async def _fetch_png(
     return content
 
 
-def png_assessment(png: bytes) -> tuple[float, float]:
-    """(kaetus, keskmine heledus) — mitu protsenti pildist on kaetud ja kui valge see on.
+def png_assessment(png: bytes) -> tuple[float, float, float]:
+    """(kaetus, keskmine heledus, pilveosakaal) pildi kohta.
 
     Kaetus tuleb alfa-kanalist: ilma kaugseireta ala on WMS-is läbipaistev.
     Heledus eraldab uduse/pilvese päeva selgest: metsa keskmine heledus on
     Eesti suvel-sügisel umbes 60–90, pilveloor tõstab selle üle 200.
+    Pilveosakaal on pilveks loetavate piltide osa kaetud alast, seega ka
+    osaliselt pilves päev saab hinnangu ka siis, kui keskmine heledus jääb
+    alla pilve lävendi.
     """
     try:
         with Image.open(io.BytesIO(png)) as image:
@@ -252,22 +261,23 @@ def png_assessment(png: bytes) -> tuple[float, float]:
             converted = image.convert("RGBA")
             alpha = converted.getchannel("A")
             if alpha.getbbox() is None:
-                return (0.0, 0.0)
+                return (0.0, 0.0, 0.0)
             histogram = alpha.histogram()
             visible = sum(histogram[1:]) if len(histogram) > 1 else 0
             coverage = visible / float(alpha.width * alpha.height)
             # Läbipaistmatud pikslid on RGB 0,0,0, seega nende heledus on 0 ja
             # keskmine tuleb jagada ainult kaetud pindalaga.
-            luma_sum = sum(
-                value * count for value, count in enumerate(converted.convert("L").histogram())
-            )
+            luma_histogram = converted.convert("L").histogram()
+            luma_sum = sum(value * count for value, count in enumerate(luma_histogram))
+            cloud_threshold = int(SATELLITE_CLOUD_LUMINANCE)
+            cloud_pixels = sum(luma_histogram[cloud_threshold:])
     except SatelliteError:
         raise
     except (OSError, ValueError, Image.DecompressionBombError) as exc:
         raise SatelliteError("EstHubi WMS pilt ei ole loetav") from exc
     if not coverage:
-        return (0.0, 0.0)
-    return (coverage, luma_sum / float(visible))
+        return (0.0, 0.0, 0.0)
+    return (coverage, luma_sum / float(visible), cloud_pixels / float(visible))
 
 
 def png_to_webp(png: bytes) -> tuple[bytes, int, int]:
@@ -298,11 +308,12 @@ async def _assess_day(
     bounds: tuple[float, float, float, float],
 ) -> dict:
     png = await _fetch_png(client, day.isoformat(), bounds, SATELLITE_PROBE_PIXELS)
-    coverage, luminance = png_assessment(png)
+    coverage, luminance, cloud_fraction = png_assessment(png)
     return {
         "day": day,
         "covered": coverage >= SATELLITE_MIN_COVERAGE,
         "obscured": luminance >= SATELLITE_MAX_CLEAR_LUMINANCE,
+        "cloud_fraction": cloud_fraction,
     }
 
 
@@ -312,14 +323,17 @@ async def latest_satellite_scene(
 ) -> dict:
     """Uusim kasutatav päev sellel väljakul.
 
-    ``date`` on uusim päev, mille pilt ei ole pilvega kaetud; kui ükski
-    vaadeldud päev ei ole selge, on ``date`` uusim kaetud päev ja
-    ``obscured`` True. ``newest_date`` on alati uusim päev, millel on
+    ``date`` on uusim päev, mille pilt ei ole pilvega kaetud ega osaliselt
+    pilves; kui ükski vaadeldud päev ei ole selge, on ``date`` uusim kaetud
+    päev ja ``obscured`` True. ``newest_date`` on alati uusim päev, millel on
     üldse kaugseiret — kasutajaliides saab öelda, kui värskem pilt on pilves.
+    ``cloud_fraction`` on valitud päeva pilveosakaal, et kaart saaks öelda
+    „osaliselt pilves” ka siis, kui päev valiti parimaks, mitte täiuslikuks.
     """
     last_day = today or datetime.now(SATELLITE_TIME_ZONE).date()
     candidates = [last_day - timedelta(days=offset) for offset in range(SATELLITE_LOOKBACK_DAYS)]
     newest_covered: dict | None = None
+    best_covered: dict | None = None
     attempts = 0
     failures = 0
     async with httpx.AsyncClient() as client:
@@ -339,7 +353,19 @@ async def latest_satellite_scene(
                     continue
                 if newest_covered is None or result["day"] > newest_covered["day"]:
                     newest_covered = result
-                if not result["obscured"]:
+                # Parim kaetud päev jääb varuks: kui ükski päev pole päris selge,
+                # näitame kõige väiksema pilveosakaaluga päeva ja ütleme, et
+                # pilt on osaliselt pilves, mitte ei näita täis-pilveloori.
+                if best_covered is None or (
+                    result["cloud_fraction"], -result["day"].toordinal()
+                ) < (
+                    best_covered["cloud_fraction"], -best_covered["day"].toordinal()
+                ):
+                    best_covered = result
+                if (
+                    not result["obscured"]
+                    and result["cloud_fraction"] < SATELLITE_PARTIAL_CLOUD_FRACTION
+                ):
                     clear_hits.append(result)
             if clear_hits:
                 picked = max(clear_hits, key=lambda hit: hit["day"])
@@ -347,15 +373,20 @@ async def latest_satellite_scene(
                     "date": picked["day"].isoformat(),
                     "newest_date": newest_covered["day"].isoformat(),
                     "obscured": False,
+                    "cloud_fraction": round(picked["cloud_fraction"], 3),
                 }
     if newest_covered is None:
         if attempts and failures == attempts:
             raise SatelliteError("EstHubi satelliiditeenus ei vasta")
-        return {"date": None, "newest_date": None, "obscured": False}
+        return {"date": None, "newest_date": None, "obscured": False, "cloud_fraction": None}
+    # Ükski päev ei ole selge: vali kõige väiksema pilveosakaaluga päev.
+    # ``obscured`` jääb True ainult siis, kui ka see parim päev on pilvelooriga.
+    picked = best_covered or newest_covered
     return {
-        "date": newest_covered["day"].isoformat(),
+        "date": picked["day"].isoformat(),
         "newest_date": newest_covered["day"].isoformat(),
-        "obscured": True,
+        "obscured": bool(picked["obscured"]),
+        "cloud_fraction": round(picked["cloud_fraction"], 3),
     }
 
 
@@ -420,6 +451,7 @@ async def satellite_context(kataster_nr: str) -> dict:
         "date": scene["date"],
         "newest_date": scene["newest_date"],
         "obscured": scene["obscured"],
+        "cloud_fraction": scene.get("cloud_fraction"),
         "image": "data:image/webp;base64," + base64.b64encode(webp).decode("ascii"),
         "width": width,
         "height": height,

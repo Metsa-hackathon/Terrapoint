@@ -95,22 +95,28 @@ class PatchBoundsTests(unittest.TestCase):
 
 class AssessmentTests(unittest.TestCase):
     def test_transparent_raster_has_no_coverage(self):
-        coverage, luminance = satellite.png_assessment(BLANK_PNG)
+        coverage, luminance, _cloud = satellite.png_assessment(BLANK_PNG)
         self.assertEqual(coverage, 0.0)
         self.assertEqual(luminance, 0.0)
 
     def test_covered_forest_is_dark_and_complete(self):
-        coverage, luminance = satellite.png_assessment(CLEAR_PNG)
+        coverage, luminance, cloud = satellite.png_assessment(CLEAR_PNG)
         self.assertEqual(coverage, 1.0)
         self.assertLess(luminance, satellite.SATELLITE_MAX_CLEAR_LUMINANCE)
 
+    def test_cloud_fraction_distinguishes_partly_cloudy_from_clear(self):
+        _coverage, _luminance, clear_cloud = satellite.png_assessment(CLEAR_PNG)
+        _coverage, _luminance, cloudy_cloud = satellite.png_assessment(CLOUDY_PNG)
+        self.assertEqual(clear_cloud, 0.0)
+        self.assertGreater(cloudy_cloud, satellite.SATELLITE_PARTIAL_CLOUD_FRACTION)
+
     def test_cloud_cover_exceeds_the_clear_threshold(self):
-        coverage, luminance = satellite.png_assessment(CLOUDY_PNG)
+        coverage, luminance, cloud = satellite.png_assessment(CLOUDY_PNG)
         self.assertEqual(coverage, 1.0)
         self.assertGreater(luminance, satellite.SATELLITE_MAX_CLEAR_LUMINANCE)
 
     def test_partial_coverage_is_measured_from_alpha(self):
-        coverage, _luminance = satellite.png_assessment(HALF_PNG)
+        coverage, _luminance, _cloud = satellite.png_assessment(HALF_PNG)
         self.assertAlmostEqual(coverage, 0.5, delta=0.1)
 
     def test_webp_keeps_the_raster_size(self):
@@ -137,7 +143,7 @@ class SceneSelectionTests(unittest.IsolatedAsyncioTestCase):
             "2026-11-01": CLEAR_PNG,
             "2026-10-31": CLEAR_PNG,
         })
-        self.assertEqual(result, {"date": "2026-11-01", "newest_date": "2026-11-01", "obscured": False})
+        self.assertEqual(result, {"date": "2026-11-01", "newest_date": "2026-11-01", "obscured": False, "cloud_fraction": 0.0})
 
     async def test_cloudy_newest_day_falls_back_to_older_clear_scene(self):
         result = await self.scene({
@@ -145,18 +151,41 @@ class SceneSelectionTests(unittest.IsolatedAsyncioTestCase):
             "2026-11-02": BLANK_PNG,
             "2026-11-01": CLEAR_PNG,
         })
-        self.assertEqual(result, {"date": "2026-11-01", "newest_date": "2026-11-03", "obscured": False})
+        self.assertEqual(result, {"date": "2026-11-01", "newest_date": "2026-11-03", "obscured": False, "cloud_fraction": 0.0})
+
+    async def test_hazy_days_fall_back_to_the_least_cloudy_scene(self):
+        """Kui ükski päev pole päris selge, valitakse väikseima pilveosakaaluga päev."""
+        # Hägune päev: keskmine heledus alla pilvelävendi (~85), aga 20% pilti on pilved.
+        image = Image.new("RGBA", (16, 16), (60, 60, 60, 255))
+        image.paste((255, 255, 255, 255), (0, 0, 16, 3))
+        buffer = io.BytesIO()
+        image.save(buffer, "PNG")
+        hazy = buffer.getvalue()
+        overcast = CLOUDY_PNG
+
+        async def fake_fetch(_client, day, _bounds, _pixels):
+            return {"2026-11-03": overcast, "2026-11-02": hazy}.get(day, BLANK_PNG)
+
+        with patch.object(satellite, "_fetch_png", fake_fetch):
+            result = await satellite.latest_satellite_scene(
+                (500000.0, 6580000.0, 500900.0, 6580900.0),
+                today=date(2026, 11, 4),
+            )
+        self.assertEqual(result["date"], "2026-11-02")
+        self.assertEqual(result["newest_date"], "2026-11-03")
+        self.assertFalse(result["obscured"])
+        self.assertGreaterEqual(result["cloud_fraction"], satellite.SATELLITE_PARTIAL_CLOUD_FRACTION)
 
     async def test_only_cloudy_scenes_are_still_reported(self):
         result = await self.scene({
             "2026-11-03": CLOUDY_PNG,
             "2026-11-02": BLANK_PNG,
         })
-        self.assertEqual(result, {"date": "2026-11-03", "newest_date": "2026-11-03", "obscured": True})
+        self.assertEqual(result, {"date": "2026-11-03", "newest_date": "2026-11-03", "obscured": True, "cloud_fraction": 1.0})
 
     async def test_no_coverage_returns_no_date(self):
         result = await self.scene({"2026-11-03": BLANK_PNG})
-        self.assertEqual(result, {"date": None, "newest_date": None, "obscured": False})
+        self.assertEqual(result, {"date": None, "newest_date": None, "obscured": False, "cloud_fraction": None})
 
     async def test_every_failed_request_is_an_error_not_an_empty_day(self):
         today = date(2026, 11, 3)
@@ -176,6 +205,7 @@ class SatelliteContextTests(unittest.IsolatedAsyncioTestCase):
             patch.object(satellite, "query_kataster", kataster),
             patch.object(satellite, "latest_satellite_scene", AsyncMock(return_value={
                 "date": "2026-10-27", "newest_date": "2026-10-30", "obscured": False,
+                "cloud_fraction": 0.012,
             })),
         ):
             async def fake_fetch(_client, day, _bounds, _pixels):
@@ -189,6 +219,7 @@ class SatelliteContextTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(payload["date"], "2026-10-27")
         self.assertEqual(payload["newest_date"], "2026-10-30")
         self.assertFalse(payload["obscured"])
+        self.assertEqual(payload["cloud_fraction"], 0.012)
         self.assertTrue(payload["image"].startswith("data:image/webp;base64,"))
         self.assertEqual((payload["width"], payload["height"]), (16, 16))
         self.assertGreater(payload["resolution_m"], 1)

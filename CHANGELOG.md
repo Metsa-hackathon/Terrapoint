@@ -88,16 +88,39 @@ Kõik olulised muudatused Terrapoint repositooriumis.
   peale hõljumise või klõpsuga CSS-pseudo-elemendist, mistõttu ekraanilugeja,
   puuteekraan ja kopeerimine seda ei näinud. Nüüd on nimi ala rea teine rida
   („Nõmme-Mustamäe maastikukaitseala”), rea link „EELIS →” püsib terve ka
-  390 px ekraanil (varem lõigati „EE”), ja kaardi lõpus on üks lause, mida
-  kitsendus tähendab („Tingimused ja ulatuse määrab kaitse-eeskiri või
-  veekaitsevööndi kord. Loetelu on kaardikihtide kattuvus, mitte õiguslik
-  otsus.”). Kontrollitud 78404:409:0113 (3 kitsendust, desktop ja mobiil).
+  390 px ekraanil (varem lõigati „EE”). Kontrollitud 78404:409:0113
+  (3 kitsendust, desktop ja mobiil).
 - **Kihi võti ei jõua enam kirjeldusena kaardile** — `api/index.py` kasutas
   nime puudumisel varuväärtusena kihi võtit, seega `kaitsevoondid` või
   `veekaitse` kuvati ala nimena. Nüüd jääb kirjeldus tühjaks ja rida näitab
   ainult tüüpi; uus test `test_restriction_rows_never_expose_the_raw_layer_key`.
 - Tühja tulemuse tekst ütleb, mida kontrolliti (kaitsealad, piiranguvööndid,
   vee- ja ranna piirangud, muinsuskaitse), mitte ainult „kitsendusi ei leitud”.
+  Kontrollitud kinnistul 17501:002:0490, kus kitsendusi ei ole.
+- **Kaardi lõpu selgitus koostatakse olemasolevatest liikidest** — üks üldine
+  lause („Tingimused ja ulatuse määrab kaitse-eeskiri või veekaitsevööndi kord”)
+  oli vale kõigil teistel ridadel: mälestise kaitsevöönd tuleb
+  muinsuskaitseseadusest, ranna ja kalda piiranguvöönd looduskaitseseadusest,
+  karuputk ja üleujutusala ei ole üldse maakasutuse reegel. Nüüd `kitsendusedNote()`
+  nimetab iga kohaloleva kihi aluse eraldi (KPOIS, KOTKAS, AdaptEST kaasa
+  arvatud). Kontroll: 78404:409:0113 (kaitseala + piiranguvöönd + mälestise
+  kaitsevöönd) ja 80802:001:0615 (Soomaa RP + ranna piiranguvöönd).
+
+### Added
+- **Satelliitkihile pilveosakaal ja selgem selgitus** — pildil nähtavad pilved,
+  udu ja pilvevari on päris kaugseis, mitte andmeviga, aga kaart ei öelnud seda.
+  `services/satellite.py` mõõdab nüüd pilveosakaalu (pikslid heledusega ≥ 150
+  kaetud alast) ja päev loetakse selgeks alles siis, kui see on alla 5%
+  (`SATELLITE_PARTIAL_CLOUD_FRACTION`) — varem piisas keskmisest heledusest,
+  mistõttu osaliselt pilves päev võis valituks osutuda. Mõõdetud 2026-11-04
+  kinnistutel 11201:001:0067 ja 78404:409:0113: 14 päeva jooksul olid kõik
+  päevad kas kaugseireta (läbipaistvad) või pilvelooriga (heledus 180–255,
+  pilveosakaal 74–100%); 27.10.2026 oli ainus selge päev (Aegviidul 0%,
+  Kadaka kinnistul 2,8% pilveosakaalu). Kui ükski päev ei ole päris selge,
+  valitakse nüüd **väikseima pilveosakaaluga** päev (varem uusim kaetud päev,
+  mis võis olla täis-pilveloor) ja olekuriba ütleb „osaliselt pilves”; kui ka
+  parim päev on pilvelooriga, jääb „pilves”. Vihje selgitab, et pilved, udu ja
+  pilvevari on pildi osa ning alusandmed ja arvutused ei tule sellest pildist.
 
 ## [Määramata] - 2026-11-03
 

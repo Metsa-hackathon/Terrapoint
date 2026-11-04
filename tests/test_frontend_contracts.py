@@ -3523,6 +3523,16 @@ console.log(JSON.stringify({{unavailable, complete: element.innerHTML}}));
         self.assertIn("sidebar.inert = !open", INDEX_HTML)
         self.assertIn("returnFocus.focus({preventScroll: true})", INDEX_HTML)
 
+    def test_restriction_note_names_the_legal_basis_of_the_rows_present(self):
+        note = _extract_js_function("kitsendusedNote")
+        self.assertIn("muinsuskaitseseadusest", note)
+        self.assertIn("looduskaitseseadusest", note)
+        self.assertIn("veeseadusest", note)
+        self.assertNotIn("kaldaseadusest", note)
+        self.assertIn("taustainfo, mitte maakasutuse piirang", note)
+        render = _extract_js_function("renderKitsendused")
+        self.assertIn("kitsendusedNote(data)", render)
+
     def test_restriction_names_are_visible_text_not_a_hover_tooltip(self):
         render = _extract_js_function("renderKitsendused")
         self.assertIn("kitsendused-name", render)

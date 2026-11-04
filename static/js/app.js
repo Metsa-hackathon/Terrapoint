@@ -2538,6 +2538,9 @@
     // WGS84 piiridega; siin paigutatakse see ortofoto peale eraldi kihina.
     // Aluskaart ise jääb Maa- ja Ruumiameti ortofotoks.
     var SATELLITE_FETCH_TIMEOUT_MS = 30000;
+    // Server loeb pildi „osaliselt pilves” alates sellest pilveosakaalust
+    // (services/satellite.py SATELLITE_PARTIAL_CLOUD_FRACTION).
+    var SATELLITE_PARTIAL_CLOUD_FRACTION = 0.05;
     var satelliteScene = null;
     var satelliteLayer = null;
     var satelliteVisible = true;
@@ -2571,13 +2574,24 @@
             control.disabled = false;
             control.setAttribute('aria-pressed', satelliteVisible ? 'true' : 'false');
             control.setAttribute('aria-label', 'Sentinel-2 satelliitpilt ' + sceneDate + (satelliteVisible ? ', peida kiht' : ', näita kihti'));
+            // Pilt on päris kaugseis: pilved, udu ja pilvevari on pildi osa,
+            // mitte andmeviga. Ütleme seda kaardil, sest muidu tundub hägune
+            // pilt rikkis kihina.
+            var cloudFraction = scene && typeof scene.cloud_fraction === 'number' ? scene.cloud_fraction : null;
+            var partialCloud = !scene.obscured && cloudFraction != null
+                && cloudFraction >= SATELLITE_PARTIAL_CLOUD_FRACTION;
             control.title = (scene && scene.obscured
                 ? 'EstHubi uusim pilt (' + sceneDate + ') on pilvega kaetud.'
-                : 'EstHubi viimane selge Sentinel-2 pilt (' + sceneDate + ').')
+                : 'EstHubi Sentinel-2 päevapilt (' + sceneDate + ').')
                 + (newestDate && newestDate !== sceneDate ? ' Uusim pilt ' + newestDate + ' on pilvega kaetud.' : '')
+                + ' Pilved, udu ja pilvevari on pildi osa, mitte andmeviga; alusandmed ja arvutused ei tule sellest pildist.'
                 + ' Klõpsa kihi peitmiseks või näitamiseks.';
             if (label) label.textContent = 'Sentinel-2 · ' + sceneDate;
-            if (state) state.textContent = scene && scene.obscured ? 'pilves' : '';
+            if (state) {
+                state.textContent = scene && scene.obscured
+                    ? 'pilves'
+                    : (partialCloud ? 'osaliselt pilves' : '');
+            }
             return;
         }
         control.disabled = true;
@@ -4204,6 +4218,51 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         el.innerHTML = html;
     }
 
+    // Iga kitsenduse liik tuleb eri allikast ja õiguslikust alusest: kaitseala
+    // ja piiranguvöönd kaitse-eeskirjast, veekaitsevöönd veeseadusest, ranna ja
+    // kalda piiranguvöönd looduskaitseseadusest, mälestiste kaitsevöönd
+    // muinsuskaitseseadusest; karuputk ja üleujutusala ei ole maakasutuse
+    // reegel. Seetõttu koostame lause olemasolevatest liikidest.
+    function kitsendusedNote(items) {
+        var present = {};
+        (items || []).forEach(function(item) {
+            var tyyp = String((item && item.tyyp) || '').toLowerCase();
+            if (tyyp) present[tyyp] = true;
+        });
+        var parts = [];
+        if (present.kaitsealad || present.piirang) {
+            parts.push('kaitseala ja piiranguvööndi tingimused kaitse-eeskirjast');
+        }
+        if (present.piirangukeelualad) {
+            parts.push('piirangu- ja keelualad KPOIS-i kihist');
+        }
+        if (present.veekaitse) {
+            parts.push('veekaitsevööndi piirangud veeseadusest');
+        }
+        if (present.ranna_piirang) {
+            parts.push('ranna ja kalda piiranguvöönd looduskaitseseadusest');
+        }
+        if (present.vaetiste_keeld) {
+            parts.push('väetiste ja taimekaitsevahendite kasutuskeeld veekaitse alal');
+        }
+        if (present.malestised || present.kaitsevoondid) {
+            parts.push('mälestise kaitsevöönd muinsuskaitseseadusest');
+        }
+        if (present.kma_kitsendused) {
+            parts.push('KOTKAS kitsenduste koondkiht Maa- ja Ruumiametilt');
+        }
+        if (present.katsealad) {
+            parts.push('AdaptEST tegevuspiirangute alad Keskkonnaagentuurilt');
+        }
+        if (present.karuputk || present.uleujutus) {
+            parts.push('karuputk ja üleujutusala on taustainfo, mitte maakasutuse piirang');
+        }
+        var note = parts.length
+            ? 'Tingimused täpsustuvad nii: ' + parts.join('; ') + '.'
+            : 'Täpsed tingimused täpsustuvad allika registris.';
+        return note + ' Loetelu on kaardikihtide kattuvus, mitte õiguslik otsus.';
+    }
+
     function renderKitsendused(data, context) {
         var el = document.getElementById('kitsendused-info');
         var linkEl = document.getElementById('kitsendused-link');
@@ -4284,8 +4343,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         html += '<div class="table-grid-header kitsendused-table-header"><div>Tüüp</div><div>Lisainfo</div></div>';
         html += '<div class="table-grid-scroll" tabindex="0" role="region" aria-label="Kitsenduste tabel">' + kitsRows(data) + '</div>';
         html += '</div>'; // end table-grid-hscroll
-        html += '<p class="kitsendused-note">Tingimused ja ulatuse määrab kaitse-eeskiri või veekaitsevööndi kord. '
-            + 'Loetelu on kaardikihtide kattuvus, mitte õiguslik otsus.</p>';
+        html += '<p class="kitsendused-note">' + kitsendusedNote(data) + '</p>';
         html += '</details>';
         el.innerHTML = html;
         if (linkEl) linkEl.style.display = '';
