@@ -426,7 +426,8 @@ function formatEur(value) {{ return String(value) + ' €'; }}
 function formatDateEt(value) {{ return value; }}
 function ddInfo() {{ return ''; }}
 function valueExplain() {{ return ''; }}
-function formatSihtotstarve(value) {{ return value == null ? '—' : String(value); }}
+const NO_VALUE = 'puudub';
+function formatSihtotstarve(value) {{ return value == null ? NO_VALUE : String(value); }}
 {render}
 renderKataster({{number:'1', pindala_ha:1, maks_hind:null}});
 const missing = target.innerHTML;
@@ -1380,12 +1381,12 @@ console.log(JSON.stringify(states.map(eudrProtectionState)));
         self.assertTrue(states[0]["sourcesComplete"])
         self.assertEqual(
             states[1]["contextLabel"],
-            "Looduskaitse eelsõel osaline — puudumist ei saa kinnitada",
+            "Looduskaitse eelsõel osaline, puudumist ei saa kinnitada",
         )
         self.assertFalse(states[1]["sourcesComplete"])
         self.assertEqual(
             states[2]["contextLabel"],
-            "Looduskaitse või soo kattuvus leitud — kontrolli tegevustingimusi eraldi",
+            "Looduskaitse või soo kattuvus leitud, kontrolli tegevustingimusi eraldi",
         )
         self.assertTrue(states[2]["kaitseala"])
         self.assertFalse(states[2]["sourcesComplete"])
@@ -1440,6 +1441,7 @@ function cancelMapSelection() {{}}
 function clearSatelliteScene() {{ satelliteCleared = true; }}
 function closeEraldisSheet() {{ sheet.remove(); }}
 var _aiUserScrolledUp = true;
+const NO_VALUE = 'puudub';
 {clear_helper.group(0)}
 {analytical_helper.group(0)}
 {helper.group(0)}
@@ -1721,7 +1723,7 @@ console.log(JSON.stringify({{
         self.assertTrue(state["loadingHidden"])
 
     def test_registry_dates_are_validated_before_formatting(self):
-        self.assertIn("if (!match) return '—';", INDEX_HTML)
+        self.assertIn("if (!match) return NO_VALUE;", INDEX_HTML)
         self.assertIn("date.getUTCFullYear() !== year", INDEX_HTML)
         self.assertIn("Andmete kuvamine ebaõnnestus", INDEX_HTML)
 
@@ -1745,11 +1747,12 @@ console.log(JSON.stringify({{
         format_num = _extract_js_function("formatNum")
         script = f"""
 const NUMBER_FORMATTERS = {{}};
+const NO_VALUE = 'puudub';
 {format_num}
 console.log(JSON.stringify([formatNum(null), formatNum(undefined), formatNum(0)]));
 """
         result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
-        self.assertEqual(json.loads(result.stdout), ["—", "—", "0"])
+        self.assertEqual(json.loads(result.stdout), ["puudub", "puudub", "0"])
 
     def test_primary_timber_value_uses_grouped_number_format(self):
         self.assertIn("formatEur(data.base_value_eur != null ? data.base_value_eur : data.total_value_eur)", INDEX_HTML)

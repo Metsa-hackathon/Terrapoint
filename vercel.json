@@ -69,7 +69,7 @@
         { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=(), payment=()" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https://praktika.arleserver.cfd https://praktika.arle.top; form-action 'self'; manifest-src 'self'; worker-src 'none'; script-src 'self' 'sha256-j1llpWYtXVTa3cLHYMQY059Jthoo6f3wsenp+loY+98='; script-src-elem 'self' 'sha256-j1llpWYtXVTa3cLHYMQY059Jthoo6f3wsenp+loY+98='; style-src 'self'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://tiles.maaamet.ee https://gsavalik.envir.ee; connect-src 'self' https://gsavalik.envir.ee https://n8n.arleserver.cfd https://n8n.arle.top; upgrade-insecure-requests" }
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self' https://praktika.arleserver.cfd https://praktika.arle.top; form-action 'self'; manifest-src 'self'; worker-src 'none'; script-src 'self' 'sha256-vNPk/AsBJn2/n3PjgnKPTS4Gj4nvWZ8ecXVGhXi890U='; script-src-elem 'self' 'sha256-vNPk/AsBJn2/n3PjgnKPTS4Gj4nvWZ8ecXVGhXi890U='; style-src 'self'; style-src-elem 'self'; style-src-attr 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://tiles.maaamet.ee https://gsavalik.envir.ee; connect-src 'self' https://gsavalik.envir.ee https://n8n.arleserver.cfd https://n8n.arle.top; upgrade-insecure-requests" }
       ]
     },
     {

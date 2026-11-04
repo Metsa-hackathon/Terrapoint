@@ -8,6 +8,9 @@
     var addressFetches = new Map();
     var activeAddressFetch = null;
 
+    // Puuduv väärtus kasutajaliideses: sõna, mitte mõttekriips.
+    var NO_VALUE = 'puudub';
+
     // MAP_WORKSPACE_PURE_START
     const MAP_VIEW_PRESETS = Object.freeze({
         overview: Object.freeze({
@@ -1212,7 +1215,7 @@
 
     async function aiSendMessage(message, queuedEntry) {
         if (!aiCurrentKataster) {
-            aiAppendMessage('assistant', '<span style="color:var(--ink-4);font-style:italic">Otsi esmalt ülevalt katastri number või aadress — seejärel saan su metsa kohta küsimustele vastata.</span>');
+            aiAppendMessage('assistant', '<span style="color:var(--ink-4);font-style:italic">Otsi esmalt ülevalt katastri number või aadress, seejärel saan su metsa kohta küsimustele vastata.</span>');
             aiSetStatus('Otsi esmalt kinnistu, et AI-le küsimus saata.');
             return;
         }
@@ -2904,7 +2907,7 @@
                 html += '<div style="margin-top:7px;font-size:10px;color:var(--ink-5)">'
                     + (p.invent_kp ? 'Inventuuri kuupäev: ' + escHtml(p.invent_kp) : 'Inventuuri kuupäev teadmata')
                     + '</div>';
-                if (popupScenario !== '—') {
+                if (popupScenario !== NO_VALUE) {
                     html += '<div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--hair)">';
                     html += '<div style="font-size:10px;color:var(--ink-4);margin-bottom:2px">Puidustsenaarium</div>';
                     html += '<div class="map-stand-scenario">' + popupScenario + '</div>';
@@ -2967,13 +2970,13 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
     };
     function formatSihtotstarve(value) {
         var text = String(value == null ? '' : value).trim();
-        if (!text) return '—';
+        if (!text) return NO_VALUE;
         var normalized = text.toLocaleLowerCase('et-EE');
         return normalized.charAt(0).toLocaleUpperCase('et-EE') + normalized.slice(1);
     }
 
     function valueExplain(field, val) {
-        if (!val || val === '—') return '';
+        if (!val || val === NO_VALUE) return '';
         var v = field === 'boniteet'
             ? ('' + val).toUpperCase().trim()
             : ('' + val).toLowerCase().trim();
@@ -3024,7 +3027,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             return '<span class="er-value-range">' + formatEurRange(low, high) + '</span>'
                 + (midpoint != null ? '<small>Vahemiku keskpunkt ' + formatEur(midpoint) + '</small>' : '');
         }
-        return midpoint != null ? '<span class="er-value-range">' + formatEur(midpoint) + '</span>' : '—';
+        return midpoint != null ? '<span class="er-value-range">' + formatEur(midpoint) + '</span>' : NO_VALUE;
     }
 
     function mergeMapStandDetails(persistent, searchData, parcelId) {
@@ -3107,21 +3110,21 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
     function formatEur(n) {
         var value = Number(n);
-        if (!Number.isFinite(value)) return '—';
+        if (!Number.isFinite(value)) return NO_VALUE;
         return EUR_FORMATTER.format(Math.round(value));
     }
 
     function formatEurRange(low, high) {
-        if (!Number.isFinite(low) || !Number.isFinite(high) || low > high) return '—';
+        if (!Number.isFinite(low) || !Number.isFinite(high) || low > high) return NO_VALUE;
         var lowText = formatNum(Math.round(low));
         var highText = formatNum(Math.round(high));
         return '<span class="currency-range">' + lowText + '–' + highText + ' €</span>';
     }
 
     function formatNum(n, decimals) {
-        if (n == null) return '—';
+        if (n == null) return NO_VALUE;
         var value = Number(n);
-        if (!Number.isFinite(value)) return '—';
+        if (!Number.isFinite(value)) return NO_VALUE;
         var digits = decimals === undefined ? 0 : decimals;
         if (!NUMBER_FORMATTERS[digits]) {
             NUMBER_FORMATTERS[digits] = new Intl.NumberFormat('et-EE', {
@@ -3133,15 +3136,15 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
     }
 
     function formatDateEt(value) {
-        if (!value) return '—';
+        if (!value) return NO_VALUE;
         var match = /^(\d{4})-(\d{2})-(\d{2})(?:T|$)/.exec(String(value));
-        if (!match) return '—';
+        if (!match) return NO_VALUE;
         var year = Number(match[1]);
         var month = Number(match[2]);
         var day = Number(match[3]);
-        if (year < 1000 || month < 1 || month > 12 || day < 1 || day > 31) return '—';
+        if (year < 1000 || month < 1 || month > 12 || day < 1 || day > 31) return NO_VALUE;
         var date = new Date(Date.UTC(year, month - 1, day));
-        if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return '—';
+        if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return NO_VALUE;
         return DATE_FORMATTER.format(date);
     }
 
@@ -3233,7 +3236,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
     function animateNumber(el, target, suffix, decimals) {
         target = Number(target);
-        if (!Number.isFinite(target)) { el.textContent = '—'; return; }
+        if (!Number.isFinite(target)) { el.textContent = NO_VALUE; return; }
         const duration = 800;
         const start = performance.now();
         const startVal = 0;
@@ -3255,11 +3258,11 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
     function renderKataster(data) {
         var el = document.getElementById('kataster-info');
         var html = '';
-        html += '<div class="info-row"><span class="label">Katastritunnus</span><span class="value">' + escHtml(data.number || '—') + '</span></div>';
+        html += '<div class="info-row"><span class="label">Katastritunnus</span><span class="value">' + escHtml(data.number || NO_VALUE) + '</span></div>';
         html += '<div class="info-row"><span class="label">Pindala ' + ddInfo('Katastriüksuse registris olev pindala hektarites') + '</span><span class="value">' + formatNum(data.pindala_ha, 2) + ' ha</span></div>';
         if (data.mets_pindala_ha) html += '<div class="info-row"><span class="label">Metsamaa ' + ddInfo('Metsamaa pindala, eraldiste kogupindala') + '</span><span class="value">' + formatNum(data.mets_pindala_ha, 2) + ' ha</span></div>';
         html += '<div class="info-row"><span class="label">Sihtotstarve ' + ddInfo('Maa sihtotstarve: metsamaa, põllumaa, elamumaa vms', valueExplain('sihtotstarve', data.sihtotstarve)) + '</span><span class="value">' + escHtml(formatSihtotstarve(data.sihtotstarve)) + '</span></div>';
-        html += '<div class="info-row"><span class="label">Omandivorm ' + ddInfo('Kinnistu omandivorm: era, riigi või ühisomand', valueExplain('omandivorm', data.omvorm)) + '</span><span class="value">' + escHtml(data.omvorm || '—') + '</span></div>';
+        html += '<div class="info-row"><span class="label">Omandivorm ' + ddInfo('Kinnistu omandivorm: era, riigi või ühisomand', valueExplain('omandivorm', data.omvorm)) + '</span><span class="value">' + escHtml(data.omvorm || NO_VALUE) + '</span></div>';
         if (data.mk_nimi) html += '<div class="info-row"><span class="label">Maakond</span><span class="value">' + escHtml(data.mk_nimi) + '</span></div>';
         if (data.ov_nimi) html += '<div class="info-row"><span class="label">Omavalitsus</span><span class="value">' + escHtml(data.ov_nimi) + '</span></div>';
         if (data.l_aadress) html += '<div class="info-row"><span class="label">Aadress</span><span class="value">' + escHtml(data.l_aadress) + '</span></div>';
@@ -3271,7 +3274,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             valuationTiming = valuationMeta.assessment_year + '. a hindamismudel';
             if (valuationMeta.valid_from) valuationTiming += ' · kehtib alates ' + formatDateEt(valuationMeta.valid_from);
         }
-        html += '<div class="info-row"><span class="label">Maa maksustamishind ' + ddInfo('Katastris olev korralise masshindamise tulemus. Hindamismudeli aasta ja väärtuse kehtivuse algus pärinevad Maa- ja Ruumiameti hindamisinfosüsteemist. See ei ole aastane maamaks, eraldi kasvava puidu hinnang ega kinnistu tehinguhind.') + '</span><span class="value value-with-detail"><strong>' + (maaMaksuhindAvailable ? formatEur(data.maks_hind) : '—') + '</strong><small>' + escHtml(maaMaksuhindAvailable ? valuationTiming : 'Andmeallikas ei tagastanud väärtust') + '</small></span></div>';
+        html += '<div class="info-row"><span class="label">Maa maksustamishind ' + ddInfo('Katastris olev korralise masshindamise tulemus. Hindamismudeli aasta ja väärtuse kehtivuse algus pärinevad Maa- ja Ruumiameti hindamisinfosüsteemist. See ei ole aastane maamaks, eraldi kasvava puidu hinnang ega kinnistu tehinguhind.') + '</span><span class="value value-with-detail"><strong>' + (maaMaksuhindAvailable ? formatEur(data.maks_hind) : NO_VALUE) + '</strong><small>' + escHtml(maaMaksuhindAvailable ? valuationTiming : 'Andmeallikas ei tagastanud väärtust') + '</small></span></div>';
         el.innerHTML = html;
     }
 
@@ -3446,7 +3449,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
     function renderMets(data, meta) {
         var el = document.getElementById('mets-info');
         if (!data) { el.innerHTML = '<p class="muted">' + missingForestDataMessage(meta, false) + '</p>'; return; }
-        var boniteet = data.boniteet || BONITEET_LABELS[data.boniteedi_kood] || data.boniteedi_kood || '—';
+        var boniteet = data.boniteet || BONITEET_LABELS[data.boniteedi_kood] || data.boniteedi_kood || NO_VALUE;
         var detailsPending = Boolean(meta && meta.details_pending === true);
         var unavailableSources = meta && Array.isArray(meta.unavailable_sources) ? meta.unavailable_sources : [];
         var compositionIncomplete = data.liikide_koosseis_taielik === false
@@ -3500,12 +3503,12 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             html += '<div class="data-quality-alert warning"><strong>Osa puistu põhiandmeid puudub</strong><span>Puuduvat puuliigi, vanuse või tagavara välja ei asendata oletusega.</span></div>';
         }
         var mainSpecies = !dominantSpeciesComplete
-            ? 'Määramata — liigi- või tagavaraandmed osalised'
+            ? 'Määramata (liigi- või tagavaraandmed osalised)'
             : speciesName(data.puuliik_kood || data.puuliik, data.puuliik);
         html += '<div class="info-row"><span class="label">Peapuuliik ' + ddInfo('Kõigi täielike liigi- ja tagavaraandmete korral suurima elus tagavaraga liik') + '</span><span class="value">' + escHtml(mainSpecies) + '</span></div>';
         var averageAge = data.vanuseandmed_taielikud === false
-            ? 'Määramata — vanuseandmed osalised'
-            : (data.vanus != null ? formatNum(data.vanus) + ' a' : '—');
+            ? 'Määramata (vanuseandmed osalised)'
+            : (data.vanus != null ? formatNum(data.vanus) + ' a' : NO_VALUE);
         html += '<div class="info-row"><span class="label">Keskmine vanus ' + ddInfo('Täielike vanuseandmete korral kõigi eraldiste pindalaga kaalutud keskmine vanus') + '</span><span class="value">' + escHtml(averageAge) + '</span></div>';
         html += '<div class="info-row"><span class="label">Elus puistutagavara ' + ddInfo('Metsaregistri 1. rinde, 2. rinde ja üksikpuude rinde tagavarade summa hektari kohta. Surnud ja lamapuitu siia ei liideta.') + '</span><span class="value">' + formatNum(data.elus_tagavara_ha != null ? data.elus_tagavara_ha : data.tagavara_y_ha) + ' m³/ha</span></div>';
         html += '<div class="info-row"><span class="label">Boniteet ' + ddInfo('Suurima pindalaga eraldise Metsaregistri kasvukohaklass: 1A on kõrgeim ja Va madalaim kasutatav klass. Tegelik kasv ning tööde lubatavus sõltuvad ka muudest andmetest.', valueExplain('boniteet', boniteet)) + '</span><span class="value">' + escHtml(boniteet) + '</span></div>';
@@ -3544,7 +3547,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
                 var sp = e.species_source_available === false
                     ? 'Määramata'
                     : speciesName(e.puuliik_kood || e.puuliik, e.puuliik);
-                var b = e.boniteet || BONITEET_LABELS[e.boniteedi_kood] || '—';
+                var b = e.boniteet || BONITEET_LABELS[e.boniteedi_kood] || NO_VALUE;
                 var v = standScenarioHtml(e);
                 var standLabel = eraldisLabel(e.eraldis_nr);
                 html += '<div class="table-grid-row eraldised-row">';
@@ -3601,7 +3604,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         }
 
         function sourceLink(source) {
-            if (!source) return '—';
+            if (!source) return NO_VALUE;
             var url = safeExternalUrl(source.url);
             var label = escHtml(source.name || 'Ametlik allikas');
             return url
@@ -3669,7 +3672,15 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
     function stockCoverageNote(data, primaryValue) {
         if (!data || data.stock_data_complete !== false) return '';
         var stands = Array.isArray(data.stock_missing_eraldised) ? data.stock_missing_eraldised : [];
-        var standNumbers = stands.map(function(nr) { return escHtml(String(nr)); }).join(', ');
+        // Korduv number tähistab mitut eraldist: Metsaregister ei anna
+        // metsaregister:eraldis kihis kvartali numbrit, millega neid eristada.
+        var counts = data.stock_missing_eraldised_counts && typeof data.stock_missing_eraldised_counts === 'object'
+            ? data.stock_missing_eraldised_counts
+            : {};
+        var standNumbers = stands.map(function(nr) {
+            var count = Number(counts[String(nr)]);
+            return escHtml(String(nr)) + (Number.isFinite(count) && count > 1 ? ' ×' + count : '');
+        }).join(', ');
         var standsText = stands.length ? ' (eraldis ' + standNumbers + ')' : '';
         var exclusionText = stands.length === 1
             ? 'Eraldis ' + standNumbers + ' jääb summast välja'
@@ -3765,7 +3776,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         var animEl = el.querySelector('#anim-co2');
         setTimeout(function() {
             if (!animEl || !animEl.isConnected) return;
-            if (data.co2_tons_total == null) { animEl.textContent = '—'; return; }
+            if (data.co2_tons_total == null) { animEl.textContent = NO_VALUE; return; }
             animateNumber(animEl, data.co2_tons_total, '', 0);
         }, 300);
     }
@@ -3784,9 +3795,9 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         var sood = read('sood');
         var sourcesComplete = natura.complete && kaitseala.complete && sood.complete;
         var contextLabel = (natura.intersects === true || kaitseala.intersects === true || sood.intersects === true)
-            ? 'Looduskaitse või soo kattuvus leitud — kontrolli tegevustingimusi eraldi'
+            ? 'Looduskaitse või soo kattuvus leitud, kontrolli tegevustingimusi eraldi'
             : !sourcesComplete
-                ? 'Looduskaitse eelsõel osaline — puudumist ei saa kinnitada'
+                ? 'Looduskaitse eelsõel osaline, puudumist ei saa kinnitada'
                 : 'Kontrollitud looduskaitsekihtides kattuvust ei tuvastatud';
         return {
             natura: natura.intersects,
@@ -3854,8 +3865,8 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         checks.push({ ok: !!lat && !!lon, label: 'Geograafilised koordinaadid', value: (lat && lon) ? lat + '°N, ' + lon + '°E' : 'puuduvad' });
         checks.push({ ok: !!k.sihtotstarbe || !!k.sihtotstarve, label: 'Sihtotstarve', value: formatSihtotstarve(k.sihtotstarbe || k.sihtotstarve) });
         checks.push({ ok: eraldised.length > 0, label: 'Metsaeraldised', value: eraldised.length + ' tk (' + formatNum(metsPindala, 1) + ' ha)' });
-        checks.push({ ok: !!k.mk_nimi, label: 'Maakond', value: k.mk_nimi || '—' });
-        checks.push({ ok: !!k.ov_nimi, label: 'Vald', value: k.ov_nimi || '—' });
+        checks.push({ ok: !!k.mk_nimi, label: 'Maakond', value: k.mk_nimi || NO_VALUE });
+        checks.push({ ok: !!k.ov_nimi, label: 'Vald', value: k.ov_nimi || NO_VALUE });
         checks.push({
             ok: protection.sourcesComplete,
             label: 'Looduskaitse registri eelsõel',
@@ -3992,19 +4003,26 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         if (data.yrask_hinnang || data.yrask) {
             var y = data.yrask_hinnang || data.yrask;
             var stateColors = ['var(--data-state-ok)', 'var(--data-state-info)', 'var(--data-state-warn)', 'var(--data-state-danger)'];
-            var riskText = String(y.label || '—')
+            var riskText = String(y.label || NO_VALUE)
                 .replace(/\s+·\s+puistu detailid osalised$/i, '')
                 .replace(/\s+·\s+kihikontroll osaline$/i, '');
-            var riskSeparator = riskText.indexOf(' — ');
+            // Server eraldab taseme ja selgituse kooloniga; vana kujundus
+            // (mõttekriips) jääb tolerantsiks vahemällu jäänud vastustele.
+            var riskSeparator = riskText.indexOf(': ');
+            var riskSeparatorLength = 2;
+            if (riskSeparator === -1) {
+                riskSeparator = riskText.indexOf(' — ');
+                riskSeparatorLength = 3;
+            }
             var riskLevel = riskSeparator === -1 ? riskText : riskText.slice(0, riskSeparator);
-            var riskExplanation = riskSeparator === -1 ? '' : riskText.slice(riskSeparator + 3).trim();
+            var riskExplanation = riskSeparator === -1 ? '' : riskText.slice(riskSeparator + riskSeparatorLength).trim();
             if (riskExplanation) riskExplanation = riskExplanation.charAt(0).toLocaleUpperCase('et-EE') + riskExplanation.slice(1);
             var incompleteStandDetails = y.spruce_data_complete === false
                 || /puistu detailid osalised/i.test(String(y.label || ''));
             var incompleteLayerCheck = y.layer_sources_complete === false
                 || /kihikontroll osaline/i.test(String(y.label || ''));
             html += '<div class="info-row risk-row"><span class="label">Üraski risk ' + ddInfo('Risk tõuseb ainult siis, kui kinnistul on kuuske. Arvesse lähevad kuuse vanus, EELIS-e vaatluskattuvus ja MKE kiht; kihikattuvus ei tõesta üksiku puu kahjustust.') + '</span>';
-            html += '<span class="value" style="color:' + (stateColors[y.score] || 'var(--ink-4)') + ';font-weight:600">' + escHtml(riskLevel || '—') + '</span></div>';
+            html += '<span class="value" style="color:' + (stateColors[y.score] || 'var(--ink-4)') + ';font-weight:600">' + escHtml(riskLevel || NO_VALUE) + '</span></div>';
             if (riskExplanation) html += '<div class="risk-explanation">' + escHtml(riskExplanation) + '</div>';
             if (y.detail) html += '<div class="risk-detail">' + escHtml(y.detail) + '</div>';
             if (incompleteStandDetails) html += '<div class="risk-source-note">Puistu detailid osalised</div>';
@@ -4173,12 +4191,12 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
              var eraldisText = eraldisNr === null ? null : eraldisLabel(eraldisNr);
              var eraldisCell = eraldisNr !== null
                  ? '<span class="teatised-eraldis-nr" title="' + escHtml(eraldisText) + '"><span class="teatised-eraldis-prefix">Eraldis </span>' + escHtml(eraldisNr) + '</span>'
-                 : '<span class="muted">—</span>';
+                 : '<span class="muted">' + NO_VALUE + '</span>';
             html += '<div class="table-grid-row teatised-row' + (t.arhiiv ? ' is-archived' : '') + '">';
             var noticeMeta = [];
             if (t.otsus_kinnitatud_kp) noticeMeta.push('Otsus: ' + formatDateEt(t.otsus_kinnitatud_kp));
             if (t.maht != null) noticeMeta.push('Kavandatud maht: ' + formatNum(t.maht) + ' m³');
-            html += '<div class="teatised-type" data-label="Tüüp"><div class="teatised-type-value">' + escHtml(t.tyyp || '—')
+            html += '<div class="teatised-type" data-label="Tüüp"><div class="teatised-type-value">' + escHtml(t.tyyp || NO_VALUE)
                 + (noticeMeta.length ? '<span class="teatised-type-meta">' + noticeMeta.map(function(item) {
                     return '<span>' + escHtml(item) + '</span>';
                 }).join('') + '</span>' : '')
@@ -4186,7 +4204,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             html += '<div class="teatised-eraldis" data-label="Eraldis">' + eraldisCell + '</div>';
             html += '<div data-label="Staatus">' + teatisedStatusBadge(t.event_status, t.event_status_label, t.staatus, t.active, t.arhiiv) + '</div>';
             html += '<div data-label="Kehtiv kuni">' + escHtml(formatDateEt(t.kehtiv_kuni)) + '</div>';
-            html += '<div data-label="Pindala">' + (t.pindala_ha ? formatNum(t.pindala_ha, 2) + ' ha' : '—') + '</div>';
+            html += '<div data-label="Pindala">' + (t.pindala_ha ? formatNum(t.pindala_ha, 2) + ' ha' : NO_VALUE) + '</div>';
             html += '</div>';
         });
         html += '</div>';
@@ -4663,7 +4681,7 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             'toetused-info', 'eudr-info',
         ].forEach(function(id) {
             var panel = document.getElementById(id);
-            if (panel) panel.innerHTML = '<p class="muted">—</p>';
+            if (panel) panel.innerHTML = '<p class="muted">' + NO_VALUE + '</p>';
         });
     }
 
@@ -4718,21 +4736,21 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         var ield = document.getElementById('kataster-info');
         if (ield) ield.innerHTML = '<div class="error-state"><div class="error-state-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="error-state-text">' + escHtml(msg) + '</div><div class="error-state-hint">Kontrolli katastritunnust ja proovi uuesti.</div></div>';
         var metsEl = document.getElementById('mets-info');
-        if (metsEl) metsEl.innerHTML = '<p class="muted">—</p>';
+        if (metsEl) metsEl.innerHTML = '<p class="muted">' + NO_VALUE + '</p>';
         var vaartusEl = document.getElementById('vaartus-info');
-        if (vaartusEl) vaartusEl.innerHTML = '<p class="muted">—</p>';
+        if (vaartusEl) vaartusEl.innerHTML = '<p class="muted">' + NO_VALUE + '</p>';
         var sinikEl = document.getElementById('sinik-info');
-        if (sinikEl) sinikEl.innerHTML = '<p class="muted">—</p>';
+        if (sinikEl) sinikEl.innerHTML = '<p class="muted">' + NO_VALUE + '</p>';
         var riskEl = document.getElementById('riskid-info');
-        if (riskEl) riskEl.innerHTML = '<p class="muted">—</p>';
+        if (riskEl) riskEl.innerHTML = '<p class="muted">' + NO_VALUE + '</p>';
         var teatisEl = document.getElementById('teatised-info');
-        if (teatisEl) teatisEl.innerHTML = '<p class="muted">—</p>';
+        if (teatisEl) teatisEl.innerHTML = '<p class="muted">' + NO_VALUE + '</p>';
         var kitsEl = document.getElementById('kitsendused-info');
-        if (kitsEl) kitsEl.innerHTML = '<p class="muted">—</p>';
+        if (kitsEl) kitsEl.innerHTML = '<p class="muted">' + NO_VALUE + '</p>';
         var toetEl = document.getElementById('toetused-info');
-        if (toetEl) toetEl.innerHTML = '<p class="muted">—</p>';
+        if (toetEl) toetEl.innerHTML = '<p class="muted">' + NO_VALUE + '</p>';
         var eudrEl = document.getElementById('eudr-info');
-        if (eudrEl) eudrEl.innerHTML = '<p class="muted">—</p>';
+        if (eudrEl) eudrEl.innerHTML = '<p class="muted">' + NO_VALUE + '</p>';
     }
 
     function dismissMapHint() {

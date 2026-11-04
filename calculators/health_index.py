@@ -27,16 +27,16 @@ def calculate_beetle_risk(
     if not has_spruce:
         return {
             "score": 0,
-            "label": "Madal — kuuske ei tuvastatud",
+            "label": "Madal: kuuske ei tuvastatud",
             "official_zone": False,
             "detail": "Kuuske ei tuvastatud; kihikattuvus üksi ei tõesta puistu üraskikahjustust.",
         }
     if in_mke_zone:
-        score, label = 3, "Kriitiline — MKE kattuvus"
+        score, label = 3, "Kriitiline: MKE kattuvus"
     elif has_eelis_observation or max_spruce_age > 50:
-        score, label = 2, "Kõrge — vaatlus või vana kuusk"
+        score, label = 2, "Kõrge: vaatlus või vana kuusk"
     elif max_spruce_age > 30:
-        score, label = 1, "Keskmine — kuusk üle 30 a"
+        score, label = 1, "Keskmine: kuusk üle 30 a"
     else:
         score, label = 0, "Madal"
     return {

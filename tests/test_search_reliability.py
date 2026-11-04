@@ -489,6 +489,11 @@ class SearchReliabilityTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(result["mets"]["stock_missing_eraldised"], [1, 7, 12])
         self.assertEqual(result["vaartus"]["stock_missing_eraldised"], [1, 7, 12])
+        # Korduv number = mitu eraldist sama numbriga; loendur hoiab teabe alles.
+        self.assertEqual(
+            result["mets"]["stock_missing_eraldised_counts"],
+            {"1": 1, "7": 2, "12": 1},
+        )
         self.assertAlmostEqual(result["mets"]["stock_missing_area_ha"], 5.5)
 
     async def test_species_composition_per_hectare_uses_the_covered_area(self):

@@ -79,7 +79,7 @@ PAGES: tuple[SeoPage, ...] = (
             "Maa- ja Ruumiameti katastriandmed, EELISe kaitsealad ja metsateatised "
             "ühte vaatesse. Sisesta katastritunnus või aadress ja näed metsamaa "
             "pindala, tagavara, puuliike, vanust, hinnavahemikku, süsinikuvaru, "
-            "piiranguid ja toetusi — iga näitaja juures on allikas ja ajaseis."
+            "piiranguid ja toetusi, iga näitaja juures on allikas ja ajaseis."
         ),
         summary=(
             "Metsaandmed katastritunnuse järgi saab kätte ühe päringuga: Terrapoint "
@@ -154,7 +154,7 @@ PAGES: tuple[SeoPage, ...] = (
             ),
         ),
         sources=(
-            Source("Maa- ja Ruumiamet — kataster ja kitsenduste kaart", "https://www.maaamet.ee/"),
+            Source("Maa- ja Ruumiamet: kataster ja kitsenduste kaart", "https://www.maaamet.ee/"),
             Source("Metsaregister", "https://register.metsad.ee/"),
             Source("EELIS (Eesti Looduse Infosüsteem)", "https://eelis.ee/"),
             Source("Kultuurimälestiste register", "https://register.muinas.ee/"),
@@ -169,7 +169,7 @@ PAGES: tuple[SeoPage, ...] = (
     ),
     SeoPage(
         slug="metsa-hind",
-        title="Metsa hind ja väärtus — kuidas see kujuneb | Terrapoint",
+        title="Metsa hind ja väärtus: kuidas see kujuneb | Terrapoint",
         description=(
             "Metsa hind ja väärtus Eestis: tagavara, puuliigid, hinnavahemik ja maa "
             "referents. Terrapoint näitab arvutuskäiku, kasutatud hindu ja katvust."
@@ -249,8 +249,8 @@ PAGES: tuple[SeoPage, ...] = (
             ),
         ),
         sources=(
-            Source("Eesti Erametsaliit — puidu hinnainfo", "https://www.erametsaliit.ee/"),
-            Source("Metsaregister — eraldiste andmed", "https://register.metsad.ee/"),
+            Source("Eesti Erametsaliit: puidu hinnainfo", "https://www.erametsaliit.ee/"),
+            Source("Metsaregister: eraldiste andmed", "https://register.metsad.ee/"),
             Source("Metsaseadus", "https://www.riigiteataja.ee/akt/116012017002"),
         ),
         related=(
@@ -287,7 +287,7 @@ PAGES: tuple[SeoPage, ...] = (
                     "Iga meede on kolmes grupis: kinnistuga seotud avatud või aastaringne "
                     "meede, vooru avanemist jälgiv meede ning „muud meetmed ja lõppenud "
                     "voorud”. Grupp näitab, kui tõenäoline on, et meede sellele kinnistule "
-                    "kohaldub — mitte seda, et taotlus õnnestub.",
+                    "kohaldub, mitte seda, et taotlus õnnestub.",
                 ),
                 bullets=(
                     "Sobivus: kas kinnistu asukoht ja kaitse staatus vastavad meetme alale",
@@ -321,9 +321,9 @@ PAGES: tuple[SeoPage, ...] = (
             ),
         ),
         sources=(
-            Source("Keskkonnaamet — toetused", "https://keskkonnaamet.ee/"),
+            Source("Keskkonnaamet: toetused", "https://keskkonnaamet.ee/"),
             Source("Keskkonnainvesteeringute Keskus (KIK)", "https://kik.ee/"),
-            Source("Metsaregister — metsateatis", "https://register.metsad.ee/"),
+            Source("Metsaregister: metsateatis", "https://register.metsad.ee/"),
         ),
         related=(
             ("metsaandmed-katastritunnuse-jargi", "Metsaandmed katastritunnuse järgi"),
@@ -345,7 +345,7 @@ PAGES: tuple[SeoPage, ...] = (
             "EUDR (määrus (EL) 2023/1115) nõuab puittoodete tarneahelas geolokatsiooni "
             "andmeid selle maa kohta, kust puit pärineb. Terrapoint valmistab Eesti "
             "katastriüksuse kohta GeoJSON-faili ametliku kinnistugeomeetriaga ja "
-            "registri eelsõeluga — see on lähteandmete pakett, mitte vastavustõend."
+            "registri eelsõeluga, see on lähteandmete pakett, mitte vastavustõend."
         ),
         summary=(
             "EUDR geolokatsioon on GeoJSON, mis sisaldab katastriüksuse ametlikku "
@@ -416,8 +416,8 @@ PAGES: tuple[SeoPage, ...] = (
         ),
         sources=(
             Source("Määrus (EL) 2023/1115 (EUDR)", "https://eur-lex.europa.eu/eli/reg/2023/1115/oj"),
-            Source("Euroopa Komisjon — metsaraie määrus", "https://environment.ec.europa.eu/topics/forests/deforestation/regulation-deforestation-free-products_en"),
-            Source("Maa- ja Ruumiamet — kataster", "https://www.maaamet.ee/"),
+            Source("Euroopa Komisjon: metsaraie määrus", "https://environment.ec.europa.eu/topics/forests/deforestation/regulation-deforestation-free-products_en"),
+            Source("Maa- ja Ruumiamet: kataster", "https://www.maaamet.ee/"),
         ),
         related=(
             ("metsaandmed-katastritunnuse-jargi", "Metsaandmed katastritunnuse järgi"),
@@ -496,7 +496,7 @@ PAGES: tuple[SeoPage, ...] = (
             Source("Maa- ja Ruumiamet", "https://www.maaamet.ee/"),
             Source("Metsaregister", "https://register.metsad.ee/"),
             Source("EELIS", "https://eelis.ee/"),
-            Source("EstHub — Sentinel-2 päevamosaiik", "https://esthub.maaruum.ee/est/satiladu-p1.html"),
+            Source("EstHub: Sentinel-2 päevamosaiik", "https://esthub.maaruum.ee/est/satiladu-p1.html"),
             Source("Eesti Erametsaliit", "https://www.erametsaliit.ee/"),
         ),
         related=(
@@ -512,7 +512,7 @@ PAGES: tuple[SeoPage, ...] = (
         title="Korduma kippuvad küsimused | Terrapoint",
         description=(
             "Vastused levinumatele küsimustele Terrapointi, metsaandmete, hinnangute, "
-            "toetuste ja EUDR-i kohta — lühidalt ja allikate viidetega."
+            "toetuste ja EUDR-i kohta, lühidalt ja allikate viidetega."
         ),
         h1="Korduma kippuvad küsimused",
         lede=(

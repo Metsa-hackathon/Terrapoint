@@ -1080,8 +1080,8 @@ BROWSER_CONTENT_SECURITY_POLICY = (
     "default-src 'self'; base-uri 'self'; object-src 'none'; "
     "frame-ancestors 'self' https://praktika.arleserver.cfd https://praktika.arle.top; "
     "form-action 'self'; manifest-src 'self'; worker-src 'none'; "
-    "script-src 'self' 'sha256-j1llpWYtXVTa3cLHYMQY059Jthoo6f3wsenp+loY+98='; "
-    "script-src-elem 'self' 'sha256-j1llpWYtXVTa3cLHYMQY059Jthoo6f3wsenp+loY+98='; "
+    "script-src 'self' 'sha256-vNPk/AsBJn2/n3PjgnKPTS4Gj4nvWZ8ecXVGhXi890U='; "
+    "script-src-elem 'self' 'sha256-vNPk/AsBJn2/n3PjgnKPTS4Gj4nvWZ8ecXVGhXi890U='; "
     "style-src 'self'; "
     "style-src-elem 'self'; "
     "style-src-attr 'unsafe-inline'; "
@@ -3135,15 +3135,16 @@ async def _search_core(
         stock_covered = bool(stock_stands) and stock_coverage >= MIN_STOCK_COVERAGE
         # Kasutajale näidatakse eraldiste numbreid kasvavas järjekorras ja iga
         # number korra: Metsaregister võib sama eraldise numbri all tagastada
-        # mitu kirjet, aga loeteluna on „1, 2, 3, 4 …” jälgitav, kordustega
-        # jada ei ole.
-        missing_stand_numbers = sorted(
-            {
-                _normalize_eraldis_nr(stand.get("eraldis_nr"))
-                for stand in stock_missing_stands
-                if _normalize_eraldis_nr(stand.get("eraldis_nr")) is not None
-            }
-        )
+        # mitu kirjet (metsaregister:eraldis ei anna kvartali numbrit, millega
+        # neid eristada), aga loeteluna on „1, 2, 3, 4 …” jälgitav, kordustega
+        # jada ei ole. Korduv number saab loenduri, et teave ei kaoks.
+        missing_stand_counts: dict[int, int] = {}
+        for stand in stock_missing_stands:
+            number = _normalize_eraldis_nr(stand.get("eraldis_nr"))
+            if number is None:
+                continue
+            missing_stand_counts[number] = missing_stand_counts.get(number, 0) + 1
+        missing_stand_numbers = sorted(missing_stand_counts)
         stock_coverage_fields = {
             "stock_data_complete": stock_complete,
             "forest_area_ha": round(total_pindala, 2),
@@ -3151,6 +3152,9 @@ async def _search_core(
             "stock_known_area_ha": round(stock_known_area_ha, 2),
             "stock_missing_area_ha": stock_missing_area_ha,
             "stock_missing_eraldised": missing_stand_numbers,
+            "stock_missing_eraldised_counts": {
+                str(number): count for number, count in sorted(missing_stand_counts.items())
+            },
         }
 
         # Weighted average tagavara and vanus
@@ -3826,7 +3830,7 @@ async def _search_core(
         beetle["spruce_data_complete"] = spruce_data_complete
         beetle["sources_complete"] = beetle_layers_complete and spruce_data_complete
         if not has_kuusk and not spruce_data_complete:
-            beetle["label"] = "Staatus teadmata — kuuse koosseisu detailid on osalised"
+            beetle["label"] = "Staatus teadmata: kuuse koosseisu detailid on osalised"
             beetle["detail"] = "Kuuse puudumist ei saa osaliste registridetailide põhjal kinnitada."
         elif not beetle_layers_complete:
             beetle["label"] += " · kihikontroll osaline"

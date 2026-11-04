@@ -6,6 +6,26 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > koduserveri tunnel). `terrapoint.vercel.app` suunab `vercel.json` redirectiga
 > (308) terrapoint.ee-le; push master branchi deployib koduserveri.
 
+## [Määramata] - 2026-11-04 (keel ja pildid)
+
+### Muudetud
+- **Mõttekriipsud välja kasutajale nähtavast tekstist.** Meta-kirjeldus, `og:image:alt`,
+  JSON-LD `alternateName`, kontaktivormi sissejuhatus, SEO-lehtede pealkirjad ja
+  allikaviited, seo_pages.py kirjeldused, `health_index.py` riskisildid ning
+  app.js-i teated kasutavad koolonit, koma või sulge. Numbervahemikud jäävad
+  en-dashiga (`61–100 a`, `01.12–15.12.2026`).
+- **Puuduv väärtus on sõna, mitte kriips.** app.js-is `NO_VALUE = 'puudub'`;
+  varem kuvati tühja välja asemel `—`. Riskisildi taseme ja selgituse eraldaja on
+  nüüd `: ` (vana ` — ` jääb tolerantsiks vahemällu jäänud vastustele).
+- **„Meist" sektsioonis on ühe grupipildi asemel kolm portreefotot**
+  (`team_2026_1..3.webp`, lõigatud `team-hackathon-2026.jpg`-st), all ühine
+  pealkiri ja nimede rida. CSS: `.about-photos`, `.about-photo-grid`.
+- **Puuduvate eraldiste loendurid.** `stock_missing_eraldised_counts` annab iga
+  korduva numbri kohta mitu eraldist (metsaregister:eraldis ei anna kvartali
+  numbrit), seega märge loeb „Eraldised 1 ×3, 2 ×3, 3, 4 ×2, …”.
+- **CSP hash uuendatud** (`sha256-vNPk…`) vercel.json-is ja api/index.py-s, sest
+  JSON-LD muutus; vahemäluvõtmed `style.css` jkl140, `app.js` jkl021.
+
 ## [Määramata] - 2026-11-04 (UI)
 
 ### Muudetud

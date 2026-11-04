@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Metsaandmed katastritunnuse järgi | Terrapoint</title>
-    <meta name="description" content="Terrapoint koondab ühe katastritunnuse alla Metsaregistri eraldised, puidu hinnavahemiku, süsinikuvaru, kitsendused ja toetused — allikate ja ajaseisuga.">
+    <meta name="description" content="Terrapoint koondab ühe katastritunnuse alla Metsaregistri eraldised, puidu hinnavahemiku, süsinikuvaru, kitsendused ja toetused, iga näitaja juures allikas.">
     <meta name="author" content="Terrapoint">
     <meta name="publisher" content="Terrapoint">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1, max-preview:-1">
@@ -31,7 +31,7 @@
     <link rel="mask-icon" href="/static/favicon.svg" color="#0a3d9e">
     <link rel="manifest" href="/site.webmanifest">
     <meta property="og:title" content="Metsaandmed katastritunnuse järgi | Terrapoint">
-    <meta property="og:description" content="Terrapoint koondab ühe katastritunnuse alla Metsaregistri eraldised, puidu hinnavahemiku, süsinikuvaru, kitsendused ja toetused — allikate ja ajaseisuga.">
+    <meta property="og:description" content="Terrapoint koondab ühe katastritunnuse alla Metsaregistri eraldised, puidu hinnavahemiku, süsinikuvaru, kitsendused ja toetused, iga näitaja juures allikas.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://terrapoint.ee/">
     <meta property="og:site_name" content="Terrapoint">
@@ -41,12 +41,12 @@
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="Terrapoint — Eesti metsaandmete analüüsi tööriist: maa referents, puidustsenaariumid, eraldised, süsinikuvaru, riskid ja toetused.">
+    <meta property="og:image:alt" content="Terrapoint: Eesti metsaandmete analüüsi tööriist. Maa referents, puidustsenaariumid, eraldised, süsinikuvaru, riskid ja toetused.">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Metsaandmed katastritunnuse järgi | Terrapoint">
-    <meta name="twitter:description" content="Terrapoint koondab ühe katastritunnuse alla Metsaregistri eraldised, puidu hinnavahemiku, süsinikuvaru, kitsendused ja toetused — allikate ja ajaseisuga.">
+    <meta name="twitter:description" content="Terrapoint koondab ühe katastritunnuse alla Metsaregistri eraldised, puidu hinnavahemiku, süsinikuvaru, kitsendused ja toetused, iga näitaja juures allikas.">
     <meta name="twitter:image" content="https://terrapoint.ee/static/og-image.png">
-    <meta name="twitter:image:alt" content="Terrapoint — Eesti metsaandmete analüüsi tööriist">
+    <meta name="twitter:image:alt" content="Terrapoint: Eesti metsaandmete analüüsi tööriist">
     <meta name="twitter:label1" content="Otsing">
     <meta name="twitter:data1" content="Katastri number või aadress">
     <link rel="preconnect" href="https://tiles.maaamet.ee">
@@ -55,7 +55,7 @@
     <script src="/static/vendor/leaflet/leaflet.js?v=1.9.4" defer></script>
     <link rel="stylesheet" href="/static/css/fonts.css?r=jkl001">
     <link rel="stylesheet" href="/static/css/font-sizes.css?r=jkl034">
-    <link rel="stylesheet" href="/static/css/style.css?r=jkl138">
+    <link rel="stylesheet" href="/static/css/style.css?r=jkl140">
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -64,7 +64,7 @@
           "@type": "WebSite",
           "@id": "https://terrapoint.ee/#website",
           "name": "Terrapoint",
-          "alternateName": "Terrapoint — Eesti metsaandmete analüüs",
+          "alternateName": "Eesti metsaandmete analüüs",
           "url": "https://terrapoint.ee/",
           "inLanguage": "et",
           "description": "Eesti metsaandmete analüüsi tööriist: maa referents, puidustsenaariumid, eraldised, süsinikuvaru, riskid ja toetused.",
@@ -111,7 +111,7 @@
           "@type": "WebApplication",
           "@id": "https://terrapoint.ee/#webapp",
           "name": "Terrapoint",
-          "alternateName": "Terrapoint — Metsaportaal",
+          "alternateName": "Terrapointi metsaportaal",
           "url": "https://terrapoint.ee/",
           "inLanguage": "et",
           "applicationCategory": "BusinessApplication",
@@ -305,7 +305,7 @@
     </div>
 
     <main>
-    <!-- Landing / Intro — angled forest hero (trees at an angle, disappear on scroll) -->
+    <!-- Landing / Intro: angled forest hero (trees at an angle, disappear on scroll) -->
     <section class="landing hero-scene" id="landing" aria-label="Terrapoint sissejuhatus">
         <div class="hero-trees" aria-hidden="true">
             <div class="hero-tree hero-tree--left hero-tree--left-1"><picture><source media="(min-width: 769px)" type="image/webp" srcset="/static/img/tree-barrier-left.webp"><img src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" alt="" decoding="async"></picture></div>
@@ -361,7 +361,7 @@
         </div>
     </section>
 
-    <!-- Dashboard (nähtav kohe lehe alguses — kaart + 9 preview sektsiooni,
+    <!-- Dashboard (nähtav kohe lehe alguses: kaart + 9 preview sektsiooni,
          andmed laaditakse peale otsingut) -->
     <section id="dashboard" class="dashboard" aria-label="Kinnistu analüüsi tulemused" tabindex="-1">
         <h2 id="dashboard-title" class="sr-only" hidden>Kinnistu analüüsi tulemused</h2>
@@ -385,7 +385,7 @@
                 <div class="map-confirm" id="map-confirm" role="dialog" aria-labelledby="map-confirm-title" aria-describedby="map-confirm-text" aria-modal="false" hidden>
                     <div class="map-confirm-card">
                         <div class="map-confirm-eyebrow" id="map-confirm-title">Leitud katastriüksus</div>
-                        <div class="map-confirm-tunnus" id="map-confirm-tunnus">—</div>
+                        <div class="map-confirm-tunnus" id="map-confirm-tunnus"></div>
                         <div class="map-confirm-text" id="map-confirm-text">Kas soovid vaadata selle kinnistu andmeid?</div>
                         <div class="map-confirm-actions">
                             <button type="button" class="map-confirm-btn map-confirm-btn-secondary" id="map-confirm-cancel">Tühista</button>
@@ -688,13 +688,17 @@
             <h2 class="about-title">Metsaandmed <em>metsaomaniku</em> heaks.</h2>
             <p class="about-lead">Terrapoint koondab Eesti avalikud metsa- ja kinnistuandmed ühte otsingusse: sisesta katastritunnus või aadress, vaata maa referentsi, puidustsenaariume, eraldiste seisukorda ja toetusi. Päring tehakse otsingu ajal, kuid registrikannete ja avaldatud hinnainfo ajaseis võib erineda.</p>
 
-            <div class="about-photo">
-                <img src="/static/img/team-hackathon-2026.jpg" alt="Terrapoint tiim Metsikult andmetes 2026 häkatoni võitjad: Krister Koger, Kaspar Mälgand, Arle Aron Reidma" loading="lazy" decoding="async">
-                <div class="about-photo-caption">
-                    <span class="about-photo-caption-title">„Metsikult andmetes 2026" võitjad</span>
-                    <span class="about-photo-caption-names">Krister Koger · Kaspar Mälgand · Arle Aron Reidma</span>
+            <figure class="about-photos">
+                <div class="about-photo-grid">
+                    <img src="/static/img/team_2026_1.webp" alt="Terrapointi tiimiliige Metsikult andmetes 2026 häkatoni laval" width="420" height="840" loading="lazy" decoding="async">
+                    <img src="/static/img/team_2026_2.webp" alt="Terrapointi tiimiliige hoiab Metsikult andmetes 2026 esikoha diplomit" width="420" height="840" loading="lazy" decoding="async">
+                    <img src="/static/img/team_2026_3.webp" alt="Terrapointi tiimiliige Metsikult andmetes 2026 häkatoni laval" width="420" height="840" loading="lazy" decoding="async">
                 </div>
-            </div>
+                <figcaption class="about-photos-caption">
+                    <span class="about-photos-caption-title">„Metsikult andmetes 2026" võitjad</span>
+                    <span class="about-photos-caption-names">Krister Koger · Kaspar Mälgand · Arle Aron Reidma</span>
+                </figcaption>
+            </figure>
 
             <div class="about-hackathon">
                 <div class="about-hackathon-badge">
@@ -748,7 +752,7 @@
     <section class="contact" id="kontakt" aria-label="Kontakt">
         <div class="contact-inner">
             <h2 class="contact-title">Küsimused või <em>koostöö</em>?</h2>
-            <p class="contact-lead">Kui on küsimus, soov või mõte — kirjutage julgelt:</p>
+            <p class="contact-lead">Kui on küsimus, soov või mõte, kirjutage julgelt:</p>
             <a class="contact-email" href="mailto:arle.reidma@gmail.com">arle.reidma@gmail.com</a>
         </div>
     </section>
@@ -913,7 +917,7 @@
         </div>
     </footer>
 
-    <script defer src="/static/js/app.js?r=jkl019"></script>
+    <script defer src="/static/js/app.js?r=jkl021"></script>
     <script defer src="/static/js/hero.js?r=jkl001"></script>
 </body>
 </html>

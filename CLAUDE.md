@@ -89,6 +89,19 @@ Metsa väärtuse ja andmete analüüsi veebirakendus. FastAPI backend + HTML/CSS
 - MD failid: `CLAUDE.md` (agent kontekst), `CHANGELOG.md` (ajalugu).
   Ei ole eraldi `AGENTS.md` / `OPENCODE.md` — kogu agent info on `CLAUDE.md`-s.
 
+## Keel ja kujundus
+- **Mõttekriipsu (— või –) kasutajale nähtavas tekstis ei ole** (kasutaja reegel,
+  2026-11-04). Asendus: koolon, koma, sulud või punkt. Numbervahemikud jäävad
+  en-dashiga (`61–100 a`, `01.12–15.12.2026`). Kehtib meta-kirjeldusele,
+  JSON-LD-le, SEO-lehtedele (`seo_pages.py`), riskisiltidele ja app.js-i tekstidele.
+- Tühja välja asemel kuvatakse sõna `puudub` (`NO_VALUE` app.js-is), mitte `—`.
+- **JSON-LD muutmine nõuab CSP hashi uuendust**: `index.html` JSON-LD ploki
+  sha256 peab olema nii `vercel.json`-is kui `api/index.py`-s, muidu blokeerib
+  CSP struktuurandmed. Test `test_csp_limits_network_hosts_and_inline_execution`
+  püüab vahe kinni.
+- Staatiliste failide vahemäluvõti (`?r=jklNNN`) tuleb iga `style.css`/`app.js`
+  muudatuse järel tõsta, muidu jääb brauserisse vana fail.
+
 ## SEO töö käib GSC kaudu
 - Kasutaja reegel (2026-11-04): **iga SEO muudatuse kontroll ja lõpetamine käib Google
   Search Console'is** — vaata Performance/Coverage/URL Inspection, esita sitemap ja
