@@ -266,6 +266,42 @@ class MapContextCoreTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(source["approximate_parcel_overlap_percent"], 50.0)
         self.assertEqual(source["affected_stand_numbers"], [4])
 
+    async def test_layer_geometry_is_cut_to_the_parcel_not_left_whole(self):
+        # A restriction zone spanning several properties must reach the map as
+        # the part inside this parcel only; drawing the whole object made the
+        # neighbouring land look like part of the answer.
+        parcel_data = {**parcel(), "geometry": SQUARE_PARCEL_GEOMETRY}
+        spanning_zone = {
+            "type": "Feature",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [[[-1, 0.25], [2, 0.25], [2, 0.75], [-1, 0.75], [-1, 0.25]]],
+            },
+            "properties": {"nimi": "Piiranguvöönd üle mitme kinnistu"},
+        }
+        with (
+            patch("api.index.query_kataster", new=AsyncMock(return_value=parcel_data)),
+            patch("api.index.query_eraldis", new=AsyncMock(return_value=[])),
+            patch(
+                "api.index.query_layers",
+                new=AsyncMock(return_value=({"natura_elupaik": [spanning_zone]}, [], [])),
+            ),
+        ):
+            result = await api._map_context_core(KATASTER_NR, ["species_habitats"])
+
+        theme = result["themes"]["species_habitats"]
+        feature = theme["features"][0]
+        geometry = feature["geometry"]
+        from shapely.geometry import shape as shapely_shape
+
+        clipped = shapely_shape(geometry)
+        self.assertTrue(feature["properties"]["clipped_to_parcel"])
+        self.assertAlmostEqual(clipped.bounds[0], 0.0, places=6)
+        self.assertAlmostEqual(clipped.bounds[2], 1.0, places=6)
+        self.assertAlmostEqual(clipped.area, 0.5, places=6)
+        # The overlap figure still measures the real intersection, not the object.
+        self.assertEqual(theme["approximate_parcel_overlap_percent"], 50.0)
+
     async def test_stand_failure_does_not_block_parcel_or_theme_matches(self):
         selected_query = AsyncMock(return_value=({"natura_elupaik": [MATCHING_FEATURE]}, [], []))
         with (

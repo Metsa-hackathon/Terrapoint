@@ -1415,7 +1415,6 @@ var aiUnavailable = false;
 var hints = null;
 var restrictionsLink = {{style: {{display: 'block'}}}};
 var inputArea = {{style: {{display: ''}}}};
-var satelliteCleared = false;
 var sheet = {{removed: false, remove() {{ this.removed = true; }}}};
 var katasterPanel = {{innerHTML: '78404:409:0113'}};
 var eudrPanel = {{innerHTML: 'EUDR eksport'}};
@@ -1438,7 +1437,6 @@ function renderMapWorkspaceState() {{}}
 function aiShowUnavailableData() {{ aiUnavailable = true; }}
 function aiRenderEraldisHints(value) {{ hints = value; }}
 function cancelMapSelection() {{}}
-function clearSatelliteScene() {{ satelliteCleared = true; }}
 function closeEraldisSheet() {{ sheet.remove(); }}
 var _aiUserScrolledUp = true;
 const NO_VALUE = 'puudub';
@@ -1463,7 +1461,6 @@ console.log(JSON.stringify({{
   restrictionsDisplay: restrictionsLink.style.display,
   inputDisplay: inputArea.style.display,
   sheetRemoved: sheet.removed,
-  satelliteCleared,
   katasterPanel: katasterPanel.innerHTML,
   eudrPanel: eudrPanel.innerHTML,
 }}));
@@ -1486,7 +1483,6 @@ console.log(JSON.stringify({{
         self.assertEqual(state["restrictionsDisplay"], "none")
         self.assertEqual(state["inputDisplay"], "none")
         self.assertTrue(state["sheetRemoved"])
-        self.assertTrue(state["satelliteCleared"])
         self.assertNotIn("78404:409:0113", state["katasterPanel"])
         self.assertNotIn("EUDR eksport", state["eudrPanel"])
 
@@ -2213,18 +2209,6 @@ console.log(JSON.stringify({{
         self.assertNotIn("maaruumGrayMap", init_map)
         self.assertNotIn("L.control.layers", init_map)
         self.assertNotIn("baselayerchange", init_map)
-
-    def test_satellite_overlay_is_a_separate_layer_not_a_basemap(self):
-        init_map = _extract_js_function("initMap")
-
-        self.assertIn('id="map-satellite-control"', INDEX_HTML)
-        self.assertIn('aria-pressed="true"', INDEX_HTML)
-        self.assertIn("createPane('map-satellite')", init_map)
-        self.assertIn("API_BASE + '/satellite/'", APP_JS)
-        self.assertIn("L.imageOverlay(", APP_JS)
-        # Aluskaart ise jääb ortofotoks: satelliitpilt ei tohi seda välja vahetada.
-        self.assertIn("maaruumOrthophoto.addTo(map)", init_map)
-        self.assertNotIn("basemapExtractionDateEt = 'Sentinel", init_map)
 
     def test_tile_errors_never_change_the_selected_official_basemap(self):
         init_map = _extract_js_function("initMap")

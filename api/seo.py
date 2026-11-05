@@ -356,7 +356,7 @@ def llms_txt() -> str:
         "",
         "Terrapoint is a free Estonian web tool that aggregates public forest and "
         "cadastral registry data (Maa- ja Ruumiamet, Metsaregister, EELIS, "
-        "Kultuurimälestiste register, EstHub Sentinel-2) for a single cadastral "
+        "Kultuurimälestiste register) for a single cadastral "
         "unit, with source and freshness metadata per figure.",
         "",
         "## Key facts",

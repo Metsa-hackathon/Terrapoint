@@ -481,9 +481,6 @@
         source = isMapRecord(source) ? source : {};
         var label = typeof source.label === 'string' ? source.label.trim() : '';
         var identity = label.toLocaleLowerCase('et-EE').replace(/\s+/g, ' ');
-        if (identity === 'esthub' || /^(?:satelliitpildid|sateliitpildid)\s*:\s*esthub$/.test(identity)) {
-            return 'Sentinel-2 satelliitpildid (EstHub)';
-        }
         if (!label || (/^[a-z0-9._:-]+$/.test(label) && label === label.toLocaleLowerCase('et-EE'))) {
             return 'Allikas';
         }
@@ -2391,8 +2388,6 @@
         focusedThemePane.style.zIndex = '430';
         // EstHubi satelliitpilt käib ortofoto (vaikimisi 200) ja katastri
         // WMS-i (350) vahele, nii et piirid ja eraldised jäävad pildi peale.
-        var satellitePane = map.createPane('map-satellite');
-        satellitePane.style.zIndex = '340';
         L.control.zoom({ position: 'topright' }).addTo(map);
         // Leaflet atribuut ilma "Leaflet" prefix'ita (Leaflet pole
         // nõutav kuvada). CSS teeb selle kokkupandavaks.
@@ -2534,154 +2529,6 @@
             return;
         }
         map.setView([58.5, 25.0], 7.5, { animate: false });
-    }
-
-    // ─── EstHubi Sentinel-2 satelliitpilt ────────────────────────────────
-    // Server valib viimase selge päeva ja tagastab väikese WebP-pildi koos
-    // WGS84 piiridega; siin paigutatakse see ortofoto peale eraldi kihina.
-    // Aluskaart ise jääb Maa- ja Ruumiameti ortofotoks.
-    var SATELLITE_FETCH_TIMEOUT_MS = 30000;
-    var satelliteScene = null;
-    var satelliteLayer = null;
-    var satelliteVisible = true;
-    var satelliteGeneration = 0;
-    var satelliteController = null;
-
-    function satelliteDateLabel(value) {
-        if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
-        var parts = value.split('-');
-        return parts[2] + '.' + parts[1] + '.' + parts[0];
-    }
-
-    function setSatelliteControl(mode, scene) {
-        var control = document.getElementById('map-satellite-control');
-        if (!control) return;
-        var label = document.getElementById('map-satellite-label');
-        if (mode === 'hidden') {
-            control.hidden = true;
-            control.disabled = false;
-            control.removeAttribute('aria-pressed');
-            control.removeAttribute('title');
-            if (label) label.textContent = '';
-            return;
-        }
-        control.hidden = false;
-        if (mode === 'ready') {
-            var sceneDate = satelliteDateLabel(scene && scene.date);
-            control.disabled = false;
-            control.setAttribute('aria-pressed', satelliteVisible ? 'true' : 'false');
-            control.setAttribute('aria-label', 'Sentinel-2 satelliitpilt ' + sceneDate + (satelliteVisible ? ', peida kiht' : ', näita kihti'));
-            // Kaardil näidatakse ainult kuupäeva: pilvehinnang on kihi valiku
-            // sisemine detail, mitte kasutajale nähtav olek.
-            control.title = 'EstHubi Sentinel-2 päevapilt (' + sceneDate + ').'
-                + ' Klõpsa kihi peitmiseks või näitamiseks.';
-            if (label) label.textContent = 'Sentinel-2 · ' + sceneDate;
-            return;
-        }
-        control.disabled = true;
-        control.removeAttribute('aria-pressed');
-        if (mode === 'loading') {
-            control.title = 'EstHubi viimast Sentinel-2 satelliitpilti laaditakse.';
-            if (label) label.textContent = 'Sentinel-2 pilt laadib…';
-            return;
-        }
-        control.title = mode === 'empty'
-            ? 'EstHubi andmetel ei ole selle ala kohta viimase ' + (scene && scene.lookback_days ? scene.lookback_days : 14) + ' päeva jooksul satelliitpilti.'
-            : 'Satelliitpilti ei õnnestunud laadida.';
-        if (label) label.textContent = mode === 'empty' ? 'Satelliitpilti ei leitud' : 'Satelliitpilt pole saadaval';
-    }
-
-    function removeSatelliteLayer() {
-        if (!satelliteLayer) return;
-        if (map && map.hasLayer(satelliteLayer)) map.removeLayer(satelliteLayer);
-        satelliteLayer = null;
-    }
-
-    function renderSatelliteLayer() {
-        removeSatelliteLayer();
-        if (!map || !satelliteScene || !satelliteScene.image) return;
-        var bounds = satelliteScene.bounds;
-        if (!Array.isArray(bounds) || bounds.length !== 2) return;
-        satelliteLayer = L.imageOverlay(satelliteScene.image, bounds, {
-            pane: 'map-satellite',
-            opacity: 1,
-            interactive: false,
-            alt: 'Sentinel-2 satelliitpilt ' + satelliteDateLabel(satelliteScene.date),
-            className: 'map-satellite-image',
-        });
-        if (satelliteVisible) satelliteLayer.addTo(map);
-    }
-
-    function setSatelliteVisible(visible) {
-        satelliteVisible = Boolean(visible);
-        if (satelliteLayer) {
-            if (satelliteVisible) {
-                if (!map.hasLayer(satelliteLayer)) satelliteLayer.addTo(map);
-            } else if (map.hasLayer(satelliteLayer)) {
-                map.removeLayer(satelliteLayer);
-            }
-        }
-        if (satelliteScene) setSatelliteControl('ready', satelliteScene);
-    }
-
-    function toggleSatelliteLayer() {
-        setSatelliteVisible(!satelliteVisible);
-    }
-
-    function clearSatelliteScene() {
-        satelliteGeneration += 1;
-        if (satelliteController) {
-            satelliteController.abort();
-            satelliteController = null;
-        }
-        satelliteScene = null;
-        removeSatelliteLayer();
-        setSatelliteControl('hidden', null);
-    }
-
-    async function fetchSatelliteScene(katasterNr, controller) {
-        var timer = setTimeout(function() {
-            if (controller) controller.abort();
-        }, SATELLITE_FETCH_TIMEOUT_MS);
-        try {
-            var response = await fetch(API_BASE + '/satellite/' + encodeURIComponent(katasterNr), {
-                signal: controller ? controller.signal : undefined,
-            });
-            var payload = await response.json().catch(function() { return {}; });
-            if (!response.ok) {
-                throw new Error(payload.error || payload.detail || ('Satelliidipäring ' + response.status));
-            }
-            return payload;
-        } finally {
-            clearTimeout(timer);
-        }
-    }
-
-    function loadSatelliteScene(katasterNr) {
-        if (!katasterNr) return;
-        satelliteGeneration += 1;
-        var generation = satelliteGeneration;
-        if (satelliteController) satelliteController.abort();
-        satelliteController = typeof AbortController === 'function' ? new AbortController() : null;
-        var controller = satelliteController;
-        satelliteScene = null;
-        removeSatelliteLayer();
-        setSatelliteControl('loading', null);
-        fetchSatelliteScene(katasterNr, controller).then(function(payload) {
-            if (generation !== satelliteGeneration) return;
-            satelliteController = null;
-            if (!payload || payload.state !== 'available' || typeof payload.image !== 'string') {
-                setSatelliteControl(payload && payload.state === 'empty' ? 'empty' : 'error', payload);
-                return;
-            }
-            satelliteScene = payload;
-            renderSatelliteLayer();
-            setSatelliteControl('ready', payload);
-        }).catch(function() {
-            if (generation !== satelliteGeneration) return;
-            satelliteController = null;
-            setSatelliteControl('error', null);
-        });
     }
 
     function positionMapLayerTooltip(layer, event) {
@@ -4666,7 +4513,6 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
             if (map && map.hasLayer(parcelLayer)) map.removeLayer(parcelLayer);
             parcelLayer = null;
         }
-        clearSatelliteScene();
         Object.keys(overlayLayers).forEach(removeOverlayLayer);
         window._mapLayersData = {};
         renderMapWorkspaceState();
@@ -5004,8 +4850,6 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
         initMap();
         var mapResetControl = document.getElementById('map-reset-control');
         if (mapResetControl) mapResetControl.addEventListener('click', resetMapView);
-        var satelliteControl = document.getElementById('map-satellite-control');
-        if (satelliteControl) satelliteControl.addEventListener('click', toggleSatelliteLayer);
         initMapWorkspaceControls();
         renderMapWorkspaceState();
         aiInitScrollTracking();
@@ -5645,7 +5489,6 @@ const BONITEET_LABELS = ['1A', 'I', 'II', 'III', 'IV', 'V', 'Va'];
 
             document.getElementById('map-controls').style.display = '';
             dismissMapHint();
-            void loadSatelliteScene(nr);
 
             hideLoading();
             showDashboard();

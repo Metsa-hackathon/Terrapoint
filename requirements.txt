@@ -5,4 +5,3 @@ httpx==0.28.1
 shapely==2.1.2
 pydantic==2.9.2
 orjson==3.11.6
-pillow==12.3.0

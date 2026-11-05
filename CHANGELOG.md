@@ -6,6 +6,24 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > koduserveri tunnel). `terrapoint.vercel.app` suunab `vercel.json` redirectiga
 > (308) terrapoint.ee-le; push master branchi deployib koduserveri.
 
+## [Määramata] - 2026-11-05 (satelliitkiht väljas, kattuvus lõigatud krundi piiresse)
+
+### Muudetud
+- **Kaardil joonistatakse kattuvast kihist ainult krundi sees olev osa.** `_map_context_core`
+  lõikab iga kattuvuse `_clip_feature_to_parcel`-iga (shapely `intersection`) krundi piiresse ja
+  märgib feature'i `clipped_to_parcel: true`. Varem joonistati terve objekt: nt piiranguvöönd
+  (#7b2cbf) kattis ka naaberkinnistud, mistõttu tundus, et krunt ise on suurem või et naabermaa
+  kuulub vastusesse. Kattuvuse protsent ja mõjutatud eraldised arvutatakse endiselt tegelikust
+  lõikepinnast. Analüüsirada ja EUDR eksport jäävad tervet objekti kasutama.
+
+### Eemaldatud
+- **EstHubi Sentinel-2 satelliitpilt kaardilt ja API-st.** Välja: `services/satellite.py`,
+  `GET /api/satellite/{kataster_nr}`, `satellite_cache`, `map-satellite` pane, olekuriba
+  `#map-satellite-control`, selle CSS, `mapSourceDisplayName` erijuht, `pillow` sõltuvus ning
+  viited allikakaardil, `humans.txt`-is ja SEO-lehtedel. Põhjus: päevamosaiigi pilveloor kattis
+  ortofoto ja näis andmeveana; kasutaja soovis selle valikuna välja. Aluskaart jääb Maa- ja
+  Ruumiameti ortofoto.
+
 ## [Määramata] - 2026-11-04 (SEO-lehed ilma kriipsuta)
 
 ### Muudetud

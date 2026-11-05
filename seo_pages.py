@@ -116,8 +116,8 @@ PAGES: tuple[SeoPage, ...] = (
                     "Päringud tehakse otsingu hetkel avalikest registritest: Maa- ja "
                     "Ruumiamet (kataster, ortofoto, kitsenduste kaart), Metsaregister "
                     "(eraldised, teatised, Natura 2000), EELIS ja Keskkonnaagentuuri "
-                    "ruumikihid (kaitsealad, piirangud, sood), Kultuurimälestiste register, "
-                    "EstHubi Sentinel-2 päevapilt ning avaldatud puiduhinnad.",
+                    "ruumikihid (kaitsealad, piirangud, sood), Kultuurimälestiste register "
+                    "ning avaldatud puiduhinnad.",
                     "Terrapoint ei ole register ega asenda ametlikku väljavõtet. Ta on "
                     "vaade, mis toob registrid ühte kohta ja märgib iga näitaja juurde, "
                     "kust see pärineb ning kui värske see on.",
@@ -442,8 +442,8 @@ PAGES: tuple[SeoPage, ...] = (
         summary=(
             "Allikad: Maa- ja Ruumiamet (kataster, ortofoto, kitsenduste kaart), "
             "Metsaregister (eraldised, teatised, Natura 2000), EELIS ja Keskkonnaagentuur "
-            "(kaitsealad, piirangud, sood), Kultuurimälestiste register, EstHubi "
-            "Sentinel-2 päevapilt ning Eesti Erametsaliidu puiduhinnad."
+            "(kaitsealad, piirangud, sood), Kultuurimälestiste register ning Eesti "
+            "Erametsaliidu puiduhinnad."
         ),
         sections=(
             Section(
@@ -453,7 +453,6 @@ PAGES: tuple[SeoPage, ...] = (
                     ("Maa- ja Ruumiamet", "Kataster, piirid, ortofoto, kitsendused", "Kataster perioodiliselt"),
                     ("Metsaregister", "Eraldised, tagavara, teatised, Natura 2000", "Inventuuri ja teatiste kaupa"),
                     ("EELIS / Keskkonnaagentuur", "Kaitsealad, piirangud, sood", "Allika järgi"),
-                    ("EstHubi Sentinel-2", "Päevapilt (viimane selge päev)", "Iga päev"),
                     ("Eesti Erametsaliit", "Puidu hinnainfo", "Kord kvartalis"),
                 ),
             ),
@@ -496,7 +495,6 @@ PAGES: tuple[SeoPage, ...] = (
             Source("Maa- ja Ruumiamet", "https://www.maaamet.ee/"),
             Source("Metsaregister", "https://register.metsad.ee/"),
             Source("EELIS", "https://eelis.ee/"),
-            Source("EstHub: Sentinel-2 päevamosaiik", "https://esthub.maaruum.ee/est/satiladu-p1.html"),
             Source("Eesti Erametsaliit", "https://www.erametsaliit.ee/"),
         ),
         related=(

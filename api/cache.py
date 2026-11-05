@@ -81,7 +81,3 @@ search_cache = TTLCache(default_ttl=300, max_entries=256)  # 5min for search res
 # WFS-i päringud on aeglased ja ühised kõigi kasutajate vahel: ilma selle
 # vahemäluta maks iga uus otsing sama upstreami ootuse uuesti.
 search_source_cache = TTLCache(default_ttl=1800, max_entries=1024)
-# 30min for the EstHub satellite scene per parcel: the newest usable date
-# changes at most once a day, but the daily walk-back over the WMS is the
-# expensive part, so keep the rendered payload around.
-satellite_cache = TTLCache(default_ttl=1800, max_entries=256)

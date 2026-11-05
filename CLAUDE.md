@@ -48,18 +48,18 @@ Metsa väärtuse ja andmete analüüsi veebirakendus. FastAPI backend + HTML/CSS
   (`DEFAULT_BACKEND_API_URL`; Traefik `coolify-proxy` → `172.20.0.1:8001`). Origin seda teed ei vaja.
 - Backendi URL-i saab muuta `TERRAPOINT_BACKEND_API_URL` keskkonnamuutujaga.
 - Home-serveri API kuulab ainult `127.0.0.1:8099`; socat ingress on `deploy/home/`.
-- **Satelliitpilt (`/api/satellite/{kataster_nr}`)** — `services/satellite.py` küsib EstHubi
-  päevamosaiiki `https://teenus.maaamet.ee/ows/wms-sentinel-2-rgb` (ainult EPSG:3301, nõuab
-  `date=`; puuduv ala tuleb täiesti läbipaistva PNG-ina). Piirangud: kinnistu piirid pööratakse
-  L-EST97-sse kohaliku Lamberti koonilise projektsiooniga (pyproj pole sõltuvus), otsitakse kuni
-  14 päeva tagasi uusimat **selget** päeva (alfa-katvus ≥ 10%, keskmine heledus < 140), pilt
-  kodeeritakse 512 px WebP-iks (q80) ja pannakse data-URL-ina vastusesse. `pillow==12.3.0` on
-  seetõttu sõltuvus. Vahemälu 30 min (`satellite_cache`), piirangud 30/min klient ja 12/min
-  kinnistu. Frontend: `L.imageOverlay` pane'is `map-satellite` (z-index 340), olekuriba
-  `#map-satellite-control` kaardi all vasakul. Aluskaart jääb ortofotoks — satelliitpilt on
-  eraldi kiht, mitte aluskaart (test `test_satellite_overlay_is_a_separate_layer_not_a_basemap`).
-- **Serveri väljuvad aadressid, mida CSP ei puuduta**: satelliitpilt liigub läbi backend proxy,
-  seega `img-src`/`connect-src` ei vaja `teenus.maaamet.ee`-d (data-URL on juba lubatud).
+- **Kaardile joonistatakse ainult krundi sees olev osa kattuvast kihist.** `_map_context_core`
+  lõikab iga kattuvuse `_clip_feature_to_parcel`-iga krundi geomeetria piiresse (shapely
+  `intersection`), sest kattuvuse mõiste on „mis jääb sellele krundile". Ilma lõikamiseta joonistati
+  terve objekt (nt `piirang` #7b2cbf vöönd, mis ulatub üle naaberkinnistute) ja see loeti
+  ekslikult krundi alaks. Analüüsirada (`_filter_features_by_geometry_with_status`) ja EUDR
+  eksport jäävad tervet objekti kasutama; lõikamine on ainult kaardi vastuses.
+- **Satelliitpilt on eemaldatud (kasutaja soov, 2026-11-05).** Välja on võetud
+  `services/satellite.py`, `GET /api/satellite/{kataster_nr}`, `satellite_cache`, EstHubi kiht
+  (`map-satellite` pane ja olekuriba `#map-satellite-control`), `pillow` sõltuvus ning viited
+  allikakaardil ja SEO-lehtedel. Põhjus: pilvelooriga päevapilt kattis ortofoto ja näis
+  andmeveana. Tagasi tuues lisa ka `pillow` `requirements.txt`-i. Aluskaart on Maa- ja
+  Ruumiameti ortofoto.
 
 ## Andmevool: puuduvad eraldise andmed
 

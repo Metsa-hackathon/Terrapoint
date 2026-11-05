@@ -16,7 +16,7 @@ Viimased uuendused: https://terrapoint.ee/CHANGELOG.md
 Lähtekood: privaatne (suletud lähtekood, käitame ise)
 Hostitud: Vercel (terrapoint.ee)
 Andmeallikad: Maa-amet, Metsaregister, EELIS, Erametsaliit, KIK,
-  Muinsuskaitseamet, Statistikaamet, RMK, Sentinel-2
+  Muinsuskaitseamet, Statistikaamet, RMK
 
 /* THANKS */
 Keskkonnaagentuur — „Metsikult andmetes 2026" häkatoni korraldus
