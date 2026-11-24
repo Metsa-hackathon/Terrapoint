@@ -6,6 +6,18 @@ Kõik olulised muudatused Terrapoint repositooriumis.
 > koduserveri tunnel). `terrapoint.vercel.app` suunab `vercel.json` redirectiga
 > (308) terrapoint.ee-le; push master branchi deployib koduserveri.
 
+## [Määramata] 24.11.2026 (jaluse teksti kontrast)
+
+### Parandatud
+- **Jaluse rida „Sisu uuendatud" on nüüd loetav (WCAG AA 4,5:1).** `.footer-updated`
+  värv `var(--ink-5)` (#94a3b8) andis valgel taustal kontrasti 2,56:1 ja jäi alla
+  nõutud 4,5:1. Uus värv on olemasolev silt `var(--ink-4)` (#64748b), mis annab
+  4,76:1. Ühist silti `--ink-5` ei muudetud, sest seda kasutavad teised kohad
+  (nt `.toetus-details-count` taust ja sisestusväljade placeholder).
+  Regressioonitest `test_footer_updated_note_meets_wcag_aa_contrast_on_its_real_background`
+  loeb `style.css`-st eel- ja taustavärvi, arvutab WCAG kontrasti ja nõuab
+  vähemalt 4,5:1. Vahemäluvõti `style.css` jkl144 → jkl145.
+
 ## [Määramata] - 2026-11-05 (satelliitkiht väljas, kattuvus lõigatud krundi piiresse)
 
 ### Muudetud

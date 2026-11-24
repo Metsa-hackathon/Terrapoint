@@ -71,6 +71,64 @@ def _extract_js_function(name):
     raise AssertionError(f"Unclosed JavaScript function: {name}")
 
 
+_CSS_NAMED_COLORS = {"white": "#ffffff", "black": "#000000"}
+
+
+def _css_block_declarations(source, selector):
+    """Body of every top level ``selector { ... }`` block, media queries included."""
+    pattern = r"(?m)^[ \t]*" + re.escape(selector) + r"\s*\{([^}]*)\}"
+    return re.findall(pattern, source)
+
+
+def _css_custom_properties(source):
+    properties = {}
+    for block in _css_block_declarations(source, ":root"):
+        for name, value in re.findall(r"(--[\w-]+)\s*:\s*([^;]+);", block):
+            properties.setdefault(name, value.strip())
+    if not properties:
+        raise AssertionError(":root token block is missing from the stylesheet")
+    return properties
+
+
+def _css_declaration(block, property_name):
+    match = re.search(r"(?:^|;)\s*" + re.escape(property_name) + r"\s*:\s*([^;]+)", block)
+    return match.group(1).strip() if match else None
+
+
+def _resolve_css_color(value, custom_properties):
+    value = value.strip()
+    variable = re.fullmatch(r"var\(\s*(--[\w-]+)\s*(?:,\s*([^()]+))?\)", value)
+    if variable:
+        name, fallback = variable.groups()
+        if name in custom_properties:
+            return _resolve_css_color(custom_properties[name], custom_properties)
+        if fallback:
+            return _resolve_css_color(fallback, custom_properties)
+        raise AssertionError(f"Undefined CSS custom property {name} in {value!r}")
+    if value.lower() in _CSS_NAMED_COLORS:
+        return _CSS_NAMED_COLORS[value.lower()]
+    match = re.fullmatch(r"#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})", value)
+    if not match:
+        raise AssertionError(f"Unsupported CSS colour value {value!r}")
+    digits = match.group(1)
+    if len(digits) == 3:
+        digits = "".join(digit * 2 for digit in digits)
+    return "#" + digits.lower()
+
+
+def _relative_luminance(color):
+    def linear(channel):
+        return channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
+
+    red, green, blue = (linear(int(color[index:index + 2], 16) / 255) for index in (1, 3, 5))
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+
+
+def _contrast_ratio(foreground, background):
+    brighter, darker = sorted((_relative_luminance(foreground), _relative_luminance(background)), reverse=True)
+    return (brighter + 0.05) / (darker + 0.05)
+
+
 class FrontendContractTests(unittest.TestCase):
     def test_vercel_has_independent_runtime_health_function_and_python_version(self):
         self.assertIn("app = FastAPI()", VERCEL_HEALTH_PY)
@@ -3517,6 +3575,41 @@ console.log(JSON.stringify({{unavailable, complete: element.innerHTML}}));
         self.assertIn('aria-label="Metsaeraldiste tabel"', INDEX_HTML)
         self.assertIn("sidebar.inert = !open", INDEX_HTML)
         self.assertIn("returnFocus.focus({preventScroll: true})", INDEX_HTML)
+
+    def test_footer_updated_note_meets_wcag_aa_contrast_on_its_real_background(self):
+        tokens = _css_custom_properties(STYLE_CSS)
+        # Pin the formula so a parsing mistake cannot pass for a contrast fix.
+        self.assertAlmostEqual(_contrast_ratio("#000000", "#ffffff"), 21.0, places=2)
+        self.assertAlmostEqual(_contrast_ratio("#94a3b8", "#ffffff"), 2.56, places=2)
+
+        footer_backgrounds = set()
+        for block in _css_block_declarations(STYLE_CSS, "footer"):
+            declared = _css_declaration(block, "background-color") or _css_declaration(block, "background")
+            if declared:
+                footer_backgrounds.add(_resolve_css_color(declared, tokens))
+        self.assertTrue(footer_backgrounds, "footer background is not declared in style.css")
+
+        rules = _css_block_declarations(STYLE_CSS, ".footer-updated")
+        self.assertEqual(len(rules), 1, "expected exactly one .footer-updated rule")
+        rule = rules[0]
+        self.assertNotIn("--ink-5", rule)
+        color = _css_declaration(rule, "color")
+        self.assertIsNotNone(color, ".footer-updated has no explicit color")
+
+        foreground = _resolve_css_color(color, tokens)
+        own_background = _css_declaration(rule, "background-color") or _css_declaration(rule, "background")
+        backgrounds = {_resolve_css_color(own_background, tokens)} if own_background else footer_backgrounds
+        for background in sorted(backgrounds):
+            ratio = _contrast_ratio(foreground, background)
+            self.assertGreaterEqual(
+                round(ratio, 2),
+                4.5,
+                f".footer-updated {foreground} on {background} is {ratio:.2f}:1, WCAG AA needs 4.5:1",
+            )
+
+        # The fix must not repaint the shared muted token other rules rely on.
+        self.assertEqual(tokens["--ink-5"], "#94a3b8", "the shared muted token must keep its own value")
+        self.assertGreater(STYLE_CSS.count("var(--ink-5)"), 1, "other muted styles must keep using --ink-5")
 
     def test_restriction_note_names_the_legal_basis_of_the_rows_present(self):
         note = _extract_js_function("kitsendusedNote")
